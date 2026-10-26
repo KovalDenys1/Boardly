@@ -176,8 +176,8 @@ Game logic:
 
 Lobby UX/state sync:
 
-- `app/lobby/[code]/hooks/*`
-- `app/lobby/[code]/components/*`
+- `app/(site)/lobby/[code]/hooks/*`
+- `app/(site)/lobby/[code]/components/*`
 - `__tests__/app/*`
 
 ## Realtime Gotchas

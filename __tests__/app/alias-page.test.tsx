@@ -1,6 +1,6 @@
 // @ts-nocheck
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
-import AliasLobbyPage from '@/app/lobby/[code]/alias-page'
+import AliasLobbyPage from '@/app/(site)/lobby/[code]/alias-page'
 import { AliasGame } from '@/lib/games/alias'
 import { fetchWithGuest } from '@/lib/fetch-with-guest'
 import { showToast } from '@/lib/i18n-toast'

@@ -3,7 +3,7 @@ import path from 'node:path'
 import type { ComponentType } from 'react'
 import { render } from '@testing-library/react'
 import { ALL_GUIDES } from '@/lib/guides-catalog'
-import { buildGuideFaqJsonLd } from '@/app/guides/components/GuideLayout'
+import { buildGuideFaqJsonLd } from '@/app/(site)/guides/components/GuideLayout'
 
 // The guide pages are static content, but the layout ends with an ad slot and
 // the site footer, which want a session and a translation context they have no
@@ -19,11 +19,11 @@ jest.mock('@/components/Footer', () => ({
 
 const root = process.cwd()
 
-const guideSlugs = readdirSync(path.join(root, 'app', 'guides'))
+const guideSlugs = readdirSync(path.join(root, 'app', '(site)', 'guides'))
   .filter((entry) => entry !== 'components')
-  .filter((entry) => statSync(path.join(root, 'app', 'guides', entry)).isDirectory())
+  .filter((entry) => statSync(path.join(root, 'app', '(site)', 'guides', entry)).isDirectory())
 
-const readGuide = (slug: string) => readFileSync(path.join(root, 'app', 'guides', slug, 'page.tsx'), 'utf8')
+const readGuide = (slug: string) => readFileSync(path.join(root, 'app', '(site)', 'guides', slug, 'page.tsx'), 'utf8')
 
 interface FaqNode {
   '@type': string
@@ -44,7 +44,7 @@ function visibleText(container: HTMLElement): string {
 const normalize = (value: string) => value.replace(/\s+/g, ' ').trim()
 
 function renderGuide(slug: string) {
-  const Page = require(`../../app/guides/${slug}/page`).default as ComponentType
+  const Page = require(`../../app/(site)/guides/${slug}/page`).default as ComponentType
   const { container } = render(<Page />)
   const nodes = Array.from(container.querySelectorAll('script[type="application/ld+json"]')).map(
     (script) => JSON.parse(script.textContent ?? '{}') as { '@type': string },

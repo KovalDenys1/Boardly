@@ -97,16 +97,16 @@ Architecture: Supabase Realtime — no separate server process.
 
 ### Client-side subscription
 
-- `app/lobby/[code]/hooks/useRealtimeConnection.ts` – subscribes to:
+- `app/(site)/lobby/[code]/hooks/useRealtimeConnection.ts` – subscribes to:
   - `lobby:{code}:{realtimeSecret}` Broadcast channel (game events), through `lib/lobby-channel-registry.ts`
   - `lobby-pg:{code}` Postgres Changes channel (lobby row changes)
-- `app/lobby/use-lobby-list.ts` – global Postgres Changes on `Lobbies` table
-- `app/games/components/GameLobbiesPage.tsx` – Postgres Changes on `Lobbies` per game type
+- `app/(site)/lobby/use-lobby-list.ts` – global Postgres Changes on `Lobbies` table
+- `app/(site)/games/components/GameLobbiesPage.tsx` – Postgres Changes on `Lobbies` per game type
 - `components/SocialLoopListener.tsx` and `components/Header/NotificationsMenu.tsx` – the user's own
   `user:{userId}:{tag}` Broadcast channel (invites, rematch requests, `notification-created` pokes),
   through the registry. The tag is an HMAC of the id under a server key (`buildUserTopic`); the user
   fetches the name from `GET /api/realtime/user-topic`, which hands out only the caller's own.
-- `app/lobby/[code]/spectate/page.tsx` – the lobby topic through the registry, plus
+- `app/(site)/lobby/[code]/spectate/page.tsx` – the lobby topic through the registry, plus
   `spectators:{code}:{realtimeSecret}` (`spectatorTopicFor`), Presence and spectator chat, client to client
 
 All Postgres Changes subscribers run as `anon` and receive only the columns that role may select

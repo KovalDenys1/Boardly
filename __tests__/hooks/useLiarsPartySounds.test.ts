@@ -1,5 +1,5 @@
 import { renderHook } from '@testing-library/react'
-import { useLiarsPartySounds } from '@/app/lobby/[code]/hooks/useLiarsPartySounds'
+import { useLiarsPartySounds } from '@/app/(site)/lobby/[code]/hooks/useLiarsPartySounds'
 import type { LiarsPartyGameData } from '@/lib/games/liars-party-game'
 import { LIARS_BREAKDOWN_FIRST_STEP, LIARS_REVEAL_MS, LIARS_VERDICT_STEP, liarsRevealLastStep, staggerDelayMs } from '@/lib/social-motion'
 import { REDUCED_MOTION_GAP_MS } from '@/lib/board-sounds'

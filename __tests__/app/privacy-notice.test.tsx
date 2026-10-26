@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react'
-import PrivacyNotice from '@/app/privacy/PrivacyNotice'
-import { metadata } from '@/app/privacy/page'
+import PrivacyNotice from '@/app/(site)/privacy/PrivacyNotice'
+import { metadata } from '@/app/(site)/privacy/page'
 import { SUPPORT_EMAIL } from '@/lib/organization-json-ld'
 import { RETENTION_RULES } from '@/lib/data-retention'
 import { CHAT_RETENTION_HOURS, RETENTION_DAYS } from '@/lib/retention-periods'

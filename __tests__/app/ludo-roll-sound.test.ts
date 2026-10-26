@@ -1,5 +1,5 @@
 import { renderHook } from '@testing-library/react'
-import { useLudoRollSound, type LudoRollLike } from '@/app/lobby/[code]/hooks/useLudoRollSound'
+import { useLudoRollSound, type LudoRollLike } from '@/app/(site)/lobby/[code]/hooks/useLudoRollSound'
 import { playCue } from '@/lib/sound-engine'
 
 jest.mock('@/lib/sound-engine', () => ({ playCue: jest.fn(() => true) }))

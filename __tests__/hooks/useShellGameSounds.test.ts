@@ -1,5 +1,5 @@
 import { renderHook } from '@testing-library/react'
-import { useShellGameSounds, type UseShellGameSoundsOptions } from '@/app/lobby/[code]/hooks/useShellGameSounds'
+import { useShellGameSounds, type UseShellGameSoundsOptions } from '@/app/(site)/lobby/[code]/hooks/useShellGameSounds'
 
 const play = jest.fn()
 

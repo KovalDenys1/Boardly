@@ -1,6 +1,6 @@
 // @ts-nocheck
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
-import SpectatorLobbyPage from '@/app/lobby/[code]/spectate/page'
+import SpectatorLobbyPage from '@/app/(site)/lobby/[code]/spectate/page'
 import { fetchWithGuest } from '@/lib/fetch-with-guest'
 import { acceptTerms } from '@/lib/client/terms-consent'
 
@@ -58,7 +58,7 @@ jest.mock('@/lib/lobby-channel-registry', () => ({
   acquireLobbyChannel: jest.fn(() => ({ release: jest.fn() })),
 }))
 
-jest.mock('@/app/lobby/[code]/components/MemoryGameBoard', () => ({
+jest.mock('@/app/(site)/lobby/[code]/components/MemoryGameBoard', () => ({
   __esModule: true,
   default: () => <div data-testid="memory-board" />,
 }))

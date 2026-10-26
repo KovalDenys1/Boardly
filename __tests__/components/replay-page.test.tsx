@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
-import ReplayPageClient from '@/app/replay/[gameId]/ReplayPageClient'
+import ReplayPageClient from '@/app/(site)/replay/[gameId]/ReplayPageClient'
 
 const fixture = JSON.parse(readFileSync(join(__dirname, '..', 'fixtures', 'replays', 'tic_tac_toe.json'), 'utf-8'))
 

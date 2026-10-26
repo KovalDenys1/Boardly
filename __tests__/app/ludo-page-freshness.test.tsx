@@ -1,6 +1,6 @@
 // @ts-nocheck
 import { act, render, screen, waitFor } from '@testing-library/react'
-import LudoLobbyPage from '@/app/lobby/[code]/ludo-page'
+import LudoLobbyPage from '@/app/(site)/lobby/[code]/ludo-page'
 import { LudoGame } from '@/lib/games/ludo-game'
 import { fetchWithGuest } from '@/lib/fetch-with-guest'
 import { showToast } from '@/lib/i18n-toast'

@@ -31,7 +31,7 @@ describe('lobby broadcasts', () => {
     // raises no error anywhere — the lobby just goes quiet.
     const server = readFileSync(path.join(root, 'lib/supabase-server.ts'), 'utf8')
     const client = readFileSync(
-      path.join(root, 'app/lobby/[code]/hooks/useRealtimeConnection.ts'),
+      path.join(root, 'app/(site)/lobby/[code]/hooks/useRealtimeConnection.ts'),
       'utf8'
     )
 

@@ -2,7 +2,7 @@ import React from 'react'
 import { act, render, screen, waitFor, fireEvent, within } from '@testing-library/react'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
-import ProfilePage from '@/app/profile/page'
+import ProfilePage from '@/app/(site)/profile/page'
 import { showToast } from '@/lib/i18n-toast'
 
 jest.mock('next-auth/react', () => ({

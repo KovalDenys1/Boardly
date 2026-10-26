@@ -1,5 +1,5 @@
 import { act, render, screen } from '@testing-library/react'
-import TryBotGamesBanner from '@/app/lobby/[code]/components/TryBotGamesBanner'
+import TryBotGamesBanner from '@/app/(site)/lobby/[code]/components/TryBotGamesBanner'
 
 jest.mock('@/lib/i18n-helpers', () => ({
   useTranslation: () => ({

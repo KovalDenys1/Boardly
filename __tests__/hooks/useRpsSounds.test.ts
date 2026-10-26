@@ -1,5 +1,5 @@
 import { act, renderHook } from '@testing-library/react'
-import { useRpsSounds, type RpsSnapshot } from '@/app/lobby/[code]/hooks/useRpsSounds'
+import { useRpsSounds, type RpsSnapshot } from '@/app/(site)/lobby/[code]/hooks/useRpsSounds'
 import { RPS_REVEAL_MS, RPS_SHAKE_MS } from '@/lib/rps-motion'
 import { REDUCED_MOTION_GAP_MS } from '@/lib/board-sounds'
 import { prefersReducedMotion } from '@/lib/motion'

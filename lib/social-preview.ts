@@ -6,7 +6,7 @@ import { ALL_GUIDES, type GuideCategory } from './guides-catalog'
  * Link previews for every public page (#1091).
  *
  * A page that sets its own `openGraph` replaces the root layout's object, and the
- * root `opengraph-image.tsx` goes with it: until this file existed only `/` carried
+ * site card that object names goes with it: until this file existed only `/` carried
  * an `og:image`, so a shared game or guide link rendered as a bare text card in
  * WhatsApp, Discord, Messenger and X. Every page's head now names its card
  * explicitly through `socialImages()`, and the card itself is drawn by

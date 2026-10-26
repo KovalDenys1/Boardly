@@ -1,6 +1,6 @@
 import { act, renderHook } from '@testing-library/react'
 import { YahtzeeGame } from '@/lib/games/yahtzee-game'
-import { useGameActions } from '@/app/lobby/[code]/hooks/useGameActions'
+import { useGameActions } from '@/app/(site)/lobby/[code]/hooks/useGameActions'
 import { createFreshnessWatermark } from '@/lib/game-state-freshness'
 import type { RollHistoryEntry } from '@/components/RollHistory'
 

@@ -570,7 +570,7 @@ describe('the head script stays out of client bundles', () => {
       .map((file) => relative(root, file))
       .sort()
 
-    expect(importers).toEqual(['app/api/notifications/unsubscribe/route.ts', 'app/layout.tsx'])
+    expect(importers).toEqual(['app/api/notifications/unsubscribe/route.ts', 'app/root-document.tsx'])
   })
 
   it('leaves lib/app-shell.ts, which client modules import, with no imports of its own', () => {

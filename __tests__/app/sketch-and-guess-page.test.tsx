@@ -1,6 +1,6 @@
 // @ts-nocheck
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
-import SketchAndGuessLobbyPage from '@/app/lobby/[code]/sketch-and-guess-page'
+import SketchAndGuessLobbyPage from '@/app/(site)/lobby/[code]/sketch-and-guess-page'
 import { fetchWithGuest } from '@/lib/fetch-with-guest'
 import { showToast } from '@/lib/i18n-toast'
 import { frameFor, installSignedRealtime, settleRealtime, signBroadcast } from '@/__tests__/fixtures/signed-realtime'

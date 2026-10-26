@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs'
 import path from 'node:path'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
-import PremiumContent from '@/app/premium/PremiumContent'
+import PremiumContent from '@/app/(site)/premium/PremiumContent'
 import { toPlanPrice, type PremiumPricing } from '@/lib/premium-plans'
 import { TERMS_VERSION, WITHDRAWAL_INFO_VERSION } from '@/lib/terms-version'
 import en from '@/locales/en'
@@ -57,7 +57,7 @@ jest.mock('next-auth/react', () => ({
 }))
 
 const root = process.cwd()
-const source = readFileSync(path.join(root, 'app/premium/PremiumContent.tsx'), 'utf8')
+const source = readFileSync(path.join(root, 'app/(site)/premium/PremiumContent.tsx'), 'utf8')
 
 const BOTH_PLANS: PremiumPricing = {
   monthly: toPlanPrice('monthly', 299, 'usd'),

@@ -77,9 +77,9 @@ describe('the Liar\'s Party table against the catalog and the registry (#1240)',
 
   it('offers no clock on the create form, so every room starts on the 60-second default', () => {
     expect(config.turnTimer).toBeUndefined()
-    const create = readFileSync(path.join(process.cwd(), 'app/lobby/create/page.tsx'), 'utf8')
+    const create = readFileSync(path.join(process.cwd(), 'app/(site)/lobby/create/page.tsx'), 'utf8')
     expect(create).toContain('turnTimer: GAME_INFO[selectedGameType].settings.defaultTurnTimer || 60')
-    const panel = readFileSync(path.join(process.cwd(), 'app/lobby/[code]/components/LobbySettingsPanel.tsx'), 'utf8')
+    const panel = readFileSync(path.join(process.cwd(), 'app/(site)/lobby/[code]/components/LobbySettingsPanel.tsx'), 'utf8')
     expect(panel).toContain('const baseOptions = [30, 60, 90, 120, 150, 180]')
     expect(detail.modes.phaseClock.desc).toMatch(/60 seconds; before the start, the host can pick 30 to 180/)
   })

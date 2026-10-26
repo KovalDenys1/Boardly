@@ -1,8 +1,8 @@
 import { readFileSync } from 'node:fs'
 import path from 'node:path'
 import { render, screen, within } from '@testing-library/react'
-import RulesContent from '@/app/rules/RulesContent'
-import { metadata } from '@/app/rules/page'
+import RulesContent from '@/app/(site)/rules/RulesContent'
+import { metadata } from '@/app/(site)/rules/page'
 import { COMMUNITY_RULES_BANNED, COMMUNITY_RULES_KIND, MODERATION_ACTIONS } from '@/lib/community-rules'
 import { SUPPORT_EMAIL } from '@/lib/organization-json-ld'
 import en from '@/locales/en'
@@ -40,7 +40,7 @@ jest.mock('@/lib/i18n-helpers', () => {
 })
 
 const root = process.cwd()
-const source = readFileSync(path.join(root, 'app/rules/RulesContent.tsx'), 'utf8')
+const source = readFileSync(path.join(root, 'app/(site)/rules/RulesContent.tsx'), 'utf8')
 
 function localeValue(locale: object, key: string): unknown {
   return key
@@ -115,7 +115,7 @@ describe('/rules page (#1173)', () => {
   })
 
   it('is linked from the register form, next to the Terms it is part of', () => {
-    const form = readFileSync(path.join(root, 'app/auth/register/RegisterForm.tsx'), 'utf8')
+    const form = readFileSync(path.join(root, 'app/(site)/auth/register/RegisterForm.tsx'), 'utf8')
     const termsCheckbox = form.indexOf("t('auth.register.termsOfService')")
     const rulesLink = form.indexOf('<Link href="/rules"')
     const ageCheckbox = form.indexOf("t('auth.register.ageConfirm')")

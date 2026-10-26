@@ -1,7 +1,7 @@
 import { readFileSync, readdirSync, statSync } from 'fs'
 import { join, relative } from 'path'
 
-const GUIDES_ROOT = join(process.cwd(), 'app', 'guides')
+const GUIDES_ROOT = join(process.cwd(), 'app', '(site)', 'guides')
 
 function pageFiles(dir: string): string[] {
   return readdirSync(dir).flatMap((name) => {
@@ -19,7 +19,7 @@ describe('guide pages make no promise about ads (#1504)', () => {
 
   it('every guide renders through GuideLayout, which carries an ad slot', () => {
     expect(layout).toMatch(/<AdSlot\b/)
-    expect(guides.map(({ file }) => file)).toContain('app/guides/how-to-play-yahtzee-online/page.tsx')
+    expect(guides.map(({ file }) => file)).toContain('app/(site)/guides/how-to-play-yahtzee-online/page.tsx')
   })
 
   it.each(guides.map(({ file, source }) => [file, source]))('%s does not say "no ads"', (_file, source) => {

@@ -31,7 +31,7 @@ const ROUNDUPS = ['best-online-games-for-game-night', 'best-2-player-games-onlin
 const NUMBER_WORDS: Record<number, string> = { 9: 'nine', 15: 'fifteen' }
 
 function visibleText(slug: string): string {
-  const Page = require(`../../app/guides/${slug}/page`).default as ComponentType
+  const Page = require(`../../app/(site)/guides/${slug}/page`).default as ComponentType
   const { container } = render(<Page />)
   const clone = container.cloneNode(true) as HTMLElement
   // JSON-LD lives in <script> children, so its copy of the prose would answer

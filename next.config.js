@@ -110,6 +110,8 @@ const nextConfig = {
   // Experimental features for better performance
   experimental: {
     optimizePackageImports: ['react-hot-toast', 'next-auth', '@phosphor-icons/react'],
+    // There is no app/layout.tsx to draw a 404 for a URL no route matches: app/global-not-found.tsx does.
+    globalNotFound: true,
     // Note: optimizeCss requires critters package, disabled to avoid build issues
     // optimizeCss: true,
   },

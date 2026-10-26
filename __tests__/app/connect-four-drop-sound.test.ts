@@ -1,5 +1,5 @@
 import { act, renderHook } from '@testing-library/react'
-import { useConnectFourDropSound, type ConnectFourDrop } from '@/app/lobby/[code]/hooks/useConnectFourDropSound'
+import { useConnectFourDropSound, type ConnectFourDrop } from '@/app/(site)/lobby/[code]/hooks/useConnectFourDropSound'
 import { useFreshKey } from '@/hooks/useFreshKey'
 import { C4_DEFAULT_CELL_PX, c4LandingMs } from '@/lib/connect-four-drop-timing'
 import { playCue } from '@/lib/sound-engine'

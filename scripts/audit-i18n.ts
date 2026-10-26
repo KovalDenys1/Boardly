@@ -22,9 +22,9 @@ import ts from 'typescript'
  * `{t('key')}` is a JSX expression, not text, so translated strings never
  * appear here - which is the property that makes the count meaningful.
  *
- * Out of scope by directory, per the decision recorded in #889: `app/guides`
- * (SEO landing pages, 87 strings, may be English on purpose), `app/privacy`
- * (legal copy), and `app/dev` (never shipped to a visitor). `app/terms` left
+ * Out of scope by directory, per the decision recorded in #889: `app/(site)/guides`
+ * (SEO landing pages, 87 strings, may be English on purpose), `app/(site)/privacy`
+ * (legal copy), and `app/(site)/dev` (never shipped to a visitor). `app/(site)/terms` left
  * that list when #1166 moved every section to t().
  *
  * Escapes, both deliberate:
@@ -47,10 +47,10 @@ const ignoredDirectories = new Set(['node_modules', '.next', '.git', 'coverage',
 
 /**
  * Directory prefixes the audit does not judge. Kept as prefixes rather than
- * allowlist entries so a new file under `app/guides` is out of scope the day it
+ * allowlist entries so a new file under `app/(site)/guides` is out of scope the day it
  * is written, instead of failing CI until someone remembers to list it.
  */
-const outOfScopePrefixes = ['app/guides/', 'app/privacy/', 'app/dev/']
+const outOfScopePrefixes = ['app/(site)/guides/', 'app/(site)/privacy/', 'app/(site)/dev/']
 
 /** Attributes a screen reader or a tooltip renders verbatim. */
 const userVisibleAttributes = new Set(['title', 'placeholder', 'aria-label', 'alt'])

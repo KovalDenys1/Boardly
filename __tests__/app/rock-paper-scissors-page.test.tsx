@@ -1,6 +1,6 @@
 // @ts-nocheck
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
-import RockPaperScissorsLobbyPage from '@/app/lobby/[code]/rock-paper-scissors-page'
+import RockPaperScissorsLobbyPage from '@/app/(site)/lobby/[code]/rock-paper-scissors-page'
 import { fetchWithGuest } from '@/lib/fetch-with-guest'
 import { clientLogger } from '@/lib/client-logger'
 import { showToast } from '@/lib/i18n-toast'

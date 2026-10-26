@@ -5,6 +5,7 @@ import type { FaqFacts, FaqGame } from '@/lib/faq-facts'
 import type { TranslationKeys } from '@/lib/i18n-helpers'
 import { useTranslation } from '@/lib/i18n-helpers'
 import { useIsPlayApp } from '@/hooks/useIsPlayApp'
+import { usePageLocale } from '@/lib/page-locale'
 
 /**
  * "A, B and C". All four locales put the conjunction in the same place and none
@@ -37,10 +38,12 @@ type FaqKey = (typeof FAQ_KEYS)[number]
 const WEB_ONLY_FAQ_KEYS: ReadonlySet<FaqKey> = new Set(['q6', 'q8'])
 
 /**
- * The JSON-LD stays English whatever the visitor's language is, so it is built
- * from the English locale rather than kept as a second hand-written copy of the
- * answers. Keeping two copies is how q1 came to promise "no subscriptions, no
- * ads, and no paywalls" in both places long after Premium went live (#878).
+ * The JSON-LD is in the language the page is prerendered in – English at /, the
+ * URL's language at /ru and /uk (#1394) – whatever the visitor's stored choice,
+ * and it is built from the locale files rather than kept as a second
+ * hand-written copy of the answers. Keeping two copies is how q1 came to promise
+ * "no subscriptions, no ads, and no paywalls" in both places long after Premium
+ * went live (#878).
  */
 function interpolate(text: string, vars: Record<string, string | number>): string {
   return text.replace(/\{\{(\w+)\}\}/g, (whole, name: string) =>
@@ -48,16 +51,16 @@ function interpolate(text: string, vars: Record<string, string | number>): strin
   )
 }
 
-function buildFaqJsonLd(vars: Partial<Record<FaqKey, Record<string, string | number>>>) {
+function buildFaqJsonLd(entry: (key: FaqKey) => { question: string; answer: string }) {
   return {
     '@context': 'https://schema.org',
     '@type': 'FAQPage',
     mainEntity: FAQ_KEYS.map((key) => ({
       '@type': 'Question',
-      name: en.faq[key].question,
+      name: entry(key).question,
       acceptedAnswer: {
         '@type': 'Answer',
-        text: interpolate(en.faq[key].answer, vars[key] ?? {}),
+        text: entry(key).answer,
       },
     })),
   }
@@ -72,6 +75,7 @@ const FAQ_COLORS = [
 
 export default function FaqSection({ facts }: { facts: FaqFacts }) {
   const { t } = useTranslation()
+  const pageLocale = usePageLocale()
   const isPlayApp = useIsPlayApp()
   const shownKeys = isPlayApp ? FAQ_KEYS.filter((key) => !WEB_ONLY_FAQ_KEYS.has(key)) : FAQ_KEYS
 
@@ -96,7 +100,15 @@ export default function FaqSection({ facts }: { facts: FaqFacts }) {
     <>
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(buildFaqJsonLd(englishVars)) }}
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(
+            buildFaqJsonLd((key) =>
+              pageLocale
+                ? { question: t(`faq.${key}.question`), answer: t(`faq.${key}.answer`, answerVars[key]) }
+                : { question: en.faq[key].question, answer: interpolate(en.faq[key].answer, englishVars[key] ?? {}) }
+            )
+          ),
+        }}
       />
       <section className="home-faq-section" aria-labelledby="home-faq-title">
         <div className="home-faq-intro">

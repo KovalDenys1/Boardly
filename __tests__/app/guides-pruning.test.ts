@@ -56,9 +56,9 @@ function proseWordCount(source: string): number {
   return words
 }
 
-const guideDirs = readdirSync(path.join(root, 'app', 'guides'))
+const guideDirs = readdirSync(path.join(root, 'app', '(site)', 'guides'))
   .filter((entry) => entry !== 'components')
-  .filter((entry) => statSync(path.join(root, 'app', 'guides', entry)).isDirectory())
+  .filter((entry) => statSync(path.join(root, 'app', '(site)', 'guides', entry)).isDirectory())
 
 describe('guide pruning (#923)', () => {
   it('has no page left for a merged guide', () => {
@@ -76,7 +76,7 @@ describe('guide pruning (#923)', () => {
       expect(rule).toBeDefined()
       expect(rule?.destination).toBe(destination)
       expect(rule?.permanent).toBe(true)
-      expect(() => read(`app${destination}/page.tsx`)).not.toThrow()
+      expect(() => read(`app/(site)${destination}/page.tsx`)).not.toThrow()
     }
   })
 
@@ -110,11 +110,11 @@ describe('guide pruning (#923)', () => {
 
 describe('guide content bar (#923)', () => {
   it.each(ALL_GUIDES.map((guide) => guide.slug))('%s carries at least %s words', (slug) => {
-    expect(proseWordCount(read(`app/guides/${slug}/page.tsx`))).toBeGreaterThanOrEqual(MIN_WORDS)
+    expect(proseWordCount(read(`app/(site)/guides/${slug}/page.tsx`))).toBeGreaterThanOrEqual(MIN_WORDS)
   })
 
   it.each(ALL_GUIDES.map((guide) => guide.slug))('%s opens with a question and its answer', (slug) => {
-    const source = read(`app/guides/${slug}/page.tsx`)
+    const source = read(`app/(site)/guides/${slug}/page.tsx`)
     expect(source).toContain(`slug="${slug}"`)
 
     const question = source.match(/\n\s+question="([^"]+)"/)
@@ -125,7 +125,7 @@ describe('guide content bar (#923)', () => {
   })
 
   it('draws the question as an h2 and shows when the guide was last updated', () => {
-    const layout = read('app/guides/components/GuideLayout.tsx')
+    const layout = read('app/(site)/guides/components/GuideLayout.tsx')
     expect(layout).toMatch(/<h2[\s\S]*?\{question\}/)
     expect(layout).toContain('Last updated')
     // the date is the catalog's, so a content change moves the page and the

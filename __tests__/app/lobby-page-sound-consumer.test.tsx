@@ -11,7 +11,7 @@ jest.mock('next/navigation', () => ({
 }))
 jest.mock('next-auth/react', () => ({ useSession: () => ({ status: 'authenticated', data: { user: { id: 'u1' } } }) }))
 jest.mock('@/contexts/GuestContext', () => ({ useGuest: () => ({ isGuest: false, guestToken: null, guestId: null, guestName: null }) }))
-jest.mock('@/app/lobby/[code]/hooks/useLobbyRouteState', () => ({
+jest.mock('@/app/(site)/lobby/[code]/hooks/useLobbyRouteState', () => ({
   useLobbyRouteState: () => ({ gameType: 'tic_tac_toe', gameStatus: 'playing', loading: false, handleGameStarted: jest.fn(), handleGameReset: jest.fn() }),
 }))
 jest.mock('@/lib/analytics', () => new Proxy({}, { get: (_t, k) => (k === '__esModule' ? true : jest.fn()) }))
@@ -56,7 +56,7 @@ it('LobbyPage holds the sound consumer while a dedicated game page renders in pl
   const { getSoundEngine } = require('@/lib/sound-engine')
   await getSoundEngine().preload(['turn.mine', 'result.win'])
   // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const LobbyPage = require('@/app/lobby/[code]/LobbyPageClient').default
+  const LobbyPage = require('@/app/(site)/lobby/[code]/LobbyPageClient').default
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   const { useSoundConsumer } = require('@/hooks/useSoundConsumer')
   await act(async () => { render(<LobbyPage />) })

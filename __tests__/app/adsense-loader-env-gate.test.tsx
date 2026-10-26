@@ -12,10 +12,10 @@
  * bare `NODE_ENV` check would ship this to Preview. The last two cases
  * below pin that distinction directly.
  *
- * RootLayout renders <html>/<head>/<body> itself, which React/jsdom refuse to
+ * RootDocument renders <html>/<head>/<body> itself, which React/jsdom refuse to
  * mount cleanly under an arbitrary test container (document singletons), so
  * this walks the returned React element tree directly instead of rendering
- * it — RootLayout is a plain function with no hooks of its own, so calling it
+ * it — RootDocument is a plain function with no hooks of its own, so calling it
  * and inspecting the element graph it builds is equivalent to reading its JSX
  * output for elements it renders itself (script tags included).
  */
@@ -111,8 +111,8 @@ async function elementTreeFor({ nodeEnv, vercelEnv, nextPublicVercelEnv }: EnvOv
   setOrDelete(env, 'VERCEL_ENV', vercelEnv)
   setOrDelete(env, 'NEXT_PUBLIC_VERCEL_ENV', nextPublicVercelEnv)
   jest.resetModules()
-  const { default: RootLayout } = await import('../../app/layout')
-  const tree = RootLayout({ children: null })
+  const { RootDocument } = await import('../../app/root-document')
+  const tree = RootDocument({ lang: 'en', children: null })
   setOrDelete(env, 'NODE_ENV', original.NODE_ENV)
   setOrDelete(env, 'VERCEL_ENV', original.VERCEL_ENV)
   setOrDelete(env, 'NEXT_PUBLIC_VERCEL_ENV', original.NEXT_PUBLIC_VERCEL_ENV)

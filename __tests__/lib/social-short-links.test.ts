@@ -92,7 +92,8 @@ describe('social short links (#1096)', () => {
   })
 
   it('collides with no page or route in app/', () => {
-    const top = new Set(readdirSync(path.join(process.cwd(), 'app')))
+    const app = path.join(process.cwd(), 'app')
+    const top = new Set([...readdirSync(app), ...readdirSync(path.join(app, '(site)'))])
     for (const { path: p } of SOCIAL_SHORT_LINKS) expect(top.has(p.slice(1))).toBe(false)
   })
 

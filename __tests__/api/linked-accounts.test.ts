@@ -59,7 +59,7 @@ describe('/auth/link is gone (#1140)', () => {
   }
 
   it('has no page', () => {
-    expect(existsSync(path.join(root, 'app/auth/link'))).toBe(false)
+    expect(existsSync(path.join(root, 'app/(site)/auth/link'))).toBe(false)
   })
 
   it('is not linked or navigated to from any source file', () => {

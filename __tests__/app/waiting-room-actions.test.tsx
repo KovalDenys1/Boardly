@@ -2,7 +2,7 @@
  * @jest-environment jsdom
  */
 import { render, screen } from '@testing-library/react'
-import WaitingRoomActions from '@/app/lobby/[code]/components/WaitingRoomActions'
+import WaitingRoomActions from '@/app/(site)/lobby/[code]/components/WaitingRoomActions'
 
 jest.mock('@/lib/sound-engine', () => ({ playCue: jest.fn() }))
 jest.mock('@/lib/i18n-helpers', () => ({

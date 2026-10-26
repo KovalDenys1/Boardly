@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { useTranslation } from '@/lib/i18n-helpers'
+import { useLocalizedHref } from '@/lib/page-locale'
 import type { TranslationKeys } from '@/lib/i18n-helpers'
 import { getCatalogAvailableGames } from '@/lib/game-catalog'
 import { SOCIAL_PLATFORM_LABELS, SOCIAL_PROFILES } from '@/lib/social-profiles'
@@ -11,6 +12,7 @@ import { useIsPlayApp } from '@/hooks/useIsPlayApp'
 
 export default function Footer({ listingBadge = false }: { listingBadge?: boolean }) {
   const { t } = useTranslation()
+  const localize = useLocalizedHref()
   const inPlayApp = useIsPlayApp()
   const currentYear = new Date().getFullYear()
   // The adsbygoogle loader — which is also what delivers Google's consent
@@ -18,7 +20,7 @@ export default function Footer({ listingBadge = false }: { listingBadge?: boolea
   // it would do nothing anywhere else. `NODE_ENV === 'production'` alone
   // can't tell a Vercel Preview build from Production (Next.js builds both
   // with NODE_ENV=production), so this goes through the VERCEL_ENV-aware
-  // helper that app/layout.tsx's loader gate uses.
+  // helper that app/root-document.tsx's loader gate uses.
   const canReopenConsentMessage = isProductionDeployment()
 
   return (
@@ -107,7 +109,7 @@ export default function Footer({ listingBadge = false }: { listingBadge?: boolea
               {getCatalogAvailableGames().map((game) => (
                 <li key={game.id}>
                   <Link
-                    href={(game.route ?? '').replace(/\/lobbies$/, '')}
+                    href={localize((game.route ?? '').replace(/\/lobbies$/, ''))}
                     className="text-sm transition-colors hover:opacity-100"
                     style={{ color: 'var(--bd-ink-soft)' }}
                     onMouseEnter={e => (e.currentTarget.style.color = 'var(--bd-ink)')}
@@ -142,7 +144,7 @@ export default function Footer({ listingBadge = false }: { listingBadge?: boolea
                 .map((link) => (
                   <li key={link.href} data-purchase-ui={link.purchase || undefined}>
                     <Link
-                      href={link.href}
+                      href={localize(link.href)}
                       className="text-sm transition-colors"
                       style={{ color: 'var(--bd-ink-soft)' }}
                       onMouseEnter={e => (e.currentTarget.style.color = 'var(--bd-ink)')}

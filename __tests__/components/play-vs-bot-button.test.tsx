@@ -1,5 +1,5 @@
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
-import PlayVsBotButton from '@/app/games/components/PlayVsBotButton'
+import PlayVsBotButton from '@/app/(site)/games/components/PlayVsBotButton'
 import { fetchWithGuest } from '@/lib/fetch-with-guest'
 
 const pushMock = jest.fn()

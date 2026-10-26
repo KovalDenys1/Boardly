@@ -216,7 +216,7 @@ describe('Ludo timeouts (#1242)', () => {
   })
 
   it('is sent by the player\'s own open page, so the page says "while your game is open"', () => {
-    const page = source('app/lobby/[code]/ludo-page.tsx')
+    const page = source('app/(site)/lobby/[code]/ludo-page.tsx')
     expect(page).toMatch(/\{ playerId: userId, type: 'timeout', data: \{\}, timestamp: new Date\(\) \}/)
     expect(ludo.rules.timer).toMatch(/If it runs out while your game is open/)
   })
@@ -263,7 +263,7 @@ describe('Ludo modes, clock and seats against the catalog and routes (#1242)', (
     expect(source('app/api/game/create/route.ts')).toContain('extractCarriedGameConfig(gameType, finishedGame.state)')
     expect(source('lib/lobby-series-transition.ts')).toContain('extractCarriedGameConfig(gameType, previousState)')
     expect(source('app/api/lobby/[code]/return-to-waiting/route.ts')).toContain('previousState: lastGame.state')
-    expect(source('app/lobby/[code]/components/LobbySettingsPanel.tsx')).toMatch(
+    expect(source('app/(site)/lobby/[code]/components/LobbySettingsPanel.tsx')).toMatch(
       /type EditableSettingKey = 'maxPlayers' \| 'turnTimer' \| 'allowSpectators' \| 'theme' \| 'gameType'/
     )
     expect(ludo.detail.faq.whoPicksMode.a).toMatch(/The host, when creating the lobby; Play Again and Return to Lobby keep that mode/)
@@ -272,7 +272,7 @@ describe('Ludo modes, clock and seats against the catalog and routes (#1242)', (
   it('quotes the create default, the host range and the Play vs Bot clock', () => {
     expect(config.turnTimer).toEqual({ options: [30, 60, 90, 120], default: 30 })
     expect(source('app/api/lobby/[code]/route.ts')).toMatch(/turnTimer: z\.number\(\)\.int\(\)\.min\(30\)\.max\(180\)\.optional\(\)/)
-    expect(source('app/lobby/[code]/components/LobbySettingsPanel.tsx')).toMatch(/\[30, 60, 90, 120, 150, 180\]/)
+    expect(source('app/(site)/lobby/[code]/components/LobbySettingsPanel.tsx')).toMatch(/\[30, 60, 90, 120, 150, 180\]/)
     expect(source('app/api/quick-play/route.ts')).toMatch(/QUICK_PLAY_TURN_TIMER_SECONDS = 45\b/)
     expect(ludo.detail.modes.turnClock.desc).toMatch(
       /Lobbies you create default to 30 seconds; the host can set 30 to 180 before the start\. Quick Play and Play vs Bot use 45\./
@@ -288,7 +288,7 @@ describe('Ludo modes, clock and seats against the catalog and routes (#1242)', (
   })
 
   it('shows the in-game chat in every game, bot games included', () => {
-    expect(source('app/lobby/[code]/ludo-page.tsx')).not.toMatch(/hasMultipleHumans|showChat/)
+    expect(source('app/(site)/lobby/[code]/ludo-page.tsx')).not.toMatch(/hasMultipleHumans|showChat/)
     expect(ludo.detail.multiplayer.withFriends.desc).toMatch(/the chat sits beside the board/)
   })
 })

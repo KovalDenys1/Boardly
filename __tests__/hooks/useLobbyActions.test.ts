@@ -1,5 +1,5 @@
 import { act, renderHook } from '@testing-library/react'
-import { useLobbyActions } from '@/app/lobby/[code]/hooks/useLobbyActions'
+import { useLobbyActions } from '@/app/(site)/lobby/[code]/hooks/useLobbyActions'
 import { createFreshnessWatermark } from '@/lib/game-state-freshness'
 
 jest.mock('@/lib/client-logger', () => ({

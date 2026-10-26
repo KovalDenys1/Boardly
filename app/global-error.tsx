@@ -3,7 +3,7 @@
 import "./globals.css";
 import * as Sentry from "@sentry/nextjs";
 import { useEffect } from "react";
-import BoardlyErrorState from "@/components/BoardlyErrorState";
+import BoardlyErrorCard from "@/components/BoardlyErrorCard";
 import { getThemeInitScript } from "@/lib/theme";
 
 export default function GlobalError({
@@ -26,7 +26,7 @@ export default function GlobalError({
         />
       </head>
       <body>
-        <BoardlyErrorState
+        <BoardlyErrorCard
           error={error}
           onRetry={reset}
           kicker="Boardly · System Error"
