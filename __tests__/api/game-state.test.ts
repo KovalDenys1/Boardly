@@ -214,6 +214,21 @@ describe('POST /api/game/[gameId]/state', () => {
     expect(await response.json()).toEqual({ error: 'Not a player in this game' })
   })
 
+  it.each(['abandoned', 'cancelled'])('refuses a valid move to a %s game row without writing or broadcasting', async (status) => {
+    mockGetRequestAuthUser.mockResolvedValue(mockAuthUser)
+    mockPrisma.games.findUnique.mockResolvedValueOnce({ ...dbGame, status } as any)
+    mockRestoreGameEngine.mockReturnValue({ makeMove: jest.fn().mockReturnValue(true) } as any)
+
+    const response = await POST(buildRequest({ move: { type: 'roll', data: {} } }), {
+      params: Promise.resolve({ gameId: 'game-123' }),
+    })
+
+    expect(response.status).toBe(400)
+    expect((await response.json()).code).toBe('GAME_NOT_ACTIVE')
+    expect(mockPrisma.games.updateMany).not.toHaveBeenCalled()
+    expect(mockBroadcastToLobby).not.toHaveBeenCalled()
+  })
+
   // PR #1100 review: this generic route used to hand a Sketch & Guess move's
   // client-written data straight to the engine – including a forged host flag –
   // and skipped the game's phase clock. Every Sketch & Guess move goes through

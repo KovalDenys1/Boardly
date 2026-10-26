@@ -326,6 +326,11 @@ export async function POST(
       return NextResponse.json({ error: 'Game not found' }, { status: 404 })
     }
 
+    // A leave abandons the row without touching the saved state, which still says playing.
+    if (game.status === 'abandoned' || game.status === 'cancelled') {
+      return NextResponse.json({ error: 'Game is no longer active', code: 'GAME_NOT_ACTIVE' }, { status: 400 })
+    }
+
     // Sketch & Guess has its own move route, which applies the game's phase
     // clock, checks who the host is, and redacts the answer per viewer. This
     // generic one did none of that and passed the client's move data straight

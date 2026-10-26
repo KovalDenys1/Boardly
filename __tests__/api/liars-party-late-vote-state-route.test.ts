@@ -134,7 +134,7 @@ describe("a Liar's Party vote that arrives after the vote deadline", () => {
     }))
   })
 
-  it('leaves an abandoned game alone and refuses the vote as before', async () => {
+  it('leaves an abandoned game alone and refuses the vote', async () => {
     const deadline = seedSplitVote('abandoned')
     clock = deadline + 1_000
     mockGetRequestAuthUser.mockResolvedValue({ id: 'p2', username: 'p2', suspended: false, isGuest: true })
@@ -142,7 +142,7 @@ describe("a Liar's Party vote that arrives after the vote deadline", () => {
     const response = await postVote('believe')
 
     expect(response.status).toBe(400)
-    expect(await response.json()).toEqual({ error: 'Invalid move' })
+    expect(await response.json()).toEqual({ error: 'Game is no longer active', code: 'GAME_NOT_ACTIVE' })
     expect(prisma.games.updateMany).not.toHaveBeenCalled()
     expect(broadcastToLobby).not.toHaveBeenCalled()
     expect(appendGameReplaySnapshot).not.toHaveBeenCalled()
