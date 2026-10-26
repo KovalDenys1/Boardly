@@ -139,6 +139,75 @@ describe('LudoLobbyPage – lobby facts and game ids carried by a dropped read (
     expect(playAgain.length).toBeGreaterThan(0)
   })
 
+  // #1528: the read the leave starts and one sent just before it carry the same game-state age, so
+  // the stamps cannot order them; the one that left first used to win by landing last.
+  it('the new host keeps Play again when a read sent before the host left lands after the leave read', async () => {
+    const s0 = startState()
+    const L0 = s0.lastMoveAt as number
+    s0.updatedAt = new Date(L0).toISOString()
+    mockFetch.mockResolvedValue({ ok: true, status: 200, json: async () => response(s0, 'user-2') } as Response)
+    render(<LudoLobbyPage code="ABCD" />)
+    await waitFor(() => expect(broadcastHandlers['player-left']).toBeDefined())
+    await waitFor(() => expect(broadcastHandlers['game-update']).toBeDefined())
+    await waitFor(() => expect(screen.getAllByTestId('ludo-roll-button').length).toBeGreaterThan(0))
+
+    const reads: Array<(r: Response) => void> = []
+    mockFetch.mockImplementation(async (url: string) => {
+      if (String(url).startsWith('/api/lobby/ABCD?')) return new Promise<Response>((resolve) => { reads.push(resolve) })
+      return { ok: true, status: 200, json: async () => ({}) } as Response
+    })
+
+    // An update the page answers with a read, and then Bob, the host, leaves; Alice inherits it.
+    await act(async () => {
+      broadcastHandlers['game-update']?.({ payload: { action: 'state-change', gameId: 'game-1' } })
+    })
+    await waitFor(() => expect(reads.length).toBe(1))
+    await act(async () => {
+      broadcastHandlers['player-left']?.({ payload: { userId: 'user-2', username: 'Bob', remainingPlayers: 2, nextCreatorId: 'user-1', nextCreatorName: 'Alice' } })
+    })
+    await waitFor(() => expect(reads.length).toBe(2))
+
+    // The leave swept Bob's seat without a new stamp. Its read lands first, the earlier one last.
+    const sLeave = JSON.parse(JSON.stringify(s0))
+    sLeave.players = sLeave.players.map((p: any) => (p.id === 'user-2' ? { ...p, isActive: false } : p))
+    await act(async () => reads[1]({ ok: true, status: 200, json: async () => response(sLeave, 'user-1') } as Response))
+    await act(async () => reads[0]({ ok: true, status: 200, json: async () => response(s0, 'user-2') } as Response))
+    await act(async () => { await settleRealtime() })
+
+    const s2 = JSON.parse(JSON.stringify(sLeave))
+    s2.status = 'finished'
+    s2.winner = 'user-3'
+    s2.data.winnerId = 'user-3'
+    s2.data.ranking = ['user-3', 'user-1', 'user-2']
+    s2.lastMoveAt = L0 + 5_000
+    await act(async () => {
+      broadcastHandlers['game-update']?.({ payload: { action: 'state-change', gameId: 'game-1', payload: s2 } })
+    })
+    await waitFor(() => expect(screen.queryAllByTestId('game-result-overlay').length).toBeGreaterThan(0))
+
+    expect(screen.queryAllByText('lobby.game.playAgain').length).toBeGreaterThan(0)
+  })
+
+  // The channel joins without waiting for the first read, so the host can leave before it lands.
+  it('still opens the game when the host leaves before the first read has landed', async () => {
+    const reads: Array<(r: Response) => void> = []
+    mockFetch.mockImplementation(async (url: string) => {
+      if (String(url).startsWith('/api/lobby/ABCD?')) return new Promise<Response>((resolve) => { reads.push(resolve) })
+      return { ok: true, status: 200, json: async () => ({}) } as Response
+    })
+    render(<LudoLobbyPage code="ABCD" />)
+    await waitFor(() => expect(broadcastHandlers['player-left']).toBeDefined())
+    await waitFor(() => expect(reads.length).toBe(1))
+
+    await act(async () => {
+      broadcastHandlers['player-left']?.({ payload: { userId: 'user-2', username: 'Bob', remainingPlayers: 2, nextCreatorId: 'user-1', nextCreatorName: 'Alice' } })
+    })
+    await waitFor(() => expect(reads.length).toBe(2))
+    await act(async () => reads[0]({ ok: true, status: 200, json: async () => response(startState(), 'user-2') } as Response))
+
+    await waitFor(() => expect(screen.getAllByTestId('ludo-roll-button').length).toBeGreaterThan(0))
+  })
+
   // A rematch is a new game row. Its first broadcast is tagged with that row; applied to the
   // finished game it raised the bar over the rematch read, which was then dropped.
   it('moves on to the rematch row, so the next roll goes to the new game', async () => {

@@ -27,6 +27,7 @@ import { isBotSeat } from '@/lib/bots/core/bot-helpers'
 import { lobbySoundCues } from '@/lib/lobby-sound-cues'
 import { useSoundConsumer } from '@/hooks/useSoundConsumer'
 import { useSpectatorResultCue } from '@/hooks/useSpectatorResultCue'
+import { beginLobbyRead, createFreshnessWatermark, decideFreshness } from '@/lib/game-state-freshness'
 
 const ConnectFourLobbyPage = dynamic(() => import('../connect-four-page'), { ssr: false, loading: () => <LobbyPageLoadingFallback /> })
 const LudoLobbyPage = dynamic(() => import('../ludo-page'), { ssr: false, loading: () => <LobbyPageLoadingFallback /> })
@@ -319,6 +320,8 @@ export default function SpectatorLobbyPage() {
   const [departedIds, setDepartedIds] = useState<ReadonlySet<string>>(new Set())
   // The game on screen: once it finishes, the route is asked for finished games so the final board stays up.
   const watchedGameIdRef = useRef<string | null>(null)
+  // Every update is answered with a read; one placed behind a read already shown is dropped (#1528).
+  const readsRef = useRef(createFreshnessWatermark())
 
   const parsedState = useMemo(() => {
     const raw = data?.activeGame?.state
@@ -332,6 +335,7 @@ export default function SpectatorLobbyPage() {
 
   const loadSnapshot = useCallback(async () => {
     if (!code) return
+    const read = beginLobbyRead(readsRef.current)
     try {
       // Read at call time (not render time) — on a client-side transition,
       // window.location.search may not reflect the new URL yet during the
@@ -377,6 +381,14 @@ export default function SpectatorLobbyPage() {
         }
         throw new Error(json?.error || `HTTP ${res.status}`)
       }
+      const rawState = json?.activeGame?.state
+      let incoming: unknown = null
+      try {
+        incoming = typeof rawState === 'string' ? JSON.parse(rawState) : rawState ?? null
+      } catch {
+        incoming = null
+      }
+      if (!decideFreshness(readsRef.current, incoming, { snapshot: true, read }).accept) return
       // A finished game is only ever the end of the one being watched, never an old game to open on.
       const finishedElsewhere = json?.activeGame?.status === 'finished' && json.activeGame.id !== watchedGameIdRef.current
       const snapshot: SpectatorLobbyResponse = finishedElsewhere

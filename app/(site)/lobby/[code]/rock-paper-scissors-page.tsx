@@ -41,7 +41,7 @@ import { trackLobbyLeaveRedirect, trackMoveSubmitApplied } from '@/lib/analytics
 import { resolveLifecycleRedirectReason } from '@/lib/lobby-lifecycle'
 import { getLobbyPlayerRequirements } from '@/lib/lobby-player-requirements'
 import type { GamePlayer, GameUpdatePayload } from '@/types/game'
-import { createFreshnessWatermark, decideFreshness, isUpdateForAnotherGame, keepBoardFromDroppedSnapshot, resetFreshnessWatermark, takeMissedSnapshot } from '@/lib/game-state-freshness'
+import { beginLobbyRead, createFreshnessWatermark, decideFreshness, isUpdateForAnotherGame, keepBoardFromDroppedSnapshot, lobbyFromRead, resetFreshnessWatermark, rosterForRead, takeMissedSnapshot, takePlayerLeftFrame } from '@/lib/game-state-freshness'
 import { isLobbyGoneStatus } from '@/lib/lobby-fetch-status'
 import { createStuckTurnRecovery, turnSignatureOf } from '@/lib/stuck-turn-recovery'
 import { playCue } from '@/lib/sound-engine'
@@ -314,6 +314,7 @@ export default function RockPaperScissorsLobbyPage({ code, isSpectator = false, 
 
     const loadLobby = useCallback(async (options: { reconcile?: boolean; followUp?: boolean } = {}) => {
         try {
+            const read = beginLobbyRead(freshnessRef.current)
             const res = await fetchWithGuest(`/api/lobby/${code}?includeFinished=true`, {
                 method: 'GET',
                 headers: { 'Content-Type': 'application/json' },
@@ -332,38 +333,38 @@ export default function RockPaperScissorsLobbyPage({ code, isSpectator = false, 
             if (!lobbyPayload?.id || !lobbyPayload?.code) throw new Error('Invalid lobby response')
             finalizePendingLobbyCreateMetric({ lobbyCode: lobbyPayload.code, fallbackGameType: lobbyPayload.gameType })
 
-            if (activeGame?.id) {
-                const parsedState = parseRpsState(activeGame.state, isLifecycleStatus(activeGame.status) ? activeGame.status : undefined)
-                const players: GamePlayer[] = Array.isArray(activeGame.players) ? (activeGame.players as GamePlayer[]) : []
-                if (parsedState) {
-                    if (parsedState.players.length === 0) {
-                        parsedState.players = players
-                            .map((player) => ({ id: player.userId || player.id, name: player.user?.username || player.name || '' }))
-                            .filter((player) => player.id)
-                    }
-                    const resolvedStatus = isLifecycleStatus(activeGame.status) ? activeGame.status : parsedState.status
-                    const freshness = decideFreshness(freshnessRef.current, parsedState, {
-                        snapshot: true,
-                        trusted: options.reconcile,
-                        moveInFlight: isSubmittingRef.current,
-                    })
-                    if (!freshness.accept) {
-                        clientLogger.debug('Ignoring stale RPS lobby snapshot', { gameId: activeGame.id, reason: freshness.reason })
-                        // A read older in game state can still be newer in lobby facts (host, roster), so an older one is asked for once more.
-                        if (freshness.reason === 'move-in-flight') setLobby(lobbyPayload as Lobby)
-                        else if (!options.followUp) void loadLobby({ followUp: true })
-                        setGame((prevGame) => keepBoardFromDroppedSnapshot(prevGame, { id: activeGame.id, status: resolvedStatus, players }, freshness))
-                        setLoading(false)
-                        return
-                    }
-                    setLobby(lobbyPayload as Lobby)
-                    setGame({ id: activeGame.id, status: resolvedStatus, players, state: { ...parsedState, status: resolvedStatus } })
-                } else {
-                    setLobby(lobbyPayload as Lobby)
-                    setGame(null)
-                }
+            const parsedState = activeGame?.id
+                ? parseRpsState(activeGame.state, isLifecycleStatus(activeGame.status) ? activeGame.status : undefined)
+                : null
+            const players: GamePlayer[] = Array.isArray(activeGame?.players) ? (activeGame.players as GamePlayer[]) : []
+            if (parsedState && parsedState.players.length === 0) {
+                parsedState.players = players
+                    .map((player) => ({ id: player.userId || player.id, name: player.user?.username || player.name || '' }))
+                    .filter((player) => player.id)
+            }
+            const resolvedStatus = parsedState && isLifecycleStatus(activeGame?.status) ? activeGame.status : parsedState?.status
+            const freshness = decideFreshness(freshnessRef.current, parsedState, {
+                snapshot: true,
+                read,
+                roster: activeGame?.players,
+                gameId: activeGame?.id,
+                trusted: options.reconcile,
+                moveInFlight: isSubmittingRef.current,
+            })
+            if (!freshness.accept) {
+                clientLogger.debug('Ignoring stale RPS lobby snapshot', { gameId: activeGame?.id, reason: freshness.reason })
+                // A read older in game state can still be newer in lobby facts (host, roster), so an older one is asked for once more.
+                if (freshness.reason === 'move-in-flight' || freshness.reason === 'superseded-read') setLobby((prev) => lobbyFromRead(freshnessRef.current, freshness, read, lobbyPayload as Lobby, prev))
+                else if (freshness.lobby && !options.followUp) void loadLobby({ followUp: true })
+                setGame((prevGame) => keepBoardFromDroppedSnapshot(prevGame, parsedState && activeGame?.id ? { id: activeGame.id, status: resolvedStatus, players } : null, freshness))
+                setLoading(false)
+                return
+            }
+            setLobby((prev) => lobbyFromRead(freshnessRef.current, freshness, read, lobbyPayload as Lobby, prev))
+            if (parsedState && activeGame?.id && resolvedStatus) {
+                const nextGame = { id: activeGame.id, status: resolvedStatus, players, state: { ...parsedState, status: resolvedStatus } }
+                setGame((prev) => rosterForRead(nextGame, prev, freshness))
             } else {
-                setLobby(lobbyPayload as Lobby)
                 setGame(null)
             }
             setLoading(false)
@@ -409,10 +410,10 @@ export default function RockPaperScissorsLobbyPage({ code, isSpectator = false, 
         if (isLeavingLobbyRef.current) return
         const departedPlayerName = data.username || data.playerName
         if (departedPlayerName) showToast.info('toast.playerLeft', undefined, { player: departedPlayerName })
-        if (data.nextCreatorId) {
-            const nextCreatorId = data.nextCreatorId
+        const nextCreatorId = takePlayerLeftFrame(freshnessRef.current, data)
+        if (nextCreatorId) {
             setLobby((prev) => (prev ? { ...prev, creatorId: nextCreatorId } : prev))
-            if (data.nextCreatorId === getCurrentUserId()) showToast.success('toast.youAreNowHost')
+            if (nextCreatorId === getCurrentUserId()) showToast.success('toast.youAreNowHost')
             else if (data.nextCreatorName) showToast.info('toast.hostReassigned', undefined, { player: data.nextCreatorName })
         }
         if (!data.gameTerminal && typeof data.remainingPlayers === 'number' && data.remainingPlayers < minPlayersRequired) {

@@ -31,7 +31,7 @@ import { Icon } from '@/components/icons'
 import { removeLocal } from '@/lib/safe-storage'
 import { seedRollHistory } from '@/lib/yahtzee-roll-history'
 import { useStoredRollHistory } from '@/hooks/useStoredRollHistory'
-import { advanceLifecycleStatus, createFreshnessWatermark, decideFreshness, isUpdateForAnotherGame, resetFreshnessWatermark } from '@/lib/game-state-freshness'
+import { advanceLifecycleStatus, createFreshnessWatermark, decideFreshness, isUpdateForAnotherGame, resetFreshnessWatermark, takePlayerLeftFrame } from '@/lib/game-state-freshness'
 
 const CATEGORY_DISPLAY_NAMES: Record<YahtzeeCategory, string> = {
   ones: 'Ones',
@@ -93,7 +93,7 @@ import { useLobbyChat, useLobbyChatHistory } from './hooks/useLobbyChat'
 import { useLobbyHeartbeat } from './hooks/useLobbyHeartbeat'
 import { useGameTimer } from './hooks/useGameTimer'
 import { useGameActions, AutoActionContext } from './hooks/useGameActions'
-import { useLobbyActions } from './hooks/useLobbyActions'
+import { useLobbyActions, type LoadLobbyOptions } from './hooks/useLobbyActions'
 import { useKickedPlayers } from './hooks/useKickedPlayers'
 import { useBotTurn } from './hooks/useBotTurn'
 import { useYahtzeeResultsHold } from './hooks/useYahtzeeResultsHold'
@@ -456,7 +456,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
   const currentPlayerId = gameEngine?.getCurrentPlayer()?.id
 
   // Create ref for loadLobby to avoid circular dependency
-  const loadLobbyRef = React.useRef<((options?: { fresh?: boolean }) => Promise<void>) | null>(null)
+  const loadLobbyRef = React.useRef<((options?: LoadLobbyOptions) => Promise<void>) | null>(null)
 
   // Memoize socket event handlers to prevent infinite loops
   const onGameUpdate = useCallback(async (payload: GameUpdatePayload) => {
@@ -773,9 +773,14 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
       return
     }
 
+    // The host on screen comes from the frame; its read is its own, never one sent before the leave (#1528).
+    const nextCreatorId = takePlayerLeftFrame(freshnessRef.current, data)
+    if (nextCreatorId) setLobby((prev) => (prev ? { ...prev, creatorId: nextCreatorId } : prev))
+    const readAfterLeave = () => { if (loadLobbyRef.current) void loadLobbyRef.current({ fresh: true, trusted: false }) }
+
     // Bot kick already toasted from kickBot() — skip the generic left toast + sound
     if (data.isBot) {
-      if (loadLobbyRef.current) void loadLobbyRef.current()
+      readAfterLeave()
       return
     }
 
@@ -792,7 +797,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
         showToast.info('toast.playerWasKicked', undefined, { player: departedName })
       }
       playAmbientCue('player.leave')
-      if (loadLobbyRef.current) void loadLobbyRef.current()
+      readAfterLeave()
       return
     }
 
@@ -808,15 +813,13 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
     // the server sends nextCreatorId instead and the branch below announces the new host.
     if (data.hostLeft) {
       showToast.info('toast.hostLeftSession')
-      if (loadLobbyRef.current) {
-        void loadLobbyRef.current()
-      }
+      readAfterLeave()
       return
     }
 
-    if (data.nextCreatorId) {
+    if (nextCreatorId) {
       const currentUserId = isGuest ? guestId : session?.user?.id
-      if (data.nextCreatorId === currentUserId) {
+      if (nextCreatorId === currentUserId) {
         showToast.success('toast.youAreNowHost')
       } else if (data.nextCreatorName) {
         showToast.info('toast.hostReassigned', undefined, { player: data.nextCreatorName })
@@ -832,9 +835,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
     if (departedPlayerName) {
       showToast.info('toast.playerLeft', undefined, { player: departedPlayerName })
     }
-    if (loadLobbyRef.current) {
-      void loadLobbyRef.current()
-    }
+    readAfterLeave()
   }, [isGuest, guestId, session?.user?.id, minPlayersRequired, triggerLifecycleRedirect, playAmbientCue, isLeavingLobbyRef])
 
   const currentUserIdForMembership = isGuest ? guestId : session?.user?.id

@@ -39,7 +39,7 @@ import GameTabs from '@/components/game-chrome/GameTabs'
 import TryBotGamesBanner from '@/app/(site)/lobby/[code]/components/TryBotGamesBanner'
 import { getGameMetadata } from '@/lib/game-catalog'
 import { createStuckTurnRecovery } from '@/lib/stuck-turn-recovery'
-import { createFreshnessWatermark, decideFreshness, isUpdateForAnotherGame, keepBoardFromDroppedSnapshot, resetFreshnessWatermark, takeMissedSnapshot } from '@/lib/game-state-freshness'
+import { beginLobbyRead, createFreshnessWatermark, decideFreshness, isUpdateForAnotherGame, keepBoardFromDroppedSnapshot, lobbyFromRead, resetFreshnessWatermark, rosterForRead, takeMissedSnapshot, takePlayerLeftFrame } from '@/lib/game-state-freshness'
 import { useTurnSounds } from '@/hooks/useTurnSounds'
 import { useFreshKey } from '@/hooks/useFreshKey'
 import { useFreshIds } from '@/hooks/useFreshFor'
@@ -720,6 +720,7 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
   const loadLobby = useCallback(async (options: { reconcile?: boolean; followUp?: boolean; attempt?: number } = {}) => {
     const attempt = options.attempt ?? 1
     try {
+      const read = beginLobbyRead(freshnessRef.current)
       const res = await fetchWithGuest(`/api/lobby/${code}?includeFinished=true`)
       const data = await res.json()
 
@@ -752,21 +753,24 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
         : null
       const freshness = decideFreshness(freshnessRef.current, parsedState, {
         snapshot: true,
+        read,
+        roster: activeGame?.players,
+        gameId: activeGame?.id,
         trusted: options.reconcile,
         moveInFlight: isMoveSubmittingRef.current,
       })
       if (!freshness.accept) {
         clientLogger.debug('Ignoring stale Alias lobby snapshot', { gameId: activeGame?.id, reason: freshness.reason })
         // A read older in game state can still be newer in lobby facts (host, roster), so an older one is asked for once more.
-        if (freshness.reason === 'move-in-flight') setLobby(lobbyData)
-        else if (!options.followUp) void loadLobby({ followUp: true })
+        if (freshness.reason === 'move-in-flight' || freshness.reason === 'superseded-read') setLobby((prev) => lobbyFromRead(freshnessRef.current, freshness, read, lobbyData, prev))
+        else if (freshness.lobby && !options.followUp) void loadLobby({ followUp: true })
         setGame(prev => keepBoardFromDroppedSnapshot(prev, activeGame, freshness))
         setLoading(false)
         return
       }
 
-      setLobby(lobbyData)
-      setGame(activeGame ?? null)
+      setLobby((prev) => lobbyFromRead(freshnessRef.current, freshness, read, lobbyData, prev))
+      setGame((prev) => rosterForRead(activeGame ?? null, prev, freshness))
       if (activeGame && parsedState && typeof parsedState === 'object') {
         const fresh = new AliasGame(activeGame.id)
         fresh.restoreState(parsedState)
@@ -809,10 +813,10 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
   const handlePlayerLeft = useCallback((payload: { userId: string; username?: string; remainingPlayers?: number; gameTerminal?: boolean; nextCreatorId?: string; nextCreatorName?: string }) => {
     clientLogger.log('📡 Alias player left', payload)
     if (payload.username) showToast.info('toast.playerLeft', undefined, { player: payload.username })
-    if (payload.nextCreatorId) {
-      const nextCreatorId = payload.nextCreatorId
+    const nextCreatorId = takePlayerLeftFrame(freshnessRef.current, payload)
+    if (nextCreatorId) {
       setLobby((prev) => (prev ? { ...prev, creatorId: nextCreatorId } : prev))
-      if (payload.nextCreatorId === getCurrentUserId()) {
+      if (nextCreatorId === getCurrentUserId()) {
         showToast.success('toast.youAreNowHost')
       } else if (payload.nextCreatorName) {
         showToast.info('toast.hostReassigned', undefined, { player: payload.nextCreatorName })

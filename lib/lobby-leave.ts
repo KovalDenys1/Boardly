@@ -222,12 +222,13 @@ export async function performPlayerLeave(
   }
 
   // Remove player: hard-delete for pre-game (waiting), soft-leave for in-progress/terminal games
+  const leftAt = new Date()
   if (activeGame.status === 'waiting') {
     await prisma.players.delete({ where: { id: player.id } })
   } else {
     await prisma.players.update({
       where: { id: player.id },
-      data: { leftAt: new Date() },
+      data: { leftAt },
     })
   }
 
@@ -273,6 +274,8 @@ export async function performPlayerLeave(
     username: departedPlayerName,
     playerName: departedPlayerName,
     remainingPlayers,
+    // Pages order leave frames that arrive out of order by it (#1528).
+    leftAt: leftAt.toISOString(),
     ...(reassignedCreator
       ? {
           nextCreatorId: reassignedCreator.userId,
@@ -595,6 +598,7 @@ export async function performPlayerLeave(
         // and its raw state carries every face-down card's value.
         await emitLobbyEvent(log, code, 'game-update', {
           action: 'state-change',
+          gameId: activeGame.id,
           payload: sanitizeStateForBroadcast(activeGame.gameType, result.state as { data?: unknown; status?: string }, null),
         })
       } else if (result.status === 'conflict') {
@@ -638,6 +642,7 @@ export async function performPlayerLeave(
         // state (Spy's spy and location, #1263) as the move routes do.
         await emitLobbyEvent(log, code, 'game-update', {
           action: 'state-change',
+          gameId: activeGame.id,
           payload: sanitizeStateForBroadcast(activeGame.gameType, result.state as { data?: unknown; status?: string }, null),
         })
       } else if (result.status === 'conflict') {

@@ -43,7 +43,7 @@ import { useLudoMotion, type LudoCueEnd } from './hooks/useLudoMotion'
 import { ludoRingKey } from '@/lib/games/ludo-motion'
 import { useBotTurn } from './hooks/useBotTurn'
 import { useLobbyChat, useLobbyChatHistory } from './hooks/useLobbyChat'
-import { createFreshnessWatermark, decideFreshness, isUpdateForAnotherGame, keepBoardFromDroppedSnapshot, resetFreshnessWatermark, takeMissedSnapshot } from '@/lib/game-state-freshness'
+import { beginLobbyRead, createFreshnessWatermark, decideFreshness, isUpdateForAnotherGame, keepBoardFromDroppedSnapshot, lobbyFromRead, resetFreshnessWatermark, rosterForRead, takeMissedSnapshot, takePlayerLeftFrame } from '@/lib/game-state-freshness'
 import { isLobbyGoneStatus } from '@/lib/lobby-fetch-status'
 import { createStuckTurnRecovery, turnSignatureOf } from '@/lib/stuck-turn-recovery'
 
@@ -236,6 +236,7 @@ export default function LudoLobbyPage({ code, isSpectator = false, onGameReset }
 
     const loadLobby = useCallback(async (options: { reconcile?: boolean; followUp?: boolean } = {}) => {
         try {
+            const read = beginLobbyRead(freshnessRef.current)
             const res = await fetchWithGuest(`/api/lobby/${code}?includeFinished=true`, { method: 'GET', headers: { 'Content-Type': 'application/json' } })
             const data = await res.json()
             if (!res.ok) {
@@ -255,20 +256,23 @@ export default function LudoLobbyPage({ code, isSpectator = false, onGameReset }
             }
             const freshness = decideFreshness(freshnessRef.current, parseLobbyGameState(activeGame), {
                 snapshot: true,
+                read,
+                roster: activeGame?.players,
+                gameId: activeGame?.id,
                 trusted: options.reconcile,
                 moveInFlight: isMoveSubmittingRef.current,
             })
             if (!freshness.accept) {
                 clientLogger.debug('Ignoring stale lobby snapshot', { gameId: activeGame?.id, reason: freshness.reason })
                 // A read older in game state can still be newer in lobby facts (host, roster), so an older one is asked for once more.
-                if (freshness.reason === 'move-in-flight') setLobby(lobbyPayload as Lobby)
-                else if (!options.followUp) void loadLobby({ followUp: true })
+                if (freshness.reason === 'move-in-flight' || freshness.reason === 'superseded-read') setLobby((prev) => lobbyFromRead(freshnessRef.current, freshness, read, lobbyPayload as Lobby, prev))
+                else if (freshness.lobby && !options.followUp) void loadLobby({ followUp: true })
                 setGame((prevGame) => keepBoardFromDroppedSnapshot(prevGame, activeGame, freshness))
                 setLoading(false)
                 return
             }
-            setLobby(lobbyPayload as Lobby)
-            setGame(activeGame as Game | null)
+            setLobby((prev) => lobbyFromRead(freshnessRef.current, freshness, read, lobbyPayload as Lobby, prev))
+            setGame((prev) => rosterForRead(activeGame as Game | null, prev, freshness))
             if (activeGame?.state) {
                 const engine = new LudoGame(activeGame.id)
                 const parsedState = typeof activeGame.state === 'string' ? JSON.parse(activeGame.state || '{}') : activeGame.state
@@ -310,11 +314,11 @@ export default function LudoLobbyPage({ code, isSpectator = false, onGameReset }
         if (isLeavingLobbyRef.current) return
         const departedPlayerName = data.username || data.playerName
         if (departedPlayerName) showToast.info('toast.playerLeft', undefined, { player: departedPlayerName })
-        if (data.nextCreatorId) {
-            const nextCreatorId = data.nextCreatorId
+        const nextCreatorId = takePlayerLeftFrame(freshnessRef.current, data)
+        if (nextCreatorId) {
             setLobby((prev) => (prev ? { ...prev, creatorId: nextCreatorId } : prev))
             const currentUserId = isGuest ? guestId : session?.user?.id
-            if (data.nextCreatorId === currentUserId) {
+            if (nextCreatorId === currentUserId) {
                 showToast.success('toast.youAreNowHost')
             } else if (data.nextCreatorName) {
                 showToast.info('toast.hostReassigned', undefined, { player: data.nextCreatorName })
