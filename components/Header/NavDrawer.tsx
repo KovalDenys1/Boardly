@@ -7,6 +7,7 @@ import { usePathname, useRouter } from 'next/navigation'
 import { useGuest } from '@/contexts/GuestContext'
 import { buildCurrentAuthUrl } from '@/lib/auth-redirect'
 import { useTranslation } from '@/lib/i18n-helpers'
+import { useLocalizedHref } from '@/lib/page-locale'
 import { navigateToProfile } from '@/lib/profile-navigation'
 import { isNavItemActive, visibleNavItems } from '@/lib/site-nav'
 import { BlockedPlayersButton } from './BlockedPlayersDialog'
@@ -39,6 +40,7 @@ export function NavDrawer({
   userImage,
 }: NavDrawerProps) {
   const { t } = useTranslation()
+  const localize = useLocalizedHref()
   const router = useRouter()
   const pathname = usePathname()
   const { isGuest, guestName, clearGuestMode } = useGuest()
@@ -131,7 +133,7 @@ export function NavDrawer({
             return (
               <Link
                 key={item.id}
-                href={item.href}
+                href={localize(item.href)}
                 onClick={onClose}
                 aria-current={active ? 'page' : undefined}
                 className={`nav-drawer-link flex w-full items-center gap-3 rounded-xl text-[15px] font-semibold transition-colors ${

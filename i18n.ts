@@ -2,12 +2,12 @@ import i18n from 'i18next'
 import { initReactI18next } from 'react-i18next'
 import LanguageDetector from 'i18next-browser-languagedetector'
 
-// Only 'en' loads eagerly: the server always renders <html lang="en"> (see
-// app/root-document.tsx) and htmlTag detection keeps the first client render aligned
-// with that SSR output, so 'en' resources are the only ones ever needed
-// before hydration. The other locales (~300-450KB of source each) are fetched on
-// demand by changeLanguageLazy, below, the moment a user's stored preference
-// actually needs them.
+// Only 'en' loads eagerly: an unprefixed page is served as <html lang="en"> and
+// htmlTag detection keeps the first client render aligned with that SSR output,
+// so 'en' resources are the only ones ever needed before hydration. The other
+// locales (~300-450KB of source each) are fetched on demand by changeLanguageLazy,
+// below, the moment a user's stored preference actually needs them. A /ru or /uk
+// page brings its own (lib/page-locale.tsx).
 import en from './locales/en'
 import { defaultLocale, availableLocales } from './locales/meta'
 import type { Locale } from './locales/meta'

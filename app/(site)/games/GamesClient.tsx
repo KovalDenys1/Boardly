@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import { Suspense, useId, useState, type ReactNode } from 'react'
 import { useTranslation } from '@/lib/i18n-helpers'
+import { useLocalizedHref } from '@/lib/page-locale'
 import { Icon } from '@/components/icons'
 import type { TranslationKeys } from '@/lib/i18n-helpers'
 import Footer from '@/components/Footer'
@@ -106,6 +107,7 @@ function GamesCatalogFromUrl({ games }: GamesClientProps) {
 
 function GamesCatalog({ games: catalogGames, filters, onFiltersChange }: GamesCatalogProps) {
   const { t } = useTranslation()
+  const localize = useLocalizedHref()
   const [shownFilters, setShownFilters] = useState(filters)
   const [animateResults, setAnimateResults] = useState(false)
   if (!sameGamesFilters(filters, shownFilters)) {
@@ -143,7 +145,7 @@ function GamesCatalog({ games: catalogGames, filters, onFiltersChange }: GamesCa
   // An entry without a route has no page, so there is nothing to link to:
   // guessing /games/<id> is how a flag-promoted game with no page under
   // app/games/ used to put a 404 in front of players (#975).
-  const detailHref = (game: Game) => (game.route ? game.route.replace(/\/lobbies$/, '') : null)
+  const detailHref = (game: Game) => (game.route ? localize(game.route.replace(/\/lobbies$/, '')) : null)
 
   return (
     <>

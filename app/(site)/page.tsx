@@ -12,9 +12,10 @@ import { getCatalogAvailableGames, getCatalogGames, hasBotSupport } from '@/lib/
 import { buildFaqFacts } from '@/lib/faq-facts'
 import { getPremiumPricing } from '@/lib/server/premium-pricing'
 import { buildPromoVideoJsonLd } from '@/lib/promo-video'
+import { languageAlternates } from '@/lib/seo-locales'
 
 export const metadata: Metadata = {
-  alternates: { canonical: '/' },
+  alternates: { canonical: '/', languages: languageAlternates('/') },
 }
 
 // Keep home page fully static for fast global TTFB.

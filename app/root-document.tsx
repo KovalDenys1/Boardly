@@ -9,6 +9,7 @@ import { getAppShellInitScript } from '@/lib/app-shell-script'
 import { siteJsonLd } from '@/lib/organization-json-ld'
 import { isProductionDeployment } from '@/lib/feature-flags'
 import { Bricolage_Grotesque, Inter } from 'next/font/google'
+import type { PrefixedLocale } from '@/lib/seo-locales'
 
 const bricolageFont = Bricolage_Grotesque({
   subsets: ['latin'],
@@ -128,9 +129,14 @@ export const siteViewport: Viewport = {
 /** `<html>` and everything around a page, shared by every root layout. */
 export function RootDocument({
   lang,
+  pathLocale,
+  LocaleProvider,
   children,
 }: {
   lang: string
+  /** A /ru or /uk page: the language comes from the URL, and `LocaleProvider` renders it. */
+  pathLocale?: PrefixedLocale
+  LocaleProvider?: (props: { children: React.ReactNode }) => React.ReactNode
   children: React.ReactNode
 }) {
   const isProduction = process.env.NODE_ENV === 'production'
@@ -188,6 +194,21 @@ export function RootDocument({
   void reset();
 })();`
     : null
+
+  const body = (
+    <>
+      <Providers pathLocale={pathLocale}>
+        <SkipToContentLink />
+        {/* Renders nothing unless the control panel has a live announcement. */}
+        <AnnouncementBanner />
+        <Header />
+        <main id="main">{children}</main>
+        <FeedbackWidget />
+      </Providers>
+      {isProduction && <DeferredTelemetry />}
+      {AgentationToolbar && <AgentationToolbar endpoint="http://localhost:4747" />}
+    </>
+  )
 
   return (
     <html lang={lang} suppressHydrationWarning className={`${bricolageFont.variable} ${interFont.className}`}>
@@ -266,18 +287,7 @@ export function RootDocument({
           dangerouslySetInnerHTML={{ __html: JSON.stringify(siteJsonLd) }}
         />
       </head>
-      <body className="antialiased">
-        <Providers>
-          <SkipToContentLink />
-          {/* Renders nothing unless the control panel has a live announcement. */}
-          <AnnouncementBanner />
-          <Header />
-          <main id="main">{children}</main>
-          <FeedbackWidget />
-        </Providers>
-        {isProduction && <DeferredTelemetry />}
-        {AgentationToolbar && <AgentationToolbar endpoint="http://localhost:4747" />}
-      </body>
+      <body className="antialiased">{LocaleProvider ? <LocaleProvider>{body}</LocaleProvider> : body}</body>
     </html>
   )
 }

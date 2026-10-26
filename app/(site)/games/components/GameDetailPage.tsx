@@ -6,6 +6,7 @@ import Footer from '@/components/Footer'
 import GameIcon from '@/components/GameIcon'
 import { Icon } from '@/components/icons'
 import { useTranslation } from '@/lib/i18n-helpers'
+import { useLocalizedHref } from '@/lib/page-locale'
 import { useGuest } from '@/contexts/GuestContext'
 import { getGameSeo } from '@/lib/game-catalog'
 import { getGuidesForGame } from '@/lib/guides-catalog'
@@ -113,6 +114,7 @@ export default function GameDetailPage({
   playVsBotGameType,
 }: GameDetailPageProps) {
   const { t } = useTranslation()
+  const localize = useLocalizedHref()
   const { status } = useSession()
   const { isGuest } = useGuest()
   // Every guide the catalog files under this game – a page used to name one
@@ -136,9 +138,9 @@ export default function GameDetailPage({
     <div className="bd-page bd-screen flex min-h-(--game-h) flex-col overflow-y-auto text-bd-ink">
       <main className="mx-auto w-full max-w-6xl grow px-4 py-8 sm:px-6 lg:px-8">
         <nav className="mb-6 flex flex-wrap items-center gap-2 text-sm font-semibold text-bd-ink-muted" aria-label={t('breadcrumbs.label')}>
-          <Link href="/" className="transition-colors hover:text-bd-ink">{t('breadcrumbs.home')}</Link>
+          <Link href={localize('/')} className="transition-colors hover:text-bd-ink">{t('breadcrumbs.home')}</Link>
           <span>/</span>
-          <Link href="/games" className="transition-colors hover:text-bd-ink">{t('breadcrumbs.games')}</Link>
+          <Link href={localize('/games')} className="transition-colors hover:text-bd-ink">{t('breadcrumbs.games')}</Link>
           <span>/</span>
           <span className="text-bd-ink">{gameName}</span>
         </nav>
@@ -173,7 +175,7 @@ export default function GameDetailPage({
                 {playVsBotGameType && !primaryCtaDisabled && (
                   <PlayVsBotButton gameType={playVsBotGameType} className="sm:w-[190px]" />
                 )}
-                <Link href="/games" className="bd-btn bd-btn-ghost bd-btn-lg justify-center sm:w-[190px]">
+                <Link href={localize('/games')} className="bd-btn bd-btn-ghost bd-btn-lg justify-center sm:w-[190px]">
                   {t('home.browseGames')}
                 </Link>
               </div>

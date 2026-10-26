@@ -396,6 +396,10 @@ const no = {
     openUserMenu: 'Kontomeny',
   },
   home: {
+    seo: {
+      title: 'Boardly – gratis brettspill på nett med venner',
+      description: 'Boardly (boardly.online) er gratis brettspill på nett. Spill Yatzy, tre på rad, fire på rad og Gjett spionen med venner i sanntid, uten registrering.',
+    },
     welcomeBack: 'Velkommen tilbake, {{name}}!',
     browseGames: 'Bla gjennom spill',
     guidesTitle: 'Guider og tips',
@@ -482,6 +486,10 @@ const no = {
     },
   },
   games: {
+    catalogSeo: {
+      title: 'Alle gratis brettspill på nett – flerspiller',
+      description: 'Se alle gratis brettspill på Boardly. Spill Yatzy, tre på rad, Hukommelse, Gjett spionen og flere med venner i sanntid. Ingen nedlasting, ingen konto.',
+    },
     title: 'Tilgjengelige spill',
     subtitle: 'Velg ditt favorittspill å spille',
     players: 'spillere',
@@ -554,6 +562,8 @@ const no = {
       description: 'Klassisk terningspill med strategisk poengberegning. Kast fem terninger for å lage kombinasjoner og score stort!',
       difficulty: 'Lett',
       seo: {
+        title: 'Spill Yatzy gratis på nett med venner eller boter',
+        description: 'Spill Yatzy gratis på nett i nettleseren. Kast fem terninger, fyll ut poengtavlen og spill med opptil tre venner i sanntid, eller mot en bot.',
         question: 'Kan du spille Yatzy online gratis med venner?',
         answer: 'Ja. Opprett en lobby, del den firesifrede koden, og inntil fire spillere spiller i sanntid – gratis, i nettleseren, med et gjestenavn i stedet for en konto. Kort modus har ni poengkategorier, klassisk har alle femten, og en bot kan ta en ledig plass.',
       },
@@ -818,6 +828,8 @@ const no = {
       description: 'Sosialt deduksjonsspill der én spiller er spionen. Finn dem før tiden går ut!',
       difficulty: 'Middels',
       seo: {
+        title: 'Spill Gjett spionen gratis på nett – sosial deduksjon',
+        description: 'Spill Gjett spionen gratis på nett med 3 til 10 spillere. Alle kjenner stedet unntatt spionen: still spørsmål, avslør bløffen og stem. Ingen nedlasting.',
         question: 'Hvordan spiller du Gjett spionen online?',
         answer: 'Alle i rommet får det samme hemmelige stedet og en rolle der, bortsett fra én spiller som bare vet at vedkommende er spionen. Dere stiller hverandre spørsmål etter tur til gruppen tar en avstemning – eller spionen gjetter stedet og tar 500 poeng. Tre til ti spillere, gratis, i nettleseren.',
       },
@@ -1039,6 +1051,8 @@ const no = {
       description: 'Enkelt og raskt spill. Få tre på rad for å vinne!',
       difficulty: 'Lett',
       seo: {
+        title: 'Spill tre på rad gratis på nett med venner',
+        description: 'Spill tre på rad gratis på nett mot en venn eller en bot, med løpende poengsum eller best av 3, 5 eller 10. I nettleseren, uten nedlasting og konto.',
         question: 'Kan du spille Tre på rad online gratis med en venn?',
         answer: 'Ja. Del en lobbykode og bytt på å sette merker i 3×3-rutenettet i sanntid, eller legg til en bot på lett, middels eller vanskelig når ingen er tilgjengelig. En lobby fortsetter med nye runder og løpende poengstilling med mindre du setter den til best av 3, 5 eller 10. Gratis, i nettleseren.',
       },
@@ -1285,6 +1299,8 @@ const no = {
       description: 'Finn alle matchende par. Test hukommelsen din!',
       difficulty: 'Lett',
       seo: {
+        title: 'Spill Hukommelse gratis på nett – flerspiller',
+        description: 'Spill Hukommelse gratis på nett med 2 til 4 spillere. Snu kort, behold parene du finner og konkurrer på brett med 4×4, 5×4 eller 6×6 kort. Ingen nedlasting.',
         question: 'Kan du spille Hukommelse online med venner?',
         answer: 'Ja. To til fire spillere deler ett brett i nettleseren: snu to kort når det er din tur, behold paret og fortsett når de matcher, og den som har flest par til slutt vinner. Lett er 4×4 med 8 par, middels 5×4 med 10, vanskelig 6×6 med 18.',
       },
@@ -1548,6 +1564,8 @@ const no = {
       description: 'Slipp brikker og vær den første til å koble fire på rad!',
       difficulty: 'Medium',
       seo: {
+        title: 'Spill fire på rad gratis på nett med en venn',
+        description: 'Spill fire på rad gratis på nett. Slipp brikker på et brett på sju ganger seks og få fire på rad først, mot en venn eller en bot. I nettleseren, uten nedlasting.',
         question: 'Kan du spille Fire på rad online gratis med en venn?',
         answer: 'Ja. Brettet er sju kolonner ganger seks rader, spilt direkte i nettleseren: send en venn lobbykoden, eller velg lett, middels eller vanskelig og slipp brikker mot en bot. Gratis, ingenting å installere, og et gjestenavn er all kontoen du trenger.',
       },
@@ -1787,6 +1805,8 @@ const no = {
       description: 'Hopp, slå og kron kongene dine i det klassiske damspillet.',
       difficulty: 'Middels',
       seo: {
+        title: 'Spill dam gratis på nett med en venn eller bot',
+        description: 'Spill dam gratis på nett. Klassisk engelsk dam på 8×8 med slagplikt, flerhopp og konger, mot en venn eller en bot. I nettleseren, uten nedlasting.',
         question: 'Kan man spille dam gratis på nett med en venn?',
         answer: 'Ja. Det er standard engelsk dam på et 8×8-brett i nettleseren: send en venn lobbykoden eller spill mot en bot på lett, middels eller vanskelig. Et gjestenavn er all kontoen du trenger.',
       },
@@ -2007,6 +2027,8 @@ const no = {
       description: 'Samtidig valgspill der stein slår saks, saks slår papir, og papir slår stein',
       difficulty: 'Lett',
       seo: {
+        title: 'Spill stein, saks, papir gratis på nett',
+        description: 'Spill stein, saks, papir gratis på nett mot en venn eller en bot. Begge velger samtidig, og resultatet vises med en gang. I nettleseren, uten nedlasting.',
         question: 'Kan du spille Stein, saks, papir online mot en venn?',
         answer: 'Ja. Begge velger samtidig, og de to hendene snus samtidig, så ingen ser den andres trekk først. Spill mot en venn med en delt lobbykode eller mot en bot på lett, middels eller vanskelig; den som først vinner to runder, tar kampen. Gratis, i nettleseren.',
       },
@@ -2202,6 +2224,8 @@ const no = {
       description: 'Kast terningen, løp brikkene dine rundt brettet og få alle hjem først.',
       difficulty: 'Lett',
       seo: {
+        title: 'Spill Ludo gratis på nett med venner eller boter',
+        description: 'Spill Ludo gratis på nett med 2 til 4 spillere. Kast terningen, flytt brikkene rundt brettet og send motstanderne hjem igjen, med venner eller boter.',
         question: 'Kan man spille Ludo gratis på nett med venner?',
         answer: 'Ja. Opprett en lobby og send koden til opptil tre venner, eller fyll tomme plasser med roboter på lett, middels eller vanskelig. Serveren vår kaster terningen, og det er gratis uten noe å installere.',
       },
@@ -2448,6 +2472,8 @@ const no = {
       description: 'Forklar ord til laget ditt uten å bruke ordet selv!',
       difficulty: 'Middels',
       seo: {
+        title: 'Spill Alias gratis på nett – ordspill for lag',
+        description: 'Spill Alias gratis på nett med 3 til 16 spillere. Forklar ordet uten å si det, gjett mot klokka, og laget med flest poeng vinner. Ingen nedlasting.',
         question: 'Kan du spille Alias online med en gjeng gratis?',
         answer: 'Ja, med tre til seksten personer og ingen boter – Alias er lag som snakker sammen, så rommet trenger ekte spillere. En på laget forklarer ordet uten å si det, de andre gjetter mot klokka, et hopp koster et poeng, og høyest poengsum vinner.',
       },
@@ -2690,6 +2716,8 @@ const no = {
       description: 'Tegn en hemmelig ledetråd og gjett hverandres skisser så raskt du kan!',
       difficulty: 'Middels',
       seo: {
+        title: 'Spill Tegn og gjett gratis på nett',
+        description: 'Spill Tegn og gjett gratis på nett med 3 til 10 spillere. Én tegner et hemmelig ord, de andre kappes om å gjette det. I nettleseren, uten nedlasting.',
         question: 'Kan du spille et tegne- og gjettespill på nett med venner?',
         answer: 'Ja, tre til ti personer rett i nettleseren. Hver runde tegner én spiller et hemmelig ord på et delt lerret mens de andre skriver gjetninger mot klokka. Raske gjett gir flere poeng, og et gjestenavn er all kontoen du trenger.',
       },
@@ -2875,6 +2903,8 @@ const no = {
         time: '15 min',
       },
       seo: {
+        title: 'Spill Løgnerfest gratis på nett – bløffespill',
+        description: 'Spill Løgnerfest gratis på nett med 4 til 12 spillere. Kom med en påstand, avgjør hvem som bløffer, og la avstemningen avgjøre. I nettleseren, uten nedlasting.',
         question: 'Kan du spille Løgnerfest online med en gjeng?',
         answer: 'Ja, med fire til tolv personer. En spiller kommer med en påstand, sann eller bløff, og den regnes som avslørt bare når et klart flertall utfordrer den – samler du nok avslørte bløffer, er du ute. Det finnes ingen boter: å lese folkene i rommet er hele spillet.',
       },

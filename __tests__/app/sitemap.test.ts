@@ -6,6 +6,7 @@ import { getGameCanonical } from '@/lib/game-seo'
 import { ALL_GUIDES } from '@/lib/guides-catalog'
 import { buildGuideArticleJsonLd, getGuideCanonical } from '@/lib/guide-seo'
 import { ROUTE_UPDATED, getRouteUpdated, type DatedRoute } from '@/lib/route-dates'
+import { pathLocale, unlocalizedPath } from '@/lib/seo-locales'
 
 const BASE = 'https://boardly.online'
 const root = process.cwd()
@@ -21,7 +22,8 @@ describe('sitemap (#922)', () => {
     const nonGuides = entries.filter((e) => !guidePaths.has(pathOf(e.url)))
     expect(nonGuides.length).toBeGreaterThan(0)
     for (const entry of nonGuides) {
-      const route = pathOf(entry.url) as DatedRoute
+      // /ru/games/alias is the same page as /games/alias in another language, and dated with it (#1394).
+      const route = unlocalizedPath(pathOf(entry.url)) as DatedRoute
       expect(ROUTE_UPDATED[route]).toMatch(ISO_DAY)
       expect(getRouteUpdated(route)).toMatch(ISO_DAY)
       expect(entry.lastModified).toEqual(new Date(getRouteUpdated(route)))
@@ -72,6 +74,8 @@ describe('sitemap (#922)', () => {
     )
     for (const entry of entries) {
       const route = pathOf(entry.url)
+      // The /ru and /uk pages build their canonical in app/[locale]; localized-pages.test.tsx checks each one.
+      if (pathLocale(route)) continue
       const source = read(route === '/' ? 'app/(site)/page.tsx' : `app/(site)${route}/page.tsx`)
       const gameId = gameIdByRoute.get(route)
       if (gameId) {

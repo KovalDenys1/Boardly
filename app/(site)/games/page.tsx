@@ -7,6 +7,7 @@ import {
 import { getCatalogGames } from '@/lib/game-catalog'
 import GamesClient from './GamesClient'
 import { OG_SITE_DEFAULTS, socialImages } from '@/lib/social-preview'
+import { languageAlternates } from '@/lib/seo-locales'
 
 export const metadata: Metadata = {
   title: 'All Free Online Board Games - Multiplayer',
@@ -38,6 +39,7 @@ export const metadata: Metadata = {
   },
   alternates: {
     canonical: 'https://boardly.online/games',
+    languages: languageAlternates('/games'),
   },
 }
 
