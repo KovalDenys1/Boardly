@@ -1,4 +1,4 @@
-import { GameConfig, GameEngine, Move, Player } from '../game-engine'
+import { GameConfig, GameEngine, GameTimeoutRecord, Move, Player, PlayerLeaveContext } from '../game-engine'
 import { resolveBoundedRuleNumber, getStringField } from './shared-helpers'
 
 export type LiarsPartyPhase = 'claim' | 'challenge' | 'reveal'
@@ -79,6 +79,19 @@ export interface LiarsPartyTimeoutResolution {
   autoSubmittedClaims: number
   autoSubmittedChallenges: number
   autoSubmittedPlayerIds: string[]
+}
+
+/** The replay record every path that applies a Liar's Party timeout writes. */
+export function liarsPartyTimeoutRecord(resolution: LiarsPartyTimeoutResolution): GameTimeoutRecord {
+  return {
+    actionType: 'liars_party:timeout-fallback',
+    actionPayload: {
+      timeoutWindowsConsumed: resolution.timeoutWindowsConsumed,
+      autoSubmittedClaims: resolution.autoSubmittedClaims,
+      autoSubmittedChallenges: resolution.autoSubmittedChallenges,
+      autoSubmittedPlayerIds: resolution.autoSubmittedPlayerIds,
+    },
+  }
 }
 
 const DEFAULT_MAX_ROUNDS = 10
@@ -272,7 +285,7 @@ export class LiarsPartyGame extends GameEngine {
       })
       data.submittedPlayerIds.push(move.playerId)
 
-      if (data.submittedPlayerIds.length >= this.getCurrentRoundVoterIds(data).length) {
+      if (this.everyVoterHasVoted(data)) {
         this.enterReveal(data, nowMs)
         this.state.lastMoveAt = nowMs
       }
@@ -325,7 +338,7 @@ export class LiarsPartyGame extends GameEngine {
     return this.getCurrentRoundVoterIds(data).filter((playerId) => !submittedSet.has(playerId))
   }
 
-  handlePlayerLeave(playerId: string): boolean {
+  handlePlayerLeave(playerId: string, context: PlayerLeaveContext = {}): boolean {
     const data = this.state.data as LiarsPartyGameData
 
     if (!data.activePlayerIds.includes(playerId)) {
@@ -334,7 +347,19 @@ export class LiarsPartyGame extends GameEngine {
 
     const nowMs = Date.now()
 
+    // The lobby read applies a lapsed clock only when it next runs, and the round it closed is not the leave's to change.
+    if (typeof context.turnTimerSeconds === 'number') {
+      const lapsed = this.closeLapsedPhase(context.turnTimerSeconds, nowMs)
+      if (lapsed.changed) {
+        context.onTimeoutApplied?.(liarsPartyTimeoutRecord(lapsed))
+      }
+    }
+
     this.eliminatePlayer(data, playerId)
+    if (data.phase === 'challenge') {
+      data.challengeVotes = data.challengeVotes.filter((vote) => vote.playerId !== playerId)
+      data.submittedPlayerIds = data.submittedPlayerIds.filter((id) => id !== playerId)
+    }
     this.recomputeRanking(data)
     this.state.updatedAt = new Date()
 
@@ -354,11 +379,8 @@ export class LiarsPartyGame extends GameEngine {
         data.submittedPlayerIds = []
         this.state.lastMoveAt = nowMs
       }
-    } else if (data.phase === 'challenge' && !data.submittedPlayerIds.includes(playerId)) {
-      // Leaving voter hadn't voted — check if all remaining voters have now submitted
-      const remainingVoters = this.getCurrentRoundVoterIds(data)
-      const pendingVoters = remainingVoters.filter(id => !data.submittedPlayerIds.includes(id))
-      if (pendingVoters.length === 0) {
+    } else if (data.phase === 'challenge') {
+      if (this.everyVoterHasVoted(data)) {
         this.enterReveal(data, nowMs)
         this.state.lastMoveAt = nowMs
       }
@@ -368,6 +390,19 @@ export class LiarsPartyGame extends GameEngine {
   }
 
   applyTimeoutFallback(turnTimerSeconds: number, nowMs: number = Date.now()): LiarsPartyTimeoutResolution {
+    return this.resolveTimeouts(turnTimerSeconds, nowMs, { stopAtReveal: false })
+  }
+
+  /** The timeouts a move or a leave must apply before it lands: up to the reveal, never past it, so neither advances or ends the game. */
+  closeLapsedPhase(turnTimerSeconds: number, nowMs: number = Date.now()): LiarsPartyTimeoutResolution {
+    return this.resolveTimeouts(turnTimerSeconds, nowMs, { stopAtReveal: true })
+  }
+
+  private resolveTimeouts(
+    turnTimerSeconds: number,
+    nowMs: number,
+    { stopAtReveal }: { stopAtReveal: boolean },
+  ): LiarsPartyTimeoutResolution {
     const result: LiarsPartyTimeoutResolution = {
       changed: false,
       timeoutWindowsConsumed: 0,
@@ -463,7 +498,7 @@ export class LiarsPartyGame extends GameEngine {
           result.changed = true
         }
 
-        if (data.submittedPlayerIds.length < this.getCurrentRoundVoterIds(data).length) {
+        if (!this.everyVoterHasVoted(data)) {
           break
         }
 
@@ -478,6 +513,9 @@ export class LiarsPartyGame extends GameEngine {
       }
 
       if (data.phase === 'reveal') {
+        if (stopAtReveal) {
+          break
+        }
         const revealEndsAt = Math.max(timeoutAt, data.advanceOpensAt ?? timeoutAt)
         if (revealEndsAt > nowMs) {
           break
@@ -735,6 +773,10 @@ export class LiarsPartyGame extends GameEngine {
 
   private getCurrentRoundVoterIds(data: LiarsPartyGameData): string[] {
     return data.activePlayerIds.filter((playerId) => playerId !== data.currentClaimantId)
+  }
+
+  private everyVoterHasVoted(data: LiarsPartyGameData): boolean {
+    return this.getCurrentRoundVoterIds(data).every((playerId) => data.submittedPlayerIds.includes(playerId))
   }
 
   private isKnownPlayer(playerId: string): boolean {

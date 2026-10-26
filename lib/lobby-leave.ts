@@ -7,6 +7,8 @@ import { getLobbyPlayerRequirements } from '@/lib/lobby-player-requirements'
 import { parseAndValidateGameState, toPersistedGameStateInput } from '@/lib/persisted-game-state'
 import { commitGameState } from '@/lib/game-state-lock'
 import { restoreGameEngine } from '@/lib/game-registry'
+import type { GameTimeoutRecord } from '@/lib/game-engine'
+import { appendGameReplaySnapshot } from '@/lib/game-replay'
 import { sanitizeStateForBroadcast } from '@/lib/broadcast-sanitize'
 import { getGameMetadata } from '@/lib/game-catalog'
 import { deleteGameTurnReminderNotifications } from '@/lib/in-app-notifications'
@@ -611,13 +613,27 @@ export async function performPlayerLeave(
   // Engine-managed games: delegate player-leave state mutation to the engine
   if (gameMeta?.engineHandlesLeave) {
     try {
+      let lapsedClock: GameTimeoutRecord | null = null
       const result = await commitLeaveStateChange(activeGame.id, gameRowSnapshot, (rawState) => {
         const engine = restoreGameEngine(activeGame.gameType, activeGame.id, rawState)
-        if (!engine.handlePlayerLeave(userId)) return null
+        lapsedClock = null
+        const onTimeoutApplied = (record: GameTimeoutRecord) => { lapsedClock = record }
+        if (!engine.handlePlayerLeave(userId, { turnTimerSeconds: lobby.turnTimer, onTimeoutApplied })) return null
         return engine.getState()
       })
 
       if (result.status === 'committed') {
+        const appliedClock = lapsedClock as GameTimeoutRecord | null
+        if (appliedClock) {
+          const { actionType, actionPayload } = appliedClock
+          await appendGameReplaySnapshot({
+            gameId: activeGame.id,
+            playerId: null,
+            actionType,
+            actionPayload: { source: 'lobby-leave', ...actionPayload },
+            state: result.state,
+          })
+        }
         // A shared broadcast has no single viewer: strip every game's hidden
         // state (Spy's spy and location, #1263) as the move routes do.
         await emitLobbyEvent(log, code, 'game-update', {

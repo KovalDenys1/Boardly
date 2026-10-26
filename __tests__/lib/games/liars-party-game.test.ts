@@ -458,6 +458,149 @@ describe("LiarsPartyGame scores the round at the reveal and holds it (#1379)", (
     expect(getData(game).roundResults[0].voterScoreDeltas).toEqual({ player2: 10, player3: 10 })
   })
 
+  describe('a voter who has voted and then leaves (#1527)', () => {
+    const claimVoteAndLeave = (target: LiarsPartyGame): void => {
+      expect(claim(target, 'player1', true)).toBe(true)
+      expect(vote(target, 'player2', 'challenge')).toBe(true)
+      expect(target.handlePlayerLeave('player2')).toBe(true)
+    }
+
+    it('waits for every voter still in the game before the reveal', () => {
+      const game = newGame()
+      claimVoteAndLeave(game)
+
+      expect(vote(game, 'player3', 'believe')).toBe(true)
+      expect(getData(game).phase).toBe('challenge')
+      expect(game.getPendingChallengePlayerIds()).toEqual(['player4'])
+      expect(getData(game).challengeVotes.map((entry) => entry.playerId)).toEqual(['player3'])
+
+      expect(vote(game, 'player4', 'challenge')).toBe(true)
+      expectScoredOnEntry(game, clock)
+      expect(getData(game).roundResults[0]).toEqual(expect.objectContaining({
+        challengedBy: ['player4'],
+        believedBy: ['player3'],
+        voterScoreDeltas: { player3: -8, player4: 14 },
+      }))
+    })
+
+    it('still reveals when the last voter owing a vote leaves too', () => {
+      const game = newGame()
+      claimVoteAndLeave(game)
+      expect(vote(game, 'player3', 'believe')).toBe(true)
+      expect(game.handlePlayerLeave('player4')).toBe(true)
+
+      expectScoredOnEntry(game, clock)
+      expect(getData(game).roundResults[0]).toEqual(expect.objectContaining({
+        challengedBy: [],
+        believedBy: ['player3'],
+        voterScoreDeltas: { player3: -8 },
+      }))
+    })
+
+    it('leaves their vote out of a round the vote clock ends', () => {
+      const game = newGame()
+      claimVoteAndLeave(game)
+      const revealAt = (game.getState().lastMoveAt as number) + 60_000
+      game.applyTimeoutFallback(60, revealAt)
+
+      expectScoredOnEntry(game, revealAt)
+      expect(getData(game).roundResults[0]).toEqual(expect.objectContaining({
+        challengedBy: [],
+        believedBy: ['player3', 'player4'],
+        voterScoreDeltas: { player3: -12, player4: -12 },
+      }))
+    })
+  })
+
+  describe('a leave after the vote clock ran out, before anything applied it', () => {
+    const SIX = ['p1', 'p2', 'p3', 'p4', 'p5', 'p6']
+    const TIMER = { turnTimerSeconds: 60 }
+    const sixPlayerGame = (ids = SIX, rules: Record<string, unknown> = { maxRounds: 10, eliminationStrikes: 2 }) => {
+      const created = new LiarsPartyGame('liars-late-leave', { maxPlayers: 12, minPlayers: 4, rules })
+      for (const id of ids) created.addPlayer({ id, name: id })
+      expect(created.startGame()).toBe(true)
+      return created
+    }
+    /** p1 bluffs; p2, p3, p4 challenge, p6 believes, p5 says nothing. Returns the vote's deadline. */
+    const bluffWithOneSilentVoter = (target: LiarsPartyGame): number => {
+      expect(claim(target, 'p1', true)).toBe(true)
+      for (const voter of ['p2', 'p3', 'p4']) expect(vote(target, voter, 'challenge')).toBe(true)
+      expect(vote(target, 'p6', 'believe')).toBe(true)
+      return (target.getState().lastMoveAt as number) + 60_000
+    }
+    const expectCaughtAtDeadline = (target: LiarsPartyGame, deadline: number, believedBy: string[]) => {
+      expect(getData(target).roundResults[0]).toEqual(expect.objectContaining({
+        challengedBy: ['p2', 'p3', 'p4'],
+        believedBy,
+        bluffCaught: true,
+        claimantScoreDelta: -12,
+        claimantStrikeDelta: 1,
+        resolvedAt: deadline,
+      }))
+    }
+
+    it('scores the vote the clock closed when the clock is applied first', () => {
+      const game = sixPlayerGame()
+      const deadline = bluffWithOneSilentVoter(game)
+      game.applyTimeoutFallback(60, deadline)
+      clock = deadline + 1_000
+      expect(game.handlePlayerLeave('p2', TIMER)).toBe(true)
+
+      expectCaughtAtDeadline(game, deadline, ['p6', 'p5'])
+    })
+
+    it('scores the same vote when a voter who voted leaves first', () => {
+      const game = sixPlayerGame()
+      const deadline = bluffWithOneSilentVoter(game)
+      clock = deadline + 1_000
+      expect(game.handlePlayerLeave('p2', TIMER)).toBe(true)
+      game.applyTimeoutFallback(60, deadline + 2_000)
+
+      expectCaughtAtDeadline(game, deadline, ['p6', 'p5'])
+    })
+
+    it('scores the same vote when the voter who owed a vote leaves first', () => {
+      const game = sixPlayerGame()
+      const deadline = bluffWithOneSilentVoter(game)
+      clock = deadline + 1_000
+      expect(game.handlePlayerLeave('p5', TIMER)).toBe(true)
+
+      expect(getData(game).phase).toBe('reveal')
+      expectCaughtAtDeadline(game, deadline, ['p6', 'p5'])
+    })
+
+    it('still drops the vote of a voter who leaves before the deadline', () => {
+      const game = sixPlayerGame()
+      const deadline = bluffWithOneSilentVoter(game)
+      clock = deadline - 1_000
+      expect(game.handlePlayerLeave('p2', TIMER)).toBe(true)
+
+      expect(getData(game).phase).toBe('challenge')
+      expect(getData(game).challengeVotes.map((entry) => entry.playerId)).toEqual(['p3', 'p4', 'p6'])
+    })
+
+    it('drops a leaver\'s vote even when the leave leaves one player in the game', () => {
+      const game = sixPlayerGame(['e1', 'e2', 'e3', 'c', 'v1', 'v2'], { maxRounds: 10, eliminationStrikes: 1 })
+      for (const claimant of ['e1', 'e2', 'e3']) {
+        expect(claim(game, claimant, true)).toBe(true)
+        for (const voter of getData(game).activePlayerIds.filter((id) => id !== claimant)) {
+          expect(vote(game, voter, 'challenge')).toBe(true)
+        }
+        pastRevealHold()
+        expect(advance(game, 'c')).toBe(true)
+      }
+      expect(getData(game).activePlayerIds).toEqual(['c', 'v1', 'v2'])
+      expect(claim(game, 'c', true)).toBe(true)
+      expect(vote(game, 'v1', 'challenge')).toBe(true)
+
+      expect(game.handlePlayerLeave('c')).toBe(true)
+      expect(game.handlePlayerLeave('v1')).toBe(true)
+
+      expect(getData(game).challengeVotes).toEqual([])
+      expect(getData(game).submittedPlayerIds).toEqual([])
+    })
+  })
+
   it('refuses Next Round from anyone until the hold is over, then takes it', () => {
     const game = newGame()
     toReveal(game)

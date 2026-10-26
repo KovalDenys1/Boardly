@@ -53,6 +53,18 @@ export interface RestorableGameState<TGameData = unknown> extends GameState<TGam
   config?: GameConfig;
 }
 
+/** A timeout an engine applied on its own, for the caller's replay record. */
+export interface GameTimeoutRecord {
+  actionType: string
+  actionPayload: Record<string, unknown>
+}
+
+/** What the leave route knows that the saved state does not, and how it hears of a timeout the leave applied. */
+export interface PlayerLeaveContext {
+  turnTimerSeconds?: number | null
+  onTimeoutApplied?: (record: GameTimeoutRecord) => void
+}
+
 export interface GameConfig {
   maxPlayers: number;
   minPlayers: number;
@@ -303,7 +315,7 @@ export abstract class GameEngine {
     this.state.turnStartedAt = this.state.lastMoveAt;
   }
 
-  handlePlayerLeave(playerId: string): boolean {
+  handlePlayerLeave(playerId: string, _context: PlayerLeaveContext = {}): boolean {
     const wasCurrentPlayer = this.state.players[this.state.currentPlayerIndex]?.id === playerId
     if (wasCurrentPlayer) {
       this.advanceTurnIndex()
