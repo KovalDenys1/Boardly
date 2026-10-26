@@ -4784,6 +4784,7 @@ const ru = {
     rules: 'Правила',
     voteBreakdown: 'Результаты голосования',
     scoreDelta: 'Очки за раунд',
+    strikeAdded: '+1 страйк',
     totalScores: 'Итоговый счёт',
     eliminatedThisRound: 'Выбыли в этом раунде',
     claimingNow: 'Сейчас делает заявление',

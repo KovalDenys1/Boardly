@@ -4670,6 +4670,7 @@ const en = {
     rules: 'Rules',
     voteBreakdown: 'Vote Breakdown',
     scoreDelta: 'Points this round',
+    strikeAdded: '+1 strike',
     totalScores: 'Total Scores',
     eliminatedThisRound: 'Eliminated this round',
     claimingNow: 'Making a claim now',

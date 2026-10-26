@@ -4702,6 +4702,7 @@ const es: TranslationWithPlurals = {
     rules: 'Reglas',
     voteBreakdown: 'Desglose de votos',
     scoreDelta: 'Puntos de esta ronda',
+    strikeAdded: '+1 falta',
     totalScores: 'Puntuación total',
     eliminatedThisRound: 'Eliminado en esta ronda',
     claimingNow: 'Haciendo una afirmación',
