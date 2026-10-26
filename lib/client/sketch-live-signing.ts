@@ -55,12 +55,17 @@ export interface SketchLiveSenderOptions {
 
 export interface SketchLiveSender {
   /**
-   * Signs and sends `message`. Until the key is certified for the message's
+   * Signs and sends `message`, once this page has been drawn on in the
+   * message's round. Until the key is certified for the message's
    * round nothing goes out; the newest finished strokes are kept and sent the
    * moment the certificate arrives, and a stroke in progress is dropped – the
    * next one replaces it anyway.
    */
   send: (gameId: string, message: SketchLiveMessage) => void
+  /** A frame heard on `topic`: another page of this drawer under a newer certificate quiets this one until it is drawn on again. */
+  hear: (topic: string, raw: unknown) => Promise<void>
+  /** This page may have missed such a frame (it was hidden, or its channel dropped): its next stroke asks for a new certificate. */
+  renewOnNextStroke: () => void
 }
 
 interface SigningKey {
@@ -92,17 +97,46 @@ export function createSketchLiveSender({ requestCert, emit }: SketchLiveSenderOp
   // Frames are signed one after another, so they leave in the order their
   // counters were handed out and a receiver never sees a newer one first.
   let queue: Promise<void> = Promise.resolve()
+  // Receivers keep only the newest certificate per round, so it has to belong to the page being drawn on.
+  let drawnIn: string | null = null
+  let quietIn: string | null = null
+  let handed: { round: string; strokes: string } | null = null
+  let showing: SketchLiveExpectation | null = null
+  let newestHeard: { round: string; cert: RealtimeEnvelope } | null = null
+  let stale: unknown = null
+  const others = createSketchLiveReceiver()
+
+  const roundOf = (gameId: string, round: number, drawerId: string) => `${gameId}\n${round}\n${drawerId}`
+
+  const isDrawing = (round: string, message: SketchLiveMessage) => {
+    if (message.kind === 'live') return message.live !== null
+    const strokes = canonicalJson(message.strokes)
+    const before = handed?.round === round ? handed.strokes : '[]'
+    handed = { round, strokes }
+    return strokes !== before
+  }
 
   const loadKey = () => {
     if (!signingKey) signingKey = generateSigningKey().catch(() => null)
     return signingKey
   }
 
-  const covers = (gameId: string, message: SketchLiveMessage) =>
+  const covers = (gameId: string, message: { round: number; drawerId: string }) =>
     !!certified &&
     certified.gameId === gameId &&
     certified.claims.round === message.round &&
     certified.claims.drawerId === message.drawerId
+
+  const isOlderThanHeard = (round: string, cert: RealtimeEnvelope) =>
+    newestHeard?.round === round && compareIssue(cert, newestHeard.cert) < 0
+
+  const quietIfTakenOver = () => {
+    if (!certified) return
+    const round = roundOf(certified.gameId, certified.claims.round, certified.claims.drawerId)
+    if (!isOlderThanHeard(round, certified.cert)) return
+    certified = null
+    quietIn = round
+  }
 
   const enqueue = (message: SketchLiveMessage) => {
     if (!certified) return
@@ -144,6 +178,7 @@ export function createSketchLiveSender({ requestCert, emit }: SketchLiveSenderOp
       } finally {
         requesting = false
       }
+      quietIfTakenOver()
       const waiting = pending
       if (waiting && covers(waiting.gameId, waiting.message)) {
         pending = null
@@ -154,12 +189,40 @@ export function createSketchLiveSender({ requestCert, emit }: SketchLiveSenderOp
 
   return {
     send(gameId, message) {
+      const round = roundOf(gameId, message.round, message.drawerId)
+      showing = { gameId, round: message.round, drawerId: message.drawerId }
+      if (isDrawing(round, message)) {
+        drawnIn = round
+        if (quietIn === round) quietIn = null
+        if (certified && certified === stale) certified = null
+      }
+      if (quietIn === round) return
+      const drawn = drawnIn === round
       if (covers(gameId, message)) {
-        enqueue(message)
+        if (drawn) enqueue(message)
         return
       }
-      if (message.kind === 'strokes') pending = { gameId, message }
+      if (drawn && message.kind === 'strokes') pending = { gameId, message }
       certify(gameId)
+    },
+
+    async hear(topic, raw) {
+      const expected = showing
+      if (!expected || !isSketchLiveFrame(raw)) return
+      const round = roundOf(expected.gameId, expected.round, expected.drawerId)
+      const own = covers(expected.gameId, expected) ? certified : null
+      if (quietIn === round || (!own && !requesting)) return
+      // Only a frame claiming a newer certificate than any this page knows can matter, so nothing else costs a check.
+      const claims = readSketchLiveKeyClaims(raw.cert.p)
+      if (!claims || claims.gameId !== expected.gameId || claims.round !== expected.round || claims.drawerId !== expected.drawerId) return
+      if ((own && compareIssue(raw.cert, own.cert) <= 0) || (newestHeard?.round === round && compareIssue(raw.cert, newestHeard.cert) <= 0)) return
+      if (!(await others.open(topic, raw, expected))) return
+      if (!isOlderThanHeard(round, raw.cert)) newestHeard = { round, cert: raw.cert }
+      quietIfTakenOver()
+    },
+
+    renewOnNextStroke() {
+      stale = certified
     },
   }
 }
@@ -258,7 +321,8 @@ export function createSketchLiveReceiver(): SketchLiveReceiver {
         return message
       }
 
-      const certified = await certifiedKeyFor(subtle, topic, raw.cert)
+      // canonicalJson throws on a certificate nested too deep to serialise.
+      const certified = await Promise.resolve(raw.cert).then((cert) => certifiedKeyFor(subtle, topic, cert)).catch(() => null)
       if (!certified) return null
       const { claims, key } = certified
       if (claims.gameId !== expected.gameId || claims.round !== expected.round || claims.drawerId !== expected.drawerId) {

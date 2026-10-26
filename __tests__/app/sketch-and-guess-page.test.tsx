@@ -631,7 +631,9 @@ describe('SketchAndGuessLobbyPage shared chrome', () => {
       expect(liveBoards().every((count) => count === 'none')).toBe(true)
     })
 
-    it('streams the drawer canvas signed: finished strokes at once, the stroke in progress throttled', async () => {
+    const certRequests = () => mockFetchWithGuest.mock.calls.filter((call) => String(call[0]).includes('/sketch-live-key'))
+
+    async function renderDrawerPage() {
       const response = buildLobbyResponse()
       response.activeGame.state.data.currentDrawerId = 'user-1'
       response.activeGame.state.data.phase = 'drawing'
@@ -643,12 +645,20 @@ describe('SketchAndGuessLobbyPage shared chrome', () => {
         return okResponse(response)
       })
       render(<SketchAndGuessLobbyPage code="ABCD" />)
-      await waitFor(() => expect(liveSends().length).toBeGreaterThan(0))
+      await waitFor(() => expect(certRequests()).toHaveLength(1))
+    }
 
+    it('streams the drawer canvas signed once it is drawn on: finished strokes at once, the stroke in progress throttled', async () => {
+      await renderDrawerPage()
+      await new Promise((resolve) => setTimeout(resolve, 50))
+      expect(liveSends()).toHaveLength(0)
+
+      fireEvent.click(screen.getAllByText('stroke')[0])
+      await waitFor(() => expect(liveSends().length).toBeGreaterThan(0))
       const receiver = createSketchLiveReceiver()
       const expected = { gameId: 'game-1', round: 1, drawerId: 'user-1' }
       expect(await receiver.open(REALTIME_TOPIC, liveSends()[0].payload, expected))
-        .toEqual({ kind: 'strokes', round: 1, drawerId: 'user-1', strokes: [] })
+        .toEqual({ kind: 'strokes', round: 1, drawerId: 'user-1', strokes: [{ color: '#000', width: 3, points: [{ x: 1, y: 1 }] }] })
 
       const inProgress = () => liveSends().filter((msg) => msg.payload.p?.kind === 'live')
       jest.useFakeTimers()
@@ -664,6 +674,79 @@ describe('SketchAndGuessLobbyPage shared chrome', () => {
       expect(inProgress()).toHaveLength(1)
       expect(await receiver.open(REALTIME_TOPIC, inProgress()[0].payload, expected))
         .toMatchObject({ kind: 'live', round: 1, drawerId: 'user-1', live: { points: [{ x: 1, y: 2 }] } })
+    })
+
+    it("asks for a new certificate when drawn on again after another of the drawer's pages streamed under a newer one", async () => {
+      await renderDrawerPage()
+      fireEvent.click(screen.getAllByText('stroke')[0])
+      await waitFor(() => expect(liveSends()).toHaveLength(1))
+
+      const startedAt = Date.now()
+      const clock = jest.spyOn(Date, 'now').mockReturnValue(startedAt + 1_000)
+      try {
+        const [fromOtherPage] = await framesFrom('user-1', 1, [{ kind: 'strokes', round: 1, drawerId: 'user-1', strokes: [stroke] }])
+        // The page checks the frame with real ECDSA, which a loaded CI runner can take longer for than settleRealtime's ticks.
+        const subtle = globalThis.crypto.subtle
+        const verify = subtle.verify.bind(subtle)
+        const checks: Promise<boolean>[] = []
+        const verifySpy = jest.spyOn(subtle, 'verify').mockImplementation((...args: Parameters<SubtleCrypto['verify']>) => {
+          const check = verify(...args)
+          checks.push(check)
+          return check
+        })
+        try {
+          await act(async () => {
+            broadcastHandlers['sketch-live']({ payload: fromOtherPage })
+          })
+          await waitFor(() => expect(checks.length).toBeGreaterThan(0))
+          await act(async () => {
+            await Promise.all(checks)
+          })
+          await settleRealtime()
+        } finally {
+          verifySpy.mockRestore()
+        }
+
+        clock.mockReturnValue(startedAt + 4_000)
+        fireEvent.click(screen.getAllByText('stroke')[0])
+        await waitFor(() => expect(liveSends()).toHaveLength(2))
+        expect(certRequests()).toHaveLength(2)
+        const receiver = createSketchLiveReceiver()
+        const expected = { gameId: 'game-1', round: 1, drawerId: 'user-1' }
+        expect(await receiver.open(REALTIME_TOPIC, fromOtherPage, expected)).not.toBeNull()
+        expect(await receiver.open(REALTIME_TOPIC, liveSends()[1].payload, expected)).not.toBeNull()
+      } finally {
+        clock.mockRestore()
+      }
+    })
+
+    async function strokeAfter(...drops: Array<() => void>) {
+      fireEvent.click(screen.getAllByText('stroke')[0])
+      await waitFor(() => expect(liveSends()).toHaveLength(1))
+      const clock = jest.spyOn(Date, 'now').mockReturnValue(Date.now() + 4_000)
+      try {
+        for (const drop of drops) act(drop)
+        fireEvent.click(screen.getAllByText('stroke')[0])
+        await waitFor(() => expect(liveSends()).toHaveLength(2))
+      } finally {
+        clock.mockRestore()
+      }
+    }
+
+    it('asks for a new certificate on the first stroke after the drawer page was hidden', async () => {
+      await renderDrawerPage()
+      await strokeAfter(() => {
+        document.dispatchEvent(new Event('visibilitychange'))
+      })
+      expect(certRequests()).toHaveLength(2)
+    })
+
+    it('asks for a new certificate on the first stroke after the drawer page lost its channel', async () => {
+      await renderDrawerPage()
+      const onStatus = mockChannel.subscribe.mock.calls.map(([callback]) => callback).find((callback) => typeof callback === 'function')
+      act(() => onStatus('SUBSCRIBED'))
+      await strokeAfter(() => onStatus('CLOSED'), () => onStatus('SUBSCRIBED'))
+      expect(certRequests()).toHaveLength(2)
     })
 
     it('sends nothing from a guesser', async () => {

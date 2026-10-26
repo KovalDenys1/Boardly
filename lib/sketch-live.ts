@@ -22,7 +22,9 @@ import { canonicalJson, isExactRealtimeEnvelope, type RealtimeEnvelope } from '@
  * topic and names the game, round and drawer it is showing, and the frame's
  * signature verifies under the certified key. One signature per message on the
  * drawer's side, one check per message on everyone else's, and one request per
- * round: nothing per stroke touches the server, the database or the limiter.
+ * round and page, plus one when a page is drawn on again after it was hidden or
+ * another page took over: nothing per stroke touches the server, the database or
+ * the limiter.
  */
 /** Structurally the board's `Stroke`; declared here so lib does not import a component. */
 export interface Stroke {

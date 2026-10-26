@@ -16,7 +16,7 @@ import {
   __resetRealtimeVerifierForTests,
 } from '@/lib/client/realtime-verify'
 import { createSketchLiveReceiver, createSketchLiveSender } from '@/lib/client/sketch-live-signing'
-import { SKETCH_LIVE_KEY_EVENT, SKETCH_LIVE_MAX_FRAME_AGE_MS, sketchLiveSigningInput, type SketchLiveMessage } from '@/lib/sketch-live'
+import { SKETCH_LIVE_KEY_EVENT, SKETCH_LIVE_MAX_FRAME_AGE_MS, SKETCH_LIVE_RESYNC_MS, sketchLiveSigningInput, type SketchLiveMessage } from '@/lib/sketch-live'
 import { installSignedRealtime, signBroadcast } from '@/__tests__/fixtures/signed-realtime'
 
 installSignedRealtime()
@@ -72,6 +72,43 @@ function senderWith(requestCert: ReturnType<typeof certify>) {
 
 function strokes(round = 2, drawerId = DRAWER): SketchLiveMessage {
   return { kind: 'strokes', round, drawerId, strokes: [stroke] }
+}
+
+/** A clock the test moves by hand, so a certificate issued later is newer. */
+function manualClock() {
+  let now = Date.now()
+  jest.spyOn(Date, 'now').mockImplementation(() => now)
+  return (ms: number) => {
+    now += ms
+  }
+}
+
+const settle = () => new Promise((resolve) => setTimeout(resolve, 50))
+
+/**
+ * The drawer draws on page A, then on page B, which is certified later; A has
+ * heard B's frame. Every frame so far reached `receiver`.
+ */
+async function drawnOnTwoPages(receiver: ReturnType<typeof createSketchLiveReceiver>) {
+  const advance = manualClock()
+  const requestedByA: string[] = []
+  const a = senderWith((gameId, key) => {
+    requestedByA.push(gameId)
+    return certify({})(gameId, key)
+  })
+  const firstFromA = a.next()
+  a.sender.send(GAME, strokes())
+  const fromA = await firstFromA
+  expect(await receiver.open(TOPIC, fromA, expected)).not.toBeNull()
+
+  advance(1_000)
+  const b = senderWith(certify({}))
+  const firstFromB = b.next()
+  b.sender.send(GAME, { kind: 'strokes', round: 2, drawerId: DRAWER, strokes: [stroke, stroke] })
+  const fromB = await firstFromB
+  expect(await receiver.open(TOPIC, fromB, expected)).not.toBeNull()
+  await a.sender.hear(TOPIC, fromB)
+  return { advance, a, fromA, fromB, requestedByA }
 }
 
 async function signPayload(privateKey: CryptoKey, text: string): Promise<string> {
@@ -267,7 +304,7 @@ describe('Sketch & Guess live strokes', () => {
     jest.spyOn(Date, 'now').mockReturnValue(Date.now() + 1_000)
     const after = senderWith(certify({}))
     const newFrame = after.next()
-    after.sender.send(GAME, { kind: 'strokes', round: 2, drawerId: DRAWER, strokes: [] })
+    after.sender.send(GAME, { kind: 'strokes', round: 2, drawerId: DRAWER, strokes: [stroke, stroke, stroke] })
 
     const receiver = createSketchLiveReceiver()
     expect(await receiver.open(TOPIC, firstOld, expected)).not.toBeNull()
@@ -290,6 +327,156 @@ describe('Sketch & Guess live strokes', () => {
     ])
     expect(fromForged).toBeNull()
     expect(fromDrawer).toEqual(strokes())
+  })
+
+  it("sends nothing from a drawer's second page nobody draws on, so the page drawn on keeps painting", async () => {
+    const advance = manualClock()
+    const drawing = senderWith(certify({}))
+    const receiver = createSketchLiveReceiver()
+    const first = drawing.next()
+    drawing.sender.send(GAME, strokes())
+    expect(await receiver.open(TOPIC, await first, expected)).not.toBeNull()
+
+    // Opened later, so its certificate is the newer one; its timer re-sends the empty canvas.
+    advance(1_000)
+    const idle = senderWith(certify({}))
+    idle.sender.send(GAME, { kind: 'strokes', round: 2, drawerId: DRAWER, strokes: [] })
+    await settle()
+    advance(SKETCH_LIVE_RESYNC_MS)
+    idle.sender.send(GAME, { kind: 'strokes', round: 2, drawerId: DRAWER, strokes: [] })
+    await settle()
+    expect(idle.frames).toHaveLength(0)
+
+    const later = drawing.next()
+    const drawn: SketchLiveMessage = { kind: 'strokes', round: 2, drawerId: DRAWER, strokes: [stroke, stroke] }
+    drawing.sender.send(GAME, drawn)
+    expect(await receiver.open(TOPIC, await later, expected)).toEqual(drawn)
+  })
+
+  it("paints the page the drawer draws on again after another of the drawer's pages took the round under a newer certificate", async () => {
+    const receiver = createSketchLiveReceiver()
+    const { advance, a } = await drawnOnTwoPages(receiver)
+
+    advance(SKETCH_LIVE_RESYNC_MS)
+    const back = a.next()
+    const drawn: SketchLiveMessage = { kind: 'strokes', round: 2, drawerId: DRAWER, strokes: [stroke, stroke, stroke] }
+    a.sender.send(GAME, drawn)
+    expect(await receiver.open(TOPIC, await back, expected)).toEqual(drawn)
+  })
+
+  it("drops the drawer's frames under older certificates once the page drawn on has taken the round back", async () => {
+    const receiver = createSketchLiveReceiver()
+    const { advance, a, fromA, fromB } = await drawnOnTwoPages(receiver)
+    advance(SKETCH_LIVE_RESYNC_MS)
+    const back = a.next()
+    a.sender.send(GAME, { kind: 'strokes', round: 2, drawerId: DRAWER, strokes: [stroke, stroke, stroke] })
+    expect(await receiver.open(TOPIC, await back, expected)).not.toBeNull()
+
+    expect(await receiver.open(TOPIC, fromA, expected)).toBeNull()
+    expect(await receiver.open(TOPIC, fromB, expected)).toBeNull()
+  })
+
+  it("keeps a page that another of the drawer's pages took the round from quiet: its re-sends send and ask for nothing", async () => {
+    const { advance, a, requestedByA } = await drawnOnTwoPages(createSketchLiveReceiver())
+
+    advance(SKETCH_LIVE_RESYNC_MS)
+    a.sender.send(GAME, strokes())
+    await settle()
+    expect(a.frames).toHaveLength(1)
+    expect(requestedByA).toHaveLength(1)
+  })
+
+  it('keeps streaming after hearing a forged certificate that claims to be newer', async () => {
+    const advance = manualClock()
+    const { sender, next } = senderWith(certify({}))
+    const first = next()
+    sender.send(GAME, strokes())
+    const genuine = await first
+    const cert = genuine.cert as Record<string, unknown>
+
+    advance(1_000)
+    await sender.hear(TOPIC, { ...genuine, seq: (genuine.seq as number) + 1, cert: { ...cert, iat: (cert.iat as number) + 60_000 } })
+    const resent = next()
+    sender.send(GAME, strokes())
+    expect(await createSketchLiveReceiver().open(TOPIC, await resent, expected)).toEqual(strokes())
+  })
+
+  it('takes the round back on the next stroke after a page that may have missed the takeover is told so', async () => {
+    const advance = manualClock()
+    const receiver = createSketchLiveReceiver()
+    const a = senderWith(certify({}))
+    const fromA = a.next()
+    a.sender.send(GAME, strokes())
+    expect(await receiver.open(TOPIC, await fromA, expected)).not.toBeNull()
+
+    // Page B takes the round while A is hidden, so A never hears it.
+    advance(1_000)
+    const b = senderWith(certify({}))
+    const fromB = b.next()
+    b.sender.send(GAME, { kind: 'strokes', round: 2, drawerId: DRAWER, strokes: [stroke, stroke] })
+    expect(await receiver.open(TOPIC, await fromB, expected)).not.toBeNull()
+
+    a.sender.renewOnNextStroke()
+    advance(SKETCH_LIVE_RESYNC_MS)
+    const back = a.next()
+    const drawn: SketchLiveMessage = { kind: 'strokes', round: 2, drawerId: DRAWER, strokes: [stroke, stroke, stroke] }
+    a.sender.send(GAME, drawn)
+    expect(await receiver.open(TOPIC, await back, expected)).toEqual(drawn)
+  })
+
+  it("goes quiet when its own certificate arrives older than one of the drawer's other pages heard while it was requested", async () => {
+    const advance = manualClock()
+    let asked: () => void = () => {}
+    const askedFor = new Promise<void>((resolve) => {
+      asked = resolve
+    })
+    let release: () => void = () => {}
+    const a = senderWith((gameId, key) => {
+      const sealedNow = certify({})(gameId, key)
+      asked()
+      return new Promise((resolve) => {
+        release = () => resolve(sealedNow)
+      })
+    })
+    a.sender.send(GAME, strokes())
+    await askedFor
+
+    advance(1_000)
+    const b = senderWith(certify({}))
+    const fromB = b.next()
+    b.sender.send(GAME, { kind: 'strokes', round: 2, drawerId: DRAWER, strokes: [stroke, stroke] })
+    await a.sender.hear(TOPIC, await fromB)
+
+    release()
+    await settle()
+    expect(a.frames).toHaveLength(0)
+  })
+
+  it("spends no signature check on frames that do not claim a newer certificate than the page's own", async () => {
+    const { sender, next } = senderWith(certify({}))
+    const first = next()
+    sender.send(GAME, strokes())
+    const own = await first
+    const cert = own.cert as Record<string, unknown>
+
+    const verify = jest.spyOn(globalThis.crypto.subtle, 'verify')
+    for (let junk = 1; junk <= 40; junk += 1) {
+      await sender.hear(TOPIC, { ...own, seq: (own.seq as number) + junk })
+      await sender.hear(TOPIC, { ...own, cert: { ...cert, iat: (cert.iat as number) - junk } })
+    }
+    expect(verify).not.toHaveBeenCalled()
+  })
+
+  it('drops a frame whose certificate is nested too deep to serialise', async () => {
+    const { sender, next } = senderWith(certify({}))
+    const first = next()
+    sender.send(GAME, strokes())
+    const frame = await first
+    const cert = frame.cert as { p: Record<string, unknown> }
+    let deep: Record<string, unknown> = {}
+    for (let depth = 0; depth < 100_000; depth += 1) deep = { deep }
+
+    await expect(createSketchLiveReceiver().open(TOPIC, { ...frame, cert: { ...cert, p: { ...cert.p, deep } } }, expected)).resolves.toBeNull()
   })
 
   it('sends nothing until the server has certified the key, then the newest finished strokes', async () => {

@@ -189,9 +189,16 @@ this change; it only makes the decision possible to make with data instead of a 
   A replay of the drawer's own frame is dropped too: a receiver paints a frame only within ten
   seconds of the server's clock, under the newest certificate it has seen for the round, with a
   counter past the last it painted for the round, and with no key beside the signed ones, so an
-  altered copy of the certificate cannot reset that counter.
+  altered copy of the certificate cannot reset that counter. A drawer with the game open on two pages
+  (#1516): a page sends nothing until it is drawn on in the round; a page that hears another of the
+  drawer's pages under a newer certificate goes quiet until it is drawn on again, then asks for a new
+  one; and a page that was hidden or lost its channel, and so may not have heard, asks for a new one on
+  its next stroke. A page that misses those frames while visible and connected keeps signing under its
+  older certificate, and receivers drop its frames, until it is next hidden or reconnects. The
+  receivers' checks are the same either way.
 - **Residual.** Holding a topic still lets a client send frames; receivers drop them, but a flood costs
-  each receiver a signature check. A topic holder can re-show one of the drawer's frames from the last
+  each receiver a signature check (the drawing page checks only frames that claim a newer certificate
+  than its own). A topic holder can re-show one of the drawer's frames from the last
   few seconds to a page that opened since and has not painted a later one. Spectator chat and presence on the spectator topic are peers'
   claims by design and are validated, not authenticated.
   The players' spectator count is not one of them: the spectate page reports it to
