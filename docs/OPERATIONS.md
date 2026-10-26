@@ -337,6 +337,10 @@ Check:
 - `OperationalEvents` contains recent `rejoin_timeout` / `auth_refresh_failed` / `move_apply_timeout`
 - run manual dry-run: `npm run ops:alerts:check -- --dry-run`
 
+### Browser errors missing from a protected deployment
+
+@sentry/nextjs 11 sends its tunnel request (`tunnelRoute` in `next.config.js`) with `credentials: 'omit'`, so on a deployment behind Vercel Authentication (`release/*`, `hotfix/*`, `boardly-kappa.vercel.app`) it gets the 302 to the sign-in page and browser errors never reach Sentry; boardly.online is unaffected, so check browser capture there.
+
 ### Runbook: withdrawal request (angrerett)
 
 A consumer may withdraw from a Premium purchase within 14 days of buying it, for any reason. Policy

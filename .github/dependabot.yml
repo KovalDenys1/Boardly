@@ -28,9 +28,6 @@ updates:
       # Every minor from 22.2 pins a newer API version; moving it needs the webhook endpoint moved with it (#1322).
       - dependency-name: "stripe"
         versions: [">=22.2.0"]
-      # 11 inverts the data-collection defaults and moves to span streaming (#1323).
-      - dependency-name: "@sentry/nextjs"
-        versions: [">=11"]
 
   - package-ecosystem: "github-actions"
     directory: "/"
