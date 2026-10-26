@@ -2259,7 +2259,6 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
               gameType="alias"
               isGuest={!isSpectator && isGuest}
               isRegistered={!isSpectator && status === 'authenticated' && !isGuest}
-              registerUrl={`/auth/register?returnUrl=${encodeURIComponent(`/lobby/${code}`)}`}
             />
           </div>
         </main>

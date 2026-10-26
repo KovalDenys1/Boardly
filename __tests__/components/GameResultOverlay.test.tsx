@@ -67,7 +67,6 @@ describe('GameResultOverlay (#736 phase 2)', () => {
         {...base}
         inviteCode="AB12"
         isGuest
-        registerUrl="/auth/register"
         isRegistered={false}
       />
     )
@@ -79,7 +78,6 @@ describe('GameResultOverlay (#736 phase 2)', () => {
         gameType: 'tic_tac_toe',
         isGuest: true,
         isRegistered: false,
-        registerUrl: '/auth/register',
       })
     )
   })

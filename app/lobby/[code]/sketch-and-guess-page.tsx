@@ -1223,7 +1223,6 @@ export default function SketchAndGuessLobbyPage({ code, isSpectator = false, onG
                     onReturnToLobby={handleReturnToWaiting}
                     onLeave={() => setShowLeaveConfirmModal(true)}
                     isGuest={isGuest}
-                    registerUrl={`/auth/register?returnUrl=${encodeURIComponent(`/lobby/${code}`)}`}
                     inviteCode={code}
                     gameType="sketch_and_guess"
                     outcome={viewerOutcome({ isFinished, isDraw: false, isSpectator, isSeated: !!currentPlayer, isViewerWinner: winnerId ? iWon : null })}

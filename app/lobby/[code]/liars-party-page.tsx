@@ -1386,7 +1386,6 @@ export default function LiarsPartyPage({ code, isSpectator = false, onGameReset 
           onReturnToLobby={handleReturnToWaiting}
           onLeave={() => setShowLeaveConfirmModal(true)}
           isGuest={isGuest}
-          registerUrl={`/auth/register?returnUrl=${encodeURIComponent(`/lobby/${code}`)}`}
           inviteCode={code}
           gameType="liars_party"
           outcome={viewerOutcome({ isFinished, isDraw: false, isSpectator, isSeated: players.some(p => p.userId === currentUserId || p.id === currentUserId), isViewerWinner: winnerId ? iWon : null })}

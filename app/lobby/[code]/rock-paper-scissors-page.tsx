@@ -887,7 +887,6 @@ export default function RockPaperScissorsLobbyPage({ code, isSpectator = false, 
                     onReturnToLobby={handleReturnToWaiting}
                     onLeave={() => setShowLeaveConfirmModal(true)}
                     isGuest={isGuest}
-                    registerUrl={`/auth/register?returnUrl=${encodeURIComponent(`/lobby/${code}`)}`}
                     inviteCode={code}
                     gameType="rock_paper_scissors"
                     outcome={viewerOutcome({ isFinished: shownFinished, isDraw: false, isSpectator, isSeated: !!currentUserId && (currentUserId === leftId || currentUserId === rightId), isViewerWinner: shownWinnerId ? shownWinnerId === currentUserId : null })}

@@ -88,7 +88,6 @@ function finishedBoardElement() {
       currentUserId={HUMAN_USER_ID}
       canStartGame
       isGuest
-      registerUrl="/auth/register?returnUrl=%2Flobby%2F9952"
     />
   )
 }

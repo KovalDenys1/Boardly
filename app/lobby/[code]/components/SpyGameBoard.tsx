@@ -99,7 +99,6 @@ interface SpyGameBoardProps {
   /** Disables Play Again / Return to Waiting while either is in flight. */
   isRestarting?: boolean
   onLeave?: () => void
-  registerUrl?: string
   isSpectator?: boolean
   /**
    * Lobby chat, handed down by whoever owns `useLobbyChat` (LobbyPageClient,
@@ -209,7 +208,6 @@ export default function SpyGameBoard({
   onReturnToWaiting,
   isRestarting = false,
   onLeave,
-  registerUrl = '/auth/register',
   isSpectator = false,
   chatMessages = [],
   onSendChatMessage,
@@ -1210,7 +1208,6 @@ export default function SpyGameBoard({
             onReturnToWaiting={!isSpectator && isCreator ? onReturnToWaiting : undefined}
             isReturningToWaiting={isRestarting}
             isGuest={isSpectator ? false : isGuest}
-            registerUrl={registerUrl}
             lobbyCode={lobbyCode}
             isRegistered={!isSpectator && !isGuest && !!currentUserId}
             reveal={resultsFresh}
@@ -1249,7 +1246,6 @@ export default function SpyGameBoard({
           onReturnToLobby={onReturnToWaiting}
           onLeave={onLeave}
           isGuest={isGuest}
-          registerUrl={registerUrl}
           inviteCode={lobbyCode}
           gameType="guess_the_spy"
           outcome={viewerResult}

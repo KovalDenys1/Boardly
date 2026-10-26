@@ -88,7 +88,6 @@ interface MemoryGameBoardProps {
   playerProfiles?: Map<string, { avatarUrl?: string | null; isPremium?: boolean }>
   onProfileClick?: (userId: string) => void
   isGuest?: boolean
-  registerUrl?: string
   isSpectator?: boolean
   /** Play Again / Return to Lobby in-flight — disables the overlay actions (#736 phase 2, fixes the double-submit gap). */
   isRestarting?: boolean
@@ -142,7 +141,6 @@ export default function MemoryGameBoard({
   playerProfiles,
   onProfileClick,
   isGuest,
-  registerUrl,
   isSpectator = false,
   isRestarting = false,
   reconcileWithServerSnapshot,
@@ -555,7 +553,6 @@ export default function MemoryGameBoard({
           onReturnToLobby={canStartGame ? onReturnToWaiting : undefined}
           onLeave={onLeave}
           isGuest={isGuest}
-          registerUrl={registerUrl}
           inviteCode={lobbyCode}
           gameType="memory"
           outcome={viewerResult}
@@ -849,7 +846,6 @@ export default function MemoryGameBoard({
                   onReturnToLobby={canStartGame ? onReturnToWaiting : undefined}
                   onLeave={onLeave}
                   isGuest={isGuest}
-                  registerUrl={registerUrl}
                   inviteCode={lobbyCode}
                   gameType="memory"
                   outcome={viewerResult}

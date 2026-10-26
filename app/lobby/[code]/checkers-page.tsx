@@ -927,7 +927,6 @@ export default function CheckersLobbyPage({ code, isSpectator = false, onGameRes
                     onReturnToLobby={handleReturnToWaiting}
                     onLeave={() => setShowLeaveConfirmModal(true)}
                     isGuest={isGuest}
-                    registerUrl={`/auth/register?returnUrl=${encodeURIComponent(`/lobby/${code}`)}`}
                     inviteCode={code}
                     gameType="checkers"
                     outcome={viewerOutcome({ isFinished, isDraw, isSpectator, isSeated: mySide !== null, isViewerWinner: winnerSide && !isDraw ? winnerSide === mySide : null })}

@@ -929,7 +929,6 @@ export default function ConnectFourLobbyPage({ code, isSpectator = false, onGame
                             onReturnToLobby={handleReturnToWaiting}
                             onLeave={() => setShowLeaveConfirmModal(true)}
                             isGuest={isGuest}
-                            registerUrl={`/auth/register?returnUrl=${encodeURIComponent(`/lobby/${code}`)}`}
                             inviteCode={code}
                             gameType="connect_four"
                             outcome={viewerOutcome({ isFinished, isDraw, isSpectator, isSeated: myDisc !== null, isViewerWinner: winnerDisc && !isDraw ? isMyWin : null })}

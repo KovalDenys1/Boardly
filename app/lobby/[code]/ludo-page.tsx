@@ -918,7 +918,6 @@ export default function LudoLobbyPage({ code, isSpectator = false, onGameReset }
                     onReturnToLobby={handleReturnToWaiting}
                     onLeave={() => setShowLeaveConfirmModal(true)}
                     isGuest={isGuest}
-                    registerUrl={`/auth/register?returnUrl=${encodeURIComponent(`/lobby/${code}`)}`}
                     inviteCode={code}
                     gameType="ludo"
                     outcome={viewerOutcome({ isFinished, isDraw: false, isSpectator, isSeated: !!currentUserId && state.players.some((p) => p.id === currentUserId), isViewerWinner: winnerId ? winnerId === currentUserId : null })}
