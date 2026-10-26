@@ -190,6 +190,7 @@
     "no header.themeSystem = \"System\"",
     "no liarsParty.rank = \"#{{position}}\"",
     "no liarsParty.strikeAdded = \"+1 strike\"",
+    "no liarsParty.strikes = \"{{count}} / {{max}} strikes\"",
     "no liarsParty.timeLeft = \"{{seconds}}s\"",
     "no lobby.create.bestOfShort = \"Bo{{rounds}}\"",
     "no premium.breadcrumb = \"Premium\"",

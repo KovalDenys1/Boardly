@@ -779,6 +779,51 @@ describe('LiarsPartyLobbyPage', () => {
       expect(mockFetchWithGuest).not.toHaveBeenCalled()
     })
 
+    it('offers the final results when a strike-out leaves one player in, not another round', async () => {
+      const response = buildScoredRevealResponse({ opensInMs: -1 })
+      Object.assign(response.activeGame.state.data, {
+        activePlayerIds: ['user-1'],
+        eliminatedPlayerIds: ['user-3', 'user-4', 'user-2'],
+        eliminatedAtRound: { 'user-1': null, 'user-2': 1, 'user-3': 1, 'user-4': 1 },
+      })
+      Object.assign(response.activeGame.state.data.roundResults[0], { bluffCaught: true, claimantScoreDelta: -12, claimantStrikeDelta: 1 })
+      mockFetchWithGuest.mockResolvedValue({ ok: true, json: async () => response } as Response)
+      render(<LiarsPartyLobbyPage code="ABCD" />)
+      await waitFor(() => expect(desktop().getByTestId('liars-next-round')).toBeTruthy())
+
+      expect(response.activeGame.state.data.currentRound).toBeLessThan(response.activeGame.state.data.maxRounds)
+      expect(desktop().getByTestId('liars-next-round').textContent).toContain('liarsParty.seeResults')
+      expect(desktop().getByTestId('liars-next-round').textContent).not.toContain('liarsParty.nextRound')
+    })
+
+    it('pops the header seats\' points when the reveal moves them, as the players panel does', async () => {
+      const voting = buildScoredRevealResponse()
+      Object.assign(voting.activeGame.state.data, {
+        phase: 'challenge',
+        currentRoundResolved: false,
+        advanceOpensAt: null,
+        roundResults: [],
+        scores: { 'user-1': 0, 'user-2': 0, 'user-3': 0, 'user-4': 0 },
+        challengeVotes: voting.activeGame.state.data.challengeVotes.slice(0, 2),
+      })
+      mockFetchWithGuest.mockResolvedValue({ ok: true, json: async () => voting } as Response)
+      render(<LiarsPartyLobbyPage code="ABCD" />)
+      await waitFor(() => expect(screen.getByTestId('liars-party-challenge-screen')).toBeTruthy())
+      const sublines = () => [...document.querySelectorAll('.ttt-desktop-layout .game-player-subline')]
+      expect(sublines().some((line) => line.querySelector('.score-pop'))).toBe(false)
+
+      const scored = buildScoredRevealResponse()
+      mockFetchWithGuest.mockResolvedValue({ ok: true, json: async () => scored } as Response)
+      act(() => {
+        broadcastHandlers['game-update']?.({ payload: {} })
+      })
+      await waitFor(() => expect(screen.getByTestId('liars-party-reveal-screen')).toBeTruthy())
+      await waitFor(() => {
+        const popped = sublines().map((line) => line.querySelector('.score-pop')?.textContent)
+        expect(popped).toEqual(['liarsParty.points:{"count":32}', 'liarsParty.points:{"count":14}'])
+      }, { timeout: 3_000 })
+    })
+
     it('opens Next Round when the hold is over and sends advance-round', async () => {
       const response = buildScoredRevealResponse({ opensInMs: 300 })
       mockFetchWithGuest.mockResolvedValue({ ok: true, json: async () => response } as Response)

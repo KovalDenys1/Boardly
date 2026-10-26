@@ -29,7 +29,7 @@ import GameStatusBanner from '@/components/game-chrome/GameStatusBanner'
 import { viewerOutcome } from '@/lib/game-outcome'
 import GameTabs from '@/components/game-chrome/GameTabs'
 import { getThemePageStyle } from '@/lib/lobby-themes'
-import { LIARS_REVEAL_HOLD_MS, LiarsPartyGame, type LiarsPartyGameData, type LiarsPartyRoundResult } from '@/lib/games/liars-party-game'
+import { LIARS_REVEAL_HOLD_MS, LiarsPartyGame, liarsPartyAdvanceEndsGame, type LiarsPartyGameData, type LiarsPartyRoundResult } from '@/lib/games/liars-party-game'
 import { createStuckTurnRecovery, turnSignatureOf } from '@/lib/stuck-turn-recovery'
 import { useTurnSounds } from '@/hooks/useTurnSounds'
 import { useSpectatorResultCue } from '@/hooks/useSpectatorResultCue'
@@ -685,7 +685,7 @@ function NextRoundButton({ label, opensAt, busy, onAdvance, t }: {
   onAdvance: () => void
   t: (key: TranslationKeys, opts?: Record<string, unknown>) => string
 }) {
-  const open = useRpsRoundOpen(opensAt)
+  const open = useRpsRoundOpen(opensAt) || (typeof opensAt === 'number' && opensAt <= Date.now())
   const held = !open && typeof opensAt === 'number'
   const secondsLeft = held ? Math.max(1, Math.ceil((opensAt - Date.now()) / 1000)) : 0
   return (
@@ -1237,7 +1237,11 @@ export default function LiarsPartyPage({ code, isSpectator = false, onGameReset 
       lobbyCode={code}
       accentColor={side === 'left' ? LIARS_PARTY_ACCENT : 'var(--bd-coral)'}
       turnDotColor="var(--bd-mint-deep)"
-      subline={t('liarsParty.points', { count: id ? (standingsData?.scores[id] ?? 0) : 0 })}
+      subline={
+        <ScorePop value={id ? (standingsData?.scores[id] ?? 0) : 0} style={{ display: 'inline-block' }}>
+          {t('liarsParty.points', { count: id ? (standingsData?.scores[id] ?? 0) : 0 })}
+        </ScorePop>
+      }
     />
   )
 
@@ -1430,7 +1434,7 @@ export default function LiarsPartyPage({ code, isSpectator = false, onGameReset 
     // everyone else whenever the host didn't click through. See #642.
     phaseAction = !isSpectator ? (
       <NextRoundButton
-        label={data!.currentRound >= data!.maxRounds ? t('liarsParty.seeResults') : t('liarsParty.nextRound')}
+        label={liarsPartyAdvanceEndsGame(data!) ? t('liarsParty.seeResults') : t('liarsParty.nextRound')}
         opensAt={data!.advanceOpensAt}
         busy={isMoveSubmitting}
         onAdvance={() => void handleMove('advance-round', {})}

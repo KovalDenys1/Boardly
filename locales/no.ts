@@ -4619,7 +4619,7 @@ const no = {
     round: 'Runde {{current}} / {{total}}',
     eliminated: 'Du er eliminert',
     eliminatedAt: 'Eliminert i runde {{round}}',
-    strikes: '{{count}} / {{max}} forsøk',
+    strikes: '{{count}} / {{max}} strikes',
     wins: '{{name}} vinner!',
     playAgain: 'Spill igjen',
     lastPlayerStanding: 'Siste spiller igjen!',

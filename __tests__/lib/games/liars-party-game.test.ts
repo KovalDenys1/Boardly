@@ -135,17 +135,22 @@ describe("LiarsPartyGame (MVP scaffold)", () => {
 
     const phaseStartAt = oneRoundGame.getState().lastMoveAt as number
     const timeoutResult = oneRoundGame.applyTimeoutFallback(30, phaseStartAt + 90_000)
-    const data = getData(oneRoundGame)
 
     // #1202: a claimant who times out has made no claim, so there is
     // nothing to vote on – claim goes straight to reveal, and nobody is scored
     // for a vote that never happened.
     expect(timeoutResult.changed).toBe(true)
-    expect(timeoutResult.timeoutWindowsConsumed).toBe(2)
+    expect(timeoutResult.timeoutWindowsConsumed).toBe(1)
     expect(timeoutResult.phaseTransitions).toBe(1)
-    expect(timeoutResult.revealAdvances).toBe(1)
     expect(timeoutResult.autoSubmittedClaims).toBe(1)
     expect(timeoutResult.autoSubmittedChallenges).toBe(0)
+    // A late run stops at the reveal it made, which holds from the run (#1379).
+    expect(timeoutResult.revealAdvances).toBe(0)
+    expect(getData(oneRoundGame).phase).toBe('reveal')
+
+    const finish = oneRoundGame.applyTimeoutFallback(30, phaseStartAt + 90_000 + 3_000)
+    const data = getData(oneRoundGame)
+    expect(finish.revealAdvances).toBe(1)
     expect(oneRoundGame.getState().status).toBe('finished')
     expect(data.completionReason).toBe('max-rounds-reached')
     expect(data.scores.player1).toBe(0)
@@ -574,6 +579,35 @@ describe("LiarsPartyGame scores the round at the reveal and holds it (#1379)", (
     expect(result.changed).toBe(false)
     expect(snapshot(game).data).toEqual(afterAdvance.data)
     expect(getData(game).roundResults).toHaveLength(1)
+  })
+
+  describe.each([
+    ['the vote clock', (target: LiarsPartyGame): number => {
+      expect(claim(target, 'player1', false)).toBe(true)
+      expect(vote(target, 'player2', 'challenge')).toBe(true)
+      return (target.getState().lastMoveAt as number) + 60_000
+    }],
+    ['a silent claimant', (target: LiarsPartyGame): number => (target.getState().lastMoveAt as number) + 60_000],
+  ])('a reveal made by %s', (_path, toDeadline) => {
+    it.each([0, 1_000, 3_500, 10_000, 90_000])('holds from the moment the timeout runs, %i ms after the deadline, and stops there', (lateMs) => {
+      const game = newGame()
+      const deadline = toDeadline(game)
+      const runAt = deadline + lateMs
+      clock = runAt
+      game.applyTimeoutFallback(60, runAt)
+
+      const data = getData(game)
+      expect(data.phase).toBe('reveal')
+      expect(data.currentRound).toBe(1)
+      expect(data.roundResults).toHaveLength(1)
+      expect(data.roundResults[0].resolvedAt).toBe(deadline)
+      expect(data.advanceOpensAt).toBe(runAt + LIARS_REVEAL_HOLD_MS)
+
+      clock = runAt + LIARS_REVEAL_HOLD_MS - 1
+      expect(advance(game)).toBe(false)
+      clock = runAt + LIARS_REVEAL_HOLD_MS
+      expect(advance(game)).toBe(true)
+    })
   })
 
   it('never ends a reveal before its hold, even on a clock shorter than the hold', () => {

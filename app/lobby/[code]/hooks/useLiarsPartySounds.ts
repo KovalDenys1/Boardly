@@ -19,6 +19,7 @@ export interface LiarsPartySnapshot {
   struckOut: string[]
   /** The reveal on screen carries its round's points, so the standings move during it. */
   scored: boolean
+  scores: Record<string, number>
 }
 
 export interface LiarsPartyCueContext {
@@ -38,6 +39,7 @@ export function liarsPartySnapshot(data: LiarsPartyGameData): LiarsPartySnapshot
     votes: data.challengeVotes.map((vote) => ({ id: vote.playerId, challenge: vote.decision === 'challenge' })),
     struckOut: data.eliminatedPlayerIds.filter((id) => (data.strikes[id] ?? 0) >= data.eliminationThreshold).sort(),
     scored: data.phase === 'reveal' && !!resolved,
+    scores: { ...data.scores },
   }
 }
 
@@ -77,7 +79,8 @@ export function liarsPartyCues(prev: LiarsPartySnapshot, next: LiarsPartySnapsho
     const lastStep = liarsRevealLastStep(next.votes.length)
     cues.push(revealStarts ? { cue: 'player.out', options: { delayMs: staggerDelayMs(lastStep, lastStep) } } : { cue: 'player.out' })
   }
-  if (revealStarts && next.scored) cues.push({ cue: 'score.add', options: { delayMs: LIARS_REVEAL_MS } })
+  const totalsMoved = Object.keys({ ...prev.scores, ...next.scores }).some((id) => (prev.scores[id] ?? 0) !== (next.scores[id] ?? 0))
+  if (revealStarts && next.scored && totalsMoved) cues.push({ cue: 'score.add', options: { delayMs: LIARS_REVEAL_MS } })
   return motionCues(cues, reducedMotion)
 }
 

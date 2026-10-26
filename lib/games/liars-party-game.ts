@@ -7,6 +7,11 @@ export type LiarsPartyChallengeDecision = 'challenge' | 'believe'
 /** From the reveal to Next Round: the verdict, the vote rows and the scoreboard land, then a second to read them. */
 export const LIARS_REVEAL_HOLD_MS = 3_000
 
+/** Whether Next Round on this reveal ends the game instead of starting another round. */
+export function liarsPartyAdvanceEndsGame(data: Pick<LiarsPartyGameData, 'activePlayerIds' | 'currentRound' | 'maxRounds'>): boolean {
+  return data.activePlayerIds.length <= 1 || data.currentRound >= data.maxRounds
+}
+
 export interface LiarsPartyClaim {
   playerId: string
   text: string
@@ -424,7 +429,7 @@ export class LiarsPartyGame extends GameEngine {
         // A claim that was never made has nothing to challenge or believe, so a
         // timed-out claimant skips the vote. A claim that exists goes to it.
         if (data.claim.autoSubmitted || this.getCurrentRoundVoterIds(data).length === 0) {
-          this.enterReveal(data, timeoutAt)
+          this.enterReveal(data, timeoutAt, Math.max(timeoutAt, nowMs))
         } else {
           data.phase = 'challenge'
           data.submittedPlayerIds = []
@@ -462,7 +467,7 @@ export class LiarsPartyGame extends GameEngine {
           break
         }
 
-        this.enterReveal(data, timeoutAt)
+        this.enterReveal(data, timeoutAt, Math.max(timeoutAt, nowMs))
         this.state.lastMoveAt = timeoutAt
 
         result.changed = true
@@ -492,14 +497,14 @@ export class LiarsPartyGame extends GameEngine {
     return result
   }
 
-  /** Every way into the reveal comes through here, so the round is scored as the table first sees it. */
-  private enterReveal(data: LiarsPartyGameData, nowMs: number): void {
+  /** Every way into the reveal comes through here; the hold runs from `shownAt`, so a timeout a lobby read applies late still holds. */
+  private enterReveal(data: LiarsPartyGameData, resolvedAt: number, shownAt: number = resolvedAt): void {
     data.phase = 'reveal'
     data.submittedPlayerIds = []
     if (!data.currentRoundResolved) {
-      this.resolveCurrentRound(data, nowMs)
+      this.resolveCurrentRound(data, resolvedAt)
     }
-    data.advanceOpensAt = nowMs + LIARS_REVEAL_HOLD_MS
+    data.advanceOpensAt = shownAt + LIARS_REVEAL_HOLD_MS
   }
 
   private isRevealHeld(data: LiarsPartyGameData, nowMs: number): boolean {

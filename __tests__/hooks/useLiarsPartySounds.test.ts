@@ -19,6 +19,7 @@ const game = (patch: {
   votes?: Vote[]
   eliminated?: string[]
   strikes?: Record<string, number>
+  scores?: Record<string, number>
   results?: Array<{ round: number; claimantId: string; claimantScoreDelta: number; voterScoreDeltas: Record<string, number> }>
 }): LiarsPartyGameData =>
   ({
@@ -28,6 +29,7 @@ const game = (patch: {
     challengeVotes: (patch.votes ?? []).map((vote) => ({ ...vote, submittedAt: 1 })),
     eliminatedPlayerIds: patch.eliminated ?? [],
     strikes: patch.strikes ?? {},
+    scores: patch.scores ?? {},
     eliminationThreshold: 2,
     roundResults: patch.results ?? [],
   }) as unknown as LiarsPartyGameData
@@ -109,13 +111,14 @@ describe('useLiarsPartySounds (#1464)', () => {
 
   it('plays the strike-out with its card and the score cue as the standings move, when the reveal arrives scored (#1379)', () => {
     const votes: Vote[] = [{ playerId: 'a', decision: 'challenge' }, { playerId: 'b', decision: 'challenge' }]
-    const { rerender } = setup(game({ phase: 'challenge', claim: { playerId: 'me' }, votes: votes.slice(0, 1), strikes: { me: 1 } }))
+    const { rerender } = setup(game({ phase: 'challenge', claim: { playerId: 'me' }, votes: votes.slice(0, 1), strikes: { me: 1 }, scores: { me: 20, a: 0, b: 0 } }))
     rerender(game({
       phase: 'reveal',
       claim: { playerId: 'me', isBluff: true },
       votes,
       eliminated: ['me'],
       strikes: { me: 2 },
+      scores: { me: 8, a: 14, b: 14 },
       results: [{ round: 1, claimantId: 'me', claimantScoreDelta: -12, voterScoreDeltas: { a: 14, b: 14 } }],
     }))
     expect(play.mock.calls).toEqual([
@@ -127,10 +130,16 @@ describe('useLiarsPartySounds (#1464)', () => {
     ])
   })
 
-  it('moves the score cue for a timed-out claim too, which has no verdict', () => {
-    const { rerender } = setup(game({ phase: 'claim' }))
-    rerender(game({ phase: 'reveal', claim: { playerId: 'b', autoSubmitted: true }, results: [{ round: 1, claimantId: 'b', claimantScoreDelta: -4, voterScoreDeltas: {} }] }))
+  it('plays the score cue for a timed-out claimant whose total drops, and not for one already at zero', () => {
+    const silent = { claim: { playerId: 'b', autoSubmitted: true }, results: [{ round: 1, claimantId: 'b', claimantScoreDelta: -4, voterScoreDeltas: {} }] }
+    const { rerender } = setup(game({ phase: 'claim', scores: { b: 10 } }))
+    rerender(game({ phase: 'reveal', ...silent, scores: { b: 6 } }))
     expect(play.mock.calls).toEqual([['score.add', { delayMs: LIARS_REVEAL_MS }]])
+
+    play.mockClear()
+    const floored = setup(game({ phase: 'claim', scores: { b: 0 } }))
+    floored.rerender(game({ phase: 'reveal', ...silent, scores: { b: 0 } }))
+    expect(play).not.toHaveBeenCalled()
   })
 
   it('gives a spectator the table and the verdict but no round result, and no verdict for a timed-out claim', () => {
