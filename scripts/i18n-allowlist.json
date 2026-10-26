@@ -2,7 +2,6 @@
   "files": {
     "app/api/og/lobby/[code]/route.tsx": "Route handler returning an ImageResponse. It renders one cached PNG per lobby code for link-preview crawlers (Slack, Discord, iMessage), not for a signed-in viewer, so there is no locale to render in and useTranslation() cannot run outside a component.",
     "app/root-document.tsx": "The document every root layout renders. The only string is the brand wordmark in the pre-hydration header skeleton, which renders before any locale is known and outside a client component, so useTranslation() cannot run here.",
-    "app/opengraph-image.tsx": "Next.js metadata image convention: a build-time ImageResponse, one static PNG for the whole site. No request, no viewer and no React component, so there is no locale to pick and no hook to call.",
-    "app/twitter-image.tsx": "Next.js metadata image convention: a build-time ImageResponse, one static PNG for the whole site. No request, no viewer and no React component, so there is no locale to pick and no hook to call."
+    "lib/site-card.tsx": "The site-wide link preview, an ImageResponse served by app/opengraph-image and app/twitter-image. One PNG for the whole site: no viewer and no React component, so there is no locale to pick and no hook to call."
   }
 }

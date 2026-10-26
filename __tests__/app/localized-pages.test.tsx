@@ -1,4 +1,4 @@
-import { readFileSync, readdirSync, statSync } from 'node:fs'
+import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs'
 import path from 'node:path'
 import type { ReactNode } from 'react'
 import type { Metadata } from 'next'
@@ -49,14 +49,15 @@ const gameParams = (game: string) => ({ params: Promise.resolve({ game }) })
 const gameMetadata = (locale: 'ru' | 'uk', game: string): Promise<Metadata> =>
   trees[locale].game.generateMetadata(gameParams(game))
 
-function pageFilesUnder(dir: string, prefix = ''): string[] {
+function filesUnder(dir: string, prefix = ''): string[] {
   return readdirSync(dir).flatMap((entry) => {
     const absolute = path.join(dir, entry)
     const relative = prefix ? `${prefix}/${entry}` : entry
-    if (statSync(absolute).isDirectory()) return pageFilesUnder(absolute, relative)
-    return entry === 'page.tsx' ? [relative] : []
+    return statSync(absolute).isDirectory() ? filesUnder(absolute, relative) : [relative]
   })
 }
+
+const pageFilesUnder = (dir: string) => filesUnder(dir).filter((file) => file.endsWith('page.tsx'))
 
 const siteGameSlugs = readdirSync(path.join(appDir, '(site)', 'games')).filter((entry) => {
   const page = path.join(appDir, '(site)', 'games', entry, 'page.tsx')
@@ -70,11 +71,10 @@ const siteGameSlugs = readdirSync(path.join(appDir, '(site)', 'games')).filter((
 const gameSlugs = (trees.ru.game.generateStaticParams() as { game: string }[]).map((p) => p.game)
 
 describe('the /ru and /uk set (#1394)', () => {
-  it('gives ru and uk a URL prefix and no other language one', () => {
-    const prefixes = readdirSync(appDir).filter(
-      (entry) => statSync(path.join(appDir, entry)).isDirectory() && !entry.startsWith('(') && !['api', 'og'].includes(entry)
-    )
-    expect(prefixes.sort()).toEqual(['ru', 'uk'])
+  it('has three root layouts: the English site, /ru and /uk, and no other language prefix', () => {
+    const roots = readdirSync(appDir).filter((entry) => existsSync(path.join(appDir, entry, 'layout.tsx')))
+    expect(roots.sort()).toEqual(['(site)', 'ru', 'uk'])
+    expect(existsSync(path.join(appDir, 'layout.tsx'))).toBe(false)
   })
 
   it('has /, /games and /games/<game> under each prefix and nothing else, so /ru/guides/... is a 404', () => {
@@ -88,11 +88,13 @@ describe('the /ru and /uk set (#1394)', () => {
     }
   })
 
-  it('builds /uk exactly like /ru', () => {
+  it('builds /uk exactly like /ru, error page included', () => {
+    expect(filesUnder(path.join(appDir, 'ru'))).toContain('error.tsx')
     const capital = (word: string) => word[0].toUpperCase() + word.slice(1)
     const swap = (source: string, from: string, to: string) =>
       source.split(from).join(to).split(capital(from)).join(capital(to))
-    for (const file of ['layout.tsx', ...pageFilesUnder(path.join(appDir, 'ru'))]) {
+    expect(filesUnder(path.join(appDir, 'uk')).sort()).toEqual(filesUnder(path.join(appDir, 'ru')).sort())
+    for (const file of filesUnder(path.join(appDir, 'ru'))) {
       const ruSource = readFileSync(path.join(appDir, 'ru', file), 'utf8')
       const ukSource = readFileSync(path.join(appDir, 'uk', file), 'utf8')
       expect(swap(ukSource, 'uk', 'ru')).toBe(ruSource)

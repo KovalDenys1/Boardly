@@ -1,15 +1,9 @@
 import { ImageResponse } from 'next/og'
 
-export const runtime = 'edge'
+import { SITE_CARD_SIZE } from './site-social-image'
 
-export const alt = 'Boardly — Play Board Games Online with Friends'
-export const size = {
-  width: 1200,
-  height: 630,
-}
-export const contentType = 'image/png'
-
-export default async function Image() {
+/** The site-wide link preview served at /opengraph-image and /twitter-image. */
+export function siteCardResponse(): ImageResponse {
   return new ImageResponse(
     (
       <div
@@ -130,6 +124,6 @@ export default async function Image() {
         </div>
       </div>
     ),
-    { ...size }
+    { ...SITE_CARD_SIZE }
   )
 }

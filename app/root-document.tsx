@@ -10,6 +10,7 @@ import { siteJsonLd } from '@/lib/organization-json-ld'
 import { isProductionDeployment } from '@/lib/feature-flags'
 import { Bricolage_Grotesque, Inter } from 'next/font/google'
 import type { PrefixedLocale } from '@/lib/seo-locales'
+import { siteCardImages } from '@/lib/site-social-image'
 
 const bricolageFont = Bricolage_Grotesque({
   subsets: ['latin'],
@@ -88,13 +89,13 @@ export const siteMetadata: Metadata = {
     title: 'Boardly – Free Online Board Games with Friends',
     description: 'Boardly (boardly.online) – free online board games with friends in real time. No download, no signup.',
     siteName: 'Boardly',
-    // Images are auto-generated from opengraph-image.tsx
+    images: siteCardImages('/opengraph-image'),
   },
   twitter: {
     card: 'summary_large_image',
     title: 'Boardly – Free Online Board Games with Friends',
     description: 'Boardly (boardly.online) – free online board games with friends in real time. No download, no signup.',
-    // Images are auto-generated from twitter-image.tsx
+    images: siteCardImages('/twitter-image'),
     // No `creator`: @boardly on X is not an account Boardly owns, and the tag
     // attributed every share of the site to whoever does own it (#886).
   },

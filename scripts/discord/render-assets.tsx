@@ -264,7 +264,7 @@ function gameTileSvg(game: { id: string; accentHex: string }, canvas: number, si
   return tileSvg({ canvas, side, fill: game.accentHex, inner, ...extra })
 }
 
-/** The dot grid from opengraph-image.tsx, as an SVG pattern. */
+/** The dot grid from lib/site-card.tsx, as an SVG pattern. */
 function dotGrid(id: string, dot: string, spacing = 32, radius = 1.5): { defs: string; rect: (w: number, h: number) => string } {
   return {
     defs: `<pattern id="${id}" width="${spacing}" height="${spacing}" patternUnits="userSpaceOnUse"><circle cx="${spacing / 2}" cy="${spacing / 2}" r="${radius}" fill="${dot}"/></pattern>`,
@@ -552,7 +552,7 @@ function paletteCard(width: number, height: number): Promise<Buffer> {
   )
 }
 
-/** The opengraph-image.tsx composition (dot grid, blobs, B-tile, wordmark, tagline, chips) at any 16:9 size. */
+/** The lib/site-card.tsx composition (dot grid, blobs, B-tile, wordmark, tagline, chips) at any 16:9 size. */
 function brandBoard(width: number, height: number): Promise<Buffer> {
   const k = height / 630 // the OG image is 1200×630; scale from its height
   const tile = Math.round(100 * k)

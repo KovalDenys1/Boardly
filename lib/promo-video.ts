@@ -33,21 +33,27 @@ export function promoVideoFor(language: string | undefined): PromoVideo {
   return PROMO_VIDEOS[base] ?? PROMO_VIDEOS.en
 }
 
-/** The home page is static and prerendered in English, so its structured data names the English cut. */
-export function buildPromoVideoJsonLd() {
-  const video = PROMO_VIDEOS.en
-  return {
-    '@context': 'https://schema.org',
-    '@type': 'VideoObject',
+/** The cut the prerendered page plays: English at /, Russian or Ukrainian at /ru and /uk, named in that language. */
+export function buildPromoVideoJsonLd(
+  locale: 'en' | 'ru' | 'uk' = 'en',
+  text: { name: string; description: string } = {
     name: 'Boardly – game night with friends, one link away',
     description:
       'A one-minute tour of Boardly: pick a game, send the link, and play board and party games with friends in the browser, with no download.',
+  }
+) {
+  const video = PROMO_VIDEOS[locale]
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'VideoObject',
+    name: text.name,
+    description: text.description,
     thumbnailUrl: [video.poster],
     contentUrl: video.src,
     uploadDate: '2026-10-18',
     duration: 'PT1M',
-    inLanguage: 'en',
+    inLanguage: locale,
     publisher: { '@id': ORGANIZATION_ID },
-    url: `${BOARDLY_URL}/`,
+    url: locale === 'en' ? `${BOARDLY_URL}/` : `${BOARDLY_URL}/${locale}`,
   }
 }
