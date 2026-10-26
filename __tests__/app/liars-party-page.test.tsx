@@ -931,3 +931,116 @@ describe('LiarsPartyLobbyPage', () => {
   })
 
 })
+
+// #1521: every broadcast sends the page to read the lobby again, and on a slow
+// server two of those reads can cross.
+describe('LiarsPartyLobbyPage – an older lobby answer never replaces the round on screen (#1521)', () => {
+  const mockFetchWithGuest = fetchWithGuest as jest.MockedFunction<typeof fetchWithGuest>
+
+  beforeEach(() => {
+    jest.clearAllMocks()
+    Object.keys(broadcastHandlers).forEach((key) => delete broadcastHandlers[key])
+  })
+
+  it('stays on the reveal when the lobby answer from before it lands last', async () => {
+    const claim = buildPlayingResponse()
+    claim.activeGame.state.lastMoveAt = Date.now() - 2_000
+    const reveal = buildRevealResponse()
+    reveal.activeGame.state.lastMoveAt = (claim.activeGame.state.lastMoveAt as number) + 1_000
+
+    mockFetchWithGuest.mockResolvedValue({ ok: true, json: async () => claim } as Response)
+    render(<LiarsPartyLobbyPage code="ABCD" />)
+    await waitFor(() => expect(screen.queryByTestId('liars-party-reveal-screen')).toBeNull())
+    await waitFor(() => expect(broadcastHandlers['game-update']).toBeDefined())
+
+    const answers: Array<(response: Response) => void> = []
+    mockFetchWithGuest.mockImplementation(async (url: string) => {
+      if (String(url).startsWith('/api/lobby/ABCD?')) return new Promise<Response>((resolve) => { answers.push(resolve) })
+      return { ok: true, json: async () => ({}) } as Response
+    })
+
+    await act(async () => {
+      broadcastHandlers['game-update']?.({ payload: { action: 'state-change', gameId: 'game-1', payload: claim.activeGame.state } })
+      broadcastHandlers['game-update']?.({ payload: { action: 'state-change', gameId: 'game-1', payload: reveal.activeGame.state } })
+    })
+    await waitFor(() => expect(answers.length).toBeGreaterThanOrEqual(2))
+
+    await act(async () => answers.slice(1).forEach((answer) => answer({ ok: true, status: 200, json: async () => reveal } as Response)))
+    await waitFor(() => expect(screen.getByTestId('liars-party-reveal-screen')).toBeTruthy())
+
+    await act(async () => answers[0]({ ok: true, status: 200, json: async () => claim } as Response))
+    expect(screen.getByTestId('liars-party-reveal-screen')).toBeTruthy()
+  })
+})
+
+// #1521 review: another player's vote completes the phase while this player's vote is still out.
+describe('LiarsPartyLobbyPage – the answer to this player\'s own move, older than the reveal on screen (#1521)', () => {
+  const mockFetchWithGuest = fetchWithGuest as jest.MockedFunction<typeof fetchWithGuest>
+
+  beforeEach(() => {
+    jest.clearAllMocks()
+    Object.keys(broadcastHandlers).forEach((key) => delete broadcastHandlers[key])
+  })
+
+  it('keeps the reveal when the answer to this player\'s vote lands after it', async () => {
+    const T0 = Date.now() - 5_000
+    const challenge = buildPlayingResponse()
+    challenge.activeGame.state.lastMoveAt = T0
+    Object.assign(challenge.activeGame.state.data, {
+      phase: 'challenge',
+      claim: { playerId: 'user-2', text: 'I once met a penguin', isBluff: true, submittedAt: T0 },
+      challengeVotes: [{ playerId: 'user-3', decision: 'believe', submittedAt: T0 }],
+      submittedPlayerIds: ['user-3'],
+    })
+    mockFetchWithGuest.mockResolvedValue({ ok: true, json: async () => challenge } as Response)
+    render(<LiarsPartyLobbyPage code="ABCD" />)
+    await waitFor(() => expect(screen.getByTestId('liars-party-challenge-screen')).toBeTruthy())
+    await waitFor(() => expect(broadcastHandlers['game-update']).toBeDefined())
+
+    const lobbyAnswers: Array<(r: Response) => void> = []
+    let answerVote: ((r: Response) => void) | null = null
+    mockFetchWithGuest.mockImplementation(async (url: string, init?: RequestInit) => {
+      if (String(url).startsWith('/api/lobby/ABCD?')) return new Promise<Response>((resolve) => { lobbyAnswers.push(resolve) })
+      if (String(url) === '/api/game/game-1/state' && init?.method === 'POST') return new Promise<Response>((resolve) => { answerVote = resolve })
+      return { ok: true, json: async () => ({}) } as Response
+    })
+
+    // user-1 votes; the request is slow.
+    await act(async () => {
+      fireEvent.click(desktop().getByText('liarsParty.challenge'))
+    })
+    await waitFor(() => expect(answerVote).not.toBeNull())
+
+    // Server: user-1's vote commits at T0+1000, then user-4's vote completes the phase at T0+2000.
+    const afterMyVote = JSON.parse(JSON.stringify(challenge.activeGame.state))
+    afterMyVote.lastMoveAt = T0 + 1_000
+    afterMyVote.data.challengeVotes.push({ playerId: 'user-1', decision: 'challenge', submittedAt: T0 + 1_000 })
+    afterMyVote.data.submittedPlayerIds = ['user-3', 'user-1']
+
+    const reveal = JSON.parse(JSON.stringify(challenge))
+    reveal.activeGame.state.lastMoveAt = T0 + 2_000
+    Object.assign(reveal.activeGame.state.data, {
+      phase: 'reveal',
+      challengeVotes: [
+        { playerId: 'user-3', decision: 'believe', submittedAt: T0 },
+        { playerId: 'user-1', decision: 'challenge', submittedAt: T0 + 1_000 },
+        { playerId: 'user-4', decision: 'believe', submittedAt: T0 + 2_000 },
+      ],
+      submittedPlayerIds: [],
+    })
+
+    // user-4's broadcast makes the page read the lobby; that read is answered first.
+    await act(async () => {
+      broadcastHandlers['game-update']?.({ payload: { action: 'state-change', gameId: 'game-1', payload: reveal.activeGame.state } })
+    })
+    await waitFor(() => expect(lobbyAnswers.length).toBeGreaterThan(0))
+    await act(async () => lobbyAnswers.forEach((answer) => answer({ ok: true, status: 200, json: async () => reveal } as Response)))
+    await waitFor(() => expect(screen.getByTestId('liars-party-reveal-screen')).toBeTruthy())
+
+    // The answer to user-1's own vote lands last: it is older than the reveal on screen.
+    await act(async () => {
+      answerVote!({ ok: true, status: 200, json: async () => ({ game: { id: 'game-1', status: 'playing', state: afterMyVote } }) } as Response)
+    })
+    expect(screen.queryByTestId('liars-party-reveal-screen')).toBeTruthy()
+  })
+})

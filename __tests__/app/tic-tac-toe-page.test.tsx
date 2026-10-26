@@ -371,4 +371,158 @@ describe('TicTacToeLobbyPage', () => {
       expect(popHosts()).toHaveLength(0)
     })
   })
+
+  // #1521: a lobby read that left before the move and is answered after it
+  // carries the board from before the move; it used to be applied as trusted.
+  describe('a lobby answer older than the board on screen (#1521)', () => {
+    it('keeps the mark when the lobby answer from before the move lands after the move answer', async () => {
+      const before = buildLobbyResponse()
+      mockFetchWithGuest.mockResolvedValue({ ok: true, json: async () => before } as Response)
+      render(<TicTacToeLobbyPage code="ABCD" />)
+      await waitFor(() => expect(screen.getByTestId('ttt-board')).toBeTruthy())
+      await waitFor(() => expect(broadcastHandlers['game-update']).toBeDefined())
+
+      let answerLobby: (response: Response) => void = () => {}
+      let answerMove: (response: Response) => void = () => {}
+      mockFetchWithGuest.mockImplementation(async (url: string, init?: RequestInit) => {
+        if (String(url).endsWith('/state') && init?.method === 'POST') {
+          return new Promise<Response>((resolve) => { answerMove = resolve })
+        }
+        if (String(url).startsWith('/api/lobby/ABCD?')) {
+          return new Promise<Response>((resolve) => { answerLobby = resolve })
+        }
+        return { ok: true, json: async () => ({}) } as Response
+      })
+
+      // An update with no state on it sends the page to read the lobby; that read is slow.
+      await act(async () => {
+        broadcastHandlers['game-update']?.({ payload: { action: 'player-update' } })
+      })
+      await waitFor(() => expect(mockFetchWithGuest).toHaveBeenCalledWith(expect.stringMatching(/^\/api\/lobby\/ABCD\?/), expect.anything()))
+
+      const cellA1 = () => screen.getAllByRole('button', { name: 'cell A1' })[0]
+      fireEvent.click(cellA1())
+      await waitFor(() => expect(cellA1().querySelector('.ttt-cell-coord')).toBeNull())
+
+      const server = new TicTacToeGame('game-1')
+      server.restoreState(before.activeGame.state)
+      server.makeMove({ playerId: 'user-1', type: 'place', data: { row: 0, col: 0 }, timestamp: new Date() })
+      const afterMove = server.getState() as { lastMoveAt?: number }
+      afterMove.lastMoveAt = (before.activeGame.state.lastMoveAt as number) + 1_000
+      await act(async () => {
+        answerMove({ ok: true, status: 200, json: async () => ({ game: { state: afterMove, status: 'playing' } }) } as Response)
+      })
+      expect(cellA1().querySelector('.ttt-cell-coord')).toBeNull()
+
+      await act(async () => {
+        answerLobby({ ok: true, status: 200, json: async () => before } as Response)
+      })
+      expect(cellA1().querySelector('.ttt-cell-coord')).toBeNull()
+    })
+  })
+})
+
+function finishedRound1() {
+  const response = buildLobbyResponse()
+  const engine = new TicTacToeGame('game-1')
+  engine.restoreState(response.activeGame.state)
+  const moves: Array<[string, number, number]> = [['user-1', 0, 0], ['user-2', 1, 0], ['user-1', 0, 1], ['user-2', 1, 1], ['user-1', 0, 2]]
+  for (const [playerId, row, col] of moves) {
+    engine.makeMove({ playerId, type: 'place', data: { row, col }, timestamp: new Date() })
+  }
+  response.activeGame.state = engine.getState()
+  response.activeGame.status = engine.getState().status
+  return response
+}
+
+// #1521 review: a lobby read that left during round 1 and lands in round 2 is older than the board;
+// dropping its board is not enough – its 'finished' status must not come back either.
+describe('TicTacToeLobbyPage – an older lobby answer from a finished round (#1521)', () => {
+  const mockFetchWithGuest = fetchWithGuest as jest.MockedFunction<typeof fetchWithGuest>
+
+  beforeEach(() => {
+    jest.clearAllMocks()
+    Object.keys(broadcastHandlers).forEach((key) => delete broadcastHandlers[key])
+  })
+
+  it('does not put the round-1 result back over round 2 after next-round', async () => {
+    const finished = finishedRound1()
+    expect(finished.activeGame.status).toBe('finished')
+    const T1 = finished.activeGame.state.lastMoveAt as number
+    mockFetchWithGuest.mockResolvedValue({ ok: true, json: async () => finished } as Response)
+    render(<TicTacToeLobbyPage code="ABCD" />)
+    await waitFor(() => expect(screen.queryAllByTestId('game-result-overlay').length).toBeGreaterThan(0))
+    await waitFor(() => expect(broadcastHandlers['game-update']).toBeDefined())
+
+    // A lobby read leaves while round 1 is over (any update with no state on it does this).
+    let answerLobby: ((r: Response) => void) | null = null
+    mockFetchWithGuest.mockImplementation(async (url: string) => {
+      if (String(url).startsWith('/api/lobby/ABCD?')) return new Promise<Response>((resolve) => { answerLobby = resolve })
+      return { ok: true, json: async () => ({}) } as Response
+    })
+    await act(async () => {
+      broadcastHandlers['game-update']?.({ payload: { action: 'player-update' } })
+    })
+    await waitFor(() => expect(answerLobby).not.toBeNull())
+
+    // The opponent starts round 2: the state route broadcasts it, newer stamp.
+    const server = new TicTacToeGame('game-1')
+    server.restoreState(finished.activeGame.state)
+    expect(server.makeMove({ playerId: 'user-2', type: 'next-round', data: {}, timestamp: new Date() })).toBe(true)
+    const round2 = server.getState() as Record<string, unknown>
+    round2.lastMoveAt = T1 + 5_000
+    expect(round2.status).toBe('playing')
+    await act(async () => {
+      broadcastHandlers['game-update']?.({ payload: { action: 'state-change', gameId: 'game-1', payload: round2 } })
+    })
+    await waitFor(() => expect(screen.queryAllByTestId('game-result-overlay')).toHaveLength(0))
+
+    // The read that left during round 1 lands now, older than the board.
+    await act(async () => {
+      answerLobby!({ ok: true, status: 200, json: async () => finished } as Response)
+    })
+    expect(screen.queryAllByTestId('game-result-overlay')).toHaveLength(0)
+  })
+
+  it('leaves the board playable on this player\'s turn in round 2', async () => {
+    const finished = finishedRound1()
+    const T1 = finished.activeGame.state.lastMoveAt as number
+    mockFetchWithGuest.mockResolvedValue({ ok: true, json: async () => finished } as Response)
+    render(<TicTacToeLobbyPage code="ABCD" />)
+    await waitFor(() => expect(screen.queryAllByTestId('game-result-overlay').length).toBeGreaterThan(0))
+    await waitFor(() => expect(broadcastHandlers['game-update']).toBeDefined())
+
+    let answerLobby: ((r: Response) => void) | null = null
+    mockFetchWithGuest.mockImplementation(async (url: string) => {
+      if (String(url).startsWith('/api/lobby/ABCD?')) return new Promise<Response>((resolve) => { answerLobby = resolve })
+      return { ok: true, json: async () => ({}) } as Response
+    })
+    await act(async () => {
+      broadcastHandlers['game-update']?.({ payload: { action: 'player-update' } })
+    })
+    await waitFor(() => expect(answerLobby).not.toBeNull())
+
+    const server = new TicTacToeGame('game-1')
+    server.restoreState(finished.activeGame.state)
+    server.makeMove({ playerId: 'user-2', type: 'next-round', data: {}, timestamp: new Date() })
+    const round2 = server.getState() as Record<string, unknown>
+    round2.lastMoveAt = T1 + 5_000
+    await act(async () => {
+      broadcastHandlers['game-update']?.({ payload: { action: 'state-change', gameId: 'game-1', payload: round2 } })
+    })
+    // O opens round 2; now it is the viewer's (X) turn.
+    server.makeMove({ playerId: 'user-2', type: 'place', data: { row: 1, col: 1 }, timestamp: new Date() })
+    const round2o = server.getState() as Record<string, unknown>
+    round2o.lastMoveAt = T1 + 8_000
+    await act(async () => {
+      broadcastHandlers['game-update']?.({ payload: { action: 'state-change', gameId: 'game-1', payload: round2o } })
+    })
+    const cellA1 = () => screen.getAllByRole('button', { name: 'cell A1' })[0] as HTMLButtonElement
+    await waitFor(() => expect(cellA1().disabled).toBe(false))
+
+    await act(async () => {
+      answerLobby!({ ok: true, status: 200, json: async () => finished } as Response)
+    })
+    expect(cellA1().disabled).toBe(false)
+  })
 })

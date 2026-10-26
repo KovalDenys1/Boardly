@@ -50,7 +50,7 @@ import GameTabs from '@/components/game-chrome/GameTabs'
 import { useGameTimer } from './hooks/useGameTimer'
 import { useBotTurn } from './hooks/useBotTurn'
 import { useLobbyChat, useLobbyChatHistory } from './hooks/useLobbyChat'
-import { createFreshnessWatermark, decideFreshness, resetFreshnessWatermark } from '@/lib/game-state-freshness'
+import { createFreshnessWatermark, decideFreshness, keepBoardFromDroppedSnapshot, resetFreshnessWatermark, takeMissedSnapshot } from '@/lib/game-state-freshness'
 import { isLobbyGoneStatus } from '@/lib/lobby-fetch-status'
 import { createStuckTurnRecovery, turnSignatureOf } from '@/lib/stuck-turn-recovery'
 
@@ -260,7 +260,7 @@ export default function ConnectFourLobbyPage({ code, isSpectator = false, onGame
 
     useEffect(() => { activeGameIdRef.current = game?.id ?? null }, [game?.id])
 
-    const loadLobby = useCallback(async () => {
+    const loadLobby = useCallback(async (options: { reconcile?: boolean } = {}) => {
         try {
             const res = await fetchWithGuest(`/api/lobby/${code}?includeFinished=true`, { method: 'GET', headers: { 'Content-Type': 'application/json' } })
             const data = await res.json()
@@ -278,13 +278,23 @@ export default function ConnectFourLobbyPage({ code, isSpectator = false, onGame
             }
             const { lobby: lobbyPayload, activeGame } = normalizeLobbySnapshotResponse(data, { includeFinished: true })
             if (!lobbyPayload) throw new Error('Invalid lobby response')
-            setLobby(lobbyPayload as Lobby)
-            // An explicit resync is authoritative: move the watermark with it (#985).
-            decideFreshness(freshnessRef.current, parseLobbyGameState(activeGame), { trusted: true })
-            setGame(activeGame as Game | null)
             if (typeof lobbyPayload?.code === 'string') {
                 finalizePendingLobbyCreateMetric({ lobbyCode: lobbyPayload.code, fallbackGameType: lobbyPayload.gameType })
             }
+            const freshness = decideFreshness(freshnessRef.current, parseLobbyGameState(activeGame), {
+                snapshot: true,
+                trusted: options.reconcile,
+                moveInFlight: isMoveSubmittingRef.current,
+            })
+            if (!freshness.accept) {
+                clientLogger.debug('Ignoring stale lobby snapshot', { gameId: activeGame?.id, reason: freshness.reason })
+                if (freshness.reason === 'move-in-flight') setLobby(lobbyPayload as Lobby)
+                setGame((prevGame) => keepBoardFromDroppedSnapshot(prevGame, activeGame, freshness))
+                setLoading(false)
+                return
+            }
+            setLobby(lobbyPayload as Lobby)
+            setGame(activeGame as Game | null)
             if (activeGame?.state) {
                 const engine = new ConnectFourGame(activeGame.id)
                 const parsedState = typeof activeGame.state === 'string' ? JSON.parse(activeGame.state || '{}') : activeGame.state
@@ -429,11 +439,11 @@ export default function ConnectFourLobbyPage({ code, isSpectator = false, onGame
                 trackMoveSubmitApplied({ gameType: 'connect_four', moveType: move.type, durationMs: Date.now() - submitStartedAt, isGuest, success: false, applied: false, statusCode: responseStatus, source: 'connect_four_page' })
                 clientLogger.error('Move failed:', data?.error)
                 if (!isAutoAction) showToast.error('games.connect_four.game.moveFailed', undefined, { message: (typeof data?.details === 'string' && data.details) || (typeof data?.error === 'string' && data.error) || 'Failed to submit move' })
-                await loadLobby()
+                await loadLobby({ reconcile: true })
                 return false
             }
             const authoritativeState = data?.game?.state
-            if (authoritativeState && !applyAuthoritativeState(game.id, authoritativeState, data?.game?.status, { trusted: true })) await loadLobby()
+            if (authoritativeState && !applyAuthoritativeState(game.id, authoritativeState, data?.game?.status, { trusted: true })) await loadLobby({ reconcile: true })
             trackMoveSubmitApplied({ gameType: 'connect_four', moveType: move.type, durationMs: Date.now() - submitStartedAt, isGuest, success: true, applied: true, statusCode: responseStatus, source: 'connect_four_page' })
             if (move.type === 'request-undo') {
                 if (data?.autoResponse?.type === 'undo') {
@@ -465,11 +475,12 @@ export default function ConnectFourLobbyPage({ code, isSpectator = false, onGame
             trackMoveSubmitApplied({ gameType: 'connect_four', moveType: move.type, durationMs: Date.now() - submitStartedAt, isGuest, success: false, applied: false, statusCode: responseStatus, source: 'connect_four_page' })
             clientLogger.error('Error making move:', error)
             if (!isAutoAction) showToast.errorFrom(error, 'games.connect_four.game.moveFailed')
-            await loadLobby()
+            await loadLobby({ reconcile: true })
             return false
         } finally {
             isMoveSubmittingRef.current = false
             setIsMoveSubmitting(false)
+            if (takeMissedSnapshot(freshnessRef.current)) void loadLobby()
         }
     }, [applyAuthoritativeState, gameEngine, game, code, getCurrentUserId, loadLobby, isGuest])
 
@@ -586,7 +597,7 @@ export default function ConnectFourLobbyPage({ code, isSpectator = false, onGame
             const data = await response.json().catch(() => null)
             if (response.ok) {
                 const authoritativeState = data?.game?.state
-                if (!authoritativeState || !applyAuthoritativeState(game.id, authoritativeState, data?.game?.status, { trusted: true })) await loadLobby()
+                if (!authoritativeState || !applyAuthoritativeState(game.id, authoritativeState, data?.game?.status, { trusted: true })) await loadLobby({ reconcile: true })
                 showToast.success('lobby.game.next_round')
                 return
             }
@@ -600,7 +611,7 @@ export default function ConnectFourLobbyPage({ code, isSpectator = false, onGame
             })
             const newGameData = await newGameResponse.json().catch(() => null)
             if (!newGameResponse.ok) throw new Error((typeof newGameData?.details === 'string' && newGameData.details) || 'Failed to start rematch')
-            await loadLobby()
+            await loadLobby({ reconcile: true })
             showToast.success('games.connect_four.game.playAgain')
         } catch (error) {
             clientLogger.error('Failed to start Connect Four rematch:', error)

@@ -31,6 +31,7 @@ import GameTabs from '@/components/game-chrome/GameTabs'
 import { getThemePageStyle } from '@/lib/lobby-themes'
 import { LiarsPartyGame, type LiarsPartyGameData, type LiarsPartyRoundResult } from '@/lib/games/liars-party-game'
 import { createStuckTurnRecovery, turnSignatureOf } from '@/lib/stuck-turn-recovery'
+import { createFreshnessWatermark, decideFreshness, keepBoardFromDroppedSnapshot, resetFreshnessWatermark, takeMissedSnapshot } from '@/lib/game-state-freshness'
 import { useTurnSounds } from '@/hooks/useTurnSounds'
 import { useSpectatorResultCue } from '@/hooks/useSpectatorResultCue'
 import { playCue } from '@/lib/sound-engine'
@@ -705,6 +706,8 @@ export default function LiarsPartyPage({ code, isSpectator = false, onGameReset 
   const [gameEngine, setGameEngine] = useState<LiarsPartyGame | null>(null)
   const [isStarting, setIsStarting] = useState(false)
   const [isMoveSubmitting, setIsMoveSubmitting] = useState(false)
+  const isMoveSubmittingRef = React.useRef(false)
+  const freshnessRef = React.useRef(createFreshnessWatermark())
   const [showLeaveConfirmModal, setShowLeaveConfirmModal] = useState(false)
   const [mobileTab, setMobileTab] = useState<LiarsMobileTab>('game')
   const [overlayInspecting, setOverlayInspecting] = useState(false)
@@ -770,8 +773,13 @@ export default function LiarsPartyPage({ code, isSpectator = false, onGameReset 
     router.replace('/games')
   }, [router])
 
-  const applyAuthoritativeState = useCallback((gameId: string, authoritativeState: unknown) => {
-    if (!authoritativeState || typeof authoritativeState !== 'object') return
+  const applyAuthoritativeState = useCallback((gameId: string, authoritativeState: unknown, options?: { trusted?: boolean }): boolean => {
+    if (!authoritativeState || typeof authoritativeState !== 'object') return false
+    const freshness = decideFreshness(freshnessRef.current, authoritativeState, { trusted: options?.trusted, moveInFlight: isMoveSubmittingRef.current })
+    if (!freshness.accept) {
+      clientLogger.debug("Ignoring stale Liar's Party state", { gameId, reason: freshness.reason })
+      return false
+    }
     const fresh = new LiarsPartyGame(gameId)
     fresh.restoreState(authoritativeState as Parameters<LiarsPartyGame['restoreState']>[0])
     setGameEngine(fresh)
@@ -779,9 +787,10 @@ export default function LiarsPartyPage({ code, isSpectator = false, onGameReset 
       if (!prev || prev.id !== gameId) return prev
       return { ...prev, status: fresh.getState().status, state: authoritativeState }
     })
+    return true
   }, [])
 
-  const loadLobby = useCallback(async () => {
+  const loadLobby = useCallback(async (options: { reconcile?: boolean } = {}) => {
     try {
       const res = await fetchWithGuest(`/api/lobby/${code}?includeFinished=true`)
       const data = await res.json()
@@ -800,21 +809,28 @@ export default function LiarsPartyPage({ code, isSpectator = false, onGameReset 
         return
       }
 
-      setLobby(lobbyData)
-      setGame(activeGame ?? null)
       if (typeof lobbyData.code === 'string') {
         finalizePendingLobbyCreateMetric({ lobbyCode: lobbyData.code, fallbackGameType: lobbyData.gameType })
       }
 
-      if (activeGame?.state) {
-        const parsedState = typeof activeGame.state === 'string'
-          ? JSON.parse(activeGame.state || '{}')
-          : activeGame.state
-        if (parsedState && typeof parsedState === 'object') {
-          const fresh = new LiarsPartyGame(activeGame.id)
-          fresh.restoreState(parsedState as Parameters<LiarsPartyGame['restoreState']>[0])
-          setGameEngine(fresh)
-        }
+      const parsedState = activeGame?.state
+        ? (typeof activeGame.state === 'string' ? JSON.parse(activeGame.state || '{}') : activeGame.state)
+        : null
+      const freshness = decideFreshness(freshnessRef.current, parsedState, { snapshot: true, trusted: options.reconcile, moveInFlight: isMoveSubmittingRef.current })
+      if (!freshness.accept) {
+        clientLogger.debug("Ignoring stale Liar's Party lobby snapshot", { gameId: activeGame?.id, reason: freshness.reason })
+        if (freshness.reason === 'move-in-flight') setLobby(lobbyData)
+        setGame(prev => keepBoardFromDroppedSnapshot(prev, activeGame, freshness))
+        setLoading(false)
+        return
+      }
+
+      setLobby(lobbyData)
+      setGame(activeGame ?? null)
+      if (activeGame && parsedState && typeof parsedState === 'object') {
+        const fresh = new LiarsPartyGame(activeGame.id)
+        fresh.restoreState(parsedState as Parameters<LiarsPartyGame['restoreState']>[0])
+        setGameEngine(fresh)
       }
 
       setLoading(false)
@@ -843,7 +859,7 @@ export default function LiarsPartyPage({ code, isSpectator = false, onGameReset 
     const activeGameId = activeGameIdRef.current
     if (payload?.action === 'state-change' && activeGameId) {
       const state = (payload?.payload as Record<string, unknown>)?.state
-      if (state) { applyAuthoritativeState(activeGameId, state); return }
+      if (state && applyAuthoritativeState(activeGameId, state)) return
     }
     void loadLobby()
   }, [applyAuthoritativeState, loadLobby])
@@ -882,6 +898,7 @@ export default function LiarsPartyPage({ code, isSpectator = false, onGameReset 
   }, [loadLobby, triggerLifecycleRedirect, minPlayersRequired, isLeavingLobbyRef, getCurrentUserId])
 
   const handleGameReset = useCallback(() => {
+    resetFreshnessWatermark(freshnessRef.current)
     if (onGameReset) onGameReset()
     else router.push(`/lobby/${code}`)
   }, [code, onGameReset, router])
@@ -934,12 +951,13 @@ export default function LiarsPartyPage({ code, isSpectator = false, onGameReset 
   }, [timerTick, game?.status, gameEngine, lobby?.turnTimer, code, loadLobby])
 
   const handleMove = useCallback(async (type: string, payload: Record<string, unknown>): Promise<boolean> => {
-    if (!game || isMoveSubmitting) return false
+    if (!game || isMoveSubmittingRef.current) return false
     const userId = getCurrentUserId()
     if (!userId) return false
 
     const move = { type, playerId: userId, data: payload, timestamp: new Date() }
 
+    isMoveSubmittingRef.current = true
     setIsMoveSubmitting(true)
     try {
       const res = await fetchWithGuest(`/api/game/${game.id}/state`, {
@@ -962,8 +980,8 @@ export default function LiarsPartyPage({ code, isSpectator = false, onGameReset 
       if (res.ok) {
         const result = await res.json()
         const authoritativeState = result?.game?.state
-        if (authoritativeState) {
-          applyAuthoritativeState(game.id, authoritativeState)
+        if (authoritativeState && !applyAuthoritativeState(game.id, authoritativeState, { trusted: true })) {
+          await loadLobby({ reconcile: true })
         }
         return true
       }
@@ -972,16 +990,18 @@ export default function LiarsPartyPage({ code, isSpectator = false, onGameReset 
         return false
       }
       clientLogger.error('LiarsParty move failed', { type })
-      await loadLobby()
+      await loadLobby({ reconcile: true })
       return false
     } catch (err) {
       clientLogger.error('LiarsPartyPage handleMove error', err)
-      await loadLobby()
+      await loadLobby({ reconcile: true })
       return false
     } finally {
+      isMoveSubmittingRef.current = false
       setIsMoveSubmitting(false)
+      if (takeMissedSnapshot(freshnessRef.current)) void loadLobby()
     }
-  }, [game, getCurrentUserId, isGuest, isMoveSubmitting, applyAuthoritativeState, loadLobby])
+  }, [game, getCurrentUserId, isGuest, applyAuthoritativeState, loadLobby])
 
   /**
    * A spectator holds no seat, so there is nothing to give back: their way out

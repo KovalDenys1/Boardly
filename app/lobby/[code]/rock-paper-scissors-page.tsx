@@ -41,7 +41,7 @@ import { trackLobbyLeaveRedirect, trackMoveSubmitApplied } from '@/lib/analytics
 import { resolveLifecycleRedirectReason } from '@/lib/lobby-lifecycle'
 import { getLobbyPlayerRequirements } from '@/lib/lobby-player-requirements'
 import type { GamePlayer, GameUpdatePayload } from '@/types/game'
-import { createFreshnessWatermark, decideFreshness, resetFreshnessWatermark } from '@/lib/game-state-freshness'
+import { createFreshnessWatermark, decideFreshness, keepBoardFromDroppedSnapshot, resetFreshnessWatermark, takeMissedSnapshot } from '@/lib/game-state-freshness'
 import { isLobbyGoneStatus } from '@/lib/lobby-fetch-status'
 import { createStuckTurnRecovery, turnSignatureOf } from '@/lib/stuck-turn-recovery'
 import { playCue } from '@/lib/sound-engine'
@@ -312,7 +312,7 @@ export default function RockPaperScissorsLobbyPage({ code, isSpectator = false, 
         return true
     }, [getCurrentUserId])
 
-    const loadLobby = useCallback(async () => {
+    const loadLobby = useCallback(async (options: { reconcile?: boolean } = {}) => {
         try {
             const res = await fetchWithGuest(`/api/lobby/${code}?includeFinished=true`, {
                 method: 'GET',
@@ -330,7 +330,6 @@ export default function RockPaperScissorsLobbyPage({ code, isSpectator = false, 
             }
             const { lobby: lobbyPayload, activeGame } = normalizeLobbySnapshotResponse(data, { includeFinished: true })
             if (!lobbyPayload?.id || !lobbyPayload?.code) throw new Error('Invalid lobby response')
-            setLobby(lobbyPayload as Lobby)
             finalizePendingLobbyCreateMetric({ lobbyCode: lobbyPayload.code, fallbackGameType: lobbyPayload.gameType })
 
             if (activeGame?.id) {
@@ -343,13 +342,26 @@ export default function RockPaperScissorsLobbyPage({ code, isSpectator = false, 
                             .filter((player) => player.id)
                     }
                     const resolvedStatus = isLifecycleStatus(activeGame.status) ? activeGame.status : parsedState.status
-                    // An explicit resync is authoritative: move the watermark with it (#985).
-                    decideFreshness(freshnessRef.current, parsedState, { trusted: true })
+                    const freshness = decideFreshness(freshnessRef.current, parsedState, {
+                        snapshot: true,
+                        trusted: options.reconcile,
+                        moveInFlight: isSubmittingRef.current,
+                    })
+                    if (!freshness.accept) {
+                        clientLogger.debug('Ignoring stale RPS lobby snapshot', { gameId: activeGame.id, reason: freshness.reason })
+                        if (freshness.reason === 'move-in-flight') setLobby(lobbyPayload as Lobby)
+                        setGame((prevGame) => keepBoardFromDroppedSnapshot(prevGame, { id: activeGame.id, status: resolvedStatus, players }, freshness))
+                        setLoading(false)
+                        return
+                    }
+                    setLobby(lobbyPayload as Lobby)
                     setGame({ id: activeGame.id, status: resolvedStatus, players, state: { ...parsedState, status: resolvedStatus } })
                 } else {
+                    setLobby(lobbyPayload as Lobby)
                     setGame(null)
                 }
             } else {
+                setLobby(lobbyPayload as Lobby)
                 setGame(null)
             }
             setLoading(false)
@@ -502,12 +514,12 @@ export default function RockPaperScissorsLobbyPage({ code, isSpectator = false, 
                 // Not only on 409. A 500, a 400 or a dropped response all leave
                 // this client guessing which round the server is on, and nothing
                 // else re-reads: there is no poll here, only broadcasts.
-                await loadLobby()
+                await loadLobby({ reconcile: true })
                 return false
             }
             const responseGame = payload?.game as { state?: unknown; status?: unknown } | undefined
             const authoritativeState = responseGame?.state
-            if (!authoritativeState || !applyAuthoritativeState(game.id, authoritativeState, responseGame?.status, { trusted: true })) await loadLobby()
+            if (!authoritativeState || !applyAuthoritativeState(game.id, authoritativeState, responseGame?.status, { trusted: true })) await loadLobby({ reconcile: true })
             trackMoveSubmitApplied({ gameType: 'rock_paper_scissors', moveType: 'submit-choice', durationMs: Date.now() - submitStartedAt, isGuest, success: true, applied: true, statusCode: responseStatus, source: 'rock_paper_scissors_page' })
             if (isAutoAction) showToast.info('games.rock_paper_scissors.timeUp')
             return true
@@ -519,11 +531,12 @@ export default function RockPaperScissorsLobbyPage({ code, isSpectator = false, 
                 playCue('ui.error')
                 showToast.errorFrom(error, 'errors.general')
             }
-            await loadLobby()
+            await loadLobby({ reconcile: true })
             return false
         } finally {
             isSubmittingRef.current = false
             setIsSubmitting(false)
+            if (takeMissedSnapshot(freshnessRef.current)) void loadLobby()
         }
     }, [game, getCurrentUserId, isGuest, applyAuthoritativeState, loadLobby])
 
@@ -664,7 +677,7 @@ export default function RockPaperScissorsLobbyPage({ code, isSpectator = false, 
             const data = await response.json().catch(() => null)
             if (!response.ok) throw new Error((typeof data?.details === 'string' && data.details) || (typeof data?.error === 'string' && data.error) || 'Failed to start rematch')
             setOverlayInspecting(false)
-            await loadLobby()
+            await loadLobby({ reconcile: true })
             showToast.success('lobby.game.playAgain')
         } catch (error) {
             clientLogger.error('Failed to start RPS rematch:', error)

@@ -39,6 +39,7 @@ import GameTabs from '@/components/game-chrome/GameTabs'
 import TryBotGamesBanner from '@/app/lobby/[code]/components/TryBotGamesBanner'
 import { getGameMetadata } from '@/lib/game-catalog'
 import { createStuckTurnRecovery } from '@/lib/stuck-turn-recovery'
+import { createFreshnessWatermark, decideFreshness, keepBoardFromDroppedSnapshot, resetFreshnessWatermark, takeMissedSnapshot } from '@/lib/game-state-freshness'
 import { useTurnSounds } from '@/hooks/useTurnSounds'
 import { useFreshKey } from '@/hooks/useFreshKey'
 import { useFreshIds } from '@/hooks/useFreshFor'
@@ -637,6 +638,8 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
   const [gameEngine, setGameEngine] = useState<AliasGame | null>(null)
   const [isStarting, setIsStarting] = useState(false)
   const [isMoveSubmitting, setIsMoveSubmitting] = useState(false)
+  const isMoveSubmittingRef = useRef(false)
+  const freshnessRef = useRef(createFreshnessWatermark())
   const isMobile = useIsMobileViewport()
   const isLandscape = useActiveGameLayout() === 'landscape'
   const [showLeaveConfirmModal, setShowLeaveConfirmModal] = useState(false)
@@ -693,8 +696,16 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
     router.replace('/games')
   }, [router])
 
-  const applyAuthoritativeState = useCallback((gameId: string, authoritativeState: unknown) => {
-    if (!authoritativeState || typeof authoritativeState !== 'object') return
+  const applyAuthoritativeState = useCallback((gameId: string, authoritativeState: unknown, options?: { trusted?: boolean }): boolean => {
+    if (!authoritativeState || typeof authoritativeState !== 'object') return false
+    const freshness = decideFreshness(freshnessRef.current, authoritativeState, {
+      trusted: options?.trusted,
+      moveInFlight: isMoveSubmittingRef.current,
+    })
+    if (!freshness.accept) {
+      clientLogger.debug('Ignoring stale Alias state', { gameId, reason: freshness.reason })
+      return false
+    }
     const fresh = new AliasGame(gameId)
     fresh.restoreState(authoritativeState as any)
     setGameEngine(fresh)
@@ -703,9 +714,11 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
       if (!prev || prev.id !== gameId) return prev
       return { ...prev, status: fresh.getState().status, state: authoritativeState }
     })
+    return true
   }, [])
 
-  const loadLobby = useCallback(async (attempt = 1) => {
+  const loadLobby = useCallback(async (options: { reconcile?: boolean; attempt?: number } = {}) => {
+    const attempt = options.attempt ?? 1
     try {
       const res = await fetchWithGuest(`/api/lobby/${code}?includeFinished=true`)
       const data = await res.json()
@@ -713,7 +726,7 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
       if (res.status === 429 && attempt <= 3) {
         const retryAfterMs = ((data.retryAfter as number | undefined) ?? 2) * 1000
         await new Promise((resolve) => setTimeout(resolve, retryAfterMs))
-        return loadLobby(attempt + 1)
+        return loadLobby({ ...options, attempt: attempt + 1 })
       }
 
       if (!res.ok) {
@@ -730,21 +743,32 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
         return
       }
 
-      setLobby(lobbyData)
-      setGame(activeGame ?? null)
       if (typeof lobbyData.code === 'string') {
         finalizePendingLobbyCreateMetric({ lobbyCode: lobbyData.code, fallbackGameType: lobbyData.gameType })
       }
 
-      if (activeGame?.state) {
-        const parsedState = typeof activeGame.state === 'string'
-          ? JSON.parse(activeGame.state || '{}')
-          : activeGame.state
-        if (parsedState && typeof parsedState === 'object') {
-          const fresh = new AliasGame(activeGame.id)
-          fresh.restoreState(parsedState)
-          setGameEngine(fresh)
-        }
+      const parsedState = activeGame?.state
+        ? (typeof activeGame.state === 'string' ? JSON.parse(activeGame.state || '{}') : activeGame.state)
+        : null
+      const freshness = decideFreshness(freshnessRef.current, parsedState, {
+        snapshot: true,
+        trusted: options.reconcile,
+        moveInFlight: isMoveSubmittingRef.current,
+      })
+      if (!freshness.accept) {
+        clientLogger.debug('Ignoring stale Alias lobby snapshot', { gameId: activeGame?.id, reason: freshness.reason })
+        if (freshness.reason === 'move-in-flight') setLobby(lobbyData)
+        setGame(prev => keepBoardFromDroppedSnapshot(prev, activeGame, freshness))
+        setLoading(false)
+        return
+      }
+
+      setLobby(lobbyData)
+      setGame(activeGame ?? null)
+      if (activeGame && parsedState && typeof parsedState === 'object') {
+        const fresh = new AliasGame(activeGame.id)
+        fresh.restoreState(parsedState)
+        setGameEngine(fresh)
       }
 
       setLoading(false)
@@ -769,7 +793,7 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
     const activeGameId = activeGameIdRef.current
     if (payload?.action === 'state-change' && activeGameId) {
       const state = (payload?.payload as Record<string, unknown>)?.state
-      if (state) { applyAuthoritativeState(activeGameId, state); return }
+      if (state && applyAuthoritativeState(activeGameId, state)) return
     }
     void loadLobby()
   }, [applyAuthoritativeState, loadLobby])
@@ -817,6 +841,7 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
   }, [getCurrentUserId])
 
   const handleGameReset = useCallback(() => {
+    resetFreshnessWatermark(freshnessRef.current)
     if (onGameReset) onGameReset()
     else router.push(`/lobby/${code}`)
   }, [code, onGameReset, router])
@@ -838,24 +863,25 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
   })
 
   const handleMove = useCallback(async (type: string, payload: Record<string, unknown>): Promise<boolean> => {
-    if (!game || isMoveSubmitting) return false
+    if (!game || isMoveSubmittingRef.current) return false
     const userId = getCurrentUserId()
     if (!userId) return false
 
     const move = { type, playerId: userId, data: payload, timestamp: new Date() }
 
-    if (gameEngine) {
-      const optimistic = new AliasGame(game.id)
-      optimistic.restoreState(gameEngine.getState())
-      if (optimistic.validateMove(move)) {
-        optimistic.processMove(move)
-        setGameEngine(optimistic)
-      }
-    }
-
-    setIsMoveSubmitting(true)
     const submitStartedAt = Date.now()
     try {
+      isMoveSubmittingRef.current = true
+      setIsMoveSubmitting(true)
+      if (gameEngine) {
+        const optimistic = new AliasGame(game.id)
+        optimistic.restoreState(gameEngine.getState())
+        if (optimistic.validateMove(move)) {
+          optimistic.processMove(move)
+          setGameEngine(optimistic)
+        }
+      }
+
       const res = await fetchWithGuest(`/api/game/${game.id}/state`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -867,27 +893,29 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
       if (res.ok) {
         const result = await res.json()
         const authoritativeState = result?.game?.state
-        if (authoritativeState) {
-          applyAuthoritativeState(game.id, authoritativeState)
+        if (authoritativeState && !applyAuthoritativeState(game.id, authoritativeState, { trusted: true })) {
+          await loadLobby({ reconcile: true })
         }
         return true
       }
       if (res.status === 409) {
         // STATE_CONFLICT: another player's move already advanced the phase; reconcile silently
-        await loadLobby()
+        await loadLobby({ reconcile: true })
       } else {
         clientLogger.error('Alias move failed', { type, status: res.status })
-        await loadLobby()
+        await loadLobby({ reconcile: true })
       }
       return false
     } catch (err) {
       clientLogger.error('Alias handleMove error', err)
-      await loadLobby()
+      await loadLobby({ reconcile: true })
       return false
     } finally {
+      isMoveSubmittingRef.current = false
       setIsMoveSubmitting(false)
+      if (takeMissedSnapshot(freshnessRef.current)) void loadLobby()
     }
-  }, [game, gameEngine, getCurrentUserId, isGuest, isMoveSubmitting, applyAuthoritativeState, loadLobby])
+  }, [game, gameEngine, getCurrentUserId, isGuest, applyAuthoritativeState, loadLobby])
 
   const handleLeave = useCallback(() => {
     if (isLeavingRef.current) return

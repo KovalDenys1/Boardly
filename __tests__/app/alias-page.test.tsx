@@ -1,6 +1,7 @@
 // @ts-nocheck
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import AliasLobbyPage from '@/app/lobby/[code]/alias-page'
+import { AliasGame } from '@/lib/games/alias'
 import { fetchWithGuest } from '@/lib/fetch-with-guest'
 import { showToast } from '@/lib/i18n-toast'
 import { frameFor, installSignedRealtime } from '@/__tests__/fixtures/signed-realtime'
@@ -960,5 +961,227 @@ describe('AliasLobbyPage phone landscape (#1384)', () => {
     const side = screen.getByTestId('alias-landscape-layout').querySelector('.game-landscape-side') as HTMLElement
     expect(side.querySelector('input[placeholder="alias.guessPlaceholder"]')).toBeTruthy()
     expect(screen.queryByText('game.ui.tabBoard')).toBeNull()
+  })
+})
+
+// #1521: every move's broadcast makes the page ask for the lobby again, and on
+// a slow server that answer can be older than the card already on screen.
+describe('AliasLobbyPage – an older answer never replaces the card on screen (#1521)', () => {
+  const mockFetchWithGuest = fetchWithGuest as jest.MockedFunction<typeof fetchWithGuest>
+  const WORDS = ['lantern', 'guitar', 'sandals', 'kettle', 'mirror', 'violin', 'pillow', 'rocket', 'tunnel', 'garden']
+  let T0 = 0
+  let turnStartedAt = 0
+
+  function snapshotAt(cardIndex: number, lastMoveAt: number) {
+    const base = buildLobbyResponse()
+    base.activeGame.status = 'playing'
+    const state = base.activeGame.state as Record<string, any>
+    state.status = 'playing'
+    state.lastMoveAt = lastMoveAt
+    state.players = [
+      { id: 'user-1', name: 'Alice' },
+      { id: 'user-2', name: 'Bob' },
+      { id: 'user-3', name: 'Carol' },
+      { id: 'user-4', name: 'Dave' },
+    ]
+    state.data.phase = 'turn_active'
+    state.data.turnStartedAt = turnStartedAt
+    state.data.currentCard = WORDS
+    state.data.currentCardIndex = cardIndex
+    state.data.currentCardResults = WORDS.slice(0, cardIndex).map((word) => ({ word, result: 'guessed' }))
+    state.data.teams[0].playerIds = ['user-1', 'user-2']
+    state.data.teams[1].playerIds = ['user-3', 'user-4']
+    return base
+  }
+
+  type Held = { resolve: (status: number, body: unknown) => void }
+  let lobbyReads: Held[]
+  let moves: Held[]
+
+  function hold(queue: Held[]) {
+    return new Promise<Response>((resolve) => {
+      queue.push({
+        resolve: (status, body) => resolve({ ok: status < 400, status, json: async () => body } as Response),
+      })
+    })
+  }
+
+  const card = () => screen.getByTestId('alias-secret-word').textContent
+  const tapGuessed = () => fireEvent.click(screen.getByRole('button', { name: 'alias.guessedCorrectly' }))
+
+  // What POST /api/game/[gameId]/state broadcasts: the state itself, with the card hidden.
+  function broadcastMove(lastMoveAt: number) {
+    const state = snapshotAt(0, lastMoveAt).activeGame.state as Record<string, any>
+    broadcastHandlers['game-update']?.({
+      payload: { action: 'state-change', gameId: 'game-1', payload: { ...state, data: { ...state.data, currentCard: null } } },
+    })
+  }
+
+  async function mountOnFirstWord() {
+    render(<AliasLobbyPage code="ABCD" />)
+    await waitFor(() => expect(lobbyReads).toHaveLength(1))
+    await act(async () => lobbyReads[0].resolve(200, snapshotAt(0, T0)))
+    await waitFor(() => expect(card()).toBe('lantern'))
+    await waitFor(() => expect(broadcastHandlers['game-update']).toBeDefined())
+  }
+
+  beforeEach(() => {
+    jest.clearAllMocks()
+    Object.keys(broadcastHandlers).forEach((key) => delete broadcastHandlers[key])
+    turnStartedAt = Date.now()
+    T0 = turnStartedAt - 1_000
+    lobbyReads = []
+    moves = []
+    mockFetchWithGuest.mockImplementation((url: string, init?: RequestInit) => {
+      const target = String(url)
+      if (target.startsWith('/api/lobby/ABCD?')) return hold(lobbyReads)
+      if (target === '/api/game/game-1/state' && init?.method === 'POST') return hold(moves)
+      return Promise.resolve({ ok: true, status: 200, json: async () => ({}) } as Response)
+    })
+  })
+
+  it('keeps the next word when a lobby answer from before the tap lands while the move is in flight', async () => {
+    await mountOnFirstWord()
+
+    await act(async () => broadcastMove(T0))
+    await waitFor(() => expect(lobbyReads).toHaveLength(2))
+
+    tapGuessed()
+    await waitFor(() => expect(moves).toHaveLength(1))
+    expect(card()).toBe('guitar')
+
+    await act(async () => lobbyReads[1].resolve(200, snapshotAt(0, T0)))
+    expect(card()).toBe('guitar')
+
+    await act(async () => moves[0].resolve(200, { game: { state: snapshotAt(1, T0 + 1_000).activeGame.state } }))
+    expect(card()).toBe('guitar')
+  })
+
+  it('keeps the next word when the move is answered first and the older lobby answer arrives last', async () => {
+    await mountOnFirstWord()
+
+    await act(async () => broadcastMove(T0))
+    await waitFor(() => expect(lobbyReads).toHaveLength(2))
+
+    tapGuessed()
+    await waitFor(() => expect(moves).toHaveLength(1))
+    await act(async () => moves[0].resolve(200, { game: { state: snapshotAt(1, T0 + 1_000).activeGame.state } }))
+    expect(card()).toBe('guitar')
+
+    await act(async () => lobbyReads[1].resolve(200, snapshotAt(0, T0)))
+    expect(card()).toBe('guitar')
+  })
+
+  it('keeps the newer card when two lobby answers cross and the older one lands last', async () => {
+    await mountOnFirstWord()
+
+    await act(async () => broadcastMove(T0))
+    await act(async () => broadcastMove(T0 + 1_000))
+    await waitFor(() => expect(lobbyReads).toHaveLength(3))
+
+    await act(async () => lobbyReads[2].resolve(200, snapshotAt(1, T0 + 1_000)))
+    expect(card()).toBe('guitar')
+
+    await act(async () => lobbyReads[1].resolve(200, snapshotAt(0, T0)))
+    expect(card()).toBe('guitar')
+  })
+
+  it('still takes a lobby answer that changed the turn without a new move stamp', async () => {
+    await mountOnFirstWord()
+
+    await act(async () => broadcastMove(T0))
+    await waitFor(() => expect(lobbyReads).toHaveLength(2))
+
+    // The timeout fallback ends the turn on the server without restamping lastMoveAt.
+    const timedOut = snapshotAt(0, T0)
+    const data = (timedOut.activeGame.state as Record<string, any>).data
+    data.phase = 'turn_results'
+    data.lastTurnResult = { teamId: 'team-1', describerId: 'user-1', wordResults: [], scoreDelta: 0, turnIndex: 0 }
+    await act(async () => lobbyReads[1].resolve(200, timedOut))
+
+    await waitFor(() => expect(screen.getByTestId('alias-turn-results-screen')).toBeTruthy())
+  })
+
+  it('puts the word back when the server refuses the move', async () => {
+    await mountOnFirstWord()
+
+    tapGuessed()
+    await waitFor(() => expect(moves).toHaveLength(1))
+    expect(card()).toBe('guitar')
+
+    await act(async () => moves[0].resolve(409, { code: 'STATE_CONFLICT' }))
+    await waitFor(() => expect(lobbyReads).toHaveLength(2))
+    await act(async () => lobbyReads[1].resolve(200, snapshotAt(0, T0)))
+
+    await waitFor(() => expect(card()).toBe('lantern'))
+  })
+
+  // Every client asks at 0:00; a timeout write that loses its row check answers with the state
+  // from before the timeout under the same lastMoveAt, and that answer can land last.
+  it('stays on the turn results when the read from before the timeout lands after them', async () => {
+    await mountOnFirstWord()
+
+    await act(async () => broadcastMove(T0))
+    await act(async () => broadcastMove(T0))
+    await waitFor(() => expect(lobbyReads).toHaveLength(3))
+
+    const beforeTimeout = snapshotAt(0, T0)
+    ;(beforeTimeout.activeGame.state as Record<string, any>).updatedAt = new Date(T0).toISOString()
+    const afterTimeout = snapshotAt(0, T0)
+    const timedOut = afterTimeout.activeGame.state as Record<string, any>
+    timedOut.updatedAt = new Date(T0 + 60_000).toISOString()
+    timedOut.data.phase = 'turn_results'
+    timedOut.data.lastTurnResult = { teamId: 'team-1', describerId: 'user-1', wordResults: [], scoreDelta: 0, turnIndex: 0 }
+
+    await act(async () => lobbyReads[2].resolve(200, afterTimeout))
+    await waitFor(() => expect(screen.getByTestId('alias-turn-results-screen')).toBeTruthy())
+
+    await act(async () => lobbyReads[1].resolve(200, beforeTimeout))
+    expect(screen.getByTestId('alias-turn-results-screen')).toBeTruthy()
+  })
+
+  it('keeps the lobby from the newer answer when an older one, naming the previous host, lands last', async () => {
+    const teamsAt = (lastMoveAt: number, creatorId: string) => {
+      const base = buildLobbyResponse()
+      base.lobby.creatorId = creatorId
+      base.activeGame.status = 'playing'
+      const state = base.activeGame.state as Record<string, any>
+      state.status = 'playing'
+      state.lastMoveAt = lastMoveAt
+      state.data.teams[0].playerIds = ['user-1', 'user-2']
+      state.data.teams[1].playerIds = ['user-3', 'user-4']
+      return base
+    }
+    render(<AliasLobbyPage code="ABCD" />)
+    await waitFor(() => expect(lobbyReads).toHaveLength(1))
+    await act(async () => lobbyReads[0].resolve(200, teamsAt(T0, 'user-2')))
+    await waitFor(() => expect(screen.getByTestId('alias-team-assignment')).toBeTruthy())
+    await waitFor(() => expect(broadcastHandlers['game-update']).toBeDefined())
+    expect(screen.queryByText('alias.startRounds')).toBeNull()
+
+    await act(async () => broadcastMove(T0))
+    await act(async () => broadcastMove(T0 + 1_000))
+    await waitFor(() => expect(lobbyReads).toHaveLength(3))
+
+    await act(async () => lobbyReads[2].resolve(200, teamsAt(T0 + 1_000, 'user-1')))
+    await waitFor(() => expect(screen.getByText('alias.startRounds')).toBeTruthy())
+
+    await act(async () => lobbyReads[1].resolve(200, teamsAt(T0, 'user-2')))
+    expect(screen.getByText('alias.startRounds')).toBeTruthy()
+  })
+
+  it('lets the describer tap again after the optimistic card could not be drawn', async () => {
+    await mountOnFirstWord()
+    const draw = jest.spyOn(AliasGame.prototype, 'processMove').mockImplementationOnce(() => {
+      throw new Error('optimistic card failed')
+    })
+
+    tapGuessed()
+    await waitFor(() => expect(lobbyReads).toHaveLength(2))
+    await act(async () => lobbyReads[1].resolve(200, snapshotAt(0, T0)))
+    draw.mockRestore()
+
+    tapGuessed()
+    await waitFor(() => expect(moves).toHaveLength(1))
   })
 })
