@@ -174,7 +174,10 @@ gameplay". Moves, scores, results, replays, friends, blocks, invites and achieve
 
 **Crash logs.** Sentry error reports: "the error, the page, browser and operating system"
 (`privacyPolicy.purposes.security.data`; `instrumentation-client.ts`, `sentry.server.config.ts`,
-`sentry.edge.config.ts`, `sendDefaultPii: false` in production, Session Replay off since #1151).
+`sentry.edge.config.ts`; `dataCollection` in `lib/sentry-data-collection.ts` sends no user info,
+cookies or HTTP bodies, and `stripQueryStrings` cuts the query and fragment off every web address
+in an error report, trace or span before it is sent, so page addresses arrive without tokens or
+codes; Session Replay off since #1151).
 
 **Diagnostics.** Speed Insights load times (`privacyPolicy.purposes.analytics.data`) and Sentry
 performance traces at a 10 % sample (`tracesSampleRate: 0.1` in `instrumentation-client.ts`).

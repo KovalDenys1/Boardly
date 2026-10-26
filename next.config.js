@@ -1,4 +1,4 @@
-const { withSentryConfig } = require("@sentry/nextjs")
+const { withSentryConfig } = require("@sentry/nextjs/config")
 const { withBotId } = require("botid/next/config")
 const path = require("path")
 const { socialShortLinkRedirects } = require("./lib/social-short-links")
@@ -164,8 +164,6 @@ const sentryWebpackOptions = {
   sourcemaps: {
     deleteFilesAfterUpload: ['**/*.js.map', '**/*.css.map'],
   },
-
-  automaticVercelMonitors: true,
 }
 
 // The VAPID public key is inlined into the client bundle at build time, so a
