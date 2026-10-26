@@ -11,7 +11,7 @@ interface TermsConsentPanelProps {
   autoFocus?: boolean
   /** 'play' where the text is a move other players see, not a chat message. */
   context?: 'chat' | 'play'
-  /** One row, for a slot sized for a single input. */
+  /** One row of the two links and Accept, for a slot sized for a single input. */
   compact?: boolean
   className?: string
   style?: CSSProperties
@@ -81,11 +81,10 @@ export default function TermsConsentPanel({
   if (compact) {
     return (
       <div role="group" aria-labelledby={promptId} tabIndex={-1} className={`terms-consent focus:outline-hidden ${className}`} style={style}>
-        <div className="flex items-center gap-2">
-          <div className="min-w-0 flex-1">
-            <p id={promptId} className="text-xs leading-snug text-bd-ink">{prompt}</p>
-            <div className="flex flex-wrap gap-x-3 text-[11px] leading-snug font-semibold">{links}</div>
-          </div>
+        {/* The sentence is the group's name for a screen reader; on screen the two links beside Accept say it. */}
+        <p id={promptId} className="sr-only">{prompt}</p>
+        <div className="flex items-center gap-3">
+          <div className="flex min-w-0 flex-1 flex-wrap gap-x-3 text-xs leading-snug font-semibold">{links}</div>
           {button}
         </div>
         {failed}
