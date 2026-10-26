@@ -2,21 +2,30 @@
 
 import { useState, type ReactNode } from 'react'
 import { useTranslation } from '@/lib/i18n-helpers'
+import { useBlockedPlayers } from '@/hooks/useBlockedPlayers'
 
 interface BlockedTextProps {
   /** The author is on the viewer's block list. */
   blocked: boolean
+  /** Who wrote it. Until the viewer's block list is known, anyone else's text folds too. */
+  from: string | null | undefined
+  /** A hover title for the text, given only while the text shows. */
+  title?: string
   children: ReactNode
   className?: string
 }
 
 /** Text a player typed inside a game: from a blocked player it folds to one line and a Show button, so the round stays playable. */
-export default function BlockedText({ blocked, children, className = '' }: BlockedTextProps) {
+export default function BlockedText({ blocked, from, title, children, className = '' }: BlockedTextProps) {
   const { t } = useTranslation()
+  const { ready, unknown, accountId } = useBlockedPlayers({ load: false })
   const [shown, setShown] = useState(false)
 
-  if (!blocked) return <>{children}</>
-  if (shown) return <span className="blocked-text-reveal">{children}</span>
+  const listUnknown = !ready || unknown
+  const folded = blocked || (listUnknown && !!from && from !== accountId)
+
+  if (!folded) return title ? <span title={title}>{children}</span> : <>{children}</>
+  if (shown) return <span className="blocked-text-reveal" title={title}>{children}</span>
 
   return (
     <span

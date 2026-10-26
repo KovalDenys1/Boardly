@@ -222,8 +222,8 @@ function LiarsRoundHistory({ data, players, rules, blockedIds, t }: {
                 <div className="text-bd-ink-soft">
                   {t('liarsParty.claimedBy', { name: playerNameById(players, result.claimantId, t) })}
                 </div>
-                <div className="truncate text-bd-ink" title={blockedIds.has(result.claimantId) ? undefined : result.claimText}>
-                  <BlockedText blocked={blockedIds.has(result.claimantId)}>&ldquo;{result.claimText}&rdquo;</BlockedText>
+                <div className="truncate text-bd-ink">
+                  <BlockedText blocked={blockedIds.has(result.claimantId)} from={result.claimantId} title={result.claimText}>&ldquo;{result.claimText}&rdquo;</BlockedText>
                 </div>
               </>
             )}
@@ -484,7 +484,7 @@ function ClaimUnderVote({ data, players, blockedIds, heading, animate = false, t
     <LiarsCard>
       {heading && <div className="liars-card__title">{heading}</div>}
       <blockquote className={`liars-claim${animate ? ' social-reveal' : ''}`} data-testid="liars-claim-text">
-        <BlockedText blocked={!!data.claim && blockedIds.has(data.claim.playerId)}>&ldquo;{data.claim?.text}&rdquo;</BlockedText>
+        <BlockedText blocked={!!data.claim && blockedIds.has(data.claim.playerId)} from={data.claim?.playerId}>&ldquo;{data.claim?.text}&rdquo;</BlockedText>
       </blockquote>
       <div className="text-sm text-bd-ink-soft" data-testid="liars-claim-by">
         {t('liarsParty.claimedBy', { name: playerNameById(players, data.currentClaimantId, t) })}
@@ -577,7 +577,7 @@ function RevealContent({ data, players, rules, blockedIds, animate = false, t }:
       {data.claim && !data.claim.autoSubmitted && (
         <LiarsCard>
           <blockquote className="liars-claim">
-            <BlockedText blocked={blockedIds.has(data.claim.playerId)}>&ldquo;{data.claim.text}&rdquo;</BlockedText>
+            <BlockedText blocked={blockedIds.has(data.claim.playerId)} from={data.claim.playerId}>&ldquo;{data.claim.text}&rdquo;</BlockedText>
           </blockquote>
           <div
             className={`liars-verdict${animate ? ' social-stamp' : ''}`}

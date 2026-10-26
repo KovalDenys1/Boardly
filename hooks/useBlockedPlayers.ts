@@ -27,12 +27,19 @@ export type UseBlockedPlayers = {
   failed: boolean
   /** True when that failed read had no earlier list to fall back on, not even an empty one: `blocked` is empty because nothing is known. */
   unknown: boolean
+  /** The signed-in account's id; undefined for a guest and while the session loads. */
+  accountId: string | undefined
   /** Reads the list again, in every instance on the page. */
   retry: () => void
   /** Resolves true once the block is kept; false when it could not be, with nothing changed (session loading, account list not loaded, the server refused, or the device would not store it). */
   block: (player: { id: string; username: string }) => Promise<boolean>
   /** Resolves true once the player is unblocked; false when it could not be, with nothing changed (same reasons as `block`). */
   unblock: (id: string) => Promise<boolean>
+}
+
+export type UseBlockedPlayersOptions = {
+  /** False for a component mounted many times over: it reads nothing itself and follows what the page's other instances read. */
+  load?: boolean
 }
 
 const DEVICE_LIMIT = 200
@@ -190,7 +197,7 @@ function peek(key: string, selfId: string | undefined): List | null {
  * device so a chat never shows a blocked player while it waits. As a guest or signed out it lives
  * on this device, and the first load after sign-in moves it to the account.
  */
-export function useBlockedPlayers(): UseBlockedPlayers {
+export function useBlockedPlayers({ load: loads = true }: UseBlockedPlayersOptions = {}): UseBlockedPlayers {
   const { data: session, status } = useSession()
   const selfId = session?.user?.id
   const mode: Mode = status === 'loading' ? 'pending' : status === 'authenticated' ? 'account' : 'device'
@@ -275,7 +282,7 @@ export function useBlockedPlayers(): UseBlockedPlayers {
   }, [mode, selfId, key])
 
   useEffect(() => {
-    if (mode === 'pending') return
+    if (mode === 'pending' || !loads) return
     let cancelled = false
     void (async () => {
       if (mode === 'account') await handOverDeviceList(selfId)
@@ -284,7 +291,7 @@ export function useBlockedPlayers(): UseBlockedPlayers {
     return () => {
       cancelled = true
     }
-  }, [mode, load, selfId])
+  }, [mode, load, selfId, loads])
 
   useEffect(() => {
     if (mode === 'pending') return
@@ -298,20 +305,20 @@ export function useBlockedPlayers(): UseBlockedPlayers {
         setSnapshot(change.list)
         return
       }
-      void load()
+      if (loads) void load()
     }
     window.addEventListener(BLOCKED_PLAYERS_CHANGED_EVENT, onChanged)
     return () => window.removeEventListener(BLOCKED_PLAYERS_CHANGED_EVENT, onChanged)
-  }, [mode, key, load])
+  }, [mode, key, load, loads])
 
   useEffect(() => {
-    if (mode !== 'device') return
+    if (mode !== 'device' || !loads) return
     const onStorage = (event: StorageEvent) => {
       if (event.key === BLOCKED_PLAYERS_STORAGE_KEY || event.key === null) void load()
     }
     window.addEventListener('storage', onStorage)
     return () => window.removeEventListener('storage', onStorage)
-  }, [mode, load])
+  }, [mode, load, loads])
 
   const block = useCallback(
     async (player: { id: string; username: string }): Promise<boolean> => {
@@ -393,5 +400,5 @@ export function useBlockedPlayers(): UseBlockedPlayers {
     window.dispatchEvent(new CustomEvent(BLOCKED_PLAYERS_CHANGED_EVENT))
   }, [])
 
-  return { blocked, blockedIds, ready, failed, unknown, block, unblock, retry }
+  return { blocked, blockedIds, ready, failed, unknown, accountId: selfId, block, unblock, retry }
 }
