@@ -119,6 +119,8 @@ function memoryGame(): MemoryGame {
   game.startGame()
   const state = game.getState()
   state.currentPlayerIndex = 1
+  // The bot only recalls cards that were face up, so a board everyone has seen lets it find pairs.
+  for (const card of (state.data as MemoryGameData).cards) card.seen = true
   game.restoreState(state)
   return game
 }
@@ -148,6 +150,41 @@ describe('bot in-turn pause table matches the executors (#1049)', () => {
     expect(allRuns).toContainEqual([250, 260])
 
     expect(longestRun(allRuns, 'easy')).toEqual([...BOT_LONGEST_IN_TURN_PAUSE_BASES.memory])
+  })
+
+  it('memory: recalling the seen mate of a guessed first card keeps the flip pauses (#1434)', async () => {
+    const game = memoryGame()
+    const state = game.getState()
+    const data = state.data as MemoryGameData
+    data.cards = ['a1', 'a2', 'b1', 'b2', 'c1', 'c2'].map((id) => ({
+      id,
+      value: id[0].toUpperCase(),
+      isFlipped: false,
+      isMatched: false,
+      seen: id === 'a2' || id === 'b1',
+    }))
+    game.restoreState(state)
+    jest
+      .spyOn(Math, 'random')
+      .mockReturnValueOnce(0.5)
+      .mockReturnValueOnce(0.01)
+      .mockReturnValueOnce(0.99)
+      .mockReturnValueOnce(0.01)
+      .mockReturnValue(0.99)
+    const flippedCardIds: string[] = []
+    const recorder = {
+      makeMove: (move: Move) => {
+        if (move.type === 'flip') flippedCardIds.push((move.data as { cardId: string }).cardId)
+        return game.makeMove(move)
+      },
+    }
+
+    const runs = await pauseRunsOfOneTurn(recorder, (onMove) =>
+      MemoryBotExecutor.executeBotTurn(game, BOT.id, 'hard', onMove)
+    )
+
+    expect(flippedCardIds.slice(0, 2)).toEqual(['a1', 'a2'])
+    expect(runs.slice(0, 2)).toEqual([[260], [360]])
   })
 
   it('yahtzee: the tail of a roll plus the score that ends the turn is the longest silence', async () => {

@@ -23,8 +23,8 @@ export default function Toast({ message, type = 'info', onClose, duration = 3000
   const typeStyles: Record<string, React.CSSProperties> = {
     success: { background: '#2D6A4F', color: 'white' },
     error: { background: 'var(--bd-coral)', color: 'var(--bd-ink-on-accent)' },
-    info: { background: 'var(--bd-ink)', color: 'white' },
-    warning: { background: 'var(--bd-sun)', color: 'var(--bd-ink)' },
+    info: { background: 'var(--bd-ink)', color: 'var(--bd-bg)' },
+    warning: { background: 'var(--bd-sun)', color: 'var(--bd-ink-on-accent)' },
   }
 
   const icons: Record<NonNullable<ToastProps['type']>, IconName> = {

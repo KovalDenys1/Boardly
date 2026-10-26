@@ -68,6 +68,20 @@ function findScriptSrc(node: unknown, src: string): boolean {
   return findScriptSrc(props?.children, src)
 }
 
+/** Every `<script>` under `node` in document order: its src, or its inline code. */
+function scriptsInOrder(node: unknown): string[] {
+  if (Array.isArray(node)) return node.flatMap(scriptsInOrder)
+  if (!isReactElement(node)) return []
+
+  const props = node.props as
+    | { src?: string; dangerouslySetInnerHTML?: { __html?: string }; children?: ReactNode }
+    | undefined
+  if (node.type === 'script') {
+    return [props?.src ?? props?.dangerouslySetInnerHTML?.__html ?? '']
+  }
+  return scriptsInOrder(props?.children)
+}
+
 type EnvOverrides = {
   nodeEnv: string
   vercelEnv?: string
@@ -128,6 +142,17 @@ describe('AdSense loader — environment gate (#1152)', () => {
       nextPublicVercelEnv: 'production',
     })
     expect(findScriptSrc(tree, ADSENSE_SRC)).toBe(true)
+  })
+
+  // #1468: inside the Play app the head script pauses AdSense ad requests, which has to happen
+  // before adsbygoogle.js can run; an async tag earlier in <head> may execute first.
+  it('runs the app-shell script, which pauses ads in the Play app, before the AdSense tag', async () => {
+    const tree = await elementTreeFor({ nodeEnv: 'production' })
+    const scripts = scriptsInOrder(tree)
+    const appShell = scripts.findIndex((script) => script.includes('pauseAdRequests = 1'))
+
+    expect(appShell).toBeGreaterThanOrEqual(0)
+    expect(appShell).toBeLessThan(scripts.indexOf(ADSENSE_SRC))
   })
 
   it('does NOT load on a Vercel Preview deployment, even though `next build` sets NODE_ENV=production there too', async () => {

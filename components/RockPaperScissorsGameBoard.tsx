@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { prefersReducedMotion } from '@/lib/motion'
+import { RPS_SHAKE_MS } from '@/lib/rps-motion'
 import { useRpsRoundOpen } from '@/hooks/useRpsRoundOpen'
 import { useTranslation, type TranslationKeys } from '@/lib/i18n-helpers'
 import { Icon, type IconName } from '@/components/icons'
@@ -86,20 +87,7 @@ export function WinPips({ filled, total, color = 'var(--bd-mint-deep)' }: { fill
   )
 }
 
-type HandTone = 'idle' | 'choosing' | 'locked' | 'win' | 'loss' | 'draw'
-
-/** Must equal the `rps-shake` duration in app/globals.css. */
-export const RPS_SHAKE_MS = 750
-/**
- * When the reveal has finished: the fists shake, then the throw flips in over
- * 0.35 s (app/globals.css). The score waits for this.
- */
-export const RPS_REVEAL_MS = RPS_SHAKE_MS + 350
-/**
- * The final round's result overlay waits for the reveal plus a beat to read it.
- * It was 1300, which left the revealed hands 200 ms before they were covered (#1200).
- */
-export const RPS_RESULT_REVEAL_DELAY_MS = RPS_REVEAL_MS + 900
+export type HandTone = 'idle' | 'choosing' | 'locked' | 'win' | 'loss' | 'draw'
 
 export default function RockPaperScissorsGameBoard({
   gameData,
@@ -213,7 +201,7 @@ export default function RockPaperScissorsGameBoard({
   )
 }
 
-function Hand({ player, accent, icon, state, tone, reveal }: { player: RPSPlayer | null; accent: string; icon: IconName; state: string; tone: HandTone; reveal: boolean }) {
+export function Hand({ player, accent, icon, state, tone, reveal }: { player: RPSPlayer | null; accent: string; icon: IconName; state: string; tone: HandTone; reveal: boolean }) {
   const initial = (player?.name ?? '?').trim().charAt(0).toUpperCase() || '?'
   const [shaking, setShaking] = useState(() => reveal && !prefersReducedMotion())
   useEffect(() => {

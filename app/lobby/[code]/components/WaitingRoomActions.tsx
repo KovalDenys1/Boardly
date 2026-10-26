@@ -1,8 +1,9 @@
 import LoadingSpinner from '@/components/LoadingSpinner'
-import { sounds } from '@/lib/sounds'
+import { playCue } from '@/lib/sound-engine'
 import { hasBotSupport } from '@/lib/game-catalog'
 import { useTranslation } from '@/lib/i18n-helpers'
 import { Icon } from '@/components/icons'
+import TermsConsentPanel from '@/components/TermsConsentPanel'
 import type { Game, Lobby, GamePlayer } from '@/types/game'
 
 interface WaitingRoomActionsProps {
@@ -14,6 +15,9 @@ interface WaitingRoomActionsProps {
   onStartGame: () => void
   /** The page shows the floating Chat button over this bar's right end. */
   reserveChatButton?: boolean
+  /** The last start was refused until the host accepts the terms (custom words). */
+  termsRequired?: boolean
+  onAcceptTerms?: () => Promise<boolean>
 }
 
 export default function WaitingRoomActions({
@@ -24,6 +28,8 @@ export default function WaitingRoomActions({
   startingGame,
   onStartGame,
   reserveChatButton = false,
+  termsRequired = false,
+  onAcceptTerms,
 }: WaitingRoomActionsProps) {
   const { t } = useTranslation()
   const barClass = `waiting-room-actions shrink-0 border-t border-bd-line bg-bd-card-warm px-4 sm:pl-6 ${
@@ -111,20 +117,23 @@ export default function WaitingRoomActions({
         </p>
       )}
 
-      {/* Start Game */}
-      <button
-        onClick={() => {
-          sounds.play('click')
-          onStartGame()
-        }}
-        disabled={!canStartImmediately}
-        className="bd-btn bd-btn-primary w-full justify-center px-5 py-3.5 text-base transition-transform active:scale-[0.98] active:transform-none! disabled:cursor-not-allowed disabled:opacity-40"
-      >
-        <span className="inline-flex items-center justify-center gap-2">
-          <Icon name="play" size={18} />
-          <span>{t('game.ui.startGame')}</span>
-        </span>
-      </button>
+      {termsRequired && onAcceptTerms ? (
+        <TermsConsentPanel onAccept={onAcceptTerms} autoFocus context="play" />
+      ) : (
+        <button
+          onClick={() => {
+            playCue('ui.select')
+            onStartGame()
+          }}
+          disabled={!canStartImmediately}
+          className="bd-btn bd-btn-primary w-full justify-center px-5 py-3.5 text-base transition-transform active:scale-[0.98] active:transform-none! disabled:cursor-not-allowed disabled:opacity-40"
+        >
+          <span className="inline-flex items-center justify-center gap-2">
+            <Icon name="play" size={18} />
+            <span>{t('game.ui.startGame')}</span>
+          </span>
+        </button>
+      )}
     </div>
   )
 }

@@ -87,3 +87,71 @@ describe('Russian and Ukrainian plural forms', () => {
     expect(form('lobby.invite.send', 3)).toBe(form('lobby.invite.send', 5))
   })
 })
+
+describe('German plural forms (#1472)', () => {
+  /** Keys whose German noun changes between one and many; "Spieler" and "Würfel" do not. */
+  const TWO_FORM_KEYS = [
+    'lobby.create.rounds',
+    'lobby.invite.send',
+    'yahtzee.results.points',
+    'yahtzee.ui.rollsLeftCount',
+    'profile.chips.games',
+    'profile.chips.friends',
+    'alias.wordsCount',
+  ] as const
+
+  beforeAll(async () => {
+    await changeLanguageLazy('de')
+  })
+
+  afterAll(async () => {
+    await i18n.changeLanguage('en')
+  })
+
+  it.each(TWO_FORM_KEYS)('uses the singular for one and the plural for every other count in %s', (key) => {
+    expect(form(key, 1)).not.toBe(form(key, 5))
+    expect(form(key, 0)).toBe(form(key, 5))
+    expect(form(key, 21)).toBe(form(key, 5))
+  })
+
+  it('reads as German, not as the English fallback', () => {
+    expect(i18n.t('profile.chips.games', { count: 1 })).toBe('1 Spiel')
+    expect(i18n.t('profile.chips.games', { count: 4 })).toBe('4 Spiele')
+  })
+})
+
+describe('Spanish plural forms (#1472)', () => {
+  /** Keys whose Spanish noun or verb changes between one and many. */
+  const TWO_FORM_KEYS = [
+    'lobby.create.rounds',
+    'lobby.create.preview.players',
+    'lobby.invite.send',
+    'yahtzee.results.points',
+    'yahtzee.ui.rollsLeftCount',
+    'yahtzee.ui.remainingCount',
+    'profile.chips.games',
+    'profile.chips.friends',
+    'home.gamesReadyBadge',
+    'alias.needMorePlayers',
+    'toast.rematchRequestSent',
+  ] as const
+
+  beforeAll(async () => {
+    await changeLanguageLazy('es')
+  })
+
+  afterAll(async () => {
+    await i18n.changeLanguage('en')
+  })
+
+  it.each(TWO_FORM_KEYS)('uses the singular for one and the plural for every other count in %s', (key) => {
+    expect(form(key, 1)).not.toBe(form(key, 5))
+    expect(form(key, 0)).toBe(form(key, 5))
+    expect(form(key, 21)).toBe(form(key, 5))
+  })
+
+  it('reads as Spanish, not as the English fallback', () => {
+    expect(i18n.t('profile.chips.games', { count: 1 })).toBe('1 partida')
+    expect(i18n.t('profile.chips.games', { count: 4 })).toBe('4 partidas')
+  })
+})

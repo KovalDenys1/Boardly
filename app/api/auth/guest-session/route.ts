@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { apiLogger } from '@/lib/logger'
 import { guestSessionPreset, rateLimit } from '@/lib/rate-limit'
-import { refuseIfBot } from '@/lib/bot-protection'
+import { checkBot, type BotCheck } from '@/lib/bot-protection'
 import {
   createGuestId,
   createGuestToken,
@@ -30,6 +30,8 @@ export async function POST(request: NextRequest) {
   const rateLimitResult = await limiter(request)
   if (rateLimitResult) return rateLimitResult
 
+  let botCheck: BotCheck | null = null
+  let mintedGuest = false
   try {
     const parsed = guestSessionSchema.safeParse(await request.json())
     if (!parsed.success) {
@@ -62,14 +64,15 @@ export async function POST(request: NextRequest) {
     // guest refreshes their session on page load, before BotID's browser challenge is
     // ready, so that call arrives without it and was classified as a bot.
     if (!tokenGuestId) {
-      const botRefusal = await refuseIfBot('POST /api/auth/guest-session')
-      if (botRefusal) return botRefusal
+      botCheck = await checkBot('POST /api/auth/guest-session', request)
+      if (botCheck.refusal) return botCheck.refusal
     }
 
     const signupSource = getSignupSourceFromRequest(request)
     const guestUser = tokenGuestId
       ? await getOrCreateGuestUser(tokenGuestId, parsed.data.guestName, signupSource, { createIfMissing: false })
       : await getOrCreateGuestUser(createGuestId(), parsed.data.guestName, signupSource)
+    mintedGuest = !tokenGuestId && guestUser !== null
 
     if (!guestUser) {
       return NextResponse.json(
@@ -102,5 +105,7 @@ export async function POST(request: NextRequest) {
 
     log.error('Failed to create guest session', error as Error)
     return handleApiError(error)
+  } finally {
+    await botCheck?.settle({ mintedGuest })
   }
 }

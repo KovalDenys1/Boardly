@@ -10,6 +10,7 @@ import { buildCurrentAuthUrl } from '@/lib/auth-redirect'
 import { showToast } from '@/lib/i18n-toast'
 import QuickPlayButton from './QuickPlayButton'
 import HeroBoard from './HeroBoard'
+import { useIsPlayApp } from '@/hooks/useIsPlayApp'
 
 export type HomeHeroFacts = {
   availableGameCount: number
@@ -26,6 +27,7 @@ export default function HeroSectionRedesign({ facts }: HeroSectionRedesignProps)
   const router = useRouter()
   const { data: session, status } = useSession()
   const { t } = useTranslation()
+  const isPlayApp = useIsPlayApp()
   const { isGuest, guestName, setGuestMode, clearGuestMode } = useGuest()
   const [showGuestForm, setShowGuestForm] = useState(false)
   const [name, setName] = useState('')
@@ -263,7 +265,7 @@ export default function HeroSectionRedesign({ facts }: HeroSectionRedesignProps)
               width: '100%',
               padding: '16px 28px',
               background: 'var(--bd-coral)',
-              color: 'white',
+              color: 'var(--bd-ink-on-accent)',
               borderRadius: 14,
               fontWeight: 700,
               fontSize: 17,
@@ -307,7 +309,7 @@ export default function HeroSectionRedesign({ facts }: HeroSectionRedesignProps)
                 fontWeight: 700,
                 fontSize: 13,
                 background: 'var(--bd-sun)',
-                color: 'var(--bd-ink)',
+                color: 'var(--bd-ink-on-accent)',
                 border: '2px solid var(--bd-ink)',
                 boxShadow: '2px 2px 0 var(--bd-ink)',
               }}
@@ -353,7 +355,7 @@ export default function HeroSectionRedesign({ facts }: HeroSectionRedesignProps)
               maxWidth: 480,
             }}
           >
-            {t('home.heroSubtitle')}
+            {t(isPlayApp ? 'home.heroSubtitlePlayApp' : 'home.heroSubtitle')}
           </p>
 
           <div className="home-cta-row">
@@ -405,7 +407,7 @@ export default function HeroSectionRedesign({ facts }: HeroSectionRedesignProps)
               { label: t('home.statsGamesReady'), value: String(facts.availableGameCount) },
               { label: t('home.statsBotsAvailable'), value: String(facts.quickPlayGameCount) },
               { label: t('home.statsInCollection'), value: String(facts.catalogGameCount) },
-              { label: t('home.statsBrowserNative'), value: '0' },
+              ...(isPlayApp ? [] : [{ label: t('home.statsBrowserNative'), value: '0' }]),
             ].map((s) => (
               <div key={s.label}>
                 <div

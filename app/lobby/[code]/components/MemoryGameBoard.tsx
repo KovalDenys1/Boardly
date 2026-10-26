@@ -12,7 +12,7 @@ import { clientLogger } from '@/lib/client-logger'
 import { trackMoveSubmitApplied } from '@/lib/analytics'
 import LoadingSpinner from '@/components/LoadingSpinner'
 import Chat from '@/components/Chat'
-import GameResultOverlay from '@/components/game-chrome/GameResultOverlay'
+import GameResultOverlay, { RESULT_REVEAL_DELAY_MS } from '@/components/game-chrome/GameResultOverlay'
 import GamePlayerCard from '@/components/game-chrome/GamePlayerCard'
 import { reportablePlayerId } from '@/lib/reportable-player'
 import GameScoreboardHeader from '@/components/game-chrome/GameScoreboardHeader'
@@ -22,9 +22,12 @@ import { hasTopScore, viewerOutcome } from '@/lib/game-outcome'
 import GameTabs from '@/components/game-chrome/GameTabs'
 import { useGameTimer } from '../hooks/useGameTimer'
 import { useActiveGameLayout, type ActiveGameLayout } from '@/hooks/useActiveGameLayout'
-import { sounds } from '@/lib/sounds'
+import { playCue } from '@/lib/sound-engine'
+import { useMemorySounds } from '../hooks/useMemorySounds'
+import { useSpectatorResultCue } from '@/hooks/useSpectatorResultCue'
 import ScorePop from '@/components/game-chrome/ScorePop'
-import { faceUpCardIds, idsAddedSince, matchedCardIds, takeRemoteFlips } from '@/lib/memory-motion'
+import { MemoryCardTile, MemoryGrid, memorySymbolSizeClass } from '@/components/boards/MemoryTiles'
+import { idsAddedSince, matchedCardIds } from '@/lib/memory-motion'
 import { createStuckTurnRecovery, turnSignatureOf } from '@/lib/stuck-turn-recovery'
 
 interface LobbyPlayer {
@@ -76,13 +79,15 @@ interface MemoryGameBoardProps {
   onReturnToWaiting?: () => void
   onLeave?: () => void
   chatMessages?: ChatMessagePayload[]
-  onSendChatMessage?: (message: string) => void
+  onSendChatMessage?: (message: string) => void | Promise<string | null>
+  /** False puts the terms consent panel in place of the chat composer (#1466). */
+  chatTermsAccepted?: boolean | null
+  onAcceptChatTerms?: () => Promise<boolean>
   chatUnreadCount?: number
   someoneTyping?: boolean
   playerProfiles?: Map<string, { avatarUrl?: string | null; isPremium?: boolean }>
   onProfileClick?: (userId: string) => void
   isGuest?: boolean
-  registerUrl?: string
   isSpectator?: boolean
   /** Play Again / Return to Lobby in-flight — disables the overlay actions (#736 phase 2, fixes the double-submit gap). */
   isRestarting?: boolean
@@ -129,12 +134,13 @@ export default function MemoryGameBoard({
   onLeave,
   chatMessages = [],
   onSendChatMessage,
+  chatTermsAccepted,
+  onAcceptChatTerms,
   chatUnreadCount = 0,
   someoneTyping = false,
   playerProfiles,
   onProfileClick,
   isGuest,
-  registerUrl,
   isSpectator = false,
   isRestarting = false,
   reconcileWithServerSnapshot,
@@ -220,27 +226,14 @@ export default function MemoryGameBoard({
     setOptimisticFlippedIds((prev) => prev.filter((id) => !confirmedIds.has(id)))
   }, [flippedCardIds, cards]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Motion cues (#1114): the opponent's flips sound like the viewer's own, and a
-  // freshly matched pair gets a short pop before settling. Keyed on id lists so
-  // the effect runs once per arriving change, never per render.
-  const faceUpKey = faceUpCardIds(cards).join(',')
+  // Keyed on the id list, so a matched pair pops once per arriving change, never per render.
   const matchedKey = matchedCardIds(cards).join(',')
-  const prevFaceUpRef = useRef<Set<string> | null>(null)
   const prevMatchedRef = useRef<Set<string> | null>(null)
-  const ownFlipsRef = useRef<Set<string>>(new Set())
   const [justMatchedIds, setJustMatchedIds] = useState<string[]>([])
+  const { playOwnFlip, forgetOwnFlip } = useMemorySounds({ gameId, cards, currentPlayerId, viewerId: currentUserId, isSpectator })
+  useSpectatorResultCue({ isSpectator, isFinished, gameId, revealDelayMs: RESULT_REVEAL_DELAY_MS })
 
   const cardsLoaded = cards.length > 0
-  useEffect(() => {
-    if (!cardsLoaded) return
-    const current = faceUpKey ? faceUpKey.split(',') : []
-    const arrived = idsAddedSince(prevFaceUpRef.current, current)
-    prevFaceUpRef.current = new Set(current)
-    if (takeRemoteFlips(arrived, ownFlipsRef.current).length > 0) {
-      sounds.play('cardFlip', { force: true })
-    }
-  }, [faceUpKey, cardsLoaded])
-
   useEffect(() => {
     if (!cardsLoaded) return
     const current = matchedKey ? matchedKey.split(',') : []
@@ -324,6 +317,7 @@ export default function MemoryGameBoard({
             payload?.code === 'STATE_CONFLICT'
 
           if (!isExpectedRaceError) {
+            playCue('ui.error')
             showToast.error('games.memory.game.moveFailed', undefined, {
               message:
                 (typeof payload?.details === 'string' && payload.details) ||
@@ -338,6 +332,7 @@ export default function MemoryGameBoard({
         return true
       } catch (error) {
         report(false)
+        playCue('ui.error')
         showToast.errorFrom(error, 'games.memory.game.moveFailed')
         return false
       } finally {
@@ -439,17 +434,16 @@ export default function MemoryGameBoard({
       }
 
       setOptimisticFlippedIds((prev) => [...prev, cardId])
-      ownFlipsRef.current.add(cardId)
-      sounds.play('cardFlip', { force: true })
+      playOwnFlip(cardId)
 
       void submitMove({ type: 'flip', data: { cardId } }).then((success) => {
         if (!success) {
-          ownFlipsRef.current.delete(cardId)
+          forgetOwnFlip(cardId)
           setOptimisticFlippedIds((prev) => prev.filter((id) => id !== cardId))
         }
       })
     },
-    [isMyTurn, optimisticFlippedIds.length, pendingMismatchCardIds.length, submitMove]
+    [isMyTurn, optimisticFlippedIds.length, pendingMismatchCardIds.length, submitMove, playOwnFlip, forgetOwnFlip]
   )
 
   if (!gameData || cards.length === 0) {
@@ -468,7 +462,8 @@ export default function MemoryGameBoard({
   const winnerName = (winnerId && displayNameByUserId.get(winnerId)) || t('games.memory.game.unknownPlayer')
   const isDraw = isFinished && !winnerId
   const isMyWin = isFinished && !!winnerId && !!currentUserId && winnerId === currentUserId
-  const symbolSizeClass = gridColumns >= 6 ? 'text-lg sm:text-xl' : gridColumns === 5 ? 'text-xl sm:text-2xl' : 'text-2xl sm:text-3xl'
+  const viewerResult = viewerOutcome({ isFinished, isDraw, isSpectator, isSeated: !!currentUserId && (parsedState.players ?? []).some((p) => p.id === currentUserId), isViewerWinner: winnerId ? isMyWin : null, isViewerAtTop: hasTopScore(scoreByPlayerId, (parsedState.players ?? []).map((p) => p.id), currentUserId) })
+  const symbolSizeClass = memorySymbolSizeClass(gridColumns)
   const matchedPairs = cards.filter((card) => card.isMatched).length / 2
   const totalPairs = Math.max(1, cards.length / 2)
   const currentPlayerName =
@@ -476,10 +471,7 @@ export default function MemoryGameBoard({
     t('games.memory.game.unknownPlayer')
 
   const cardGrid = (
-    <div
-      className="memory-grid"
-      style={{ gridTemplateColumns: `repeat(${gridColumns}, minmax(0, 1fr))` }}
-    >
+    <MemoryGrid gridColumns={gridColumns}>
       {cards.map((card, cardIndex) => {
         const isOptimisticallyFlipped = optimisticFlippedIds.includes(card.id)
         const isFaceUp = card.isFlipped || card.isMatched || isOptimisticallyFlipped
@@ -495,36 +487,20 @@ export default function MemoryGameBoard({
           isOptimisticallyFlipped
 
         return (
-          <button
+          <MemoryCardTile
             key={card.id}
-            type="button"
+            card={card}
+            cardIndex={cardIndex}
+            isFaceUp={isFaceUp}
+            symbolSizeClass={symbolSizeClass}
+            isDisabled={isDisabled}
             onClick={() => handleCardClick(card.id)}
-            disabled={isDisabled}
-            aria-label={
-              card.isMatched && card.value
-                ? t('games.memory.game.cardMatched', { num: cardIndex + 1, value: card.value })
-                : isFaceUp && card.value
-                  ? t('games.memory.game.cardFaceUp', { num: cardIndex + 1, value: card.value })
-                  : t('games.memory.game.cardFaceDown', { num: cardIndex + 1 })
-            }
-            className={`memory-tile ${isDisabled ? 'cursor-default' : 'cursor-pointer'} ${card.isMatched ? 'memory-tile-matched' : ''}${justMatchedIds.includes(card.id) ? ' memory-tile-match-cue' : ''}${pendingMismatchCardIds.includes(card.id) ? ' memory-tile-mismatch-cue' : ''}`}
-          >
-            <span className={`memory-tile-inner ${isFaceUp ? 'memory-tile-inner-flipped' : ''}`}>
-              <span className="memory-tile-back">
-                <span className="memory-tile-back-mark">✦</span>
-              </span>
-              <span className={`memory-tile-face ${symbolSizeClass}`}>
-                {/* Face-down cards no longer carry their value (#715), so an
-                    optimistic flip has nothing to show until the server confirms
-                    the move. Render a neutral placeholder for that brief window
-                    instead of a blank tile. */}
-                {card.value || (isFaceUp ? '·' : '')}
-              </span>
-            </span>
-          </button>
+            isJustMatched={justMatchedIds.includes(card.id)}
+            isMismatch={pendingMismatchCardIds.includes(card.id)}
+          />
         )
       })}
-    </div>
+    </MemoryGrid>
   )
 
   // One flag for both the class and the mount, so the desktop panel can never
@@ -577,10 +553,11 @@ export default function MemoryGameBoard({
           onReturnToLobby={canStartGame ? onReturnToWaiting : undefined}
           onLeave={onLeave}
           isGuest={isGuest}
-          registerUrl={registerUrl}
           inviteCode={lobbyCode}
           gameType="memory"
+          outcome={viewerResult}
           resultKey={`${gameId}:${parsedState.lastMoveAt ?? ''}`}
+          gameId={gameId}
           isRegistered={!isGuest && !isSpectator && !!currentUserId}
         />
       )}
@@ -700,7 +677,7 @@ export default function MemoryGameBoard({
                 {avatarSrc ? (
                   <img src={avatarSrc} alt={name} style={{ width: 32, height: 32, borderRadius: '50%', objectFit: 'cover', flexShrink: 0, border: '2px solid var(--bd-ink)' }} />
                 ) : (
-                  <div style={{ width: 32, height: 32, borderRadius: '50%', background: 'var(--bd-mint)', display: 'grid', placeItems: 'center', flexShrink: 0, border: '2px solid var(--bd-ink)', fontWeight: 700, fontSize: 14, color: 'white', fontFamily: 'var(--bd-font-display)' }}>
+                  <div style={{ width: 32, height: 32, borderRadius: '50%', background: 'var(--bd-mint)', display: 'grid', placeItems: 'center', flexShrink: 0, border: '2px solid var(--bd-ink)', fontWeight: 700, fontSize: 14, color: 'var(--bd-ink-on-accent)', fontFamily: 'var(--bd-font-display)' }}>
                     {name.charAt(0).toUpperCase()}
                   </div>
                 )}
@@ -747,7 +724,7 @@ export default function MemoryGameBoard({
               {avatarSrc ? (
                 <img src={avatarSrc} alt={name} style={{ width: 24, height: 24, borderRadius: '50%', objectFit: 'cover', flexShrink: 0, border: '1.5px solid var(--bd-ink)' }} />
               ) : (
-                <div style={{ width: 24, height: 24, borderRadius: '50%', background: 'var(--bd-mint)', display: 'grid', placeItems: 'center', flexShrink: 0, border: '1.5px solid var(--bd-ink)', fontWeight: 700, fontSize: 10, color: 'white' }}>
+                <div style={{ width: 24, height: 24, borderRadius: '50%', background: 'var(--bd-mint)', display: 'grid', placeItems: 'center', flexShrink: 0, border: '1.5px solid var(--bd-ink)', fontWeight: 700, fontSize: 10, color: 'var(--bd-ink-on-accent)' }}>
                   {name.charAt(0).toUpperCase()}
                 </div>
               )}
@@ -767,7 +744,7 @@ export default function MemoryGameBoard({
     <GameStatusBanner
       isFinished={isFinished}
       isDraw={isDraw}
-      outcome={viewerOutcome({ isFinished, isDraw, isSpectator, isSeated: !!currentUserId && (parsedState.players ?? []).some((p) => p.id === currentUserId), isViewerWinner: winnerId ? isMyWin : null, isViewerAtTop: hasTopScore(scoreByPlayerId, (parsedState.players ?? []).map((p) => p.id), currentUserId) })}
+      outcome={viewerResult}
       finishedMessage={isDraw ? t('games.memory.game.tieLabel') : t('games.memory.game.winnerLabel', { player: winnerName })}
       activeTitle={t('games.memory.game.playerTurnBanner', { player: currentPlayerName })}
       meta={`${matchedPairs}/${totalPairs}`}
@@ -810,6 +787,8 @@ export default function MemoryGameBoard({
         lobbyCode={lobbyCode}
         messages={chatMessages}
         onSendMessage={onSendChatMessage}
+        termsAccepted={chatTermsAccepted}
+        onAcceptTerms={onAcceptChatTerms}
         currentUserId={currentUserId || null}
         isMinimized={false}
         onToggleMinimize={() => {}}
@@ -818,6 +797,7 @@ export default function MemoryGameBoard({
         playerProfiles={playerProfiles}
         onProfileClick={onProfileClick}
         fullScreen
+        readOnly={isSpectator}
       />
     </section>
   ) : null
@@ -866,10 +846,11 @@ export default function MemoryGameBoard({
                   onReturnToLobby={canStartGame ? onReturnToWaiting : undefined}
                   onLeave={onLeave}
                   isGuest={isGuest}
-                  registerUrl={registerUrl}
                   inviteCode={lobbyCode}
                   gameType="memory"
+                  outcome={viewerResult}
                   resultKey={`${gameId}:${parsedState.lastMoveAt ?? ''}`}
+                  gameId={gameId}
                   isRegistered={!isGuest && !isSpectator && !!currentUserId}
                 />
               )}

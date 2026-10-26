@@ -287,9 +287,9 @@ describe('Ludo modes, clock and seats against the catalog and routes (#1242)', (
     expect(ludo.detail.faq.howManyPlayers.a).toMatch(/Two to four, up to three of them bots/)
   })
 
-  it('opens the in-game chat only once two people are seated', () => {
-    expect(source('app/lobby/[code]/ludo-page.tsx')).toMatch(/const showChat = hasMultipleHumans \|\| isSpectator/)
-    expect(ludo.detail.multiplayer.withFriends.desc).toMatch(/chat opens once two people are seated/)
+  it('shows the in-game chat in every game, bot games included', () => {
+    expect(source('app/lobby/[code]/ludo-page.tsx')).not.toMatch(/hasMultipleHumans|showChat/)
+    expect(ludo.detail.multiplayer.withFriends.desc).toMatch(/the chat sits beside the board/)
   })
 })
 

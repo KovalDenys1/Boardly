@@ -239,6 +239,50 @@ describe('GET /api/lobby/[code]/spectate', () => {
     expect(mockPrisma.users.findUnique).not.toHaveBeenCalled()
   })
 
+  it('keeps a drawing the host hid out of a finished Sketch & Guess game, and offers no seat in it (#1088, #1464)', async () => {
+    const { sanitizeGameStateForSpectator: realSanitize } = jest.requireActual('@/lib/spectator-state')
+    mockSanitizeGameStateForSpectator.mockImplementation(realSanitize)
+    mockGetRequestAuthUser.mockResolvedValue(null)
+    const finishedState = {
+      status: 'finished',
+      data: {
+        phase: 'reveal',
+        currentRound: 2,
+        rounds: [
+          { round: 1, drawerId: 'host', drawingContent: '{"strokes":["secret-stroke"]}', drawingHiddenByHost: true },
+          { round: 2, drawerId: 'guest', drawingContent: '{"strokes":["kept-stroke"]}' },
+        ],
+      },
+    }
+    mockPrisma.lobbies.findUnique.mockResolvedValue({
+      id: 'lobby-1',
+      code: 'ABC123',
+      name: 'Sketch Lobby',
+      realtimeSecret: 'secret',
+      maxPlayers: 6,
+      allowSpectators: true,
+      maxSpectators: 10,
+      spectatorCount: 1,
+      turnTimer: 60,
+      isActive: true,
+      gameType: 'sketch_and_guess',
+      createdAt: new Date('2026-02-27T18:00:00.000Z'),
+      creator: { id: 'host', username: 'host' },
+      games: [{ id: 'game-1', status: 'finished', state: JSON.stringify(finishedState), players: [] }],
+    } as any)
+
+    const response = await GET(
+      new NextRequest('http://localhost:3000/api/lobby/ABC123/spectate?includeFinished=true'),
+      { params: Promise.resolve({ code: 'ABC123' }) }
+    )
+    const payload = await response.json()
+
+    expect(response.status).toBe(200)
+    expect(payload.activeGame.state).not.toContain('secret-stroke')
+    expect(payload.activeGame.state).toContain('kept-stroke')
+    expect(payload.canJoinAsPlayer).toBe(false)
+  })
+
   it('gives an admitted spectator the topic name but never the raw secret (#845)', async () => {
     const SECRET = 'test-lobby-realtime-secret'
     mockGetRequestAuthUser.mockResolvedValue({ id: 'user-1', username: 'viewer', isGuest: false })
@@ -289,6 +333,54 @@ describe('GET /api/lobby/[code]/spectate', () => {
     // HTTP, and its state used to keep going out on a topic they could guess.
     expect(response.status).toBe(403)
     expect(JSON.stringify(await response.json())).not.toContain('test-lobby-realtime-secret')
+  })
+
+  describe('viewer.termsAccepted (#1482)', () => {
+    const openLobby = {
+      ...baseLobby,
+      allowSpectators: true,
+      maxSpectators: 10,
+      realtimeSecret: 'secret',
+    }
+    const spectate = () =>
+      GET(new NextRequest('http://localhost:3000/api/lobby/ABC123/spectate'), {
+        params: Promise.resolve({ code: 'ABC123' }),
+      })
+
+    it('is true for a viewer who accepted the terms', async () => {
+      mockGetRequestAuthUser.mockResolvedValue({ id: 'user-1', username: 'viewer', isGuest: false })
+      mockPrisma.lobbies.findUnique.mockResolvedValue(openLobby as any)
+      mockPrisma.users.findUnique.mockResolvedValue({ termsAcceptedAt: new Date('2026-10-01T00:00:00.000Z') } as any)
+
+      const response = await spectate()
+
+      expect(response.status).toBe(200)
+      expect((await response.json()).viewer).toEqual({ termsAccepted: true })
+      expect(mockPrisma.users.findUnique).toHaveBeenCalledWith({
+        where: { id: 'user-1' },
+        select: { termsAcceptedAt: true },
+      })
+    })
+
+    it('is false for a viewer who has not accepted them', async () => {
+      mockGetRequestAuthUser.mockResolvedValue({ id: 'guest-1', username: 'Guest', isGuest: true })
+      mockPrisma.lobbies.findUnique.mockResolvedValue(openLobby as any)
+      mockPrisma.users.findUnique.mockResolvedValue({ termsAcceptedAt: null } as any)
+
+      const response = await spectate()
+
+      expect((await response.json()).viewer).toEqual({ termsAccepted: false })
+    })
+
+    it('is false for an anonymous viewer, without a user lookup', async () => {
+      mockGetRequestAuthUser.mockResolvedValue(null)
+      mockPrisma.lobbies.findUnique.mockResolvedValue(openLobby as any)
+
+      const response = await spectate()
+
+      expect((await response.json()).viewer).toEqual({ termsAccepted: false })
+      expect(mockPrisma.users.findUnique).not.toHaveBeenCalled()
+    })
   })
 
   it('a guest cannot use adminView even if adminView=true is requested', async () => {

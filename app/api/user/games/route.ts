@@ -5,6 +5,23 @@ import { rateLimit } from '@/lib/rate-limit'
 import { Prisma, GameStatus, GameType } from '@/prisma/client'
 import { requireSessionUser } from '@/lib/session-user'
 import { isRetiredLobbyCode } from '@/lib/lobby'
+import { getGameDurationMs, getGameEndedAt } from '@/lib/game-display'
+
+export type ViewerResult = 'won' | 'lost' | 'draw' | 'abandoned' | 'cancelled' | 'inProgress'
+
+/** The game as the viewer's seat saw it end; mirrors viewerOutcome in lib/game-outcome.ts. */
+function viewerResultFor(status: string, isWinner: boolean | null, terminalMetadata: unknown): ViewerResult {
+  if (status === 'abandoned') return 'abandoned'
+  if (status === 'cancelled') return 'cancelled'
+  if (status !== 'finished') return 'inProgress'
+  const metadata = terminalMetadata && typeof terminalMetadata === 'object' ? terminalMetadata as { isDraw?: unknown; playerResults?: unknown } : null
+  if (metadata?.isDraw === true) {
+    // A draw with recorded winners was shared at the top: below it, the seat lost (#1493).
+    const sharedTop = Array.isArray(metadata.playerResults) && metadata.playerResults.some((result) => (result as { isWinner?: unknown } | null)?.isWinner === true)
+    return isWinner || !sharedTop ? 'draw' : 'lost'
+  }
+  return isWinner ? 'won' : 'lost'
+}
 
 // Force dynamic rendering (uses request.headers)
 export const dynamic = 'force-dynamic'
@@ -91,6 +108,9 @@ export async function GET(request: NextRequest) {
           createdAt: true,
           updatedAt: true,
           abandonedAt: true,
+          endedAt: true,
+          durationSeconds: true,
+          terminalMetadata: true,
           lobby: {
             select: {
               code: true,
@@ -139,34 +159,48 @@ export async function GET(request: NextRequest) {
     })
 
     const visibleTotalCount = isPremium ? totalCount : Math.min(totalCount, FREE_GAME_HISTORY_LIMIT)
+    const capped = !isPremium && totalCount > FREE_GAME_HISTORY_LIMIT
 
     return NextResponse.json({
-      games: games.map((game) => ({
-        id: game.id,
-        // A retired code (#1130) is `~<lobby id>`: nothing to show or join.
-        lobbyCode: isRetiredLobbyCode(game.lobby.code) ? null : game.lobby.code,
-        lobbyName: game.lobby.name,
-        gameType: game.gameType,
-        status: game.status,
-        createdAt: game.createdAt,
-        updatedAt: game.updatedAt,
-        abandonedAt: game.abandonedAt,
-        hasReplay: game.status === 'finished',
-        players: game.players.map((player) => ({
-          id: player.id,
-          username: player.user.username,
-          isBot: !!player.user.bot,  // Convert bot relation to boolean
-          score: player.score,
-          finalScore: player.finalScore,
-          placement: player.placement,
-          isWinner: player.isWinner,
-        })),
-      })),
+      games: games.map((game) => {
+        const endedAt = game.endedAt ?? getGameEndedAt(game.status, game.updatedAt, game.abandonedAt)
+        const durationMs = game.durationSeconds != null
+          ? game.durationSeconds * 1000
+          : getGameDurationMs(game.createdAt, endedAt)
+        const viewerSeat = game.players.find((player) => player.userId === userId)
+        return {
+          id: game.id,
+          // A retired code (#1130) is `~<lobby id>`: nothing to show or join.
+          lobbyCode: isRetiredLobbyCode(game.lobby.code) ? null : game.lobby.code,
+          lobbyName: game.lobby.name,
+          gameType: game.gameType,
+          status: game.status,
+          createdAt: game.createdAt,
+          updatedAt: game.updatedAt,
+          abandonedAt: game.abandonedAt,
+          durationMs,
+          viewerResult: viewerResultFor(game.status, viewerSeat?.isWinner ?? null, game.terminalMetadata),
+          hasReplay: game.status === 'finished' && game._count.snapshots > 0,
+          players: game.players.map((player) => ({
+            id: player.id,
+            userId: player.userId,
+            isViewer: player.userId === userId,
+            username: player.user.username,
+            isBot: !!player.user.bot,
+            score: player.score,
+            finalScore: player.finalScore,
+            placement: player.placement,
+            isWinner: player.isWinner,
+          })),
+        }
+      }),
       pagination: {
         limit,
         offset,
         totalCount: visibleTotalCount,
         hasMore: offset + limit < visibleTotalCount,
+        capped,
+        hiddenCount: capped ? totalCount - FREE_GAME_HISTORY_LIMIT : 0,
       },
     })
   } catch (error) {

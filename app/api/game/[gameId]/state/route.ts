@@ -18,6 +18,8 @@ import { checkAchievementsOnStatusChange } from '@/lib/achievement-engine'
 import { gameStateRequestSchema, type AutoActionContextRequest } from '@/lib/validation/game-state'
 import { runAfterResponse } from '@/lib/after-response'
 import { buildBotTurnHeaders, getInternalAppOrigin, postBotTurn } from '@/lib/bot-turn-trigger'
+import { requiresTermsAcceptance } from '@/lib/terms-gate'
+import { applySpyAction, spyActionSchema } from '@/lib/spy-action'
 
 type AutoActionContext = AutoActionContextRequest
 
@@ -332,7 +334,22 @@ export async function POST(
         { status: 400 }
       )
     }
-    
+
+    if (game.lobby.gameType === 'guess_the_spy') {
+      const spyMove = spyActionSchema.safeParse({ action: move.type, data: move.data })
+      if (!spyMove.success) {
+        return NextResponse.json({ error: 'Invalid action', details: spyMove.error.flatten() }, { status: 400 })
+      }
+      return applySpyAction({
+        gameId,
+        userId,
+        username: requestUser.username || 'Guest',
+        action: spyMove.data.action,
+        data: spyMove.data.data,
+        log,
+      })
+    }
+
     log.debug('Game fetched successfully', { gameId, status: game.status })
 
     interface GamePlayer {
@@ -363,6 +380,13 @@ export async function POST(
     // here against the lobby row. The host passes to another player when they
     // leave (lib/lobby-leave.ts); a lobby with no host at all (its creator's
     // account deleted) lets anyone seated go on rather than end the series.
+    if (game.lobby.gameType === 'liars_party' && move.type === 'submit-claim' && (await requiresTermsAcceptance(userId))) {
+      return NextResponse.json(
+        { error: 'Accept the terms before posting', code: 'TERMS_REQUIRED' },
+        { status: 403 }
+      )
+    }
+
     if (move.type === 'next-round' && game.lobby.creatorId && game.lobby.creatorId !== userId) {
       return NextResponse.json(
         { error: 'Only the host can start the next round', code: 'HOST_ONLY_MOVE' },
@@ -590,6 +614,7 @@ export async function POST(
       enginePlayers: enginePlayers as Player[],
       dbPlayersByUserId,
       getScorecard,
+      sharedTopWins: game.lobby.gameType === 'yahtzee',
     })
 
     const gameUpdateResult = await prisma.$transaction(async (tx) => {

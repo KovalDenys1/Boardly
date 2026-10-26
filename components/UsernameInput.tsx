@@ -142,12 +142,12 @@ export default function UsernameInput({
           type="text"
           required={required}
           disabled={disabled}
-          className={`w-full rounded-2xl border bg-(--bd-input-bg) px-4 py-3 pr-10 text-base text-bd-ink shadow-xs outline-hidden transition-all placeholder:text-bd-ink-muted sm:text-sm ${
+          className={`w-full rounded-2xl border bg-(--bd-input-bg) px-4 py-3 pr-10 text-base text-bd-ink shadow-xs outline-hidden transition-all placeholder:text-bd-ink-muted desk:text-sm ${
             status === 'available'
-              ? 'border-emerald-400 focus:ring-2 focus:ring-inset focus:ring-emerald-500/20'
+              ? 'border-emerald-400 focus:ring-2 focus:ring-inset focus:ring-bd-lav-deep'
               : status === 'taken' || status === 'invalid'
-                ? 'border-red-400 focus:ring-2 focus:ring-inset focus:ring-red-500/20'
-                : 'border-bd-line focus:border-bd-lav-deep focus:ring-4 focus:ring-inset focus:ring-bd-lav/20'
+                ? 'border-red-400 focus:ring-2 focus:ring-inset focus:ring-bd-lav-deep'
+                : 'border-(--bd-input-border) focus:border-bd-lav-deep focus:ring-4 focus:ring-inset focus:ring-bd-lav-deep'
           }`}
           value={value}
           onChange={(e) => onChange(e.target.value)}

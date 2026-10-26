@@ -14,11 +14,13 @@ import GameStatusBanner from '@/components/game-chrome/GameStatusBanner'
 import { viewerOutcome } from '@/lib/game-outcome'
 import GameTabs from '@/components/game-chrome/GameTabs'
 import GameRoomCard from '@/components/game-chrome/GameRoomCard'
-import RockPaperScissorsGameBoard, { CHOICE_LABEL_KEY, getChoiceIcon, RPS_RESULT_REVEAL_DELAY_MS, RPS_REVEAL_MS, WinPips } from '@/components/RockPaperScissorsGameBoard'
+import RockPaperScissorsGameBoard, { CHOICE_LABEL_KEY, getChoiceIcon, WinPips } from '@/components/RockPaperScissorsGameBoard'
+import { RPS_RESULT_REVEAL_DELAY_MS, RPS_REVEAL_MS } from '@/lib/rps-motion'
 import ScorePop from '@/components/game-chrome/ScorePop'
 import { useHeldValue } from '@/hooks/useHeldValue'
 import { useRpsRoundOpen } from '@/hooks/useRpsRoundOpen'
 import { prefersReducedMotion } from '@/lib/motion'
+import { useSpectatorResultCue } from '@/hooks/useSpectatorResultCue'
 import { LobbyPageErrorFallback, LobbyPageLoadingFallback } from '@/app/lobby/[code]/components/LobbyPageFallbacks'
 import { useRealtimeConnection } from '@/app/lobby/[code]/hooks/useRealtimeConnection'
 import { useLeaveLobby } from '@/app/lobby/[code]/hooks/useLeaveLobby'
@@ -42,7 +44,8 @@ import type { GamePlayer, GameUpdatePayload } from '@/types/game'
 import { createFreshnessWatermark, decideFreshness, resetFreshnessWatermark } from '@/lib/game-state-freshness'
 import { isLobbyGoneStatus } from '@/lib/lobby-fetch-status'
 import { createStuckTurnRecovery, turnSignatureOf } from '@/lib/stuck-turn-recovery'
-import { useTurnSounds } from '@/hooks/useTurnSounds'
+import { playCue } from '@/lib/sound-engine'
+import { useRpsSounds } from './hooks/useRpsSounds'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -209,6 +212,8 @@ export default function RockPaperScissorsLobbyPage({ code, isSpectator = false, 
     const {
         chatMessages,
         sendChatMessage,
+        termsAccepted: chatTermsAccepted,
+        acceptTerms: acceptChatTerms,
         unreadCount: chatUnreadCount,
         resetUnread: resetChatUnread,
         someoneTyping,
@@ -440,6 +445,7 @@ export default function RockPaperScissorsLobbyPage({ code, isSpectator = false, 
         }
         isSubmittingRef.current = true
         setIsSubmitting(true)
+        if (!isAutoAction) playCue('vote.cast')
         try {
             // Optimistic: the tile locks in immediately; the reveal waits for the server.
             setGame((prevGame) => {
@@ -490,6 +496,7 @@ export default function RockPaperScissorsLobbyPage({ code, isSpectator = false, 
                 trackMoveSubmitApplied({ gameType: 'rock_paper_scissors', moveType: 'submit-choice', durationMs: Date.now() - submitStartedAt, isGuest, success: false, applied: false, statusCode: responseStatus, source: 'rock_paper_scissors_page' })
                 revertOwnChoice()
                 if (!isAutoAction) {
+                    playCue('ui.error')
                     showToast.error('errors.general', undefined, { message: String(payload?.message || payload?.error || 'Failed to submit choice') })
                 }
                 // Not only on 409. A 500, a 400 or a dropped response all leave
@@ -508,7 +515,10 @@ export default function RockPaperScissorsLobbyPage({ code, isSpectator = false, 
             trackMoveSubmitApplied({ gameType: 'rock_paper_scissors', moveType: 'submit-choice', durationMs: Date.now() - submitStartedAt, isGuest, success: false, applied: false, statusCode: responseStatus, source: 'rock_paper_scissors_page' })
             clientLogger.error('Failed to submit choice:', error)
             revertOwnChoice()
-            if (!isAutoAction) showToast.errorFrom(error, 'errors.general')
+            if (!isAutoAction) {
+                playCue('ui.error')
+                showToast.errorFrom(error, 'errors.general')
+            }
             await loadLobby()
             return false
         } finally {
@@ -551,16 +561,19 @@ export default function RockPaperScissorsLobbyPage({ code, isSpectator = false, 
     const roundOpen = useRpsRoundOpen(rpsData.nextRoundAt)
     const iAmChoosing = !isSpectator && !!game && !isFinished && !!currentUserId && game.state.players.some((p) => p.id === currentUserId) && !mySubmitted && roundOpen
 
-    // Round and opponent cues (#1111): a new round asks for the viewer's throw,
-    // and the opponent locking theirs in is their move. Counting only the
-    // opponent's lock keeps the viewer's own submit silent.
-    const opponentsReady = rpsData.playersReady.filter((id) => id !== currentUserId).length
-    useTurnSounds({
-        isMyTurn: iAmChoosing,
-        lastMoveSignature: game ? `${rpsData.rounds.length}:${opponentsReady}` : null,
-        opponentMoved: opponentsReady > 0,
-        enabled: !isSpectator && !!game && !isFinished,
-    })
+    // No turn cue: every round asks both players at once, and the reveal already marks it.
+    useRpsSounds(
+        game
+            ? {
+                rounds: rpsData.rounds.length,
+                ready: [...rpsData.playersReady].sort(),
+                lastWinner: rpsData.rounds[rpsData.rounds.length - 1]?.winner ?? null,
+                matchOver: !!rpsData.gameWinner,
+            }
+            : null,
+        { gameId: game?.id, viewerId: currentUserId, isSeated: !isSpectator && !!currentUserId && !!game?.state.players.some((p) => p.id === currentUserId) },
+    )
+    useSpectatorResultCue({ isSpectator, isFinished, gameId: game?.id, revealDelayMs: RPS_RESULT_REVEAL_DELAY_MS })
 
     const turnTimerLimit =
         typeof lobby?.turnTimer === 'number' && Number.isFinite(lobby.turnTimer) && lobby.turnTimer > 0
@@ -861,6 +874,7 @@ export default function RockPaperScissorsLobbyPage({ code, isSpectator = false, 
             </div>
             {showsResultOverlay && (
                 <GameResultOverlay
+                    isSpectator={isSpectator}
                     title={finishedMessage}
                     kicker={t('lobby.game.gameOver')}
                     icon={<div style={{ width: 56, height: 56, borderRadius: '50%', background: iWon ? 'var(--bd-mint-deep)' : 'var(--bd-coral)', display: 'grid', placeItems: 'center', boxShadow: 'inset 0 0 0 3px rgba(255,255,255,0.15)' }}><Icon name={iWon ? 'trophy' : 'rock'} size={28} tone="on-accent" /></div>}
@@ -873,10 +887,11 @@ export default function RockPaperScissorsLobbyPage({ code, isSpectator = false, 
                     onReturnToLobby={handleReturnToWaiting}
                     onLeave={() => setShowLeaveConfirmModal(true)}
                     isGuest={isGuest}
-                    registerUrl={`/auth/register?returnUrl=${encodeURIComponent(`/lobby/${code}`)}`}
                     inviteCode={code}
                     gameType="rock_paper_scissors"
+                    outcome={viewerOutcome({ isFinished: shownFinished, isDraw: false, isSpectator, isSeated: !!currentUserId && (currentUserId === leftId || currentUserId === rightId), isViewerWinner: shownWinnerId ? shownWinnerId === currentUserId : null })}
                     resultKey={`${game?.id}:${game?.state.lastMoveAt ?? ''}`}
+                    gameId={game?.id}
                     revealDelayMs={RPS_RESULT_REVEAL_DELAY_MS}
                     isRegistered={status === 'authenticated' && !isGuest}
                 />
@@ -886,17 +901,13 @@ export default function RockPaperScissorsLobbyPage({ code, isSpectator = false, 
 
     // Leave lives in the header (layout DoD); nothing else needs a row under the board.
 
-    // Chat hidden in bot-only games (#522 parity with the shared lobby shell);
-    // spectators get a read-only feed.
-    const hasMultipleHumans = lobbyPlayers.filter((p) => !p.user?.bot && !p.bot).length >= 2
-    const showChat = hasMultipleHumans || isSpectator
     const chatPlayerProfiles = new Map<string, { avatarUrl?: string | null; isPremium?: boolean }>()
     for (const p of lobbyPlayers) {
         if (p.userId) chatPlayerProfiles.set(p.userId, { avatarUrl: p.user?.avatarUrl ?? p.user?.image ?? null, isPremium: !!p.user?.isPremium })
     }
 
     const historySection = (
-        <div className={`ttt-history-card${showChat ? '' : ' ttt-history-card--fill'}`}>
+        <div className="ttt-history-card">
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: 10, marginBottom: 10, borderBottom: '1px solid var(--bd-line)' }}>
                 <h3 style={{ fontFamily: 'var(--bd-font-display)', fontWeight: 700, fontSize: 16, color: 'var(--bd-ink)', margin: 0 }}>{t('games.rock_paper_scissors.roundsTitle')}</h3>
                 <span style={{ display: 'inline-flex', padding: '3px 9px', borderRadius: 999, fontSize: 11, fontWeight: 600, background: 'var(--bd-bg2)', color: 'var(--bd-ink-soft)' }}>
@@ -920,7 +931,7 @@ export default function RockPaperScissorsLobbyPage({ code, isSpectator = false, 
                         const who = isDrawRound ? t('lobby.game.draw') : getDisplayName(round.winner ?? '')
                         return (
                             <div key={`round-${number}`} className={`rps-round-row${isDrawRound ? ' rps-round-row--draw' : ''}`} style={{ '--row-accent': accent } as React.CSSProperties}>
-                                <span className="rps-round-row__num">#{String(number).padStart(2, '0')}</span>
+                                <span className="rps-round-row__num">{String(number).padStart(2, '0')}</span>
                                 <span className="rps-round-row__pair">
                                     <span aria-label={leftChoice ? t(CHOICE_LABEL_KEY[leftChoice]) : undefined}><Icon name={getChoiceIcon(leftChoice)} size={18} /></span>
                                     <span className="rps-round-row__vs">{t('game.ui.vs')}</span>
@@ -935,12 +946,14 @@ export default function RockPaperScissorsLobbyPage({ code, isSpectator = false, 
         </div>
     )
 
-    const chatSection = showChat ? (
+    const chatSection = (
         <section className="game-chat-panel">
             <Chat
                 lobbyCode={code}
                 messages={chatMessages}
                 onSendMessage={sendChatMessage}
+                termsAccepted={chatTermsAccepted}
+                onAcceptTerms={acceptChatTerms}
                 currentUserId={currentUserId || null}
                 playerProfiles={chatPlayerProfiles}
                 isMinimized={false}
@@ -951,7 +964,7 @@ export default function RockPaperScissorsLobbyPage({ code, isSpectator = false, 
                 readOnly={isSpectator}
             />
         </section>
-    ) : null
+    )
 
     // The room card sits to the right of the scoreboard, in the same grid row
     // and at the same height (layout DoD, scheme A): game, room code, invite
@@ -995,7 +1008,18 @@ export default function RockPaperScissorsLobbyPage({ code, isSpectator = false, 
                 <div className="game-landscape-side">
                     <div className="ttt-top-row">{headerSection}{roomSectionCompact}</div>
                     {statusSection}
-                    {chatSection}
+                    <GameTabs
+                        tabs={[
+                            { id: 'history' as const, label: `${t('games.rock_paper_scissors.roundsTitle')} (${rpsData.rounds.length})` },
+                            { id: 'chat' as const, label: t('game.ui.tabChat'), badge: chatUnreadCount },
+                        ]}
+                        activeTab={mobileTab === 'history' ? 'history' : 'chat'}
+                        onTabChange={(id) => {
+                            setMobileTab(id)
+                            if (id === 'chat') resetChatUnread()
+                        }}
+                    />
+                    {mobileTab === 'history' ? historySection : chatSection}
                 </div>
             </div>
 
@@ -1007,7 +1031,7 @@ export default function RockPaperScissorsLobbyPage({ code, isSpectator = false, 
                     tabs={[
                         { id: 'board' as const, label: t('game.ui.tabBoard') },
                         { id: 'history' as const, label: `${t('games.rock_paper_scissors.roundsTitle')} (${rpsData.rounds.length})` },
-                        ...(showChat ? [{ id: 'chat' as const, label: t('game.ui.tabChat'), badge: chatUnreadCount }] : []),
+                        { id: 'chat' as const, label: t('game.ui.tabChat'), badge: chatUnreadCount },
                     ]}
                     activeTab={mobileTab}
                     onTabChange={(id) => {

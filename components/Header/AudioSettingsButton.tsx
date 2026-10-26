@@ -1,14 +1,26 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, useSyncExternalStore } from 'react'
 import { useTranslation } from '@/lib/i18n-helpers'
-import { sounds } from '@/lib/sounds'
+import { setSoundEnabled, setSoundVolume } from '@/lib/sound-settings'
+import { useSoundSettings } from '@/hooks/useSoundSettings'
+import { headerControl } from './headerControlStyles'
 
-const AUDIO_SETTINGS_CHANGED_EVENT = 'boardly:audio-settings-changed'
+// navigator.audioSession exists in macOS Safari too, which has no silent switch, so the user agent decides.
+const IPHONE_UA = /iPhone|iPod/
 
-function broadcastAudioSettingsChange() {
-  if (typeof window === 'undefined') return
-  window.dispatchEvent(new Event(AUDIO_SETTINGS_CHANGED_EVENT))
+function subscribeNever() {
+  return () => {}
+}
+
+function useIsIPhone(): boolean {
+  return useSyncExternalStore(subscribeNever, () => IPHONE_UA.test(navigator.userAgent), () => false)
+}
+
+function SilentSwitchHint({ className = '' }: { className?: string }) {
+  const { t } = useTranslation()
+  if (!useIsIPhone()) return null
+  return <p className={`text-xs text-(--bd-ink-muted) ${className}`}>{t('header.silentSwitchHint')}</p>
 }
 
 function VolumeIcon({ muted }: { muted: boolean }) {
@@ -33,58 +45,24 @@ function VolumeIcon({ muted }: { muted: boolean }) {
 }
 
 function useAudioSettings() {
-  const [enabled, setEnabled] = useState(true)
-  const [volume, setVolumeState] = useState(0.7)
-
-  useEffect(() => {
-    setEnabled(sounds.isEnabled())
-    setVolumeState(sounds.getVolume())
-  }, [])
-
-  useEffect(() => {
-    const syncFromManager = () => {
-      setEnabled(sounds.isEnabled())
-      setVolumeState(sounds.getVolume())
-    }
-
-    window.addEventListener(AUDIO_SETTINGS_CHANGED_EVENT, syncFromManager)
-    return () => {
-      window.removeEventListener(AUDIO_SETTINGS_CHANGED_EVENT, syncFromManager)
-    }
-  }, [])
+  const { enabled, volume } = useSoundSettings()
 
   const toggleMute = () => {
     if (!enabled) {
-      const next = sounds.toggle()
-      setEnabled(next)
-      if (volume === 0) {
-        sounds.setVolume(0.5)
-        setVolumeState(0.5)
-      }
-      broadcastAudioSettingsChange()
+      setSoundEnabled(true)
+      if (volume === 0) setSoundVolume(0.5)
       return
     }
-
     if (volume === 0) {
-      sounds.setVolume(0.5)
-      setVolumeState(0.5)
-      broadcastAudioSettingsChange()
+      setSoundVolume(0.5)
       return
     }
-
-    const next = sounds.toggle()
-    setEnabled(next)
-    broadcastAudioSettingsChange()
+    setSoundEnabled(false)
   }
 
   const changeVolume = (val: number) => {
-    sounds.setVolume(val)
-    setVolumeState(val)
-    if (!enabled && val > 0) {
-      sounds.toggle()
-      setEnabled(true)
-    }
-    broadcastAudioSettingsChange()
+    setSoundVolume(val)
+    if (!enabled && val > 0) setSoundEnabled(true)
   }
 
   return { enabled, volume, toggleMute, changeVolume }
@@ -123,11 +101,11 @@ export function AudioSettingsButton() {
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
-        aria-label={t('header.openAudioSettings', 'Open audio settings')}
-        title={t('header.audioSettings', 'Audio Settings')}
-        className={`relative flex h-9 w-9 items-center justify-center rounded-xl border border-(--bd-line) bg-(--bd-card-warm) transition-all hover:-translate-y-px hover:text-(--bd-ink) ${
-          muted ? 'text-(--bd-ink-muted)' : 'text-(--bd-ink)'
-        }`}
+        aria-label={t('header.openAudioSettings')}
+        title={t('header.audioSettings')}
+        aria-expanded={open}
+        data-open={open ? '' : undefined}
+        className={`${headerControl({ square: true, text: muted ? 'text-bd-ink-muted hover:text-bd-ink data-open:text-bd-ink' : 'text-bd-ink' })} relative`}
       >
         <VolumeIcon muted={muted} />
       </button>
@@ -136,9 +114,9 @@ export function AudioSettingsButton() {
         <div className="absolute right-0 top-12 z-50 w-64 rounded-2xl border border-(--bd-line) bg-(--bd-card-warm) p-4 text-(--bd-ink) shadow-[0_18px_45px_rgba(31,27,22,0.18)]">
           <div className="mb-4 flex items-start justify-between gap-3">
             <div>
-              <p className="bd-kicker">{t('header.audioSettings', 'Audio Settings')}</p>
+              <p className="bd-kicker">{t('header.audioSettings')}</p>
               <p className="mt-1 text-sm font-semibold text-(--bd-ink-muted)">
-                {muted ? t('header.unmute', 'Unmute') : `${t('header.volume', 'Volume')} ${volumePercent}%`}
+                {muted ? t('header.unmute') : `${t('header.volume')} ${volumePercent}%`}
               </p>
             </div>
             <div className="grid h-10 w-10 place-items-center rounded-xl border border-(--bd-line) bg-(--bd-card-warm) text-(--bd-ink)">
@@ -151,13 +129,13 @@ export function AudioSettingsButton() {
             onClick={toggleMute}
             className="mb-4 flex w-full items-center justify-between rounded-xl border border-(--bd-line) bg-(--bd-card-warm) px-3 py-2.5 text-sm font-bold text-(--bd-ink) transition-colors hover:bg-(--bd-bg2)"
           >
-            <span>{muted ? t('header.unmute', 'Unmute') : t('header.mute', 'Mute')}</span>
+            <span>{muted ? t('header.unmute') : t('header.mute')}</span>
             <VolumeIcon muted={muted} />
           </button>
 
           <div>
             <div className="mb-1.5 flex items-center justify-between">
-              <label className="text-xs font-semibold text-(--bd-ink-muted)">{t('header.volume', 'Volume')}</label>
+              <label className="text-xs font-semibold text-(--bd-ink-muted)">{t('header.volume')}</label>
               <span className="text-xs font-black text-(--bd-ink)">{volumePercent}%</span>
             </div>
             <input
@@ -168,31 +146,59 @@ export function AudioSettingsButton() {
               value={volume}
               onChange={(e) => changeVolume(parseFloat(e.target.value))}
               className="h-2 w-full cursor-pointer accent-(--bd-ink)"
-              aria-label={t('header.volume', 'Volume')}
+              aria-label={t('header.volume')}
             />
           </div>
+          <SilentSwitchHint className="mt-3" />
         </div>
       )}
     </div>
   )
 }
 
-export function AudioSettingsMobilePanel() {
+/** One tap mutes or unmutes; the volume itself lives in Settings and the desktop popover. */
+export function MuteToggleButton({ className = '' }: { className?: string }) {
+  const { t } = useTranslation()
+  const { enabled, volume, toggleMute } = useAudioSettings()
+  const muted = !enabled || volume === 0
+
+  return (
+    <button
+      type="button"
+      onClick={toggleMute}
+      aria-pressed={muted}
+      aria-label={muted ? t('header.unmute') : t('header.mute')}
+      title={muted ? t('header.unmute') : t('header.mute')}
+      className={`flex h-9 w-9 items-center justify-center rounded-xl border-[1.5px] border-bd-line bg-bd-bg transition-colors hover:bg-bd-bg2 focus:outline-hidden focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-bd-lav-deep ${
+        muted ? 'text-bd-ink-muted' : 'text-bd-ink'
+      } ${className}`}
+    >
+      <VolumeIcon muted={muted} />
+    </button>
+  )
+}
+
+interface AudioSettingsPanelProps {
+  title: string
+  subtitle?: string
+  className?: string
+}
+
+/** Mute button plus the volume slider, for a settings surface. */
+export function AudioSettingsPanel({ title, subtitle, className = '' }: AudioSettingsPanelProps) {
   const { t } = useTranslation()
   const { enabled, volume, toggleMute, changeVolume } = useAudioSettings()
   const muted = !enabled || volume === 0
   const volumePercent = Math.round(volume * 100)
 
   return (
-    <div className="rounded-2xl border border-(--bd-line) bg-(--bd-card-warm) p-3 shadow-xs">
-      <div className="mb-3 flex items-center justify-between gap-3">
+    <div className={className}>
+      <div className="mb-3 flex items-start justify-between gap-3">
         <div>
-          <p className="bd-kicker">{t('header.audioSettings', 'Audio Settings')}</p>
-          <p className="mt-1 text-xs font-semibold text-(--bd-ink-muted)">
-            {muted ? t('header.unmute', 'Unmute') : `${t('header.volume', 'Volume')} ${volumePercent}%`}
-          </p>
+          <p className="mb-1 block text-sm font-semibold text-bd-ink">{title}</p>
+          {subtitle && <p className="text-sm text-bd-ink-soft">{subtitle}</p>}
         </div>
-        <div className="grid h-10 w-10 place-items-center rounded-xl border border-(--bd-line) bg-(--bd-card-warm) text-(--bd-ink)">
+        <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl border border-(--bd-line) bg-(--bd-card-warm) text-(--bd-ink)">
           <VolumeIcon muted={muted} />
         </div>
       </div>
@@ -200,18 +206,20 @@ export function AudioSettingsMobilePanel() {
       <button
         type="button"
         onClick={toggleMute}
-        className="mb-3 flex w-full items-center justify-between rounded-xl border border-(--bd-line) bg-(--bd-card-warm) px-3 py-2.5 text-sm font-bold text-(--bd-ink) transition-colors hover:bg-(--bd-bg2)"
+        aria-pressed={muted}
+        className="mb-3 flex w-full items-center justify-between rounded-xl border border-(--bd-line) bg-(--bd-card-warm) px-3 py-2.5 text-sm font-bold text-(--bd-ink) transition-colors hover:bg-(--bd-bg2) focus:outline-hidden focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-bd-lav-deep"
       >
-        <span>{muted ? t('header.unmute', 'Unmute') : t('header.mute', 'Mute')}</span>
+        <span>{muted ? t('header.unmute') : t('header.mute')}</span>
         <VolumeIcon muted={muted} />
       </button>
 
       <div className="px-1">
         <div className="mb-1.5 flex items-center justify-between">
-          <label className="text-xs font-semibold text-(--bd-ink-muted)">{t('header.volume', 'Volume')}</label>
+          <label htmlFor="audio-settings-volume" className="text-xs font-semibold text-(--bd-ink-muted)">{t('header.volume')}</label>
           <span className="text-xs font-black text-(--bd-ink)">{volumePercent}%</span>
         </div>
         <input
+          id="audio-settings-volume"
           type="range"
           min={0}
           max={1}
@@ -219,9 +227,10 @@ export function AudioSettingsMobilePanel() {
           value={volume}
           onChange={(e) => changeVolume(parseFloat(e.target.value))}
           className="h-2 w-full cursor-pointer accent-(--bd-ink)"
-          aria-label={t('header.volume', 'Volume')}
+          aria-label={t('header.volume')}
         />
       </div>
+      <SilentSwitchHint className="mt-3 px-1" />
     </div>
   )
 }

@@ -6,6 +6,7 @@ import { renderToStaticMarkup } from 'react-dom/server'
 import MemoryGameBoard from '@/app/lobby/[code]/components/MemoryGameBoard'
 import { MemoryGame, type MemoryGameData } from '@/lib/games/memory-game'
 import { MOBILE_MAX_MEDIA_QUERY, PHONE_LANDSCAPE_MEDIA_QUERY } from '@/lib/responsive-tokens'
+import { playCue } from '@/lib/sound-engine'
 
 jest.mock('@vercel/analytics', () => ({ track: jest.fn() }))
 
@@ -21,10 +22,6 @@ jest.mock('@/lib/fetch-with-guest', () => ({
   fetchWithGuest: jest.fn(() => Promise.resolve({ ok: true, json: async () => ({}) })),
 }))
 
-jest.mock('@/lib/sounds', () => ({
-  sounds: { play: jest.fn() },
-}))
-
 jest.mock('@/lib/analytics', () => ({
   trackDiscordCta: jest.fn(),
   trackSignupPrompt: jest.fn(),
@@ -33,6 +30,11 @@ jest.mock('@/lib/analytics', () => ({
 
 jest.mock('@/hooks/useInviteShare', () => ({
   useInviteShare: () => jest.fn(),
+}))
+
+jest.mock('@/lib/sound-engine', () => ({
+  ...jest.requireActual('@/lib/sound-engine'),
+  playCue: jest.fn(() => true),
 }))
 
 /**
@@ -86,7 +88,6 @@ function finishedBoardElement() {
       currentUserId={HUMAN_USER_ID}
       canStartGame
       isGuest
-      registerUrl="/auth/register?returnUrl=%2Flobby%2F9952"
     />
   )
 }
@@ -197,5 +198,58 @@ describe('MemoryGameBoard result overlay (#1052)', () => {
 
     expect(html).toContain('memory-grid')
     expect(html).not.toContain('game-result-overlay')
+  })
+})
+
+describe('MemoryGameBoard spectator result cue (#1464)', () => {
+  const play = playCue as jest.Mock
+  const resultCues = () => play.mock.calls.filter(([cue]) => String(cue).startsWith('result.'))
+  const playingState = () => {
+    const state = finishedMemoryState()
+    state.status = 'playing'
+    state.data.winnerId = null
+    return state
+  }
+  const watcherBoard = (state: ReturnType<typeof finishedMemoryState>, overrides: Record<string, unknown> = {}) => (
+    <MemoryGameBoard
+      gameId="cmuabzhpu000fyosihrvaoydp"
+      lobbyCode="9952"
+      state={state}
+      players={[
+        { id: 'cmuac0zq1001lyosiuhb5qhlv', userId: HUMAN_USER_ID, score: 5, name: 'Denys' },
+        { id: 'cmuac100b001oyosi92tcuxv2', userId: BOT_USER_ID, score: 3, name: 'Botty' },
+      ]}
+      currentUserId="watcher"
+      isSpectator
+      {...overrides}
+    />
+  )
+
+  beforeEach(() => {
+    play.mockClear()
+    setViewport('desktop')
+  })
+
+  it('tells a spectator once that the game is over when it finishes while they watch', () => {
+    const { rerender } = render(watcherBoard(playingState()))
+    act(() => { rerender(watcherBoard(finishedMemoryState())) })
+    act(() => { rerender(watcherBoard(finishedMemoryState())) })
+
+    expect(resultCues()).toEqual([['result.over', { gameId: 'cmuabzhpu000fyosihrvaoydp#end', delayMs: 700 }]])
+  })
+
+  it('stays silent for a spectator who opens the game after it finished', () => {
+    const { rerender } = render(watcherBoard(finishedMemoryState()))
+    act(() => { rerender(watcherBoard(finishedMemoryState())) })
+
+    expect(resultCues()).toEqual([])
+  })
+
+  it('leaves a seated player to the result overlay', () => {
+    const seated = { currentUserId: HUMAN_USER_ID, isSpectator: false }
+    const { rerender } = render(watcherBoard(playingState(), seated))
+    act(() => { rerender(watcherBoard(finishedMemoryState(), seated)) })
+
+    expect(resultCues()).toEqual([])
   })
 })

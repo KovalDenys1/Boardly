@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { MobileMenu } from '@/components/Header/MobileMenu'
 
 const mockPush = jest.fn()
@@ -14,14 +14,17 @@ jest.mock('next/navigation', () => ({
   usePathname: () => mockPathname,
 }))
 
+let mockIsGuest = false
+
 jest.mock('next-auth/react', () => ({
   signOut: jest.fn(),
+  useSession: () => ({ data: null, status: 'unauthenticated' }),
 }))
 
 jest.mock('@/contexts/GuestContext', () => ({
   useGuest: () => ({
-    isGuest: false,
-    guestName: null,
+    isGuest: mockIsGuest,
+    guestName: mockIsGuest ? 'HostQ1383' : null,
     clearGuestMode: jest.fn(),
   }),
 }))
@@ -37,6 +40,7 @@ jest.mock('@/components/LanguageSwitcher', () => ({
 
 jest.mock('@/lib/i18n-helpers', () => ({
   useTranslation: () => ({
+    i18n: { language: 'en' },
     t: (key: string) => {
       const map: Record<string, string> = {
         'header.menu': 'Open menu',
@@ -46,7 +50,7 @@ jest.mock('@/lib/i18n-helpers', () => ({
         'header.lobbies': 'Lobbies',
         'header.leaderboard': 'Leaderboard',
         'header.guides': 'Guides',
-
+        'header.friends': 'Friends',
         'header.profile': 'Open profile',
         'header.settings': 'Settings',
         'header.logout': 'Logout',
@@ -63,96 +67,81 @@ jest.mock('@/lib/i18n-helpers', () => ({
   }),
 }))
 
+function renderMenu(props: Partial<React.ComponentProps<typeof MobileMenu>> = {}) {
+  return render(
+    <MobileMenu
+      isAuthenticated
+      userName="Tester"
+      userEmail="tester@example.com"
+      {...props}
+    />
+  )
+}
+
+function openMenu() {
+  fireEvent.click(screen.getByRole('button', { name: 'Open menu' }))
+  return screen.getByRole('dialog')
+}
+
 describe('MobileMenu', () => {
   beforeEach(() => {
-    jest.useFakeTimers()
     mockPathname = '/'
-  })
-
-  afterEach(() => {
-    act(() => {
-      jest.runOnlyPendingTimers()
-    })
-    jest.useRealTimers()
     jest.clearAllMocks()
   })
 
-  it('does not auto-close immediately after opening without pathname change', () => {
-    render(
-      <MobileMenu
-        isAuthenticated
-        userName="Tester"
-        userEmail="tester@example.com"
-      />
-    )
+  it('opens a dialog from the hamburger and reports it as expanded', () => {
+    renderMenu()
+    const trigger = screen.getByRole('button', { name: 'Open menu' })
+    expect(trigger).toHaveAttribute('aria-expanded', 'false')
 
-    fireEvent.click(screen.getByLabelText('Open menu'))
+    fireEvent.click(trigger)
 
-    act(() => {
-      jest.advanceTimersByTime(350)
-    })
-
-    expect(screen.getAllByLabelText('Close menu').length).toBeGreaterThan(0)
+    const dialog = screen.getByRole('dialog')
+    expect(dialog).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'Close menu', expanded: true, hidden: true })).toHaveAttribute('aria-controls', dialog.id)
   })
 
-  it('closes menu when pathname changes', () => {
-    const { rerender } = render(
-      <MobileMenu
-        isAuthenticated
-        userName="Tester"
-        userEmail="tester@example.com"
-      />
-    )
+  it('moves focus into the drawer and back to the hamburger on close', async () => {
+    renderMenu()
+    const dialog = openMenu()
+    await waitFor(() => expect(dialog.contains(document.activeElement)).toBe(true))
 
-    fireEvent.click(screen.getByLabelText('Open menu'))
-    expect(screen.getAllByLabelText('Close menu').length).toBeGreaterThan(0)
+    fireEvent.keyDown(dialog, { key: 'Escape' })
+
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
+    expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Open menu' }))
+  })
+
+  it('closes when the pathname changes', async () => {
+    const { rerender } = renderMenu()
+    openMenu()
 
     mockPathname = '/games'
-    rerender(
-      <MobileMenu
-        isAuthenticated
-        userName="Tester"
-        userEmail="tester@example.com"
-      />
-    )
+    rerender(<MobileMenu isAuthenticated userName="Tester" userEmail="tester@example.com" />)
 
-    act(() => {
-      jest.advanceTimersByTime(300)
-    })
-
-    expect(screen.getByLabelText('Open menu')).toBeTruthy()
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
   })
 
-  it('cleans pending close timer on unmount', () => {
-    const clearTimeoutSpy = jest.spyOn(global, 'clearTimeout')
+  it('renders every nav item as an anchor and adds Friends for a member', () => {
+    renderMenu()
+    openMenu()
 
-    const { unmount } = render(
-      <MobileMenu
-        isAuthenticated
-        userName="Tester"
-        userEmail="tester@example.com"
-      />
-    )
+    const hrefs = screen.getAllByRole('link').map((link) => link.getAttribute('href'))
+    expect(hrefs).toEqual(['/', '/games', '/lobby', '/leaderboard', '/guides', '/friends'])
+  })
 
-    fireEvent.click(screen.getByLabelText('Open menu'))
-    fireEvent.click(screen.getAllByLabelText('Close menu')[0])
+  it('closes after a nav link is tapped', async () => {
+    renderMenu()
+    openMenu()
 
-    unmount()
+    fireEvent.click(screen.getByRole('link', { name: 'Guides' }))
 
-    expect(clearTimeoutSpy).toHaveBeenCalled()
-    clearTimeoutSpy.mockRestore()
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
   })
 
   it('uses profile navigation helper when tapping the user summary block', () => {
-    render(
-      <MobileMenu
-        isAuthenticated
-        userName="Tester"
-        userEmail="tester@example.com"
-      />
-    )
-
-    fireEvent.click(screen.getByLabelText('Open menu'))
+    renderMenu()
+    openMenu()
     fireEvent.click(screen.getByLabelText('Open profile'))
 
     expect(mockNavigateToProfile).toHaveBeenCalledWith(
@@ -163,15 +152,8 @@ describe('MobileMenu', () => {
   })
 
   it('opens profile settings from the bottom action button', () => {
-    render(
-      <MobileMenu
-        isAuthenticated
-        userName="Tester"
-        userEmail="tester@example.com"
-      />
-    )
-
-    fireEvent.click(screen.getByLabelText('Open menu'))
+    renderMenu()
+    openMenu()
     fireEvent.click(screen.getByRole('button', { name: 'Settings' }))
 
     expect(mockNavigateToProfile).toHaveBeenCalledWith(
@@ -181,37 +163,41 @@ describe('MobileMenu', () => {
     )
   })
 
-  it('keeps the compact menu split active through the tablet breakpoint', () => {
-    render(
-      <MobileMenu
-        isAuthenticated={false}
-      />
-    )
+  it('shows Login and Sign Up to a signed-out visitor and no user card', () => {
+    renderMenu({ isAuthenticated: false, userName: null, userEmail: null })
+    openMenu()
 
-    expect(screen.getByLabelText('Open menu').className).toContain('xl:hidden')
+    expect(screen.getByRole('button', { name: 'Login' })).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'Sign Up' })).toBeTruthy()
+    expect(screen.queryByLabelText('Open profile')).toBeNull()
+    expect(screen.queryByRole('link', { name: 'Friends' })).toBeNull()
+  })
+
+  it('keeps the compact menu split active through the tablet breakpoint', () => {
+    renderMenu({ isAuthenticated: false })
+
+    expect(screen.getByRole('button', { name: 'Open menu' }).className).toContain('desk:hidden')
   })
 
   it('renders the language switcher inside the menu panel', () => {
-    render(
-      <MobileMenu
-        isAuthenticated={false}
-      />
-    )
-
-    fireEvent.click(screen.getByLabelText('Open menu'))
+    renderMenu({ isAuthenticated: false })
+    openMenu()
 
     expect(screen.getByTestId('mobile-language-switcher')).toBeTruthy()
   })
 
-  it('lists the public guides route, as the desktop nav does', () => {
-    render(
-      <MobileMenu
-        isAuthenticated={false}
-      />
-    )
+  it('opens the Blocked players dialog over the drawer for a guest (#1466)', async () => {
+    mockIsGuest = true
+    try {
+      renderMenu({ isAuthenticated: false, userName: null, userEmail: null })
+      openMenu()
 
-    fireEvent.click(screen.getByLabelText('Open menu'))
+      fireEvent.click(screen.getByRole('button', { name: 'blockedPlayers.title' }))
 
-    expect(screen.getByRole('link', { name: 'Guides' })).toHaveAttribute('href', '/guides')
+      const dialog = await screen.findByRole('dialog', { name: 'blockedPlayers.title' })
+      expect(await within(dialog).findByText('blockedPlayers.empty')).toBeTruthy()
+    } finally {
+      mockIsGuest = false
+    }
   })
 })

@@ -2,8 +2,11 @@
 
 import React from 'react'
 import { useTranslation } from '@/lib/i18n-helpers'
-import { sounds } from '@/lib/sounds'
+import { playCue } from '@/lib/sound-engine'
 import { Icon } from '@/components/icons'
+
+/** die.hold is pitched +4 st for a hold; a release sits at +1 st, a lower step for letting go. */
+const RELEASE_SEMIS = -3
 
 const PIPS: Record<number, number[]> = {
   1: [4],
@@ -14,129 +17,139 @@ const PIPS: Record<number, number[]> = {
   6: [0, 2, 3, 5, 6, 8],
 }
 
+const PLACEHOLDER_PIPS = PIPS[5]
+const MAX_ROLLS = 3
+
 function DieButton({
+  index,
   value,
   held,
-  blank,
+  placeholder,
   disabled,
-  shaking,
+  rolling,
   onToggle,
 }: {
+  index: number
   value: number
   held: boolean
-  blank: boolean
+  placeholder: boolean
   disabled: boolean
-  shaking: boolean
+  rolling: boolean
   onToggle: () => void
 }) {
   const { t } = useTranslation()
-  const [pop, setPop] = React.useState(false)
-  const previousHeld = React.useRef(held)
+  const [landed, setLanded] = React.useState(false)
+  const previousValue = React.useRef(value)
   React.useEffect(() => {
-    if (held && !previousHeld.current) {
-      setPop(true)
-      const timeout = setTimeout(() => setPop(false), 280)
-      previousHeld.current = held
-      return () => clearTimeout(timeout)
-    }
-    previousHeld.current = held
-  }, [held])
+    if (previousValue.current === value) return
+    previousValue.current = value
+    if (!placeholder) setLanded(true)
+    // Only a new value lands; the placeholder flag changing alone does not.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [value])
 
-  const pips = PIPS[value] ?? []
+  const pips = placeholder ? PLACEHOLDER_PIPS : PIPS[value] ?? []
+  const className = [
+    'yz-die',
+    held && !placeholder ? 'yz-die--held' : '',
+    placeholder ? 'yz-die--placeholder' : '',
+    rolling && !held ? 'yz-die--rolling' : '',
+    landed && !rolling && !placeholder ? 'yz-die--landed' : '',
+  ].filter(Boolean).join(' ')
+
   return (
     <button
       type="button"
-      className={`yz-die${held ? ' yz-die--held' : ''}${blank ? ' yz-die--blank' : ''}${pop ? ' yz-die--pop' : ''}${shaking && !held ? ' animate-shake-roll' : ''}`}
+      className={className}
+      style={{ '--i': index } as React.CSSProperties}
       disabled={disabled}
       aria-pressed={held}
-      aria-label={blank ? t('yahtzee.ui.dieBlankAria') : t(held ? 'yahtzee.ui.dieHeldAria' : 'yahtzee.ui.dieAria', { value })}
+      aria-label={placeholder ? t('yahtzee.ui.dieBlankAria') : t(held ? 'yahtzee.ui.dieHeldAria' : 'yahtzee.ui.dieAria', { value })}
       onClick={() => {
-        sounds.play('click', { force: true })
+        playCue('die.hold', { semis: held ? RELEASE_SEMIS : 0 })
         onToggle()
       }}
     >
-      <span className="yz-die__pips" aria-hidden>
+      <span
+        className="yz-die__face"
+        aria-hidden
+        onAnimationEnd={(event) => {
+          if (event.target === event.currentTarget && event.animationName === 'yz-land') setLanded(false)
+        }}
+      >
         {Array.from({ length: 9 }).map((_, i) => (
-          <span key={i} className="yz-die__pip" style={{ opacity: !blank && pips.includes(i) ? 1 : 0 }} />
+          <span key={i} className={`yz-die__pip${pips.includes(i) ? ' yz-die__pip--on' : ''}`} />
         ))}
       </span>
+      <span className="yz-die__held" aria-hidden>{t('yahtzee.ui.heldLabel')}</span>
     </button>
   )
 }
 
-/**
- * Five dice and the Roll button on one row (#1187). Tapping a die holds it; the
- * button says how many rolls are left, and once there are none it says what to
- * do instead. Spectators get the dice without the button.
- */
 export default function YahtzeeDiceBar({
   dice,
   held,
   rollsLeft,
-  isMyTurn,
+  placeholder,
   isRolling,
   canHold,
   canRoll,
   onToggleHold,
   onRoll,
   showRollButton = true,
+  hint = null,
 }: {
   dice: readonly number[]
   held: readonly boolean[]
   rollsLeft: number
-  isMyTurn: boolean
+  placeholder: boolean
   isRolling: boolean
   canHold: boolean
   canRoll: boolean
   onToggleHold: (index: number) => void
   onRoll: () => void
   showRollButton?: boolean
+  hint?: string | null
 }) {
   const { t } = useTranslation()
-  // Before the first roll of a turn the dice still show the last player's
-  // roll; they read as a fresh set, not as something to score.
-  const blank = isMyTurn && rollsLeft === 3
-
-  const rollLabel = isRolling
-    ? t('yahtzee.ui.rolling')
-    : !isMyTurn
-      ? t('yahtzee.ui.rollWaiting')
-      : rollsLeft === 0
-        ? t('yahtzee.ui.noRollsLeft')
-        : rollsLeft === 3
-          ? t('yahtzee.ui.rollDice')
-          : t('yahtzee.ui.rollWithCount', { count: rollsLeft })
+  const left = Math.max(0, Math.min(MAX_ROLLS, rollsLeft))
 
   return (
-    <div className="yz-dicebar">
-      <div className="yz-dice">
-        {dice.map((value, index) => (
-          <DieButton
-            key={index}
-            value={value}
-            held={!!held[index]}
-            blank={blank}
-            disabled={!canHold}
-            shaking={isRolling}
-            onToggle={() => onToggleHold(index)}
-          />
-        ))}
+    <div className={`yz-tray${showRollButton ? '' : ' yz-tray--no-roll'}`}>
+      <div className="yz-tray__body">
+        <div className="yz-tray__dice">
+          {dice.map((value, index) => (
+            <DieButton
+              key={index}
+              index={index}
+              value={value}
+              held={!!held[index]}
+              placeholder={placeholder}
+              disabled={!canHold}
+              rolling={isRolling}
+              onToggle={() => onToggleHold(index)}
+            />
+          ))}
+        </div>
+        {showRollButton && (
+          <button
+            type="button"
+            className={`yz-roll${isRolling ? ' yz-roll--rolling' : ''}`}
+            disabled={!canRoll}
+            aria-label={`${t('yahtzee.ui.rollDice')}. ${t('yahtzee.ui.rollsLeftCount', { count: left })}`}
+            onClick={onRoll}
+          >
+            <span className="yz-roll__icon" aria-hidden><Icon name="dice" size={18} /></span>
+            <span className="yz-roll__label">{t('yahtzee.ui.rollDice')}</span>
+            <span className="yz-roll__pips" aria-hidden>
+              {Array.from({ length: MAX_ROLLS }).map((_, i) => (
+                <span key={i} className={`yz-roll__pip${i < left ? ' yz-roll__pip--left' : ''}`} />
+              ))}
+            </span>
+          </button>
+        )}
       </div>
-      {showRollButton && (
-        <button
-          type="button"
-          className="yz-roll"
-          disabled={!canRoll}
-          aria-label={`${t('yahtzee.ui.rollDice')}. ${t('yahtzee.ui.rollsLeftCount', { count: rollsLeft })}`}
-          onClick={() => {
-            sounds.play('click', { force: true })
-            onRoll()
-          }}
-        >
-          <Icon name="dice" size={16} className={isRolling ? 'animate-spin' : undefined} />
-          <span>{rollLabel}</span>
-        </button>
-      )}
+      {hint && <p className="yz-tray__hint" role="status">{hint}</p>}
     </div>
   )
 }

@@ -1,5 +1,5 @@
 import React from 'react'
-import { act, render, screen, waitFor, fireEvent } from '@testing-library/react'
+import { act, render, screen, waitFor, fireEvent, within } from '@testing-library/react'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import ProfilePage from '@/app/profile/page'
@@ -493,31 +493,31 @@ describe('ProfilePage', () => {
     )
   })
 
+  /** Purchases answers at once; the renewal route answers with `renewal`, or never. */
+  function withPurchases(
+    purchases: Record<string, unknown>,
+    renewal: { status: number; body: unknown } | 'never' = { status: 200, body: { renewal: null } }
+  ) {
+    const routeEverythingElse = mockFetch.getMockImplementation()!
+    mockFetch.mockImplementation(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = typeof input === 'string' ? input : String(input)
+      if (url.includes('/api/user/purchases/renewal')) {
+        if (renewal === 'never') return new Promise(() => {})
+        return mockJsonResponse(renewal.body, renewal.status)
+      }
+      if (url.includes('/api/user/purchases')) return mockJsonResponse(purchases)
+      return routeEverythingElse(input, init)
+    })
+  }
+
+  const renewing = {
+    isPremium: true,
+    premiumUntil: '2026-10-27T00:00:00.000Z',
+    cancelAtPeriodEnd: false,
+    hasSubscriptionId: true,
+  }
+
   describe('the renewal line (#1167)', () => {
-    /** Purchases answers at once; the renewal route answers with `renewal`, or never. */
-    function withPurchases(
-      purchases: Record<string, unknown>,
-      renewal: { status: number; body: unknown } | 'never' = { status: 200, body: { renewal: null } }
-    ) {
-      const routeEverythingElse = mockFetch.getMockImplementation()!
-      mockFetch.mockImplementation(async (input: RequestInfo | URL, init?: RequestInit) => {
-        const url = typeof input === 'string' ? input : String(input)
-        if (url.includes('/api/user/purchases/renewal')) {
-          if (renewal === 'never') return new Promise(() => {})
-          return mockJsonResponse(renewal.body, renewal.status)
-        }
-        if (url.includes('/api/user/purchases')) return mockJsonResponse(purchases)
-        return routeEverythingElse(input, init)
-      })
-    }
-
-    const renewing = {
-      isPremium: true,
-      premiumUntil: '2026-10-27T00:00:00.000Z',
-      cancelAtPeriodEnd: false,
-      hasSubscriptionId: true,
-    }
-
     beforeEach(() => {
       window.history.replaceState({}, '', '/profile?tab=premium')
     })
@@ -566,6 +566,98 @@ describe('ProfilePage', () => {
 
       expect(await screen.findByText('profile.premiumTab.loseAccess')).toBeTruthy()
       expect(mockFetch).not.toHaveBeenCalledWith('/api/user/purchases/renewal', expect.anything())
+    })
+  })
+
+  describe('the Premium tab in the Play app (#1465)', () => {
+    beforeEach(() => {
+      window.history.replaceState({}, '', '/profile?tab=premium')
+    })
+
+    afterEach(() => {
+      delete document.documentElement.dataset.appShell
+    })
+
+    it('shows a free user the notice instead of the buy button', async () => {
+      document.documentElement.dataset.appShell = 'play'
+      render(<ProfilePage />)
+
+      expect(await screen.findByText('premium.playAppNotice')).toBeTruthy()
+      expect(screen.queryByRole('button', { name: /profile\.premiumTab\.getPremium/ })).toBeNull()
+    })
+
+    it('keeps the buy button and no notice for a free user on the web', async () => {
+      render(<ProfilePage />)
+
+      expect(await screen.findByRole('button', { name: /profile\.premiumTab\.getPremium/ })).toBeTruthy()
+      expect(screen.queryByText('premium.playAppNotice')).toBeNull()
+    })
+
+    it('keeps the status and Cancel for a subscriber in the app, without Manage billing', async () => {
+      document.documentElement.dataset.appShell = 'play'
+      withPurchases(renewing)
+      render(<ProfilePage />)
+
+      expect(await screen.findByText('profile.premiumTab.renewsOn')).toBeTruthy()
+      const actions = screen.getByTestId('premium-status-actions')
+      expect(within(actions).getByRole('button', { name: 'common.cancel' })).toBeTruthy()
+      expect(screen.queryByRole('button', { name: 'profile.premiumTab.manageBilling' })).toBeNull()
+      expect(screen.queryByText('premium.playAppNotice')).toBeNull()
+    })
+
+    it('offers no reactivate control in the app while the subscription is cancelling', async () => {
+      document.documentElement.dataset.appShell = 'play'
+      withPurchases({ ...renewing, cancelAtPeriodEnd: true })
+      render(<ProfilePage />)
+
+      expect(await screen.findByText('profile.premiumTab.loseAccess')).toBeTruthy()
+      expect(screen.queryByRole('button', { name: /profile\.premiumTab\.reactivate/ })).toBeNull()
+      expect(screen.queryByRole('button', { name: 'profile.premiumTab.manageBilling' })).toBeNull()
+      expect(screen.queryByTestId('premium-status-actions')).toBeNull()
+      expect(screen.getByText('premium.playAppNotice')).toBeTruthy()
+    })
+
+    it('opens no billing portal from the app for premium without a subscription id', async () => {
+      document.documentElement.dataset.appShell = 'play'
+      withPurchases({ ...renewing, hasSubscriptionId: false })
+      render(<ProfilePage />)
+
+      expect(await screen.findByText('profile.premiumTab.renewsOn')).toBeTruthy()
+      expect(screen.queryByRole('button', { name: 'premium.ctaManage' })).toBeNull()
+      expect(screen.queryByTestId('premium-status-actions')).toBeNull()
+    })
+
+    it('keeps Manage billing and reactivate on the web', async () => {
+      withPurchases({ ...renewing, cancelAtPeriodEnd: true })
+      render(<ProfilePage />)
+
+      expect(await screen.findByRole('button', { name: /profile\.premiumTab\.reactivate/ })).toBeTruthy()
+      expect(screen.getByRole('button', { name: 'profile.premiumTab.manageBilling' })).toBeTruthy()
+      expect(screen.getByTestId('premium-status-actions')).toBeTruthy()
+      expect(screen.queryByText('premium.playAppNotice')).toBeNull()
+    })
+
+    it('keeps the action row on the web for premium without a subscription id', async () => {
+      withPurchases({ ...renewing, hasSubscriptionId: false })
+      render(<ProfilePage />)
+
+      const actions = await screen.findByTestId('premium-status-actions')
+      expect(within(actions).getByRole('button', { name: 'premium.ctaManage' })).toBeTruthy()
+    })
+
+    it('reaches neither Stripe route from reactivate or Manage billing once the tab is the app', async () => {
+      withPurchases({ ...renewing, cancelAtPeriodEnd: true })
+      render(<ProfilePage />)
+      const reactivate = await screen.findByRole('button', { name: /profile\.premiumTab\.reactivate/ })
+      const manageBilling = screen.getByRole('button', { name: 'profile.premiumTab.manageBilling' })
+
+      document.documentElement.dataset.appShell = 'play'
+      fireEvent.click(reactivate)
+      fireEvent.click(manageBilling)
+
+      await act(async () => {})
+      expect(mockFetch).not.toHaveBeenCalledWith('/api/stripe/reactivate', expect.anything())
+      expect(mockFetch).not.toHaveBeenCalledWith('/api/stripe/checkout', expect.anything())
     })
   })
 
@@ -625,6 +717,31 @@ describe('ProfilePage', () => {
     expect(publicOption).toBeEnabled()
     expect(onlineBox).toBeChecked()
   })
+  it('lists the blocked players after Privacy in the settings tab, and Unblock removes one (#1466)', async () => {
+    const baseFetch = mockFetch.getMockImplementation()!
+    mockFetch.mockImplementation(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input)
+      if (url === '/api/user/blocks') {
+        return mockJsonResponse({ blocks: [{ id: 'u-bob', username: 'Bob', blockedAt: '2026-10-01T10:00:00.000Z' }] })
+      }
+      if (url === '/api/user/blocks/u-bob' && init?.method === 'DELETE') return mockJsonResponse({ success: true })
+      return baseFetch(input, init)
+    })
+    window.history.replaceState({}, '', '/profile?tab=settings')
+
+    render(<ProfilePage />)
+
+    const section = await screen.findByRole('region', { name: 'blockedPlayers.title' })
+    expect(section.id).toBe('blocked')
+    const privacy = screen.getByRole('region', { name: 'profile.settings.privacy.title' })
+    expect(privacy.compareDocumentPosition(section) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+
+    fireEvent.click(await within(section).findByRole('button', { name: 'blockedPlayers.unblock' }))
+
+    expect(await within(section).findByText('blockedPlayers.empty')).toBeTruthy()
+    expect(mockFetch).toHaveBeenCalledWith('/api/user/blocks/u-bob', { method: 'DELETE' })
+  })
+
   describe('privacy setting one click from the profile (#1226)', () => {
     let scrollIntoView: jest.Mock
     const originalScrollIntoView = Element.prototype.scrollIntoView

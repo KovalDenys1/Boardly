@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation'
 import { useTranslation, type TranslationKeys } from '@/lib/i18n-helpers'
 import { showToast } from '@/lib/i18n-toast'
 import { trackPremiumCta } from '@/lib/analytics'
+import { isPlayApp } from '@/lib/app-shell'
 import { Icon, type IconName } from '@/components/icons'
 import GameIcon from '@/components/GameIcon'
 import UsernameInput from '@/components/UsernameInput'
@@ -19,10 +20,18 @@ import BoardlySelect from '@/components/ui/BoardlySelect'
 import { Label } from '@/components/ui/label'
 import { navigateBackFromProfile } from '@/lib/profile-navigation'
 import { UserAvatar } from '@/components/Header/UserAvatar'
+import { AppearanceDevicePanels } from '@/components/profile/AppearanceDevicePanels'
 import AvatarPicker from '@/components/AvatarPicker'
+import { PlayAppOnly, PurchaseOnly } from '@/components/PurchaseOnly'
+import { useIsPlayApp } from '@/hooks/useIsPlayApp'
 import PublicProfileView from '@/components/PublicProfileView'
+import BlockedPlayersList from '@/components/BlockedPlayersList'
 import { buildAuthUrl } from '@/lib/auth-redirect'
-import { NOTIFICATION_SETTINGS_SECTION_ID, PRIVACY_SETTINGS_SECTION_ID } from '@/lib/public-profile'
+import {
+  BLOCKED_PLAYERS_SECTION_ID,
+  NOTIFICATION_SETTINGS_SECTION_ID,
+  PRIVACY_SETTINGS_SECTION_ID,
+} from '@/lib/public-profile'
 import { prefersReducedMotion } from '@/lib/motion'
 import {
   getStoredAppearancePreferences,
@@ -30,6 +39,7 @@ import {
   setStoredAppearanceLocale,
 } from '@/lib/appearance-preferences'
 import { changeLanguageLazy, type Locale } from '@/i18n'
+import { availableLocales, localeNames } from '@/locales/meta'
 import { ACHIEVEMENTS, ACHIEVEMENT_CATEGORY_ACCENT } from '@/lib/achievements'
 import { getSafeLocalStorage } from '@/lib/safe-storage'
 import { LAST_SIGN_IN_METHOD_CODE } from '@/lib/linked-accounts'
@@ -237,14 +247,13 @@ const DEFAULT_SETTINGS: SettingsState = {
   language: 'en',
 }
 
-const SETTINGS_LANGUAGE_OPTIONS = [
-  { value: 'en', label: 'English', badge: 'EN' },
-  { value: 'uk', label: 'Ukrainian', badge: 'UA' },
-  { value: 'no', label: 'Norwegian', badge: 'NO' },
-  { value: 'ru', label: 'Russian', badge: 'RU' },
-]
+const SETTINGS_LANGUAGE_OPTIONS = availableLocales.map((value) => ({
+  value,
+  label: localeNames[value].name,
+  badge: localeNames[value].badge,
+}))
 
-const SETTINGS_SECTION_IDS = [PRIVACY_SETTINGS_SECTION_ID, NOTIFICATION_SETTINGS_SECTION_ID]
+const SETTINGS_SECTION_IDS = [PRIVACY_SETTINGS_SECTION_ID, NOTIFICATION_SETTINGS_SECTION_ID, BLOCKED_PLAYERS_SECTION_ID]
 export default function ProfilePage() {
   const { t, i18n } = useTranslation()
   const { data: session, update, status } = useSession()
@@ -274,6 +283,8 @@ export default function ProfilePage() {
   const [hasSubscriptionId, setHasSubscriptionId] = useState(false)
   const [premiumRenewal, setPremiumRenewal] = useState<PremiumRenewal | null>(null)
   const [premiumActionLoading, setPremiumActionLoading] = useState(false)
+  const inPlayApp = useIsPlayApp()
+  const canCancelSubscription = hasSubscriptionId && !premiumCancelAtPeriodEnd
   const [showPublicProfilePreview, setShowPublicProfilePreview] = useState(false)
   const [publicProfilePreviewTransitionPhase, setPublicProfilePreviewTransitionPhase] =
     useState<PublicProfilePreviewTransitionPhase>('idle')
@@ -450,6 +461,7 @@ export default function ProfilePage() {
   }, [fetchProfileSummary])
 
   const handleReactivate = useCallback(async () => {
+    if (isPlayApp()) return
     setPremiumActionLoading(true)
     try {
       const res = await fetch('/api/stripe/reactivate', { method: 'POST' })
@@ -484,6 +496,7 @@ export default function ProfilePage() {
   }, [])
 
   const handleManageBilling = useCallback(async () => {
+    if (isPlayApp()) return
     try {
       const res = await fetch('/api/stripe/checkout', { method: 'POST' })
       const data = await res.json()
@@ -500,6 +513,7 @@ export default function ProfilePage() {
   // plan chooser lives on /premium, priced from Stripe at runtime, so send them
   // there instead of building a second pricing UI that can drift from the first.
   const handleCheckout = useCallback(() => {
+    if (isPlayApp()) return
     trackPremiumCta('profile_premium_tab')
     setPremiumActionLoading(true)
     router.push('/premium')
@@ -1855,7 +1869,7 @@ export default function ProfilePage() {
   const profileSurfaceClassName =
     'rounded-3xl border border-bd-line bg-bd-bg p-5'
   const fieldInputClassName =
-    'w-full rounded-2xl border bg-(--bd-input-bg) px-4 py-3 text-sm text-bd-ink shadow-xs outline-hidden transition-all'
+    'w-full rounded-2xl border bg-(--bd-input-bg) px-4 py-3 text-base text-bd-ink shadow-xs outline-hidden desk:text-sm transition-all focus:ring-2 focus:ring-inset focus:ring-bd-lav-deep'
   const settingsSyncBadgeClassName =
     'inline-flex w-fit rounded-full bg-bd-lav/15 px-2.5 py-1 text-xs font-semibold text-bd-lav-deep dark:text-bd-lav'
 
@@ -1922,7 +1936,7 @@ export default function ProfilePage() {
                           className="h-28 w-28 border-[3px] border-[#1F1B16] bg-bd-lav text-(--bd-ink-on-accent) outline-solid outline-4 outline-white outline-offset-[-7px] sm:h-32 sm:w-32"
                           textClassName="font-display text-5xl font-bold"
                         />
-                        <div className="absolute -bottom-2 -right-4 rotate-[8deg] rounded-full border-2 border-bd-ink bg-bd-mint px-3 py-1 font-display text-xs font-bold text-bd-ink shadow-[2px_2px_0_#1F1B16]">
+                        <div className="absolute -bottom-2 -right-4 rotate-[8deg] rounded-full border-2 border-bd-ink bg-bd-mint px-3 py-1 font-display text-xs font-bold text-bd-ink-on-accent shadow-[2px_2px_0_#1F1B16]">
                           {t('profile.levelShort')} {Math.max(
                             1,
                             Math.floor(
@@ -1992,7 +2006,7 @@ export default function ProfilePage() {
                               type="button"
                               onClick={handleResendVerification}
                               disabled={showResendVerification}
-                              className="inline-flex shrink-0 items-center justify-center rounded-xl bg-amber-500 px-3 py-2 text-xs font-semibold text-white shadow-xs transition-all hover:bg-amber-600 hover:shadow-sm disabled:cursor-not-allowed disabled:opacity-60"
+                              className="inline-flex shrink-0 items-center justify-center rounded-xl bg-amber-500 px-3 py-2 text-xs font-semibold text-bd-ink-on-accent shadow-xs transition-all hover:bg-amber-600 hover:shadow-sm disabled:cursor-not-allowed disabled:opacity-60"
                             >
                               {showResendVerification
                                 ? t('common.loading')
@@ -2167,7 +2181,7 @@ export default function ProfilePage() {
                           type="button"
                           onClick={handleResendVerification}
                           disabled={showResendVerification}
-                          className="mt-3 inline-flex items-center gap-1.5 rounded-xl bg-amber-500 px-4 py-2 text-xs font-semibold text-white shadow-xs transition-all hover:bg-amber-600 hover:shadow-sm disabled:opacity-50 sm:text-sm"
+                          className="mt-3 inline-flex items-center gap-1.5 rounded-xl bg-amber-500 px-4 py-2 text-xs font-semibold text-bd-ink-on-accent shadow-xs transition-all hover:bg-amber-600 hover:shadow-sm disabled:opacity-50 sm:text-sm"
                         >
                           {showResendVerification ? t('profile.sending') : t('profile.verificationBanner.resend')}
                         </button>
@@ -2194,6 +2208,7 @@ export default function ProfilePage() {
                       await update()
                     }}
                     onUnlockUpload={() => {
+                      if (isPlayApp()) return
                       // Same reason as handleCheckout: the avatar unlock used to
                       // buy the monthly plan outright.
                       router.push('/premium')
@@ -2224,10 +2239,10 @@ export default function ProfilePage() {
                         id="profile-email-input"
                         className={`${fieldInputClassName} ${
                           emailStatus === 'available'
-                            ? 'border-emerald-400 focus:ring-emerald-100 dark:border-emerald-500 dark:focus:ring-emerald-500/20'
+                            ? 'border-emerald-400 dark:border-emerald-500'
                             : emailStatus === 'taken' || emailStatus === 'invalid' || emailStatus === 'error'
-                              ? 'border-red-400 focus:ring-red-100 dark:border-red-500 dark:focus:ring-red-500/20'
-                              : 'border-(--bd-input-border) focus:border-bd-lav-deep focus:ring-bd-lav/20'
+                              ? 'border-red-400 dark:border-red-500'
+                              : 'border-(--bd-input-border) focus:border-bd-lav-deep'
                         }`}
                         autoComplete="email"
                       />
@@ -2261,7 +2276,7 @@ export default function ProfilePage() {
                           value={currentPassword}
                           onChange={(event) => setCurrentPassword(event.target.value)}
                           id="profile-current-password-input"
-                          className={`${fieldInputClassName} border-(--bd-input-border) focus:border-bd-lav-deep focus:ring-bd-lav/20`}
+                          className={`${fieldInputClassName} border-(--bd-input-border) focus:border-bd-lav-deep`}
                           autoComplete="current-password"
                         />
                         <p className="mt-1.5 text-xs text-bd-ink-soft">
@@ -2567,6 +2582,7 @@ export default function ProfilePage() {
                       />
                     </div>
 
+                    <AppearanceDevicePanels surfaceClassName={settingsSurfaceClassName} />
                   </div>
                 </section>
 
@@ -2873,6 +2889,29 @@ export default function ProfilePage() {
                     </div>
                   </div>
                 </section>
+
+                <section
+                  id={BLOCKED_PLAYERS_SECTION_ID}
+                  aria-labelledby="profile-settings-blocked-title"
+                  className={`scroll-mt-4 xl:col-span-12 ${settingsSectionClassName}`}
+                >
+                  <div className="flex flex-wrap items-center gap-2">
+                    <h3
+                      id="profile-settings-blocked-title"
+                      className="inline-flex items-center gap-2 text-lg font-bold text-bd-ink"
+                    >
+                      <Icon name="prohibit" size={18} />
+                      {t('blockedPlayers.title')}
+                    </h3>
+                    <span className={settingsScopeBadgeClassName}>
+                      {t('profile.settings.scope.account')}
+                    </span>
+                  </div>
+
+                  <div className={`mt-5 ${settingsSurfaceClassName}`}>
+                    <BlockedPlayersList className="max-h-80" />
+                  </div>
+                </section>
               </div>
             </div>
           )}
@@ -2917,49 +2956,58 @@ export default function ProfilePage() {
                                 )
                               : t('profile.premiumTab.renewsOn', { date: formatPremiumDate(premiumUntilDate) })}
                         </p>
+                        <PlayAppOnly>
+                          {premiumCancelAtPeriodEnd && (
+                            <p className="mt-1 text-sm text-amber-700 dark:text-amber-400">{t('premium.playAppNotice')}</p>
+                          )}
+                        </PlayAppOnly>
                       </div>
                     </div>
-                    <div className="flex flex-wrap gap-2">
-                      {hasSubscriptionId && !premiumCancelAtPeriodEnd && (
-                        <button
-                          type="button"
-                          onClick={() => void handleCancelSubscription()}
-                          disabled={premiumActionLoading}
-                          className="rounded-xl border border-amber-200 px-3 py-1.5 text-xs font-medium text-amber-800 transition hover:border-red-300 hover:text-red-600 disabled:opacity-50 dark:border-amber-700/40 dark:text-amber-400 dark:hover:border-red-500 dark:hover:text-red-400"
-                        >
-                          {premiumActionLoading ? '...' : t('common.cancel')}
-                        </button>
-                      )}
-                      {hasSubscriptionId && premiumCancelAtPeriodEnd && (
-                        <button
-                          type="button"
-                          onClick={() => void handleReactivate()}
-                          disabled={premiumActionLoading}
-                          className="flex items-center gap-1.5 rounded-xl bg-amber-500 px-4 py-1.5 text-xs font-bold text-white shadow-xs transition hover:bg-amber-600 active:scale-95 disabled:opacity-50"
-                        >
-                          <Icon name="star" size={16} />
-                          <span>{premiumActionLoading ? '...' : t('profile.premiumTab.reactivate')}</span>
-                        </button>
-                      )}
-                      {hasSubscriptionId && (
-                        <button
-                          type="button"
-                          onClick={() => void handleManageBilling()}
-                          className="rounded-xl border border-amber-200 px-3 py-1.5 text-xs font-medium text-amber-800 transition hover:bg-amber-100 dark:border-amber-700/40 dark:text-amber-400 dark:hover:bg-amber-900/30"
-                        >
-                          {t('profile.premiumTab.manageBilling')}
-                        </button>
-                      )}
-                      {!hasSubscriptionId && (
-                        <button
-                          type="button"
-                          onClick={() => void handleManageBilling()}
-                          className="rounded-xl border border-amber-200 px-3 py-1.5 text-xs font-medium text-amber-800 transition hover:bg-amber-100 dark:border-amber-700/40 dark:text-amber-400 dark:hover:bg-amber-900/30"
-                        >
-                          {t('premium.ctaManage')}
-                        </button>
-                      )}
-                    </div>
+                    {(canCancelSubscription || !inPlayApp) && (
+                      <div data-testid="premium-status-actions" className="flex flex-wrap gap-2">
+                        {canCancelSubscription && (
+                          <button
+                            type="button"
+                            onClick={() => void handleCancelSubscription()}
+                            disabled={premiumActionLoading}
+                            className="rounded-xl border border-amber-200 px-3 py-1.5 text-xs font-medium text-amber-800 transition hover:border-red-300 hover:text-red-600 disabled:opacity-50 dark:border-amber-700/40 dark:text-amber-400 dark:hover:border-red-500 dark:hover:text-red-400"
+                          >
+                            {premiumActionLoading ? '...' : t('common.cancel')}
+                          </button>
+                        )}
+                        <PurchaseOnly>
+                          {hasSubscriptionId && premiumCancelAtPeriodEnd && (
+                            <button
+                              type="button"
+                              onClick={() => void handleReactivate()}
+                              disabled={premiumActionLoading}
+                              className="flex items-center gap-1.5 rounded-xl bg-amber-500 px-4 py-1.5 text-xs font-bold text-bd-ink-on-accent shadow-xs transition hover:bg-amber-600 active:scale-95 disabled:opacity-50"
+                            >
+                              <Icon name="star" size={16} />
+                              <span>{premiumActionLoading ? '...' : t('profile.premiumTab.reactivate')}</span>
+                            </button>
+                          )}
+                          {hasSubscriptionId && (
+                            <button
+                              type="button"
+                              onClick={() => void handleManageBilling()}
+                              className="rounded-xl border border-amber-200 px-3 py-1.5 text-xs font-medium text-amber-800 transition hover:bg-amber-100 dark:border-amber-700/40 dark:text-amber-400 dark:hover:bg-amber-900/30"
+                            >
+                              {t('profile.premiumTab.manageBilling')}
+                            </button>
+                          )}
+                          {!hasSubscriptionId && (
+                            <button
+                              type="button"
+                              onClick={() => void handleManageBilling()}
+                              className="rounded-xl border border-amber-200 px-3 py-1.5 text-xs font-medium text-amber-800 transition hover:bg-amber-100 dark:border-amber-700/40 dark:text-amber-400 dark:hover:bg-amber-900/30"
+                            >
+                              {t('premium.ctaManage')}
+                            </button>
+                          )}
+                        </PurchaseOnly>
+                      </div>
+                    )}
                   </div>
                 </div>
               )}
@@ -3009,27 +3057,34 @@ export default function ProfilePage() {
 
                 {/* Free user CTA */}
                 {!hasUploadPack && (
-                  <div className="mt-5 flex flex-wrap items-center gap-3">
-                    <button
-                      type="button"
-                      onClick={() => void handleCheckout()}
-                      disabled={premiumActionLoading}
-                      className="inline-flex items-center gap-2 rounded-xl bg-amber-500 px-5 py-2.5 text-sm font-bold text-white shadow-[0_3px_0_#d97706] transition-all hover:-translate-y-px hover:bg-amber-600 hover:shadow-[0_4px_0_#d97706] active:scale-95 disabled:cursor-not-allowed disabled:opacity-60"
-                    >
-                      {premiumActionLoading ? (
-                        <>
-                          <div className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
-                          <span>{t('common.loading')}</span>
-                        </>
-                      ) : (
-                        <>
-                          <Icon name="star" size={16} />
-                          <span>{t('profile.premiumTab.getPremium')}</span>
-                        </>
-                      )}
-                    </button>
-                    <p className="text-xs text-bd-ink-soft">{t('profile.premiumTab.cancelAnytime')}</p>
-                  </div>
+                  <>
+                    <PurchaseOnly>
+                      <div className="mt-5 flex flex-wrap items-center gap-3">
+                        <button
+                          type="button"
+                          onClick={() => void handleCheckout()}
+                          disabled={premiumActionLoading}
+                          className="inline-flex items-center gap-2 rounded-xl bg-amber-500 px-5 py-2.5 text-sm font-bold text-bd-ink-on-accent shadow-[0_3px_0_#d97706] transition-all hover:-translate-y-px hover:bg-amber-600 hover:shadow-[0_4px_0_#d97706] active:scale-95 disabled:cursor-not-allowed disabled:opacity-60"
+                        >
+                          {premiumActionLoading ? (
+                            <>
+                              <div className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+                              <span>{t('common.loading')}</span>
+                            </>
+                          ) : (
+                            <>
+                              <Icon name="star" size={16} />
+                              <span>{t('profile.premiumTab.getPremium')}</span>
+                            </>
+                          )}
+                        </button>
+                        <p className="text-xs text-bd-ink-soft">{t('profile.premiumTab.cancelAnytime')}</p>
+                      </div>
+                    </PurchaseOnly>
+                    <PlayAppOnly>
+                      <p className="mt-5 text-sm font-semibold text-bd-ink">{t('premium.playAppNotice')}</p>
+                    </PlayAppOnly>
+                  </>
                 )}
               </div>
 
@@ -3050,7 +3105,7 @@ export default function ProfilePage() {
                     onChange={(e) => setProfileBio(e.target.value.slice(0, 160))}
                     placeholder={t('profile.customization.bioPlaceholder')}
                     rows={3}
-                    className="w-full rounded-xl border border-(--bd-input-border) bg-(--bd-input-bg) px-3 py-2.5 text-sm text-bd-ink placeholder:text-bd-ink-muted focus:border-bd-ink focus:outline-hidden"
+                    className="w-full rounded-xl border border-(--bd-input-border) bg-(--bd-input-bg) px-3 py-2.5 text-base text-bd-ink placeholder:text-bd-ink-muted focus:border-bd-ink desk:text-sm focus:outline-hidden"
                   />
                   <div className="mt-1 flex items-center justify-between">
                     <span className={`text-xs font-medium transition-colors ${profileBio.length >= 140 ? 'text-amber-500' : 'text-bd-ink-muted'}`}>

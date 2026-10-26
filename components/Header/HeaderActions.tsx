@@ -2,15 +2,35 @@
 
 import type { KeyboardEvent } from 'react'
 import { useEffect, useState } from 'react'
-import { signOut } from 'next-auth/react'
+import dynamic from 'next/dynamic'
 import { usePathname, useRouter } from 'next/navigation'
 import { useTranslation } from '@/lib/i18n-helpers'
 import { useGuest } from '@/contexts/GuestContext'
+import { Icon } from '@/components/icons'
 import { navigateToProfile } from '@/lib/profile-navigation'
 import { buildCurrentAuthUrl } from '@/lib/auth-redirect'
-import { UserAvatar } from './UserAvatar'
 import { ThemeToggle } from './ThemeToggle'
-import { ForgetGuestButton } from './ForgetGuestButton'
+import { UserMenu } from './UserMenu'
+import { guestMenuButtonClass, headerControl } from './headerControlStyles'
+
+/** The guest menu's box and name while its code loads, so the header does not shift when it arrives. */
+function GuestMenuPlaceholder() {
+  const { t } = useTranslation()
+  const { guestName } = useGuest()
+  return (
+    <span aria-hidden className={guestMenuButtonClass}>
+      <Icon name="user" size={14} />
+      <span className="truncate">{guestName ?? t('header.guestSession')}</span>
+    </span>
+  )
+}
+
+// A guest is only known in the browser, so the menu never rendered on the server; its Popover
+// and dialogs stay out of every page's first load.
+const GuestMenu = dynamic(() => import('./GuestMenu').then((mod) => mod.GuestMenu), {
+  ssr: false,
+  loading: () => <GuestMenuPlaceholder />,
+})
 
 interface HeaderActionsProps {
   isAuthenticated: boolean
@@ -23,23 +43,13 @@ export function HeaderActions({ isAuthenticated, userName, userEmail, userImage 
   const router = useRouter()
   const pathname = usePathname()
   const { t } = useTranslation()
-  const { isGuest, clearGuestMode } = useGuest()
+  const { isGuest } = useGuest()
   const [isGuestUiReady, setIsGuestUiReady] = useState(false)
   const isGuestSession = isGuestUiReady && isGuest && !isAuthenticated
 
   useEffect(() => {
     setIsGuestUiReady(true)
   }, [])
-
-  const handleSignOut = async () => {
-    await signOut({ redirect: false })
-    router.replace('/')
-  }
-
-  const handleGuestExit = () => {
-    clearGuestMode()
-    router.replace('/')
-  }
 
   const handleProfileNavigation = () => {
     navigateToProfile(router, pathname)
@@ -54,59 +64,44 @@ export function HeaderActions({ isAuthenticated, userName, userEmail, userImage 
 
   if (isGuestSession) {
     return (
-      <div className="hidden lg:flex shrink-0 items-center gap-2">
+      <div className="hidden desk:flex shrink-0 items-center gap-2">
         <ThemeToggle />
         <button
+          type="button"
           onClick={() => router.push(buildCurrentAuthUrl('login'))}
-          className="px-4 py-2 rounded-xl font-medium transition-all duration-150 hover:bg-bd-bg2"
-          style={{ color: 'var(--bd-ink-soft)', fontSize: 15 }}
+          className={`${headerControl()} px-4 text-[15px] font-medium`}
         >
-          {t('header.login', 'Login')}
+          {t('header.login')}
         </button>
-        <button
-          onClick={handleGuestExit}
-          className="px-4 py-2 rounded-xl font-medium transition-all duration-150 hover:bg-bd-bg2"
-          style={{ color: 'var(--bd-ink-soft)', fontSize: 15, border: '1.5px solid var(--bd-line)' }}
-        >
-          {t('guest.exit', 'Exit Guest')}
-        </button>
-        <ForgetGuestButton
-          className="px-3 py-2 rounded-xl font-medium transition-all duration-150 hover:bg-bd-bg2 disabled:opacity-60"
-          style={{ color: 'var(--bd-ink-soft)', fontSize: 14 }}
-        />
+        <GuestMenu />
       </div>
     )
   }
 
   if (!isAuthenticated) {
     return (
-      <div className="hidden lg:flex shrink-0 items-center gap-2">
+      <div className="hidden desk:flex shrink-0 items-center gap-2">
         <ThemeToggle />
         <button
+          type="button"
           onClick={() => router.push(buildCurrentAuthUrl('login'))}
-          className="px-4 py-2 rounded-xl font-medium transition-all duration-150 hover:bg-bd-bg2"
-          style={{ color: 'var(--bd-ink-soft)', fontSize: 15 }}
+          className={`${headerControl()} px-4 text-[15px] font-medium`}
         >
-          {t('header.login', 'Login')}
+          {t('header.login')}
         </button>
         <button
+          type="button"
           onClick={() => router.push(buildCurrentAuthUrl('register'))}
-          className="px-4 py-2 rounded-xl font-semibold transition-all duration-150 hover:-translate-y-px"
-          style={{
-            background: 'var(--bd-ink)',
-            color: 'var(--bd-bg)',
-            fontSize: 15,
-            boxShadow: '0 4px 0 var(--bd-coral)',
-          }}
+          className={`${headerControl({ border: 'border-bd-ink', surface: 'bg-bd-ink hover:bg-bd-ink-soft', text: 'text-bd-bg' })} px-4 text-[15px] font-semibold`}
         >
-          {t('header.register', 'Play free')}
+          {t('header.register')}
         </button>
       </div>
     )
   }
 
   return (
-    <div className="hidden lg:flex items-center gap-2 min-w-0">
+    <div className="hidden desk:flex items-center gap-2 min-w-0">
       <ThemeToggle />
       <span
         role="link"
@@ -115,31 +110,11 @@ export function HeaderActions({ isAuthenticated, userName, userEmail, userImage 
         onKeyDown={handleProfileTextKeyDown}
         className="hidden 2xl:inline-block max-w-[120px] cursor-pointer truncate text-sm font-medium"
         style={{ color: 'var(--bd-ink)' }}
-        title={userName || userEmail || t('header.profile', 'Profile')}
+        title={userName || userEmail || t('header.profile')}
       >
         {userName || userEmail}
       </span>
-      <button
-        onClick={handleProfileNavigation}
-        className="overflow-hidden rounded-full p-0.5 hover:scale-110 transition-transform"
-        style={{ background: 'var(--bd-bg2)', boxShadow: 'inset 0 0 0 2px var(--bd-ink)' }}
-        title={userName || t('header.profile', 'Profile')}
-      >
-        <UserAvatar
-          image={userImage}
-          userName={userName}
-          userEmail={userEmail}
-          className="h-9 w-9 bg-bd-lav text-(--bd-ink-on-accent)"
-          textClassName="text-sm font-bold"
-        />
-      </button>
-      <button
-        onClick={handleSignOut}
-        className="px-3 py-2 rounded-xl font-medium transition-all duration-150 hover:bg-bd-bg2"
-        style={{ color: 'var(--bd-ink-soft)', fontSize: 14 }}
-      >
-        {t('header.logout', 'Logout')}
-      </button>
+      <UserMenu userName={userName} userEmail={userEmail} userImage={userImage} />
     </div>
   )
 }

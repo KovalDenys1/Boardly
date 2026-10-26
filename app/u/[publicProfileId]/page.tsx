@@ -55,8 +55,9 @@ export async function generateMetadata({ params }: PublicProfilePageProps): Prom
     alternates: {
       canonical: `https://boardly.online/u/${publicProfileId}`,
     },
+    // A profile is a few numbers with no reason to rank, even when it is public (#1498).
     robots: {
-      index: true,
+      index: false,
       follow: true,
     },
   }

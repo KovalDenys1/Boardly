@@ -3,6 +3,10 @@
     "next-devtools": {
       "command": "npx",
       "args": ["-y", "next-devtools-mcp@latest"]
+    },
+    "agentation": {
+      "command": "npx",
+      "args": ["-y", "agentation-mcp@1.3.2", "server"]
     }
   }
 }

@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect, useCallback, useMemo, useLayoutEffect } from 'react'
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import LeaveIcon from '@/components/LeaveIcon'
 import { useRouter } from 'next/navigation'
 import { useSession } from 'next-auth/react'
@@ -12,8 +12,6 @@ import {
     CheckersStep,
     Side,
     Square,
-    isDarkSquare,
-    isKing,
     pieceSide,
     sameSquare,
 } from '@/lib/games/checkers-game'
@@ -29,16 +27,15 @@ import { fetchWithGuest } from '@/lib/fetch-with-guest'
 import { AnyGameState, Game, GameUpdatePayload } from '@/types/game'
 import { normalizeLobbySnapshotResponse } from '@/lib/lobby-snapshot'
 import { finalizePendingLobbyCreateMetric } from '@/lib/lobby-create-metrics'
-import LoadingSpinner from '@/components/LoadingSpinner'
+import { LobbyPageLoadingFallback } from '@/app/lobby/[code]/components/LobbyPageFallbacks'
 import ConfirmModal from '@/components/ConfirmModal'
 import { Move } from '@/lib/game-engine'
 import GameIcon from '@/components/GameIcon'
 import { trackLobbyLeaveRedirect, trackMoveSubmitApplied } from '@/lib/analytics'
-import { sounds } from '@/lib/sounds'
 import { resolveLifecycleRedirectReason } from '@/lib/lobby-lifecycle'
 import { getLobbyPlayerRequirements } from '@/lib/lobby-player-requirements'
 import Chat from '@/components/Chat'
-import GameResultOverlay from '@/components/game-chrome/GameResultOverlay'
+import GameResultOverlay, { RESULT_REVEAL_DELAY_MS } from '@/components/game-chrome/GameResultOverlay'
 import GamePlayerCard from '@/components/game-chrome/GamePlayerCard'
 import { reportablePlayerId } from '@/lib/reportable-player'
 import GameScoreboardHeader from '@/components/game-chrome/GameScoreboardHeader'
@@ -52,8 +49,10 @@ import { useLobbyChat, useLobbyChatHistory } from './hooks/useLobbyChat'
 import { createFreshnessWatermark, decideFreshness, resetFreshnessWatermark } from '@/lib/game-state-freshness'
 import { isLobbyGoneStatus } from '@/lib/lobby-fetch-status'
 import { createStuckTurnRecovery, turnSignatureOf } from '@/lib/stuck-turn-recovery'
-import { checkersMoverKeyframes, checkersSquareMotion } from './checkers-motion'
-import { ActiveCheckersMotion, useCheckersMotion } from './hooks/useCheckersMotion'
+import { useCheckersMotion, type CheckersCueEnd } from './hooks/useCheckersMotion'
+import { TURN_AFTER_MOVE_MS, useTurnSounds } from '@/hooks/useTurnSounds'
+import { useSpectatorResultCue } from '@/hooks/useSpectatorResultCue'
+import CheckersBoard, { FILES, PIECE_DARK, PIECE_LIGHT, squareName } from '@/components/boards/CheckersBoard'
 
 /** `activeGame.state` arrives as a JSON string from the lobby route and as an object elsewhere. */
 function parseLobbyGameState(activeGame: unknown): unknown {
@@ -68,180 +67,13 @@ function parseLobbyGameState(activeGame: unknown): unknown {
 
 // ─── Design ───────────────────────────────────────────────────────────────────
 
-// Fixed colours, not theme tokens: like Connect Four's board, a checkerboard is
-// a self-contained object that must read the same in light and dark theme.
-const SQUARE_LIGHT = '#F2E1C2'
-const SQUARE_DARK = '#9C6A43'
-const FRAME = '#3B2A1E'
-const PIECE_DARK = '#2A2420'
-const PIECE_LIGHT = '#FFF6E4'
-const HIGHLIGHT = '#35C28F'
-const LAST_MOVE_TINT = 'rgba(255,196,77,0.55)'
 /** Accent per side for the chrome: the player cards, the banner bar. */
 const SIDE_ACCENT: Record<Side, string> = { 1: 'var(--bd-coral)', 2: 'var(--bd-sun)' }
 
-const FILES = 'abcdefgh'
-/** Squares named from Dark's side, the way a printed diagram names them. */
-function squareName([r, c]: Square): string {
-    return `${FILES[c]}${BOARD_SIZE - r}`
-}
 
 function describeMove(record: CheckersMoveRecord): string {
     const joiner = record.captured.length > 0 ? '×' : '–'
     return record.path.map(squareName).join(joiner)
-}
-
-function CrownMark({ color, pop }: { color: string; pop?: boolean }) {
-    return (
-        <svg className={pop ? 'ck-crown ck-crown--pop' : 'ck-crown'} viewBox="0 0 24 24" width="46%" height="46%" aria-hidden="true" style={{ display: 'block' }}>
-            <path d="M4 17h16l1.4-9.2-5 3.6L12 5l-4.4 6.4-5-3.6z" fill={color} stroke={color} strokeWidth={1.6} strokeLinejoin="round" />
-        </svg>
-    )
-}
-
-function CheckersPiece({ side, king, faded, popCrown, motionClass, motionStyle }: {
-    side: Side
-    king: boolean
-    faded?: boolean
-    popCrown?: boolean
-    /** `ck-piece--jumped` / `ck-piece--captured` while a move animates (#1112). */
-    motionClass?: string
-    motionStyle?: React.CSSProperties
-}) {
-    const fill = side === 1 ? PIECE_DARK : PIECE_LIGHT
-    const ring = side === 1 ? 'rgba(255,255,255,0.22)' : 'rgba(120,90,50,0.35)'
-    return (
-        <div
-            className={motionClass ? `ck-piece ${motionClass}` : 'ck-piece'}
-            style={{
-                background: fill,
-                boxShadow: `inset 0 0 0 3px ${ring}, 0 3px 0 rgba(0,0,0,0.35)`,
-                opacity: faded ? 0.35 : 1,
-                ...motionStyle,
-            }}
-        >
-            {king && <CrownMark color={side === 1 ? '#FFC44D' : '#B7791F'} pop={popCrown} />}
-        </div>
-    )
-}
-
-const ms = (value: number) => `${Math.round(value)}ms`
-
-function CheckersBoard({
-    board, flipped, selected, movable, mustCapture, destinations, lastPath, pendingCaptures, disabled, onSquareClick, squareLabel,
-    motion, popCrownAt,
-}: {
-    board: number[][]
-    flipped: boolean
-    selected: Square | null
-    movable: Square[]
-    mustCapture: boolean
-    destinations: Square[]
-    lastPath: Square[]
-    pendingCaptures: Square[]
-    disabled: boolean
-    onSquareClick: (r: number, c: number) => void
-    squareLabel: (square: Square) => string
-    /** The move in flight, if any (#1112). */
-    motion: ActiveCheckersMotion | null
-    /** The square of a man just crowned; its crown pops in when it lands. */
-    popCrownAt: Square | null
-}) {
-    const order = Array.from({ length: BOARD_SIZE }, (_, i) => (flipped ? BOARD_SIZE - 1 - i : i))
-    const moverRef = React.useRef<HTMLDivElement>(null)
-    const plan = motion?.plan ?? null
-    const moverDest = plan ? plan.hops[plan.hops.length - 1].to : null
-    const moverOrigin = plan ? plan.hops[0].from : null
-    const display = (n: number) => (flipped ? BOARD_SIZE - 1 - n : n)
-
-    // The travelling piece: one transform animation over every hop, measured in
-    // squares (see checkersMoverKeyframes). A chain hop that extends the run
-    // restarts it at the time already played, so the piece does not jump back.
-    useLayoutEffect(() => {
-        const el = moverRef.current
-        if (!motion || !el || typeof el.animate !== 'function') return
-        const { timing } = motion
-        const travel = timing.liftStart
-        const animation = el.animate(checkersMoverKeyframes(motion.plan, timing, flipped), { duration: travel, fill: 'both' })
-        animation.currentTime = Math.min(motion.offset, travel)
-        return () => animation.cancel()
-    }, [motion, flipped])
-
-    return (
-        <div className="ck-board" style={{ background: FRAME }} data-testid="checkers-board">
-            {order.map((r) =>
-                order.map((c) => {
-                    const dark = isDarkSquare(r, c)
-                    const cell = board[r]?.[c] ?? 0
-                    const side = pieceSide(cell)
-                    const isSelected = sameSquare(selected, r, c)
-                    const isMovable = movable.some(([mr, mc]) => mr === r && mc === c)
-                    const isDestination = destinations.some(([dr, dc]) => dr === r && dc === c)
-                    const onLastPath = lastPath.some(([lr, lc]) => lr === r && lc === c)
-                    const isPendingCapture = pendingCaptures.some(([pr, pc]) => pr === r && pc === c)
-                    const clickable = !disabled && dark && (isMovable || isDestination || isSelected)
-                    // While a move is in flight its piece is drawn by the mover, so
-                    // the destination square holds nothing until it lands.
-                    const hiddenForMover = sameSquare(moverDest, r, c)
-                    let pieceNode: React.ReactNode = null
-                    const squareMotion = motion && plan ? checkersSquareMotion(plan, motion.timing, motion.offset, [r, c], cell) : null
-                    if (squareMotion?.kind === 'jumped' && side) {
-                        // Jumped mid-chain: it stays until the turn ends, faded as the mover passes.
-                        pieceNode = <CheckersPiece key={`j${motion!.epoch}`} side={side} king={isKing(cell)} faded motionClass="ck-piece--jumped" motionStyle={{ animationDelay: ms(squareMotion.delay) }} />
-                    } else if (squareMotion?.kind === 'captured') {
-                        // Taken and already lifted from the state: a ghost fades out as the mover passes.
-                        pieceNode = <CheckersPiece key={`c${motion!.epoch}`} side={pieceSide(squareMotion.cell)!} king={isKing(squareMotion.cell)} motionClass="ck-piece--captured" motionStyle={{ animationDelay: ms(squareMotion.delay) }} />
-                    } else if (squareMotion?.kind === 'lifted') {
-                        // Taken earlier in the turn: stays dimmed until the mover lands.
-                        pieceNode = <CheckersPiece key={`l${motion!.epoch}`} side={pieceSide(squareMotion.cell)!} king={isKing(squareMotion.cell)} motionClass="ck-piece--captured ck-piece--lifted" motionStyle={{ animationDelay: ms(squareMotion.delay) }} />
-                    } else if (side && !hiddenForMover) {
-                        pieceNode = <CheckersPiece side={side} king={isKing(cell)} faded={isPendingCapture} popCrown={sameSquare(popCrownAt, r, c)} />
-                    }
-                    let ring = 'none'
-                    if (isSelected) ring = `inset 0 0 0 3px ${HIGHLIGHT}`
-                    else if (isMovable && mustCapture) ring = `inset 0 0 0 3px ${HIGHLIGHT}`
-                    else if (isMovable) ring = `inset 0 0 0 2px rgba(53,194,143,0.55)`
-                    return (
-                        <button
-                            key={`${r}-${c}`}
-                            type="button"
-                            className="ck-square"
-                            data-square={squareName([r, c])}
-                            data-movable={isMovable || undefined}
-                            data-destination={isDestination || undefined}
-                            aria-label={squareLabel([r, c])}
-                            aria-pressed={isSelected || undefined}
-                            disabled={!dark || disabled}
-                            onClick={() => clickable && onSquareClick(r, c)}
-                            style={{
-                                background: dark ? SQUARE_DARK : SQUARE_LIGHT,
-                                boxShadow: ring,
-                                cursor: clickable ? 'pointer' : 'default',
-                            }}
-                        >
-                            {onLastPath && <span className="ck-last" style={{ background: LAST_MOVE_TINT }} />}
-                            {pieceNode}
-                            {isDestination && <span className="ck-dot" style={{ background: HIGHLIGHT }} />}
-                        </button>
-                    )
-                })
-            )}
-            {plan && moverOrigin && (
-                <div
-                    ref={moverRef}
-                    className="ck-mover"
-                    aria-hidden="true"
-                    data-testid="checkers-mover"
-                    style={{
-                        left: `calc(var(--ck-pad) + ${display(moverOrigin[1])} * var(--ck-cell))`,
-                        top: `calc(var(--ck-pad) + ${display(moverOrigin[0])} * var(--ck-cell))`,
-                    }}
-                >
-                    <CheckersPiece side={pieceSide(plan.movingCell) ?? plan.side} king={isKing(plan.movingCell)} />
-                </div>
-            )}
-        </div>
-    )
 }
 
 function SideBadge({ side }: { side: Side }) {
@@ -342,6 +174,8 @@ export default function CheckersLobbyPage({ code, isSpectator = false, onGameRes
     const {
         chatMessages,
         sendChatMessage,
+        termsAccepted: chatTermsAccepted,
+        acceptTerms: acceptChatTerms,
         unreadCount: chatUnreadCount,
         resetUnread: resetChatUnread,
         someoneTyping,
@@ -614,7 +448,6 @@ export default function CheckersLobbyPage({ code, isSpectator = false, onGameRes
             if (winner || resolvedEngine?.getState().status === 'finished') {
                 if (winner) {
                     showToast.success('games.checkers.game.gameWon')
-                    if (winner.id === getCurrentUserId()) sounds.play('win')
                 } else showToast.info('game.ui.gameFinished')
             }
             return true
@@ -772,17 +605,30 @@ export default function CheckersLobbyPage({ code, isSpectator = false, onGameRes
     }, [code, getCurrentUserId, lobby, onGameReset, router])
 
     // Hoisted above the early returns so these hooks always run (Rules of Hooks).
-    const earlyData = gameEngine ? (gameEngine.getState().data as CheckersGameData) : undefined
+    const earlyState = gameEngine?.getState()
+    const earlyData = earlyState ? (earlyState.data as CheckersGameData) : undefined
     const earlyMoveHistory = earlyData?.moveHistory
     // Motion (#1112): the viewer's side decides whether an arriving move is theirs.
-    const earlyViewerIndex = gameEngine ? gameEngine.getState().players.findIndex((p) => p.id === getCurrentUserId()) : -1
+    const earlyViewerIndex = earlyState ? earlyState.players.findIndex((p) => p.id === getCurrentUserId()) : -1
     const viewerSide: Side | null = earlyViewerIndex === 0 ? 1 : earlyViewerIndex === 1 ? 2 : null
-    const boardMotion = useCheckersMotion(earlyData, isSpectator ? null : viewerSide)
+    const cueEndRef = useRef<CheckersCueEnd | null>(null)
+    const boardMotion = useCheckersMotion(earlyData, isSpectator ? null : viewerSide, cueEndRef)
     const reversedMoveHistory = useMemo(
         () => (Array.isArray(earlyMoveHistory) ? earlyMoveHistory.slice().reverse() : []),
         [earlyMoveHistory]
     )
-    const myTurnNow = !isSpectator && isMyTurn() && gameEngine?.getState().status === 'playing'
+    const myTurnNow = !isSpectator && isMyTurn() && earlyState?.status === 'playing'
+    // The motion plays the move; the turn cue waits for its last landing.
+    useTurnSounds({
+        isMyTurn: myTurnNow,
+        lastMoveSignature: earlyData ? `${earlyMoveHistory?.length ?? 0}:${earlyData.lastMove?.path.length ?? 0}` : null,
+        enabled: !isSpectator && earlyState?.status === 'playing',
+        moveCue: null,
+        turnDelayMs: () => (cueEndRef.current?.data === earlyData ? cueEndRef.current?.inMs ?? 0 : 0) + TURN_AFTER_MOVE_MS,
+    })
+    const resolvedStatus = game?.status || earlyState?.status
+    const isFinished = resolvedStatus === 'finished' || earlyState?.status === 'finished'
+    useSpectatorResultCue({ isSpectator, isFinished, gameId: game?.id, finishKey: earlyState?.lastMoveAt, revealDelayMs: RESULT_REVEAL_DELAY_MS })
     const legalSteps: CheckersStep[] = useMemo(
         () => (gameEngine && myTurnNow ? gameEngine.getLegalSteps() : []),
         [gameEngine, myTurnNow]
@@ -800,11 +646,7 @@ export default function CheckersLobbyPage({ code, isSpectator = false, onGameRes
     // ─── Early returns ────────────────────────────────────────────────────────
 
     if (loading) {
-        return (
-            <div className="flex justify-center items-center min-h-dvh">
-                <LoadingSpinner size="lg" />
-            </div>
-        )
+        return <LobbyPageLoadingFallback />
     }
 
     if (!lobby) {
@@ -818,9 +660,6 @@ export default function CheckersLobbyPage({ code, isSpectator = false, onGameRes
             </div>
         )
     }
-
-    const resolvedStatus = game?.status || gameEngine?.getState().status
-    const isFinished = resolvedStatus === 'finished' || gameEngine?.getState().status === 'finished'
 
     if (!gameEngine || (resolvedStatus !== 'playing' && resolvedStatus !== 'finished')) {
         return (
@@ -1012,12 +851,8 @@ export default function CheckersLobbyPage({ code, isSpectator = false, onGameRes
         />
     )
 
-    // Whether chat shows decides whether the Moves card spans the right column (#898).
-    const hasMultipleHumans = players.filter((p) => !p.user?.bot && !p.bot).length >= 2
-    const showChat = hasMultipleHumans || isSpectator
-
     const historySection = (
-        <div className={`ttt-history-card${showChat ? '' : ' ttt-history-card--fill'}`}>
+        <div className="ttt-history-card">
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: 10, marginBottom: 10, borderBottom: '1px solid var(--bd-line)' }}>
                 <h3 style={{ fontFamily: 'var(--bd-font-display)', fontWeight: 700, fontSize: 16, color: 'var(--bd-ink)', margin: 0 }}>{t('game.ui.moves')}</h3>
                 <span style={{ display: 'inline-flex', padding: '3px 9px', borderRadius: 999, fontSize: 11, fontWeight: 600, background: 'var(--bd-bg2)', color: 'var(--bd-ink-soft)' }}>
@@ -1030,7 +865,7 @@ export default function CheckersLobbyPage({ code, isSpectator = false, onGameRes
                     : reversedMoveHistory.map((m: CheckersMoveRecord, index) => (
                         <div key={`${m.timestamp}-${index}`} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 10px', borderRadius: 8, background: 'var(--bd-card-warm)' }}>
                             <span style={{ color: 'var(--bd-ink-muted)', width: 22, fontSize: 11, fontFamily: 'ui-monospace,monospace', flexShrink: 0 }}>
-                                #{String(moveHistory.length - index).padStart(2, '0')}
+                                {String(moveHistory.length - index).padStart(2, '0')}
                             </span>
                             <div style={{ width: 16, height: 16, borderRadius: '50%', background: m.side === 1 ? PIECE_DARK : PIECE_LIGHT, flexShrink: 0, boxShadow: 'inset 0 0 0 1.5px var(--bd-ink)' }} />
                             <span style={{ color: 'var(--bd-ink-soft)', fontSize: 12, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>
@@ -1078,6 +913,7 @@ export default function CheckersLobbyPage({ code, isSpectator = false, onGameRes
             </div>
             {showsResultOverlay && (
                 <GameResultOverlay
+                    isSpectator={isSpectator}
                     resultKey={`${game?.id}:${gameEngine.getState().lastMoveAt ?? ''}`}
                     title={isDraw ? t('games.checkers.game.draw') : winnerName ? t('games.checkers.game.playerWins', { player: winnerName }) : t('games.checkers.game.gameWon')}
                     kicker={isDraw ? drawReasonLine : endReasonLine ?? undefined}
@@ -1091,9 +927,9 @@ export default function CheckersLobbyPage({ code, isSpectator = false, onGameRes
                     onReturnToLobby={handleReturnToWaiting}
                     onLeave={() => setShowLeaveConfirmModal(true)}
                     isGuest={isGuest}
-                    registerUrl={`/auth/register?returnUrl=${encodeURIComponent(`/lobby/${code}`)}`}
                     inviteCode={code}
                     gameType="checkers"
+                    outcome={viewerOutcome({ isFinished, isDraw, isSpectator, isSeated: mySide !== null, isViewerWinner: winnerSide && !isDraw ? winnerSide === mySide : null })}
                     isRegistered={status === 'authenticated' && !isGuest}
                 />
             )}
@@ -1127,12 +963,14 @@ export default function CheckersLobbyPage({ code, isSpectator = false, onGameRes
         return map
     })()
 
-    const chatSection = showChat ? (
+    const chatSection = (
         <section className="game-chat-panel">
             <Chat
                 lobbyCode={code}
                 messages={chatMessages}
                 onSendMessage={sendChatMessage}
+                termsAccepted={chatTermsAccepted}
+                onAcceptTerms={acceptChatTerms}
                 currentUserId={currentUserId || null}
                 playerProfiles={chatPlayerProfiles}
                 isMinimized={false}
@@ -1143,7 +981,7 @@ export default function CheckersLobbyPage({ code, isSpectator = false, onGameRes
                 readOnly={isSpectator}
             />
         </section>
-    ) : null
+    )
 
     const themeStyle = getThemePageStyle(lobby.theme)
 
@@ -1189,7 +1027,18 @@ export default function CheckersLobbyPage({ code, isSpectator = false, onGameRes
                     <div className="ttt-top-row">{headerSection}{roomSectionCompact}</div>
                     {statusSection}
                     {hintSection}
-                    {chatSection ?? historySection}
+                    <GameTabs
+                        tabs={[
+                            { id: 'history' as const, label: `${t('game.ui.tabMoves')} (${moveHistory.length})` },
+                            { id: 'chat' as const, label: t('game.ui.tabChat'), badge: chatUnreadCount },
+                        ]}
+                        activeTab={mobileTab === 'history' ? 'history' : 'chat'}
+                        onTabChange={(id) => {
+                            setMobileTab(id)
+                            if (id === 'chat') resetChatUnread()
+                        }}
+                    />
+                    {mobileTab === 'history' ? historySection : chatSection}
                 </div>
             </div>
 
@@ -1201,7 +1050,7 @@ export default function CheckersLobbyPage({ code, isSpectator = false, onGameRes
                     tabs={[
                         { id: 'board' as const, label: t('game.ui.tabBoard') },
                         { id: 'history' as const, label: `${t('game.ui.tabMoves')} (${moveHistory.length})` },
-                        ...(showChat ? [{ id: 'chat' as const, label: t('game.ui.tabChat'), badge: chatUnreadCount }] : []),
+                        { id: 'chat' as const, label: t('game.ui.tabChat'), badge: chatUnreadCount },
                     ]}
                     activeTab={mobileTab}
                     onTabChange={(id) => {

@@ -2,9 +2,13 @@ import type { ComponentType } from 'react'
 import type { ReplayRendererProps } from './types'
 
 const registry: Record<string, () => Promise<{ default: ComponentType<ReplayRendererProps> }>> = {
-  tic_tac_toe: () => import('./TTTReplayRenderer'),
+  tic_tac_toe: () => import('./TttReplayRenderer'),
   yahtzee: () => import('./YahtzeeReplayRenderer'),
-  connect_four: () => import('./ConnectFourReplayRenderer'),
+  connect_four: () => import('./C4ReplayRenderer'),
+  checkers: () => import('./CheckersReplayRenderer'),
+  ludo: () => import('./LudoReplayRenderer'),
+  memory: () => import('./MemoryReplayRenderer'),
+  rock_paper_scissors: () => import('./RpsReplayRenderer'),
 }
 
 export function hasReplayRenderer(gameType: string): boolean {

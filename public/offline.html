@@ -5,6 +5,40 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#2563eb">
   <title>Boardly | Offline</title>
+  <script>(() => {
+  try {
+    let stored = null;
+    try { stored = sessionStorage.getItem('boardly:app-shell'); } catch {}
+    const params = new URLSearchParams(location.search);
+    const fromUrl = params.get('utm_source') === 'android_app' && params.get('utm_medium') === 'twa';
+    let standaloneAndroid = false;
+    try { standaloneAndroid = /Android/i.test(navigator.userAgent) && matchMedia('(display-mode: standalone)').matches; } catch {}
+    if (stored !== 'play' && !fromUrl && !/^android-app:\/\/online\.boardly\.app(\/|$)/.test(document.referrer) && !standaloneAndroid) return;
+    document.documentElement.dataset.appShell = 'play';
+    try { (window.adsbygoogle = window.adsbygoogle || []).pauseAdRequests = 1; } catch {}
+    document.addEventListener('click', (event) => {
+      const link = event.target instanceof Element ? event.target.closest('a[href]') : null;
+      if (!(link instanceof HTMLAnchorElement) || link.target.toLowerCase() !== '_blank' || link.hasAttribute('download')) return;
+      try {
+        const url = new URL(link.href, location.origin);
+        if (url.origin !== location.origin) return;
+        if (url.searchParams.get('utm_source') === 'android_app' && url.searchParams.get('utm_medium') === 'twa') return;
+        const original = link.getAttribute('href');
+        url.searchParams.set('utm_source', 'android_app');
+        url.searchParams.set('utm_medium', 'twa');
+        link.href = url.href;
+        setTimeout(() => link.setAttribute('href', original), 0);
+      } catch {}
+    }, true);
+    sessionStorage.setItem('boardly:app-shell', 'play');
+    if (fromUrl) {
+      params.delete('utm_source');
+      params.delete('utm_medium');
+      const rest = params.toString();
+      history.replaceState(history.state, '', location.pathname + (rest ? '?' + rest : '') + location.hash);
+    }
+  } catch {}
+})();</script>
   <style>
     :root {
       --bg: #020617;

@@ -2,7 +2,9 @@
 
 import React, { useEffect, useState } from 'react'
 import { useTranslation, type TranslationKeys } from '@/lib/i18n-helpers'
+import { noteLiveFinish } from '@/lib/live-finish'
 import { Icon } from '@/components/icons'
+import { useTurnTimerSounds } from '@/hooks/useTurnTimerSounds'
 
 /**
  * Shared turn/result status banner (#736 phase 4) — replaces
@@ -66,7 +68,7 @@ const DANGER_SECONDS = 10
  */
 function formatSeconds(secs: number): string {
   const safe = Math.max(0, Math.floor(secs))
-  if (safe < 100) return `:${String(safe).padStart(2, '0')}`
+  if (safe < 60) return `:${String(safe).padStart(2, '0')}`
   return `${Math.floor(safe / 60)}:${String(safe % 60).padStart(2, '0')}`
 }
 
@@ -96,16 +98,23 @@ export default function GameStatusBanner({
   showTimer = true,
 }: GameStatusBannerProps) {
   const { t } = useTranslation()
+  // Every result overlay sits under this banner, and only the banner is mounted before the finish.
+  const finishedRef = React.useRef(isFinished)
+  useEffect(() => {
+    if (isFinished && !finishedRef.current) noteLiveFinish()
+    finishedRef.current = isFinished
+  }, [isFinished])
   // A live region announces changes, not what it mounted with: it starts empty
   // and gets the hint after mount.
   const [mounted, setMounted] = useState(false)
   useEffect(() => setMounted(true), [])
+  useTurnTimerSounds(secs, !isFinished && !isSpectator && isYourTurn && showTimer && turnTimerLimit > 0)
 
   if (isFinished) {
     const result: GameOutcome | 'over' =
       isDraw || outcome === 'draw' ? 'draw' : isSpectator || !outcome ? 'over' : outcome
     const BADGE: Record<typeof result, { key: TranslationKeys; background: string; color: string; plate: string }> = {
-      win: { key: 'game.ui.victoryBadge', background: 'var(--bd-sun)', color: 'var(--bd-ink)', plate: barColor },
+      win: { key: 'game.ui.victoryBadge', background: 'var(--bd-sun)', color: 'var(--bd-ink-on-accent)', plate: barColor },
       loss: { key: 'game.ui.defeatBadge', background: 'var(--bd-coral)', color: 'var(--bd-ink-on-accent)', plate: 'var(--bd-coral)' },
       draw: { key: 'game.ui.drawBadge', background: 'var(--bd-lav)', color: 'var(--bd-ink-on-accent)', plate: 'var(--bd-lav)' },
       over: { key: 'game.ui.gameOverBadge', background: 'var(--bd-bg2)', color: 'var(--bd-ink)', plate: 'var(--bd-line)' },

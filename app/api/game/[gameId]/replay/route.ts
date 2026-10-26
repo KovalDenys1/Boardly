@@ -1,4 +1,3 @@
-import { stripSketchCustomWords } from '@/lib/games/sketch-and-guess-game'
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { apiLogger } from '@/lib/logger'
@@ -6,6 +5,7 @@ import { getRequestAuthUser } from '@/lib/request-auth'
 import { decodeGameReplaySnapshots } from '@/lib/game-replay'
 import { getGameDurationMs, getGameEndedAt } from '@/lib/game-display'
 import { parsePersistedGameState } from '@/lib/persisted-game-state'
+import { sanitizeReplayState } from '@/lib/replay/sanitize-replay-state'
 
 function shouldDownloadReplay(value: string | null): boolean {
   if (!value) return false
@@ -28,9 +28,10 @@ export async function GET(
 
     const dbUser = await prisma.users.findUnique({ where: { id: userId }, select: { premiumUntil: true } })
     const isPremium = !!dbUser?.premiumUntil && dbUser.premiumUntil > new Date()
+    const download = shouldDownloadReplay(new URL(request.url).searchParams.get('download'))
 
-    if (!isPremium) {
-      return NextResponse.json({ error: 'Premium required to access replays' }, { status: 403 })
+    if (download && !isPremium) {
+      return NextResponse.json({ error: 'Premium required to download replays' }, { status: 403 })
     }
 
     const { gameId } = await params
@@ -45,8 +46,10 @@ export async function GET(
           },
         },
         players: {
+          orderBy: { position: 'asc' },
           select: {
             userId: true,
+            position: true,
             user: {
               select: {
                 username: true,
@@ -131,18 +134,20 @@ export async function GET(
           userId: player.userId,
           username: player.user.username ?? null,
           isBot: !!player.user.bot,
+          position: player.position,
         })),
       },
+      viewer: { isPremium },
       replay: {
         count: replaySnapshots.length,
-        snapshots:
-          resolvedGameType === 'sketch_and_guess'
-            ? replaySnapshots.map((snapshot) => ({ ...snapshot, state: stripSketchCustomWords(snapshot.state as { data?: unknown }) }))
-            : replaySnapshots,
+        snapshots: replaySnapshots.map((snapshot) => ({
+          ...snapshot,
+          state: snapshot.state ? sanitizeReplayState(resolvedGameType, snapshot.state as object) : snapshot.state,
+        })),
       },
     }
 
-    if (shouldDownloadReplay(new URL(request.url).searchParams.get('download'))) {
+    if (download) {
       return new NextResponse(JSON.stringify(replayPayload, null, 2), {
         status: 200,
         headers: {

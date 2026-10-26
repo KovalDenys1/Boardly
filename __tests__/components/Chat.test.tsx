@@ -1,9 +1,20 @@
-import { fireEvent, render, screen } from '@testing-library/react'
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
+import { useState } from 'react'
+import { useSession } from 'next-auth/react'
 import Chat from '@/components/Chat'
 import { fetchWithGuest } from '@/lib/client/fetch-with-guest'
+import { showToast } from '@/lib/i18n-toast'
 
 jest.mock('@/lib/client/fetch-with-guest', () => ({
   fetchWithGuest: jest.fn(),
+}))
+
+jest.mock('next-auth/react', () => ({
+  useSession: jest.fn(() => ({ data: null, status: 'unauthenticated' })),
+}))
+
+jest.mock('@/lib/i18n-toast', () => ({
+  showToast: { error: jest.fn() },
 }))
 
 jest.mock('@/lib/i18n-helpers', () => ({
@@ -174,19 +185,18 @@ describe('Chat community rules link (#1173)', () => {
     const { container } = render(
       <Chat messages={messages} onSendMessage={jest.fn()} currentUserId="u1" fullScreen />
     )
-    const link = screen.getByRole('link', { name: 'chat.rulesNewTab' })
+    const link = within(container.querySelector('.chat-titlebar') as HTMLElement).getByRole('link', { name: 'chat.rulesNewTab' })
     expect(link.getAttribute('href')).toBe('/rules')
     expect(link.getAttribute('target')).toBe('_blank')
     expect(link.getAttribute('rel')).toContain('noopener')
     expect(link.textContent).toBe('chat.rules')
-    expect(link.closest('.chat-titlebar')).toBe(container.querySelector('.chat-titlebar'))
     // Rarely opened, so it does not prefetch /rules on every game screen.
     expect(link.getAttribute('data-prefetch')).toBe('false')
   })
 
   // WCAG 2.5.3 Label in Name: a voice-control user says what they see, so the accessible name
   // must contain the visible label; here it starts with it, in every locale.
-  it.each(['en', 'no', 'ru', 'uk'])('%s: the accessible name starts with the visible label', (locale) => {
+  it.each(['en', 'no', 'ru', 'uk', 'de', 'es'])('%s: the accessible name starts with the visible label', (locale) => {
     const bundle = require(`@/locales/${locale}`).default as { chat: { rules: string; rulesNewTab: string } }
     const visible = bundle.chat.rules.toLocaleLowerCase()
     const name = bundle.chat.rulesNewTab.toLocaleLowerCase()
@@ -200,9 +210,21 @@ describe('Chat community rules link (#1173)', () => {
     )
     expect(screen.getByRole('link', { name: 'chat.rulesNewTab' })).toBeTruthy()
     unmount()
-    render(<Chat messages={messages} onSendMessage={jest.fn()} currentUserId="u1" onToggleMinimize={jest.fn()} />)
-    expect(screen.getByRole('link', { name: 'chat.rulesNewTab' })).toBeTruthy()
+    const { container } = render(<Chat messages={messages} onSendMessage={jest.fn()} currentUserId="u1" onToggleMinimize={jest.fn()} />)
+    expect(within(container.querySelector('.chat-titlebar') as HTMLElement).getByRole('link', { name: 'chat.rulesNewTab' })).toBeTruthy()
     expect(screen.getByLabelText('chat.minimize')).toBeTruthy()
+  })
+
+  // #1466 review: short phones (waiting room, max-height 720px) and the phone-landscape side
+  // column hide the title strip; globals.css shows this one there instead.
+  it('keeps a Rules link in the composer row for the layouts that hide the title strip', () => {
+    const { container } = render(<Chat messages={messages} onSendMessage={jest.fn()} currentUserId="u1" fullScreen />)
+    const link = within(container.querySelector('form.chat-composer') as HTMLElement).getByRole('link', { name: 'chat.rulesNewTab' })
+    expect(link.getAttribute('href')).toBe('/rules')
+    expect(link.getAttribute('target')).toBe('_blank')
+    expect(link.getAttribute('rel')).toContain('noopener')
+    expect(link.getAttribute('data-prefetch')).toBe('false')
+    expect(link.classList.contains('chat-composer-rules')).toBe(true)
   })
 
   it('adds no block to the panel', () => {
@@ -214,34 +236,45 @@ describe('Chat community rules link (#1173)', () => {
   })
 })
 
-// #1088: a mute is the viewer's own, per lobby, and survives a reload on this device.
-describe('Chat mute action (#1088)', () => {
-  beforeEach(() => window.localStorage.clear())
+// #1466: Block replaces the per-lobby Mute (#1088). It is the viewer's own, for every game,
+// kept on the account or, for a guest, on this device.
+describe('Chat block action (#1466)', () => {
+  const systemMessage = {
+    id: 's1', userId: 'system', username: 'System', message: 'Bob joined', timestamp: Date.now(), type: 'system' as const,
+  }
 
-  it("hides a player's messages, keeps the mute for this lobby, and lets the viewer undo it", () => {
+  beforeEach(() => {
+    window.localStorage.clear()
+    jest.clearAllMocks()
+  })
+
+  afterEach(() => jest.restoreAllMocks())
+
+  it("asks first, then hides that player's messages and nobody else's, in every game", async () => {
     const { unmount } = render(
       <Chat messages={messages} onSendMessage={jest.fn()} currentUserId="u1" lobbyCode="4821" fullScreen />
     )
-    expect(screen.queryByRole('button', { name: 'chat.mutePlayer' })).toBeTruthy()
-    fireEvent.click(screen.getByRole('button', { name: 'chat.mutePlayer' }))
-    expect(screen.queryByText('hi back')).toBeNull()
+    const blockButton = screen.getByRole('button', { name: 'chat.blockPlayer' })
+    await waitFor(() => expect((blockButton as HTMLButtonElement).disabled).toBe(false))
+    fireEvent.click(blockButton)
+
+    const confirm = screen.getByRole('alertdialog')
+    expect(confirm.textContent).toContain('chat.blockConfirm')
+    expect(screen.getByText('hi back')).toBeTruthy()
+
+    fireEvent.click(screen.getByRole('button', { name: 'chat.blockAction' }))
+    await waitFor(() => expect(screen.queryByText('hi back')).toBeNull())
     expect(screen.getByText('hello there')).toBeTruthy()
+    // The Block button left with Bob's messages; focus lands on the chat's heading, not the page.
+    expect(document.activeElement).toBe(screen.getByRole('heading', { name: 'chat.title' }))
     unmount()
 
-    // Reload: still hidden in this lobby, visible in another.
-    const { unmount: unmount2 } = render(
-      <Chat messages={messages} onSendMessage={jest.fn()} currentUserId="u1" lobbyCode="4821" fullScreen />
-    )
-    expect(screen.queryByText('hi back')).toBeNull()
-    fireEvent.click(screen.getByRole('button', { name: 'chat.unmuteAll' }))
-    expect(screen.getByText('hi back')).toBeTruthy()
-    unmount2()
-
     render(<Chat messages={messages} onSendMessage={jest.fn()} currentUserId="u1" lobbyCode="9999" fullScreen />)
-    expect(screen.getByText('hi back')).toBeTruthy()
+    await waitFor(() => expect(screen.queryByText('hi back')).toBeNull())
+    expect(screen.getByText('hello there')).toBeTruthy()
   })
 
-  it('hides the player in every chat on the page, as one per layout tree is mounted', () => {
+  it('hides the player in every chat on the page, as one per layout tree is mounted', async () => {
     render(
       <>
         <Chat messages={messages} onSendMessage={jest.fn()} currentUserId="u1" lobbyCode="4821" fullScreen />
@@ -249,12 +282,261 @@ describe('Chat mute action (#1088)', () => {
       </>
     )
     expect(screen.getAllByText('hi back')).toHaveLength(2)
-    fireEvent.click(screen.getAllByRole('button', { name: 'chat.mutePlayer' })[0])
-    expect(screen.queryAllByText('hi back')).toHaveLength(0)
+    const [first] = screen.getAllByRole('button', { name: 'chat.blockPlayer' })
+    await waitFor(() => expect((first as HTMLButtonElement).disabled).toBe(false))
+    fireEvent.click(first)
+    fireEvent.click(screen.getByRole('button', { name: 'chat.blockAction' }))
+    await waitFor(() => expect(screen.queryAllByText('hi back')).toHaveLength(0))
   })
 
-  it('offers no mute on your own message or without a lobby', () => {
-    render(<Chat messages={messages} onSendMessage={jest.fn()} currentUserId="u2" fullScreen />)
-    expect(screen.queryByRole('button', { name: 'chat.mutePlayer' })).toBeNull()
+  it('puts focus on the composer after a block when the title strip is hidden', async () => {
+    const hide = document.createElement('style')
+    hide.textContent = '.chat-titlebar { display: none; }'
+    document.head.appendChild(hide)
+    try {
+      const { container } = render(<Chat messages={messages} onSendMessage={jest.fn()} currentUserId="u1" lobbyCode="4821" fullScreen />)
+      const blockButton = screen.getByRole('button', { name: 'chat.blockPlayer' })
+      await waitFor(() => expect((blockButton as HTMLButtonElement).disabled).toBe(false))
+      fireEvent.click(blockButton)
+      fireEvent.click(screen.getByRole('button', { name: 'chat.blockAction' }))
+
+      await waitFor(() => expect(screen.queryByText('hi back')).toBeNull())
+      expect(document.activeElement).toBe(container.querySelector('form.chat-composer'))
+    } finally {
+      hide.remove()
+    }
+  })
+
+  it('offers no Block on your own message or a system line', () => {
+    render(
+      <Chat messages={[...messages, systemMessage]} onSendMessage={jest.fn()} currentUserId="u2" lobbyCode="4821" fullScreen />
+    )
+    // Only Alice's message: Bob is the viewer, and the system line belongs to nobody.
+    expect(screen.getAllByRole('button', { name: 'chat.blockPlayer' })).toHaveLength(1)
+  })
+
+  it('closes the question with Cancel or Escape, blocks nobody, and gives focus back', async () => {
+    render(<Chat messages={messages} onSendMessage={jest.fn()} currentUserId="u1" lobbyCode="4821" fullScreen />)
+    const blockButton = screen.getByRole('button', { name: 'chat.blockPlayer' })
+    await waitFor(() => expect((blockButton as HTMLButtonElement).disabled).toBe(false))
+
+    fireEvent.click(blockButton)
+    expect(blockButton.getAttribute('aria-expanded')).toBe('true')
+    // Keyboard-reachable: focus moves into the question.
+    expect(screen.getByRole('alertdialog').contains(document.activeElement)).toBe(true)
+    fireEvent.keyDown(document.activeElement as Element, { key: 'Escape' })
+    expect(screen.queryByRole('alertdialog')).toBeNull()
+    expect(document.activeElement).toBe(blockButton)
+
+    fireEvent.click(blockButton)
+    fireEvent.click(screen.getByRole('button', { name: 'chat.cancel' }))
+    expect(screen.queryByRole('alertdialog')).toBeNull()
+    expect(screen.getByText('hi back')).toBeTruthy()
+    expect(window.localStorage.getItem('boardly_blocked_players')).toBeNull()
+  })
+
+  it('scrolls only the message list to show the question from its first line, and never the page', async () => {
+    render(<Chat messages={messages} onSendMessage={jest.fn()} currentUserId="u1" lobbyCode="4821" fullScreen />)
+    const blockButton = screen.getByRole('button', { name: 'chat.blockPlayer' })
+    await waitFor(() => expect((blockButton as HTMLButtonElement).disabled).toBe(false))
+    const list = screen.getByRole('log')
+    const focus = jest.spyOn(HTMLElement.prototype, 'focus')
+    // A 110px list showing its last bubble; the question opens below it and is taller than the list.
+    jest.spyOn(Element.prototype, 'getBoundingClientRect').mockImplementation(function (this: Element) {
+      const top = this === list ? 150 : this.getAttribute('role') === 'alertdialog' ? 240 - list.scrollTop : 0
+      const height = this === list ? 110 : this.getAttribute('role') === 'alertdialog' ? 130 : 0
+      return { top, bottom: top + height, height, left: 0, right: 0, width: 0, x: 0, y: top, toJSON: () => ({}) } as DOMRect
+    })
+
+    fireEvent.click(blockButton)
+
+    expect(list.scrollTop).toBe(90)
+    expect(focus).toHaveBeenCalledWith({ preventScroll: true })
+  })
+
+  it('says so when the block could not be kept, and shows the messages still', async () => {
+    jest.spyOn(window.localStorage, 'setItem').mockImplementation(() => {
+      throw new Error('QuotaExceededError')
+    })
+    render(<Chat messages={messages} onSendMessage={jest.fn()} currentUserId="u1" lobbyCode="4821" fullScreen />)
+    const blockButton = screen.getByRole('button', { name: 'chat.blockPlayer' })
+    await waitFor(() => expect((blockButton as HTMLButtonElement).disabled).toBe(false))
+
+    fireEvent.click(blockButton)
+    fireEvent.click(screen.getByRole('button', { name: 'chat.blockAction' }))
+
+    await waitFor(() => expect(showToast.error).toHaveBeenCalledWith('chat.blockFailed', undefined, { player: 'Bob' }))
+    expect(screen.getByText('hi back')).toBeTruthy()
+  })
+
+  it("puts focus back on the Block button when a signed-in player's block is rolled back", async () => {
+    const originalFetch = global.fetch
+    ;(useSession as jest.Mock).mockReturnValue({ data: { user: { id: 'u1' } }, status: 'authenticated' })
+    let answerPost: (response: Response) => void = () => {}
+    global.fetch = jest.fn((url: RequestInfo | URL, init?: RequestInit) =>
+      init?.method === 'POST'
+        ? new Promise<Response>((resolve) => {
+            answerPost = resolve
+          })
+        : Promise.resolve(new Response(JSON.stringify({ blocks: [] }), { status: 200 }))
+    ) as typeof fetch
+    try {
+      render(<Chat messages={messages} onSendMessage={jest.fn()} currentUserId="u1" lobbyCode="4821" fullScreen />)
+      // No message shows before the account's list has answered.
+      const blockButton = await screen.findByRole('button', { name: 'chat.blockPlayer' })
+      await waitFor(() => expect((blockButton as HTMLButtonElement).disabled).toBe(false))
+      fireEvent.click(blockButton)
+      fireEvent.click(screen.getByRole('button', { name: 'chat.blockAction' }))
+
+      // Shown blocked before the server answers, which takes the button out with the message.
+      await waitFor(() => expect(screen.queryByText('hi back')).toBeNull())
+      await act(async () => {
+        answerPost(new Response(JSON.stringify({ error: 'nope' }), { status: 500 }))
+      })
+
+      await waitFor(() => expect(showToast.error).toHaveBeenCalledWith('chat.blockFailed', undefined, { player: 'Bob' }))
+      expect(screen.getByText('hi back')).toBeTruthy()
+      expect(document.activeElement).toBe(screen.getByRole('button', { name: 'chat.blockPlayer' }))
+    } finally {
+      global.fetch = originalFetch
+      ;(useSession as jest.Mock).mockReturnValue({ data: null, status: 'unauthenticated' })
+    }
+  })
+})
+
+// #1466: Google Play's UGC policy – nobody posts before accepting the terms and the rules.
+describe('Chat terms consent (#1466)', () => {
+  function ChatWithTerms({
+    initial,
+    accept = async () => true,
+    send = jest.fn(),
+  }: {
+    initial: boolean | null
+    accept?: () => Promise<boolean>
+    send?: (message: string, refuse: () => void) => void | Promise<string | null>
+  }) {
+    const [termsAccepted, setTermsAccepted] = useState<boolean | null>(initial)
+    return (
+      <Chat
+        messages={messages}
+        onSendMessage={(message) => send(message, () => setTermsAccepted(false))}
+        currentUserId="u1"
+        lobbyCode="4821"
+        fullScreen
+        termsAccepted={termsAccepted}
+        onAcceptTerms={async () => {
+          const ok = await accept()
+          if (ok) setTermsAccepted(true)
+          return ok
+        }}
+      />
+    )
+  }
+
+  it('shows the consent panel instead of the composer until the terms are accepted', () => {
+    render(<ChatWithTerms initial={false} />)
+    expect(screen.queryByPlaceholderText('chat.placeholder')).toBeNull()
+    expect(screen.getByText('chat.termsPrompt')).toBeTruthy()
+
+    const terms = screen.getByRole('link', { name: 'chat.termsTerms' })
+    const rules = screen.getByRole('link', { name: 'chat.termsRules' })
+    expect(terms.getAttribute('href')).toBe('/terms')
+    expect(rules.getAttribute('href')).toBe('/rules')
+    for (const link of [terms, rules]) {
+      expect(link.getAttribute('target')).toBe('_blank')
+      expect(link.getAttribute('rel')).toContain('noopener')
+    }
+    expect(screen.getByRole('button', { name: 'chat.termsAccept' })).toBeTruthy()
+  })
+
+  it('keeps the composer while the answer is unknown, and for spectators asks nothing', () => {
+    const { unmount } = render(<ChatWithTerms initial={null} />)
+    expect(screen.getByPlaceholderText('chat.placeholder')).toBeTruthy()
+    expect(screen.queryByText('chat.termsPrompt')).toBeNull()
+    unmount()
+
+    render(
+      <Chat messages={messages} onSendMessage={jest.fn()} currentUserId={null} fullScreen readOnly termsAccepted={false} onAcceptTerms={jest.fn()} />
+    )
+    expect(screen.queryByText('chat.termsPrompt')).toBeNull()
+  })
+
+  it('accepts, then gives the player the composer', async () => {
+    const accept = jest.fn(async () => true)
+    render(<ChatWithTerms initial={false} accept={accept} />)
+
+    fireEvent.click(screen.getByRole('button', { name: 'chat.termsAccept' }))
+
+    const input = await screen.findByPlaceholderText('chat.placeholder')
+    expect(accept).toHaveBeenCalledTimes(1)
+    expect(screen.queryByText('chat.termsPrompt')).toBeNull()
+    expect(document.activeElement).toBe(input)
+  })
+
+  it('says so when accepting failed, and keeps asking', async () => {
+    render(<ChatWithTerms initial={false} accept={async () => false} />)
+    fireEvent.click(screen.getByRole('button', { name: 'chat.termsAccept' }))
+
+    expect((await screen.findByRole('alert')).textContent).toBe('chat.termsFailed')
+    expect(screen.queryByPlaceholderText('chat.placeholder')).toBeNull()
+  })
+
+  it('asks when a send is refused for the terms, and keeps what was typed', async () => {
+    const send = jest.fn(async (message: string, refuse: () => void) => {
+      refuse()
+      return message
+    })
+    render(<ChatWithTerms initial={null} send={send} />)
+
+    const input = screen.getByPlaceholderText('chat.placeholder')
+    fireEvent.change(input, { target: { value: 'gg everyone' } })
+    fireEvent.submit(input.closest('form') as HTMLFormElement)
+
+    const accept = await screen.findByRole('button', { name: 'chat.termsAccept' })
+    expect(send).toHaveBeenCalledWith('gg everyone', expect.any(Function))
+    await waitFor(() => expect(document.activeElement).toBe(accept))
+    // Focus lands on the button, so it carries the prompt for a screen reader that skipped it.
+    expect(accept).toHaveAccessibleDescription('chat.termsPrompt')
+    expect(screen.getByRole('group', { name: 'chat.termsPrompt' }).contains(accept)).toBe(true)
+
+    await act(async () => {
+      fireEvent.click(accept)
+    })
+    expect((screen.getByPlaceholderText('chat.placeholder') as HTMLInputElement).value).toBe('gg everyone')
+  })
+
+  it('keeps what was typed after the send as well, behind the refused text', async () => {
+    let refuseNow: () => void = () => {}
+    const send = jest.fn(
+      (message: string, refuse: () => void) =>
+        new Promise<string | null>((resolve) => {
+          refuseNow = () => {
+            refuse()
+            resolve(message)
+          }
+        })
+    )
+    render(<ChatWithTerms initial={null} send={send} />)
+
+    const input = screen.getByPlaceholderText('chat.placeholder')
+    fireEvent.change(input, { target: { value: 'gg everyone' } })
+    fireEvent.submit(input.closest('form') as HTMLFormElement)
+    fireEvent.change(input, { target: { value: 'well played' } })
+    await act(async () => refuseNow())
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'chat.termsAccept' }))
+    })
+    expect((screen.getByPlaceholderText('chat.placeholder') as HTMLInputElement).value).toBe('gg everyone well played')
+  })
+
+  it('clears the composer when the message went through', async () => {
+    render(<ChatWithTerms initial={true} send={async () => null} />)
+    const input = screen.getByPlaceholderText('chat.placeholder') as HTMLInputElement
+    fireEvent.change(input, { target: { value: 'gg' } })
+    await act(async () => {
+      fireEvent.submit(input.closest('form') as HTMLFormElement)
+    })
+    expect(input.value).toBe('')
   })
 })

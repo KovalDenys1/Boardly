@@ -5,6 +5,7 @@ import type { Metadata, Viewport } from 'next'
 import Providers from './providers'
 import dynamic from 'next/dynamic'
 import { getThemeInitScript } from '@/lib/theme'
+import { getAppShellInitScript } from '@/lib/app-shell-script'
 import { siteJsonLd } from '@/lib/organization-json-ld'
 import { isProductionDeployment } from '@/lib/feature-flags'
 import { Bricolage_Grotesque, Inter } from 'next/font/google'
@@ -28,6 +29,12 @@ const FeedbackWidget = dynamic(() => import('@/components/FeedbackWidget'), {
 const DeferredTelemetry = dynamic(() => import('@/components/DeferredTelemetry'), {
   loading: () => null,
 })
+
+// Dev only – Agentation's licence does not cover shipping it inside a product we sell.
+const AgentationToolbar =
+  process.env.NODE_ENV === 'development'
+    ? dynamic(() => import('agentation').then((m) => m.Agentation))
+    : null
 
 // Header Skeleton with fixed dimensions to prevent CLS
 function HeaderSkeleton() {
@@ -130,6 +137,7 @@ export default function RootLayout({
   // Vercel hasn't declared an environment at all (e.g. `pnpm dev`, jest).
   const adSenseLoaderEnabled = isProductionDeployment()
   const themeInitScript = getThemeInitScript()
+  const appShellInitScript = getAppShellInitScript()
   const devServiceWorkerResetScript = !isProduction
     ? `(() => {
   if (typeof window === 'undefined' || !('serviceWorker' in navigator)) {
@@ -181,6 +189,11 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning className={`${bricolageFont.variable} ${interFont.className}`}>
       <head>
+        {/* Ahead of the AdSense tag, so the Play app pauses ad requests before it can load. */}
+        <script
+          suppressHydrationWarning
+          dangerouslySetInnerHTML={{ __html: appShellInitScript }}
+        />
         {/* AdSense site verification + loader (#784). This also delivers Google's
             EEA/UK consent message, so it stays on regardless of whether any ad
             unit renders. The units themselves are in components/AdSlot.tsx,
@@ -260,6 +273,7 @@ export default function RootLayout({
           <FeedbackWidget />
         </Providers>
         {isProduction && <DeferredTelemetry />}
+        {AgentationToolbar && <AgentationToolbar endpoint="http://localhost:4747" />}
       </body>
     </html>
   )

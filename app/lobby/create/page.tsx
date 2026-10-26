@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, Suspense } from 'react'
+import { useState, useEffect, useMemo, useRef, Suspense, type KeyboardEvent, type ReactNode } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useSession } from 'next-auth/react'
 import dynamic from 'next/dynamic'
@@ -9,7 +9,6 @@ import { fetchWithGuest } from '@/lib/fetch-with-guest'
 import { clientLogger } from '@/lib/client-logger'
 import { useTranslation, type TranslationKeys } from '@/lib/i18n-helpers'
 import { Icon, type IconName } from '@/components/icons'
-import Die from '@/components/ui/Die'
 import { getCatalogGames, getGameMetadata, isAvailableCatalogEntry, type SupportedCatalogGameType } from '@/lib/game-catalog'
 import GameIcon from '@/components/GameIcon'
 import { isTemporarilyUnavailableGameType } from '@/lib/public-game-access'
@@ -22,7 +21,14 @@ import {
 import { markPendingLobbyCreateMetric } from '@/lib/lobby-create-metrics'
 import { resolveRequestedMaxPlayers } from '@/lib/lobby-create-query'
 import { AuthGateModal } from '@/components/AuthGateModal'
+import TermsConsentPanel from '@/components/TermsConsentPanel'
+import { acceptTerms } from '@/lib/client/terms-consent'
 import { LOBBY_THEMES, LOBBY_THEME_IDS, getLobbyTheme, getThemePageStyle, type LobbyTheme } from '@/lib/lobby-themes'
+import { useIsMobileViewport } from '@/hooks/useIsMobileViewport'
+import GameArt from './GameArt'
+import { useSoundConsumer } from '@/hooks/useSoundConsumer'
+import { playCue } from '@/lib/sound-engine'
+import type { CueId } from '@/lib/sound-map'
 
 type GameType = SupportedCatalogGameType
 type MemoryDifficulty = 'easy' | 'medium' | 'hard'
@@ -50,6 +56,7 @@ type GameSettings = {
 
 type GameInfo = {
   nameKey: string
+  descriptionKey: string
   svgId: string
   accentColor: string
   gradient: string
@@ -66,6 +73,7 @@ function buildGameInfoFromCatalog(): Record<string, GameInfo> {
         g.gameType,
         {
           nameKey: g.nameKey,
+          descriptionKey: g.descriptionKey,
           svgId: g.id,
           accentColor: getGameMetadata(g.gameType)?.accentColor ?? 'var(--bd-coral)',
           gradient: g.lobbyCreateConfig.gradient,
@@ -101,12 +109,40 @@ function isSelectableGameType(value: string | null | undefined): value is GameTy
 
 const FriendsListModal = dynamic(() => import('@/components/FriendsListModal'))
 
+// One path – the game, then Create. The game list and (on a phone) the settings are
+// side views that replace the summary rather than expand under it: never animate height.
+type View = 'summary' | 'games' | 'options'
+
+const FOCUS_RING = 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-bd-lav-deep'
+
+function SettingsGroup({ title, children }: { title: string; children: ReactNode }) {
+  return (
+    <section className="space-y-4 border-t border-bd-line pt-5">
+      <h3 className="text-[13px] font-bold text-bd-ink-soft">{title}</h3>
+      {children}
+    </section>
+  )
+}
+
+function FieldLabel({ icon, htmlFor, children }: { icon: IconName; htmlFor?: string; children: ReactNode }) {
+  return (
+    <label htmlFor={htmlFor} className="flex items-center gap-1.5 text-sm font-semibold text-bd-ink">
+      <span className="text-bd-ink-muted"><Icon name={icon} size={14} /></span>
+      {children}
+    </label>
+  )
+}
+
+const CREATE_SOUND_CUES: readonly CueId[] = ['ui.confirm', 'ui.error']
+
 function CreateLobbyPage() {
   const { t } = useTranslation()
+  useSoundConsumer(CREATE_SOUND_CUES)
   const router = useRouter()
   const searchParams = useSearchParams()
   const { status } = useSession()
   const { isGuest } = useGuest()
+  const isMobile = useIsMobileViewport()
 
   const requestedGameType = searchParams.get('gameType')
   const [selectedGameType, setSelectedGameType] = useState<GameType>(
@@ -148,11 +184,18 @@ function CreateLobbyPage() {
   )
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const [termsRequired, setTermsRequired] = useState(false)
   const [showPlayerWarning, setShowPlayerWarning] = useState(false)
   const [showFriendsModal, setShowFriendsModal] = useState(false)
   const [selectedFriendIds, setSelectedFriendIds] = useState<string[]>([])
-  const [tipsOpen, setTipsOpen] = useState(false)
   const [selectedTheme, setSelectedTheme] = useState<LobbyTheme>('default')
+  const [view, setView] = useState<View>('summary')
+
+  const changeGameRef = useRef<HTMLButtonElement>(null)
+  const settingsRowRef = useRef<HTMLButtonElement>(null)
+  const gamesBackRef = useRef<HTMLButtonElement>(null)
+  const optionsBackRef = useRef<HTMLButtonElement>(null)
+  const previousView = useRef<View>(view)
 
   useEffect(() => {
     clientLogger.log('🎮 Game type selected:', selectedGameType)
@@ -173,6 +216,19 @@ function CreateLobbyPage() {
     }
   }, [selectedGameType, gameInfo, deepLinkMaxPlayers])
 
+  // A side view takes focus when it opens and hands it back to the control that opened it.
+  useEffect(() => {
+    const previous = previousView.current
+    previousView.current = view
+    if (previous === view) return
+    const target =
+      view === 'games' ? gamesBackRef.current
+        : view === 'options' ? optionsBackRef.current
+          : previous === 'games' ? changeGameRef.current
+            : settingsRowRef.current
+    target?.focus({ preventScroll: true })
+  }, [view])
+
   // A logged-out visitor used to be bounced to `/` with no explanation, which
   // is where every shared /lobby/create?gameType=… link landed them. Show the
   // form behind the same gate Play vs Bot uses (#908): guest name, log in or
@@ -187,6 +243,14 @@ function CreateLobbyPage() {
         .catch(() => {})
     }
   }, [status])
+
+  const pickerGames = useMemo(
+    () =>
+      Object.entries(GAME_INFO)
+        .filter(([key]) => !isTemporarilyUnavailableGameType(key))
+        .sort(([, a], [, b]) => t(a.nameKey as TranslationKeys).localeCompare(t(b.nameKey as TranslationKeys), undefined, { sensitivity: 'base' })),
+    [t]
+  )
 
   const handlePartySelection = async (friendIds: string[]) => {
     setSelectedFriendIds(friendIds)
@@ -223,11 +287,13 @@ function CreateLobbyPage() {
     const createStartedAt = Date.now()
     let responseStatus: number | undefined
     let createMetricTracked = false
+    let navigating = false
 
     try {
       // The gate covers the form whenever this is true; this only stops a submit
       // that slips past it from reaching the API with no identity.
       if (needsIdentity) return
+      playCue('ui.confirm')
 
       clientLogger.log('📤 Sending lobby creation request:', formData)
 
@@ -262,6 +328,7 @@ function CreateLobbyPage() {
       // player has a room already and almost certainly wants to be in it, and
       // they can change the game once they are there.
       if (res.status === 409 && data?.code === 'LOBBY_ALREADY_OPEN' && typeof data?.lobbyCode === 'string') {
+        navigating = true
         router.push(`/lobby/${data.lobbyCode}`)
         return
       }
@@ -275,6 +342,10 @@ function CreateLobbyPage() {
           statusCode: responseStatus,
         })
         createMetricTracked = true
+        if (res.status === 403 && data?.code === 'TERMS_REQUIRED') {
+          setTermsRequired(true)
+          return
+        }
         throw new Error(data.error || 'Failed to create lobby')
       }
 
@@ -332,6 +403,7 @@ function CreateLobbyPage() {
       }
 
       clientLogger.log('✅ Lobby created successfully, redirecting to:', lobbyCode)
+      navigating = true
       router.push(`/lobby/${lobbyCode}`)
     } catch (err) {
       if (!createMetricTracked) {
@@ -344,11 +416,18 @@ function CreateLobbyPage() {
         })
       }
       clientLogger.error('❌ Lobby creation error:', err)
+      playCue('ui.error')
       const errorMessage = err instanceof Error ? err.message : t('lobby.create.errors.failedToCreate')
       setError(errorMessage)
     } finally {
-      setLoading(false)
+      if (!navigating) setLoading(false)
     }
+  }
+
+  const acceptCreateTerms = async () => {
+    const accepted = await acceptTerms()
+    if (accepted) setTermsRequired(false)
+    return accepted
   }
 
   if (status === 'loading') {
@@ -364,15 +443,7 @@ function CreateLobbyPage() {
     : 0
 
   const isTTT = selectedGameType === 'tic_tac_toe'
-
-  // The game name is drawn in the accent colour inside the heading, so the
-  // sentence cannot be one JSX text node. Translating it as a whole sentence and
-  // splitting on the placeholder keeps word order free for every locale — a
-  // prefix/suffix pair would force "<game>" into the middle in all four.
-  const HEADING_GAME_SLOT = '\u0000'
-  const [headingBeforeGame, headingAfterGame = ''] = t('lobby.create.setUpRoom', {
-    game: HEADING_GAME_SLOT,
-  }).split(HEADING_GAME_SLOT)
+  const gameName = t(gameInfo.nameKey as TranslationKeys)
 
   const difficultyLabel = (difficulty: MemoryDifficulty) =>
     difficulty === 'easy'
@@ -381,671 +452,587 @@ function CreateLobbyPage() {
         ? t('lobby.create.difficultyMedium')
         : t('lobby.create.difficultyHard')
 
-  const MiniBoard = ({ size }: { size: 3 | 4 | 5 }) => {
-    const dim = 168
-    const demoCells: Record<number, 'x' | 'o'> =
-      size === 3 ? { 4: 'x', 0: 'o', 8: 'x' } :
-      size === 4 ? { 5: 'x', 10: 'o', 0: 'x' } :
-      { 12: 'x', 6: 'o', 18: 'x', 24: 'o' }
-    return (
-      <div style={{
-        width: dim, height: dim,
-        display: 'grid', gridTemplateColumns: `repeat(${size}, 1fr)`,
-        background: 'white', borderRadius: 16, border: '2px solid var(--bd-ink)',
-        boxShadow: '4px 4px 0 var(--bd-ink)', overflow: 'hidden', flexShrink: 0,
-      }}>
-        {Array.from({ length: size * size }).map((_, i) => {
-          const m = demoCells[i]
-          return (
-            <div key={i} style={{
-              display: 'grid', placeItems: 'center',
-              borderRight: (i % size) < size - 1 ? '1.5px solid var(--bd-line)' : 'none',
-              borderBottom: Math.floor(i / size) < size - 1 ? '1.5px solid var(--bd-line)' : 'none',
-              fontSize: Math.floor(dim / size * 0.48),
-              fontFamily: 'var(--bd-font-display)', fontWeight: 800,
-              color: m === 'x' ? 'var(--bd-coral)' : 'var(--bd-lav-deep)',
-            }}>{m === 'x' ? 'X' : m === 'o' ? 'O' : ''}</div>
-          )
-        })}
-      </div>
-    )
-  }
-
-  const GamePreview = () => {
-    if (selectedGameType === 'tic_tac_toe') {
-      return (
-        <div className="flex flex-col items-center gap-5">
-          <MiniBoard size={boardSize} />
-          <div className="text-center">
-            <p className="text-lg font-extrabold text-bd-ink" style={{ fontFamily: 'var(--bd-font-display)' }}>{t(gameInfo.nameKey as TranslationKeys)}</p>
-            <p className="text-sm text-bd-ink-muted">{t('lobby.create.preview.grid', { size: boardSize })}</p>
-          </div>
-        </div>
-      )
-    }
-    if (selectedGameType === 'yahtzee') {
-      const vals = [6, 3, 3, 1, 5]
-      const rotations = [-5, 3, -8, 5, -3]
-      const offsets = [0, -4, 0, -6, 2]
-      return (
-        <div className="flex flex-col items-center gap-5">
-          <div className="flex items-end gap-2">
-            {vals.map((v, i) => (
-              <div key={i} style={{ transform: `translateY(${offsets[i]}px)` }}>
-                <Die value={v} size={50} rotate={`${rotations[i]}deg`} />
-              </div>
-            ))}
-          </div>
-          <div className="text-center">
-            <p className="text-lg font-extrabold text-bd-ink" style={{ fontFamily: 'var(--bd-font-display)' }}>{t(gameInfo.nameKey as TranslationKeys)}</p>
-            <p className="text-sm text-bd-ink-muted">{t('lobby.create.preview.yahtzeeCaption')}</p>
-          </div>
-        </div>
-      )
-    }
-    if (selectedGameType === 'memory') {
-      const cols = formData.memoryDifficulty === 'easy' ? 4 : formData.memoryDifficulty === 'medium' ? 5 : 6
-      // Preview of the memory card faces, the same game content that
-      // scripts/emoji-allowlist.json permits in lib/games/memory-game.ts.
-      // emoji-allow: memory card faces
-      const emojis = ['🦊', '🐧', '🦁', '🐬', '🌟', '🍕', '🎸', '🚀', '🎨', '🎭', '🎲', '🌈']
-      const revealed = [0, 5, 3]
-      const total = Math.min(cols * cols, 20)
-      const sz = formData.memoryDifficulty === 'easy' ? 38 : formData.memoryDifficulty === 'medium' ? 32 : 28
-      return (
-        <div className="flex flex-col items-center gap-5">
-          <div style={{ display: 'grid', gridTemplateColumns: `repeat(${cols}, 1fr)`, gap: 5 }}>
-            {Array.from({ length: total }).map((_, i) => (
-              <div key={i} style={{
-                width: sz, height: sz, borderRadius: 7, display: 'grid', placeItems: 'center',
-                background: revealed.includes(i) ? 'white' : 'var(--bd-ink)',
-                border: '1.5px solid var(--bd-line)', fontSize: sz * 0.52, transition: 'all 0.2s',
-              }}>
-                {revealed.includes(i) ? emojis[i % emojis.length] : ''}
-              </div>
-            ))}
-          </div>
-          <div className="text-center">
-            <p className="text-lg font-extrabold text-bd-ink" style={{ fontFamily: 'var(--bd-font-display)' }}>{t(gameInfo.nameKey as TranslationKeys)}</p>
-            <p className="text-sm text-bd-ink-muted capitalize">{t('lobby.create.preview.memoryCaption', { difficulty: difficultyLabel(formData.memoryDifficulty) })}</p>
-          </div>
-        </div>
-      )
-    }
-    if (selectedGameType === 'guess_the_spy') {
-      const cards: { icon: IconName; label: string; dark: boolean }[] = [
-        { icon: 'map', label: t('lobby.create.preview.spyCardBeach'), dark: false },
-        { icon: 'mask', label: '???', dark: true },
-        { icon: 'map', label: t('lobby.create.preview.spyCardMountain'), dark: false },
-      ]
-      const rotations = [-6, 0, 6]
-      const offsets = [4, 0, 4]
-      return (
-        <div className="flex flex-col items-center gap-5">
-          <div className="flex items-end gap-2">
-            {cards.map((card, i) => (
-              <div key={i} style={{
-                width: 80, height: 108, borderRadius: 14, flexShrink: 0,
-                background: card.dark ? 'var(--bd-ink)' : 'white',
-                border: '2px solid var(--bd-ink)', boxShadow: '3px 3px 0 var(--bd-ink)',
-                display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 6,
-                transform: `rotate(${rotations[i]}deg) translateY(${offsets[i]}px)`,
-              }}>
-                <Icon name={card.icon} size={26} />
-                <span style={{
-                  fontSize: 9, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em',
-                  color: card.dark ? 'rgba(255,255,255,0.5)' : 'var(--bd-ink-muted)',
-                }}>{card.label}</span>
-              </div>
-            ))}
-          </div>
-          <div className="text-center">
-            <p className="text-lg font-extrabold text-bd-ink" style={{ fontFamily: 'var(--bd-font-display)' }}>{t(gameInfo.nameKey as TranslationKeys)}</p>
-            <p className="text-sm text-bd-ink-muted">{t('lobby.create.preview.spyCaption')}</p>
-          </div>
-        </div>
-      )
-    }
-    if (selectedGameType === 'rock_paper_scissors') {
-      const choices: { i: IconName; l: string }[] = [
-        { i: 'rock', l: t('lobby.choice.rock') }, { i: 'paper', l: t('lobby.choice.paper') }, { i: 'scissors', l: t('lobby.choice.scissors') },
-      ]
-      const rotations = [-5, 0, 5]
-      const offsets = [4, 0, 4]
-      return (
-        <div className="flex flex-col items-center gap-5">
-          <div className="flex items-end gap-3">
-            {choices.map((c, i) => (
-              <div key={c.i} style={{
-                width: 74, height: 94, borderRadius: 14, background: 'white',
-                border: '2px solid var(--bd-ink)', boxShadow: '3px 3px 0 var(--bd-ink)',
-                display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 6,
-                transform: `rotate(${rotations[i]}deg) translateY(${offsets[i]}px)`,
-              }}>
-                <Icon name={c.i} size={28} />
-                <span style={{ fontSize: 9, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--bd-ink-muted)' }}>{c.l}</span>
-              </div>
-            ))}
-          </div>
-          <div className="text-center">
-            <p className="text-lg font-extrabold text-bd-ink" style={{ fontFamily: 'var(--bd-font-display)' }}>{t(gameInfo.nameKey as TranslationKeys)}</p>
-            <p className="text-sm text-bd-ink-muted">{t('lobby.create.preview.rpsCaption')}</p>
-          </div>
-        </div>
-      )
-    }
-    if (selectedGameType === 'alias') {
-      return (
-        <div className="flex flex-col items-center gap-5">
-          <div style={{
-            width: 188, borderRadius: 18, background: 'white',
-            border: '2px solid var(--bd-ink)', boxShadow: '4px 4px 0 var(--bd-ink)',
-            padding: '18px 20px', transform: 'rotate(-2deg)',
-          }}>
-            <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--bd-ink-muted)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 10 }}>
-              {t('lobby.create.preview.aliasPrompt')}
-            </div>
-            <div style={{ fontFamily: 'var(--bd-font-display)', fontWeight: 800, fontSize: 24, color: 'var(--bd-ink)', marginBottom: 14, lineHeight: 1.1 }}>
-              {t('lobby.create.preview.aliasWord')}
-            </div>
-            <div style={{ height: 6, borderRadius: 3, background: 'var(--bd-bg2)', overflow: 'hidden' }}>
-              <div style={{ width: '60%', height: '100%', background: 'var(--bd-mint)', borderRadius: 3 }} />
-            </div>
-            <div style={{ marginTop: 6, fontSize: 11, color: 'var(--bd-ink-muted)', textAlign: 'right' }}>0:35</div>
-          </div>
-          <div className="text-center">
-            <p className="text-lg font-extrabold text-bd-ink" style={{ fontFamily: 'var(--bd-font-display)' }}>{t(gameInfo.nameKey as TranslationKeys)}</p>
-            <p className="text-sm text-bd-ink-muted">{t('lobby.create.preview.aliasCaption')}</p>
-          </div>
-        </div>
-      )
-    }
-    if (selectedGameType === 'liars_party') {
-      // emoji-allow: playing-card suits are card content, not interface chrome
-      const cards = [{ rank: 'K', suit: '♠', red: false }, { rank: 'A', suit: '♥', red: true }, { rank: '7', suit: '♣', red: false }, { rank: 'Q', suit: '♦', red: true }]
-      const rotations = [-8, -3, 3, 8]
-      return (
-        <div className="flex flex-col items-center gap-5">
-          <div style={{ position: 'relative', width: 170, height: 110 }}>
-            {cards.map((card, i) => (
-              <div key={i} style={{
-                position: 'absolute', top: 0, left: `${i * 28}px`,
-                width: 68, height: 90, borderRadius: 10, background: 'white',
-                border: '2px solid var(--bd-ink)', boxShadow: '2px 2px 0 var(--bd-ink)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                transform: `rotate(${rotations[i]}deg)`,
-              }}>
-                <span style={{
-                  fontSize: 19, fontWeight: 800, fontFamily: 'var(--bd-font-display)',
-                  color: card.red ? 'var(--bd-coral)' : 'var(--bd-ink)',
-                }}>{card.rank}{card.suit}</span>
-              </div>
-            ))}
-          </div>
-          <div className="text-center">
-            <p className="text-lg font-extrabold text-bd-ink" style={{ fontFamily: 'var(--bd-font-display)' }}>{t(gameInfo.nameKey as TranslationKeys)}</p>
-            <p className="text-sm text-bd-ink-muted">{t('lobby.create.preview.liarsPartyCaption')}</p>
-          </div>
-        </div>
-      )
-    }
-    return (
-      <div className="text-center">
-        <div className="mb-5 flex justify-center">
-          <GameIcon gameId={gameInfo.svgId} accentColor={gameInfo.accentColor} size={52} variant="sticker" />
-        </div>
-        <p className="text-lg font-extrabold text-bd-ink" style={{ fontFamily: 'var(--bd-font-display)' }}>{t(gameInfo.nameKey as TranslationKeys)}</p>
-      </div>
-    )
-  }
+  const seatsLabel = (allowed: number[]) =>
+    allowed.length > 1
+      ? t('lobby.create.playersRange', { range: `${allowed[0]}–${allowed[allowed.length - 1]}` })
+      : t('lobby.create.preview.players', { count: allowed[0] })
 
   const chipOpt = (active: boolean) =>
-    `bd-chip flex-1 cursor-pointer justify-center py-2 text-sm transition-all ${
+    `bd-chip flex-1 cursor-pointer justify-center py-2 text-sm transition-[background-color,border-color,color] duration-150 ${FOCUS_RING} ${
       active ? 'border-bd-ink bg-bd-ink text-bd-bg' : 'hover:border-bd-ink'
     }`
 
   const currentTheme = getLobbyTheme(selectedTheme)
 
+  // The room the defaults make, in one glance: what "just press Create" gives you.
+  const facts: { icon: IconName; label: string }[] = [
+    {
+      icon: 'users',
+      label: gameInfo.allowedPlayers.length > 1
+        ? t('lobby.create.upToPlayers', { count: formData.maxPlayers })
+        : t('lobby.create.preview.players', { count: formData.maxPlayers }),
+    },
+    formData.password
+      ? { icon: 'lock', label: t('lobby.privateLobby') }
+      : { icon: 'globe', label: t('lobby.publicLobby') },
+  ]
+  if (isTTT && gameInfo.settings.hasRoundSelection) {
+    facts.push({ icon: 'target', label: formData.ticTacToeRounds ? t('lobby.create.bestOfShort', { rounds: formData.ticTacToeRounds }) : t('lobby.create.unlimitedRounds') })
+  }
+  if (gameInfo.settings.hasDifficultySelection) {
+    facts.push({ icon: 'cards', label: difficultyLabel(formData.memoryDifficulty) })
+  }
+  if (gameInfo.settings.hasGameModes) {
+    facts.push({
+      icon: 'dice',
+      label: formData.gameType === 'ludo'
+        ? (formData.ludoMode === 'quick' ? t('games.ludo.modes.quick') : t('games.ludo.modes.classic'))
+        : (formData.yahtzeeMode === 'short' ? t('lobby.create.gameModeShort') : t('lobby.create.gameModeClassic')),
+    })
+  }
+  if (gameInfo.settings.hasTurnTimer) {
+    facts.push({ icon: 'clock', label: t('lobby.create.turnSeconds', { seconds: formData.turnTimer }) })
+  }
+  if (selectedTheme !== 'default') {
+    facts.push({ icon: 'palette', label: currentTheme.name })
+  }
+
+  const hasGameSettings = isTTT || gameInfo.settings.hasDifficultySelection || gameInfo.settings.hasGameModes || gameInfo.settings.hasTurnTimer
+
+  const closeOnEscape = (e: KeyboardEvent) => {
+    if (e.key === 'Escape') {
+      e.stopPropagation()
+      setView('summary')
+    }
+  }
+
+  const pickGame = (key: GameType) => {
+    setSelectedGameType(key)
+    setView('summary')
+  }
+
+  // Below the desk breakpoint the summary and the settings share one area and swap;
+  // on desktop both are on screen, so only the game list ever covers the summary.
+  const settingsHidden = isMobile && view !== 'options'
+  const stageHidden = isMobile && view === 'options'
+  const layerMotion = 'transition-[opacity,translate] duration-200 ease-out'
+
   return (
-    <div className="page-shell bd-page bd-screen flex flex-col">
-
-      {/* Top bar: back + game selector */}
-      <div className="flex shrink-0 items-center gap-3 border-b border-(--bd-line) bg-(--bd-card-warm) px-5 py-3">
-        <button
-          type="button"
-          onClick={() => router.push('/games')}
-          className="bd-btn bd-btn-soft shrink-0 px-3 py-2 text-sm"
-        >
-          ← {t('lobby.create.cancel')}
-        </button>
-        <div className="h-4 w-px shrink-0 bg-(--bd-line)" />
-        <div className="flex items-center gap-2 overflow-x-auto scrollbar-none [&::-webkit-scrollbar]:hidden">
-          {Object.entries(GAME_INFO)
-            .filter(([key]) => !isTemporarilyUnavailableGameType(key))
-            .sort(([, a], [, b]) => t(a.nameKey as TranslationKeys).localeCompare(t(b.nameKey as TranslationKeys), undefined, { sensitivity: 'base' }))
-            .map(([key, info]) => (
-              <button
-                key={key}
-                type="button"
-                onClick={() => setSelectedGameType(key as GameType)}
-                aria-label={t('lobby.create.selectGame', { name: t(info.nameKey as TranslationKeys) })}
-                style={selectedGameType === key
-                  ? { background: '#1F1B16', color: '#FBF6EE', borderColor: '#1F1B16' }
-                  : { background: 'white', color: '#1F1B16', borderColor: '#E8DDC8' }
-                }
-                className="bd-chip shrink-0 cursor-pointer px-3.5 py-1.5 text-[13px] transition-all"
-              >
-                <GameIcon
-                  gameId={info.svgId}
-                  accentColor="currentColor"
-                  detailColor={selectedGameType === key ? 'var(--bd-bg)' : 'white'}
-                  size={16}
-                  variant="bare"
-                />
-                {t(info.nameKey as TranslationKeys)}
-              </button>
-            ))}
-        </div>
-      </div>
-
-      {/* Main area — themed */}
-      <div className="flex min-h-0 flex-1 overflow-hidden" style={getThemePageStyle(selectedTheme)}>
-
-        {/* Left: game preview */}
-        <div className="hidden w-72 shrink-0 flex-col border-r border-bd-line bg-bd-card-warm xl:flex">
-          <div className="flex flex-1 items-center justify-center p-8">
-            <GamePreview />
-          </div>
-          <div className="shrink-0 border-t border-bd-line p-4">
-            <div className="bd-card p-4">
-              <p className="bd-kicker mb-2">{t('lobby.create.preview.title')}</p>
-              <p className="mb-3 text-[17px] font-extrabold leading-tight text-bd-ink" style={{ fontFamily: 'var(--bd-font-display)' }}>
-                {formData.name || <span className="text-sm font-normal italic text-bd-ink-muted">{t('lobby.create.preview.untitled')}</span>}
-              </p>
-              <div className="flex flex-wrap gap-1.5">
-                <span className={`bd-chip ${formData.password ? 'bd-chip-coral' : 'bd-chip-mint'}`}>
-                  <Icon name={formData.password ? 'lock' : 'globe'} size={12} />{' '}
-                  {formData.password ? t('lobby.privateLobby') : t('lobby.publicLobby')}
-                </span>
-                <span className="bd-chip"><Icon name="users" size={12} /> {formData.maxPlayers}</span>
-                {isTTT && formData.ticTacToeRounds && (
-                  <span className="bd-chip bd-chip-lav">{t('lobby.create.bestOfShort', { rounds: formData.ticTacToeRounds })}</span>
-                )}
-                {selectedGameType === 'memory' && (
-                  <span className="bd-chip bd-chip-mint capitalize">{difficultyLabel(formData.memoryDifficulty)}</span>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Right: settings form */}
-        <form
-          id="create-lobby-form"
-          onSubmit={handleSubmit}
-          className="flex flex-1 flex-col overflow-y-auto"
-        >
-          <div className="mx-auto my-auto w-full max-w-lg space-y-5 px-6 py-7">
-
-            {/* Title */}
-            <div>
-              <span className="bd-kicker mb-1 block">{t('lobby.create.title')}</span>
-              <h1
-                className="text-[clamp(22px,3vw,30px)] font-extrabold leading-tight text-bd-ink"
-                style={{ fontFamily: 'var(--bd-font-display)' }}
-              >
-                {headingBeforeGame}
-                <span style={{ color: 'var(--bd-coral)' }}>{t(gameInfo.nameKey as TranslationKeys)}</span>
-                {headingAfterGame}
-              </h1>
-            </div>
-
-            {/* Lobby name */}
-            <div className="space-y-1.5">
-              <label className="block text-sm font-semibold text-bd-ink">
-                <Icon name="tag" size={14} /> {t('lobby.create.lobbyName')}{' '}
-                <span className="font-normal text-bd-ink-muted">({t('common.optional')})</span>
-              </label>
-              <input
-                type="text"
-                placeholder={t('lobby.create.lobbyNamePlaceholder')}
-                maxLength={LOBBY_NAME_MAX}
-                className="bd-input"
-                value={formData.name}
-                onChange={(e) => {
-                  let value = e.target.value
-                  if (value.length > LOBBY_NAME_MAX) value = value.slice(0, LOBBY_NAME_MAX)
-                  setFormData({ ...formData, name: value })
-                  setShowNameWarning(value.length >= LOBBY_NAME_MAX)
-                }}
-                onBlur={() => setShowNameWarning(false)}
-              />
-              {showNameWarning && (
-                <p className="text-sm" style={{ color: 'var(--bd-coral-deep)' }}>
-                  <Icon name="warning" size={14} /> {t('lobby.create.maxCharacters', { max: LOBBY_NAME_MAX })}
-                </p>
-              )}
-            </div>
-
-            {/* Password */}
-            <div className="space-y-1.5">
-              <label className="block text-sm font-semibold text-bd-ink">
-                <Icon name="lock" size={14} /> {t('lobby.create.password')}{' '}
-                <span className="font-normal text-bd-ink-muted">({t('common.optional')})</span>
-              </label>
-              <input
-                type="text"
-                autoComplete="off"
-                placeholder={t('lobby.create.passwordPlaceholder')}
-                className="bd-input"
-                value={formData.password}
-                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-              />
-            </div>
-
-            {/* Max players */}
-            {gameInfo.allowedPlayers.length > 1 ? (
-              <div className="stack-y-3">
-                <div className="flex items-center justify-between">
-                  <label className="text-sm font-semibold text-bd-ink"><Icon name="users" size={14} /> {t('lobby.create.maxPlayers')}</label>
-                  <span className="text-2xl font-extrabold text-bd-ink" style={{ fontFamily: 'var(--bd-font-display)' }}>
-                    {formData.maxPlayers}
-                  </span>
-                </div>
-                <input
-                  type="range"
-                  min={gameInfo.allowedPlayers[0]}
-                  max={gameInfo.allowedPlayers[gameInfo.allowedPlayers.length - 1]}
-                  step="1"
-                  value={formData.maxPlayers}
-                  onChange={(e) => {
-                    const value = parseInt(e.target.value)
-                    if (gameInfo.allowedPlayers.includes(value)) {
-                      setFormData({ ...formData, maxPlayers: value })
-                      setMaxPlayersInput(value.toString())
-                      setShowPlayerWarning(false)
-                    }
-                  }}
-                  className="slider-thumb w-full"
-                  style={{
-                    background: `linear-gradient(to right, var(--bd-ink) 0%, var(--bd-ink) ${sliderPct}%, var(--bd-bg2) ${sliderPct}%, var(--bd-bg2) 100%)`,
-                  }}
-                />
-                <div className="flex justify-between px-0.5">
-                  {gameInfo.allowedPlayers.map((n) => (
-                    <span key={n} className={`text-xs font-semibold ${formData.maxPlayers === n ? 'text-bd-ink' : 'text-bd-ink-muted'}`}>
-                      {n}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            ) : (
-              <div className="flex items-center gap-3">
-                <span className="text-sm font-semibold text-bd-ink"><Icon name="users" size={14} /> {t('lobby.create.maxPlayers')}</span>
-                <span className="bd-chip">{gameInfo.allowedPlayers[0]} {t('lobby.create.players')}</span>
-              </div>
-            )}
-
-            {/* Game-specific settings */}
-            {(isTTT || gameInfo.settings.hasDifficultySelection || gameInfo.settings.hasTurnTimer) && (
-              <>
-                <div className="flex items-center gap-3 pt-1">
-                  <div className="h-px flex-1 bg-bd-line" />
-                  <span className="bd-kicker text-[10px]">{t('lobby.create.sectionGameSettings')}</span>
-                  <div className="h-px flex-1 bg-bd-line" />
-                </div>
-
-                {isTTT && (
-                  <div className="space-y-4">
-                    {gameInfo.settings.hasRoundSelection && (
-                      <div className="space-y-2">
-                        <label className="block text-sm font-semibold text-bd-ink"><Icon name="target" size={14} /> {t('lobby.create.bestOf')}</label>
-                        <div className="flex gap-2">
-                          {[3, 5, 10].map((r) => (
-                            <button key={r} type="button" onClick={() => setFormData({ ...formData, ticTacToeRounds: r })} className={chipOpt(formData.ticTacToeRounds === r)}>{t('lobby.create.bestOfShort', { rounds: r })}</button>
-                          ))}
-                          <button type="button" onClick={() => setFormData({ ...formData, ticTacToeRounds: null })} className={chipOpt(formData.ticTacToeRounds === null)}>∞</button>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {gameInfo.settings.hasDifficultySelection && (
-                  <div className="space-y-2">
-                    <label className="block text-sm font-semibold text-bd-ink"><Icon name="cards" size={14} /> {t('lobby.create.memoryDifficulty')}</label>
-                    <div className="flex gap-2">
-                      {(['easy', 'medium', 'hard'] as MemoryDifficulty[]).map((d) => (
-                        <button key={d} type="button" onClick={() => setFormData({ ...formData, memoryDifficulty: d })} className={chipOpt(formData.memoryDifficulty === d)}>
-                          <Icon name={d === 'easy' ? 'bot-easy' : d === 'medium' ? 'bot-medium' : 'bot-hard'} size={13} />{' '}
-                          {difficultyLabel(d)}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {gameInfo.settings.hasGameModes && (
-                  <div className="space-y-2">
-                    <label className="block text-sm font-semibold text-bd-ink"><Icon name="dice" size={14} /> {t('lobby.create.gameMode')}</label>
-                    <div className="flex gap-2">
-                      {formData.gameType === 'ludo'
-                        ? (gameInfo.settings.gameModeOptions ?? ['quick', 'classic']).map(asLudoMode).map((m) => (
-                          <button key={m} type="button" onClick={() => setFormData({ ...formData, ludoMode: m })} className={chipOpt(formData.ludoMode === m)}>
-                            {m === 'quick' ? t('games.ludo.modes.quick') : t('games.ludo.modes.classic')}
-                          </button>
-                        ))
-                        : (gameInfo.settings.gameModeOptions ?? ['classic', 'short']).map(asYahtzeeMode).map((m) => (
-                          <button key={m} type="button" onClick={() => setFormData({ ...formData, yahtzeeMode: m })} className={chipOpt(formData.yahtzeeMode === m)}>
-                            {m === 'short' ? t('lobby.create.gameModeShort') : t('lobby.create.gameModeClassic')}
-                          </button>
-                        ))}
-                    </div>
-                    <p className="text-xs text-bd-ink-muted">{formData.gameType === 'ludo' ? t('games.ludo.modes.helper') : t('lobby.create.gameModeShortHelper')}</p>
-                  </div>
-                )}
-
-                {gameInfo.settings.hasTurnTimer && (
-                  <div className="space-y-2">
-                    <label className="block text-sm font-semibold text-bd-ink"><Icon name="clock" size={14} /> {t('lobby.create.turnTimer')}</label>
-                    <div className="flex gap-2">
-                      {(gameInfo.settings.turnTimerOptions ?? [30, 60, 90, 120]).map((s) => (
-                        <button key={s} type="button" onClick={() => setFormData({ ...formData, turnTimer: s })} className={chipOpt(formData.turnTimer === s)}>{s}s</button>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </>
-            )}
-
-            {/* Lobby theme — premium */}
-            <div className="space-y-2">
-              <div className="flex items-center gap-2">
-                <label className="text-sm font-semibold text-bd-ink"><Icon name="palette" size={14} /> {t('lobby.create.themeTitle')}</label>
-                {!isPremiumUser && <span className="text-[11px] font-bold text-amber-500"><Icon name="crown" size={11} /> {t('premium.breadcrumb')}</span>}
-              </div>
-              <div className="flex gap-2 flex-wrap">
-                {LOBBY_THEME_IDS.map((themeId) => {
-                  const theme = LOBBY_THEMES[themeId]
-                  const isPremiumTheme = themeId !== 'default'
-                  const isLocked = isPremiumTheme && !isPremiumUser
-                  const isSelected = selectedTheme === themeId
-                  return (
+    <div className="page-shell bd-page bd-screen" style={getThemePageStyle(selectedTheme)}>
+      <form
+        id="create-lobby-form"
+        onSubmit={handleSubmit}
+        className="mx-auto grid min-h-0 w-full max-w-[1120px] flex-1 grid-cols-1 grid-rows-[minmax(0,1fr)_auto] desk:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)] desk:grid-rows-[minmax(0,1fr)] desk:gap-x-10 desk:px-8 desk:py-6"
+      >
+        {/* The game and the Create button: a card on desktop; on a phone its two parts sit
+            directly in the grid, so the button bar stays put while the area above swaps. */}
+        <div className="contents desk:col-start-1 desk:row-start-1 desk:flex desk:h-full desk:max-h-[680px] desk:min-h-0 desk:flex-col desk:self-center desk:overflow-hidden desk:rounded-[28px] desk:border-[1.5px] desk:border-bd-line desk:bg-bd-card-warm desk:shadow-[0_6px_0_0_rgba(31,27,22,0.08),0_14px_28px_-10px_rgba(31,27,22,0.18)]">
+          <div
+            inert={stageHidden}
+            className={`relative col-start-1 row-start-1 min-h-0 desk:flex-1 ${layerMotion} ${
+              view === 'options' ? 'max-desk:pointer-events-none max-desk:opacity-0 max-desk:motion-safe:-translate-x-3' : ''
+            }`}
+          >
+            {/* Summary */}
+            <div
+              inert={view === 'games'}
+              className={`absolute inset-0 overflow-y-auto overscroll-contain ${layerMotion} ${
+                view === 'games' ? 'pointer-events-none opacity-0 motion-safe:-translate-x-3' : 'opacity-100'
+              }`}
+            >
+              <div className="mx-auto flex min-h-full w-full max-w-[560px] flex-col justify-center gap-4 px-4 pt-4 pb-5 desk:max-w-none desk:px-7 desk:pt-7 desk:pb-6">
+                <div
+                  className="bd-dot-grid relative flex max-h-[340px] min-h-[200px] flex-1 flex-col rounded-[22px] p-3"
+                  style={{ backgroundColor: `color-mix(in srgb, ${gameInfo.accentColor} 18%, var(--bd-card-warm))` }}
+                >
+                  <div className="flex justify-end">
                     <button
-                      key={themeId}
+                      ref={changeGameRef}
                       type="button"
-                      aria-disabled={isLocked}
-                      onClick={() => {
-                        if (isLocked) {
-                          // Locked controls used to be `disabled`, so a free user's tap was
-                          // silent and unmeasurable (#920). Same toast as the lobby settings panel.
-                          trackPremiumCta('create_theme')
-                          showToast.custom('profile.premiumFeatureLocked', <Icon name="crown" size={18} />)
-                          return
-                        }
-                        setSelectedTheme(themeId)
-                      }}
-                      title={isLocked ? t('lobby.create.themePremiumOnly', { name: theme.name }) : theme.name}
-                      style={{
-                        position: 'relative',
-                        width: 40, height: 40, borderRadius: 10, flexShrink: 0,
-                        background: theme.bg,
-                        border: isSelected ? `3px solid ${theme.accent}` : '2px solid var(--bd-line)',
-                        boxShadow: isSelected ? `inset 0 0 0 2px ${theme.accent}40` : undefined,
-                        cursor: isLocked ? 'not-allowed' : 'pointer',
-                        opacity: isLocked ? 0.5 : 1,
-                        overflow: 'hidden',
-                        transition: 'all 0.15s',
-                      }}
+                      onClick={() => setView('games')}
+                      className={`inline-flex items-center gap-1.5 rounded-full border-[1.5px] border-bd-line bg-bd-card-warm px-3.5 py-2 text-[13px] font-semibold text-bd-ink transition-[border-color] duration-150 hover:border-bd-ink ${FOCUS_RING}`}
                     >
-                      <span style={{
-                        position: 'absolute', bottom: 0, left: 0, right: 0,
-                        height: 8, background: theme.accent,
-                      }} />
-                      {isLocked && <Icon name="crown" size={10} tone="premium" style={{ position: 'absolute', top: 1, right: 1 }} />}
+                      <Icon name="gamepad" size={15} />
+                      {t('lobby.create.changeGame')}
                     </button>
-                  )
-                })}
-              </div>
-              <p className="text-[12px] text-bd-ink-muted">
-                {selectedTheme === 'default'
-                  ? t('lobby.create.themeDefaultHint')
-                  : t('lobby.create.themeSelected', { name: LOBBY_THEMES[selectedTheme].name })}
-                {!isPremiumUser && ` · ${t('lobby.create.themeUpgradeHint')}`}
-              </p>
-            </div>
-
-            {/* Lobby options */}
-            <div className="flex items-center gap-3 pt-1">
-              <div className="h-px flex-1 bg-bd-line" />
-              <span className="bd-kicker text-[10px]">{t('lobby.create.sectionLobbyOptions')}</span>
-              <div className="h-px flex-1 bg-bd-line" />
-            </div>
-
-            {/* Spectators — premium only */}
-            <div className="flex items-center justify-between gap-4 rounded-2xl border-2 border-bd-line bg-bd-card-warm px-4 py-3.5">
-              <div>
-                <div className="flex items-center gap-2">
-                  <p className="font-semibold text-bd-ink">{t('game.ui.spectatorsLabel')}</p>
-                  {!isPremiumUser && <span className="text-[11px] font-bold text-amber-500"><Icon name="crown" size={11} /> {t('premium.breadcrumb')}</span>}
+                  </div>
+                  <div className="grid flex-1 place-items-center px-2 pt-2 pb-4">
+                    <div key={selectedGameType} className="motion-safe:animate-[bd-screen-in_0.35s_var(--bd-ease-out)] motion-reduce:animate-[fade-in-plain_0.2s_ease-out]">
+                      <GameArt
+                        gameType={selectedGameType}
+                        svgId={gameInfo.svgId}
+                        accentColor={gameInfo.accentColor}
+                        memoryDifficulty={formData.memoryDifficulty}
+                        t={t}
+                      />
+                    </div>
+                  </div>
                 </div>
-                <p className="text-[13px] text-bd-ink-muted">
-                  {isPremiumUser ? t('lobby.create.spectatorsAllow') : t('lobby.create.spectatorsUpgrade')}
-                </p>
-              </div>
-              <button
-                type="button"
-                aria-disabled={!isPremiumUser}
-                onClick={() => {
-                  if (!isPremiumUser) {
-                    trackPremiumCta('create_spectators')
-                    showToast.custom('profile.premiumFeatureLocked', <Icon name="crown" size={18} />)
-                    return
-                  }
-                  setFormData((prev) => ({ ...prev, allowSpectators: !prev.allowSpectators }))
-                }}
-                aria-pressed={formData.allowSpectators}
-                aria-label={t('lobby.create.spectatorsToggle')}
-                style={{
-                  position: 'relative', display: 'inline-flex', height: 28, width: 52,
-                  alignItems: 'center', borderRadius: 999, border: 'none',
-                  cursor: isPremiumUser ? 'pointer' : 'not-allowed',
-                  flexShrink: 0, transition: 'background 0.2s',
-                  background: formData.allowSpectators ? 'var(--bd-mint)' : 'var(--bd-bg2)',
-                  opacity: isPremiumUser ? 1 : 0.5,
-                }}
-              >
-                <span style={{
-                  display: 'inline-block', width: 20, height: 20, borderRadius: '50%',
-                  background: 'white', boxShadow: '0 1px 4px rgba(31,27,22,0.2)',
-                  transition: 'transform 0.2s',
-                  transform: formData.allowSpectators ? 'translateX(28px)' : 'translateX(4px)',
-                }} />
-              </button>
-            </div>
 
-            {/* Invite friends */}
-            {!isGuest && (
-              <div className="flex items-center justify-between gap-4 rounded-2xl border-2 border-bd-line bg-bd-card-warm px-4 py-3.5">
-                <div>
-                  <p className="font-semibold text-bd-ink"><Icon name="users" size={14} /> {t('lobby.invite.title')}</p>
-                  <p className="text-[13px] text-bd-ink-muted">
-                    {selectedFriendIds.length > 0
-                      ? <span style={{ color: 'var(--bd-mint-deep)', fontWeight: 600 }}><Icon name="check" size={13} /> {t('lobby.create.friendsSelected', { value: selectedFriendIds.length })}</span>
-                      : t('lobby.invite.description')}
+                <div key={`about-${selectedGameType}`} className="space-y-1.5 motion-safe:animate-[bd-screen-in_0.35s_var(--bd-ease-out)] motion-reduce:animate-[fade-in-plain_0.2s_ease-out]">
+                  <h1
+                    className="text-balance text-[clamp(22px,2.6vw,30px)] font-extrabold leading-tight text-bd-ink"
+                    style={{ fontFamily: 'var(--bd-font-display)' }}
+                  >
+                    {t('lobby.create.setUpRoom', { game: gameName })}
+                  </h1>
+                  <p className="text-pretty text-[15px] leading-snug text-bd-ink-soft">
+                    {t(gameInfo.descriptionKey as TranslationKeys)}
                   </p>
                 </div>
+
+                <ul className="flex flex-wrap gap-1.5" aria-label={t('lobby.create.settingsTitle')}>
+                  {facts.map((fact) => (
+                    <li key={fact.icon} className="bd-chip text-[13px] text-bd-ink">
+                      <Icon name={fact.icon} size={13} />
+                      {fact.label}
+                    </li>
+                  ))}
+                </ul>
+
+                {/* #945: the Discord feed republishes open public lobbies, so say so where
+                    the lobby is made public – a lobby is private only if it has a password. */}
+                <p className="flex items-start gap-1.5 text-[13px] leading-snug text-bd-ink-muted">
+                  <span className="mt-0.5 shrink-0"><Icon name="globe" size={13} /></span>
+                  <span>{t('lobby.create.discordListingNotice')}</span>
+                </p>
+
                 <button
+                  ref={settingsRowRef}
                   type="button"
-                  onClick={() => setShowFriendsModal(true)}
-                  className="bd-btn bd-btn-soft shrink-0 px-3 py-2 text-sm"
+                  onClick={() => setView('options')}
+                  className={`flex w-full items-center gap-3 rounded-2xl border-[1.5px] border-bd-line bg-bd-card-warm px-4 py-3.5 text-left transition-[border-color] duration-150 hover:border-bd-ink desk:hidden ${FOCUS_RING}`}
                 >
-                  {selectedFriendIds.length > 0 ? t('common.edit') : t('lobby.invite.title')}
+                  <span className="text-bd-ink-soft"><Icon name="gear" size={18} /></span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block font-semibold text-bd-ink">{t('lobby.create.settingsTitle')}</span>
+                    <span className="block truncate text-[13px] text-bd-ink-muted">{t('lobby.create.settingsRowHint')}</span>
+                  </span>
+                  <span className="text-bd-ink-muted"><Icon name="arrow-right" size={16} /></span>
                 </button>
               </div>
-            )}
+            </div>
 
-            {/* Error */}
-            {error && (
-              <div
-                className="flex items-center gap-2 rounded-2xl px-4 py-3 text-sm"
-                style={{ background: 'rgba(255,107,91,0.10)', border: '1.5px solid rgba(255,107,91,0.3)', color: 'var(--bd-coral-deep)' }}
-              >
-                <svg style={{ width: 16, height: 16, flexShrink: 0 }} fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-                </svg>
-                {error}
+            {/* Game list: full-width plates in a vertical list, so it scales with the catalog. */}
+            <div
+              inert={view !== 'games'}
+              onKeyDown={closeOnEscape}
+              className={`absolute inset-0 overflow-y-auto overscroll-contain ${layerMotion} ${
+                view === 'games' ? 'opacity-100' : 'pointer-events-none opacity-0 motion-safe:translate-x-3'
+              }`}
+            >
+              <div className="sticky top-0 z-10 mx-auto flex max-w-[560px] items-center gap-2 bg-bd-bg px-4 py-3 desk:max-w-none desk:bg-bd-card-warm desk:px-7 desk:pt-6">
+                <button
+                  ref={gamesBackRef}
+                  type="button"
+                  onClick={() => setView('summary')}
+                  aria-label={t('common.back')}
+                  className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-bd-ink transition-[background-color] duration-150 hover:bg-bd-bg2 ${FOCUS_RING}`}
+                >
+                  <Icon name="arrow-left" size={18} />
+                </button>
+                <h2 className="text-lg font-extrabold text-bd-ink" style={{ fontFamily: 'var(--bd-font-display)' }}>
+                  {t('lobby.create.chooseGame')}
+                </h2>
               </div>
-            )}
-
-            {/* #945: the Discord feed republishes open public lobbies, so say so where
-                the lobby is made public – a lobby is private only if it has a password. */}
-            <p className="flex items-start gap-1.5 text-[13px] text-bd-ink-muted">
-              <Icon name="globe" size={13} />
-              <span>{t('lobby.create.discordListingNotice')}</span>
-            </p>
-
+              <ul className="mx-auto max-w-[560px] space-y-2 px-4 pb-5 desk:max-w-none desk:px-7 desk:pb-7">
+                {pickerGames.map(([key, info]) => {
+                  const isSelected = key === selectedGameType
+                  const name = t(info.nameKey as TranslationKeys)
+                  return (
+                    <li key={key}>
+                      <button
+                        type="button"
+                        onClick={() => pickGame(key as GameType)}
+                        aria-pressed={isSelected}
+                        aria-label={t('lobby.create.selectGame', { name })}
+                        className={`flex w-full items-center gap-3 rounded-2xl border-[1.5px] px-4 py-3 text-left transition-[background-color,border-color,color] duration-150 ${FOCUS_RING} ${
+                          isSelected ? 'border-bd-ink bg-bd-ink text-bd-bg' : 'border-bd-line bg-bd-bg text-bd-ink hover:border-bd-ink'
+                        }`}
+                      >
+                        <GameIcon
+                          gameId={info.svgId}
+                          accentColor={isSelected ? 'currentColor' : info.accentColor}
+                          detailColor={isSelected ? 'var(--bd-ink)' : 'white'}
+                          size={22}
+                          variant="bare"
+                        />
+                        <span className="min-w-0 flex-1">
+                          <span className="block truncate text-[15px] font-semibold">{name}</span>
+                          <span className={`block text-[13px] ${isSelected ? 'opacity-70' : 'text-bd-ink-muted'}`}>{seatsLabel(info.allowedPlayers)}</span>
+                        </span>
+                        {isSelected && <Icon name="check" size={16} />}
+                      </button>
+                    </li>
+                  )
+                })}
+              </ul>
+            </div>
           </div>
-        </form>
-      </div>
 
-      {/* Bottom action bar */}
-      <div
-        className="flex shrink-0 items-center gap-4 border-t px-6 py-4"
-        style={{ background: 'var(--bd-ink)', borderColor: 'var(--bd-ink)' }}
-      >
-        <span className="hidden text-sm sm:block" style={{ color: 'rgba(251,246,238,0.4)' }}>
-          {t('lobby.create.inviteCodeNotice')}
-        </span>
-        <div className="ml-auto flex items-center gap-3">
-          <button
-            type="button"
-            onClick={() => router.push('/games')}
-            className="bd-btn bd-btn-soft px-4 py-2.5 text-sm"
-          >
-            {t('lobby.create.cancel')}
-          </button>
-          <button
-            type="submit"
-            form="create-lobby-form"
-            disabled={loading}
-            className="bd-btn px-5 py-2.5 font-bold text-white"
-            style={{ opacity: loading ? 0.7 : 1, background: currentTheme.accent, borderColor: currentTheme.accent }}
-          >
-            {loading ? (
-              <>
-                <svg className="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
-                  <circle style={{ opacity: 0.25 }} cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                  <path style={{ opacity: 0.75 }} fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                </svg>
-                {t('lobby.create.creating')}
-              </>
-            ) : (
-              <>{t('lobby.create.create')} →</>
-            )}
-          </button>
+          {/* Create is always on screen: the bottom bar on a phone, the card's foot on desktop. */}
+          <div className="col-start-1 row-start-2 border-t border-bd-line bg-bd-card-warm px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] desk:px-7 desk:pt-4 desk:pb-5">
+            <div className="mx-auto w-full max-w-[560px] desk:max-w-none">
+              {error && (
+                <div
+                  role="alert"
+                  className="mb-3 flex items-center gap-2 rounded-2xl px-4 py-3 text-sm"
+                  style={{ background: 'rgba(255,107,91,0.10)', border: '1.5px solid rgba(255,107,91,0.3)', color: 'var(--bd-coral-deep)' }}
+                >
+                  <Icon name="warning" size={16} />
+                  {error}
+                </div>
+              )}
+              {termsRequired && <TermsConsentPanel onAccept={acceptCreateTerms} autoFocus context="play" className="mb-3" />}
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => router.push('/games')}
+                  className={`bd-btn bd-btn-soft bd-btn-lg shrink-0 ${FOCUS_RING}`}
+                  style={{ paddingInline: 18 }}
+                >
+                  {t('lobby.create.cancel')}
+                </button>
+                <button
+                  type="submit"
+                  form="create-lobby-form"
+                  disabled={loading}
+                  aria-busy={loading}
+                  className={`bd-btn bd-btn-lg min-w-0 flex-1 justify-center disabled:cursor-wait ${FOCUS_RING}`}
+                  style={{
+                    fontWeight: 700,
+                    opacity: loading ? 0.7 : 1,
+                    background: currentTheme.accent,
+                    color: 'var(--bd-ink-on-accent)',
+                    boxShadow: `0 4px 0 0 color-mix(in srgb, ${currentTheme.accent} 60%, #1F1B16)`,
+                  }}
+                >
+                  {loading ? (
+                    <>
+                      <svg className="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24" aria-hidden="true">
+                        <circle style={{ opacity: 0.25 }} cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                        <path style={{ opacity: 0.75 }} fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                      </svg>
+                      {t('lobby.create.creating')}
+                    </>
+                  ) : (
+                    t('lobby.create.create')
+                  )}
+                </button>
+              </div>
+              <p className="mt-2.5 hidden text-center text-xs text-bd-ink-muted desk:block">
+                {t('lobby.create.inviteCodeNotice')}
+              </p>
+            </div>
+          </div>
         </div>
-      </div>
+
+        {/* Settings: every field is optional. A drill-down on a phone, a column on desktop. */}
+        <div
+          inert={settingsHidden}
+          onKeyDown={closeOnEscape}
+          className={`col-start-1 row-start-1 min-h-0 overflow-y-auto overscroll-contain desk:col-start-2 ${layerMotion} ${
+            view === 'options' ? '' : 'max-desk:pointer-events-none max-desk:opacity-0 max-desk:motion-safe:translate-x-3'
+          }`}
+        >
+          <div className="mx-auto flex min-h-full w-full max-w-[560px] flex-col px-4 pt-3 pb-6 desk:max-w-none desk:px-1 desk:py-2">
+            <div className="space-y-5 desk:my-auto">
+              <div className="flex items-start gap-2">
+                <button
+                  ref={optionsBackRef}
+                  type="button"
+                  onClick={() => setView('summary')}
+                  aria-label={t('common.back')}
+                  className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-bd-ink transition-[background-color] duration-150 hover:bg-bd-bg2 desk:hidden ${FOCUS_RING}`}
+                >
+                  <Icon name="arrow-left" size={18} />
+                </button>
+                <div className="min-w-0 pt-1.5 desk:pt-0">
+                  <h2 className="text-lg font-extrabold leading-tight text-bd-ink desk:text-xl" style={{ fontFamily: 'var(--bd-font-display)' }}>
+                    {t('lobby.create.settingsTitle')}
+                  </h2>
+                  <p className="text-sm text-bd-ink-muted">{t('lobby.create.settingsOptional')}</p>
+                </div>
+              </div>
+
+              <SettingsGroup title={t('lobby.create.groupRoom')}>
+                <div className="space-y-1.5">
+                  <FieldLabel icon="tag" htmlFor="create-lobby-name">
+                    {t('lobby.create.lobbyName')}
+                  </FieldLabel>
+                  <input
+                    id="create-lobby-name"
+                    type="text"
+                    placeholder={t('lobby.create.lobbyNamePlaceholder')}
+                    maxLength={LOBBY_NAME_MAX}
+                    className="bd-input"
+                    value={formData.name}
+                    onChange={(e) => {
+                      let value = e.target.value
+                      if (value.length > LOBBY_NAME_MAX) value = value.slice(0, LOBBY_NAME_MAX)
+                      setFormData({ ...formData, name: value })
+                      setShowNameWarning(value.length >= LOBBY_NAME_MAX)
+                    }}
+                    onBlur={() => setShowNameWarning(false)}
+                  />
+                  {showNameWarning && (
+                    <p className="text-sm" style={{ color: 'var(--bd-coral-deep)' }}>
+                      <Icon name="warning" size={14} /> {t('lobby.create.maxCharacters', { max: LOBBY_NAME_MAX })}
+                    </p>
+                  )}
+                </div>
+
+                <div className="space-y-1.5">
+                  <FieldLabel icon="lock" htmlFor="create-lobby-password">
+                    {t('lobby.create.password')}
+                  </FieldLabel>
+                  <input
+                    id="create-lobby-password"
+                    type="text"
+                    autoComplete="off"
+                    placeholder={t('lobby.create.passwordPlaceholder')}
+                    className="bd-input"
+                    value={formData.password}
+                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                  />
+                </div>
+
+                {gameInfo.allowedPlayers.length > 1 ? (
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <FieldLabel icon="users" htmlFor="create-lobby-players">{t('lobby.create.maxPlayers')}</FieldLabel>
+                      <span className="text-2xl font-extrabold tabular-nums text-bd-ink" style={{ fontFamily: 'var(--bd-font-display)' }}>
+                        {formData.maxPlayers}
+                      </span>
+                    </div>
+                    <input
+                      id="create-lobby-players"
+                      type="range"
+                      min={gameInfo.allowedPlayers[0]}
+                      max={gameInfo.allowedPlayers[gameInfo.allowedPlayers.length - 1]}
+                      step="1"
+                      value={formData.maxPlayers}
+                      onChange={(e) => {
+                        const value = parseInt(e.target.value)
+                        if (gameInfo.allowedPlayers.includes(value)) {
+                          setFormData({ ...formData, maxPlayers: value })
+                          setMaxPlayersInput(value.toString())
+                          setShowPlayerWarning(false)
+                        }
+                      }}
+                      className="slider-thumb w-full"
+                      style={{
+                        background: `linear-gradient(to right, var(--bd-ink) 0%, var(--bd-ink) ${sliderPct}%, var(--bd-bg2) ${sliderPct}%, var(--bd-bg2) 100%)`,
+                      }}
+                    />
+                    <div className="flex justify-between px-0.5" aria-hidden="true">
+                      {gameInfo.allowedPlayers.map((n) => (
+                        <span key={n} className={`text-xs font-semibold tabular-nums ${formData.maxPlayers === n ? 'text-bd-ink' : 'text-bd-ink-muted'}`}>
+                          {n}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-between gap-3">
+                    <FieldLabel icon="users">{t('lobby.create.maxPlayers')}</FieldLabel>
+                    <span className="bd-chip text-[13px] text-bd-ink" title={t('lobby.create.playerCountHelperExact', { count: gameInfo.allowedPlayers[0] })}>
+                      {t('lobby.create.preview.players', { count: gameInfo.allowedPlayers[0] })}
+                    </span>
+                  </div>
+                )}
+              </SettingsGroup>
+
+              {hasGameSettings && (
+                <SettingsGroup title={t('lobby.create.sectionGameSettings')}>
+                  {isTTT && gameInfo.settings.hasRoundSelection && (
+                    <div className="space-y-2">
+                      <FieldLabel icon="target">{t('lobby.create.bestOf')}</FieldLabel>
+                      <div className="flex gap-2">
+                        {[3, 5, 10].map((r) => (
+                          <button key={r} type="button" aria-pressed={formData.ticTacToeRounds === r} onClick={() => setFormData({ ...formData, ticTacToeRounds: r })} className={chipOpt(formData.ticTacToeRounds === r)}>{t('lobby.create.bestOfShort', { rounds: r })}</button>
+                        ))}
+                        <button type="button" aria-pressed={formData.ticTacToeRounds === null} aria-label={t('lobby.create.unlimitedRounds')} onClick={() => setFormData({ ...formData, ticTacToeRounds: null })} className={chipOpt(formData.ticTacToeRounds === null)}>∞</button>
+                      </div>
+                    </div>
+                  )}
+
+                  {gameInfo.settings.hasDifficultySelection && (
+                    <div className="space-y-2">
+                      <FieldLabel icon="cards">{t('lobby.create.memoryDifficulty')}</FieldLabel>
+                      <div className="flex gap-2">
+                        {(['easy', 'medium', 'hard'] as MemoryDifficulty[]).map((d) => (
+                          <button key={d} type="button" aria-pressed={formData.memoryDifficulty === d} onClick={() => setFormData({ ...formData, memoryDifficulty: d })} className={chipOpt(formData.memoryDifficulty === d)}>
+                            <Icon name={d === 'easy' ? 'bot-easy' : d === 'medium' ? 'bot-medium' : 'bot-hard'} size={13} />
+                            {difficultyLabel(d)}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {gameInfo.settings.hasGameModes && (
+                    <div className="space-y-2">
+                      <FieldLabel icon="dice">{t('lobby.create.gameMode')}</FieldLabel>
+                      <div className="flex gap-2">
+                        {formData.gameType === 'ludo'
+                          ? (gameInfo.settings.gameModeOptions ?? ['quick', 'classic']).map(asLudoMode).map((m) => (
+                            <button key={m} type="button" aria-pressed={formData.ludoMode === m} onClick={() => setFormData({ ...formData, ludoMode: m })} className={chipOpt(formData.ludoMode === m)}>
+                              {m === 'quick' ? t('games.ludo.modes.quick') : t('games.ludo.modes.classic')}
+                            </button>
+                          ))
+                          : (gameInfo.settings.gameModeOptions ?? ['classic', 'short']).map(asYahtzeeMode).map((m) => (
+                            <button key={m} type="button" aria-pressed={formData.yahtzeeMode === m} onClick={() => setFormData({ ...formData, yahtzeeMode: m })} className={chipOpt(formData.yahtzeeMode === m)}>
+                              {m === 'short' ? t('lobby.create.gameModeShort') : t('lobby.create.gameModeClassic')}
+                            </button>
+                          ))}
+                      </div>
+                      <p className="text-xs text-bd-ink-muted">{formData.gameType === 'ludo' ? t('games.ludo.modes.helper') : t('lobby.create.gameModeShortHelper')}</p>
+                    </div>
+                  )}
+
+                  {gameInfo.settings.hasTurnTimer && (
+                    <div className="space-y-2">
+                      <FieldLabel icon="clock">{t('lobby.create.turnTimer')}</FieldLabel>
+                      <div className="flex gap-2">
+                        {(gameInfo.settings.turnTimerOptions ?? [30, 60, 90, 120]).map((s) => (
+                          <button key={s} type="button" aria-pressed={formData.turnTimer === s} onClick={() => setFormData({ ...formData, turnTimer: s })} className={`${chipOpt(formData.turnTimer === s)} tabular-nums`}>{s}s</button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </SettingsGroup>
+              )}
+
+              <SettingsGroup title={t('lobby.create.groupExtras')}>
+                {/* Lobby theme — premium */}
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <FieldLabel icon="palette">{t('lobby.create.themeTitle')}</FieldLabel>
+                    {!isPremiumUser && <span className="text-[11px] font-bold text-amber-500"><Icon name="crown" size={11} /> {t('premium.breadcrumb')}</span>}
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {LOBBY_THEME_IDS.map((themeId) => {
+                      const theme = LOBBY_THEMES[themeId]
+                      const isPremiumTheme = themeId !== 'default'
+                      const isLocked = isPremiumTheme && !isPremiumUser
+                      const isSelected = selectedTheme === themeId
+                      return (
+                        <button
+                          key={themeId}
+                          type="button"
+                          aria-disabled={isLocked}
+                          aria-pressed={isSelected}
+                          aria-label={isLocked ? t('lobby.create.themePremiumOnly', { name: theme.name }) : theme.name}
+                          onClick={() => {
+                            if (isLocked) {
+                              // Locked controls used to be `disabled`, so a free user's tap was
+                              // silent and unmeasurable (#920). Same toast as the lobby settings panel.
+                              trackPremiumCta('create_theme')
+                              showToast.custom('profile.premiumFeatureLocked', <Icon name="crown" size={18} />)
+                              return
+                            }
+                            setSelectedTheme(themeId)
+                          }}
+                          title={isLocked ? t('lobby.create.themePremiumOnly', { name: theme.name }) : theme.name}
+                          className={FOCUS_RING}
+                          style={{
+                            position: 'relative',
+                            width: 44, height: 44, borderRadius: 12, flexShrink: 0,
+                            background: theme.bg,
+                            border: isSelected ? `3px solid ${theme.accent}` : '2px solid var(--bd-line)',
+                            boxShadow: isSelected ? `inset 0 0 0 2px ${theme.accent}40` : undefined,
+                            cursor: isLocked ? 'not-allowed' : 'pointer',
+                            opacity: isLocked ? 0.5 : 1,
+                            overflow: 'hidden',
+                            transition: 'border-color 0.15s, box-shadow 0.15s',
+                          }}
+                        >
+                          <span style={{
+                            position: 'absolute', bottom: 0, left: 0, right: 0,
+                            height: 9, background: theme.accent,
+                          }} />
+                          {isLocked && <Icon name="crown" size={10} tone="premium" style={{ position: 'absolute', top: 2, right: 2 }} />}
+                        </button>
+                      )
+                    })}
+                  </div>
+                  <p className="text-[12px] text-bd-ink-muted">
+                    {selectedTheme === 'default'
+                      ? t('lobby.create.themeDefaultHint')
+                      : t('lobby.create.themeSelected', { name: LOBBY_THEMES[selectedTheme].name })}
+                    {!isPremiumUser && ` · ${t('lobby.create.themeUpgradeHint')}`}
+                  </p>
+                </div>
+
+                {/* Spectators — premium only */}
+                <div className="flex items-center justify-between gap-4 rounded-2xl border-[1.5px] border-bd-line bg-bd-card-warm px-4 py-3.5">
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <p className="font-semibold text-bd-ink">{t('game.ui.spectatorsLabel')}</p>
+                      {!isPremiumUser && <span className="text-[11px] font-bold text-amber-500"><Icon name="crown" size={11} /> {t('premium.breadcrumb')}</span>}
+                    </div>
+                    <p className="text-[13px] text-bd-ink-muted">
+                      {isPremiumUser ? t('lobby.create.spectatorsAllow') : t('lobby.create.spectatorsUpgrade')}
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    aria-disabled={!isPremiumUser}
+                    onClick={() => {
+                      if (!isPremiumUser) {
+                        trackPremiumCta('create_spectators')
+                        showToast.custom('profile.premiumFeatureLocked', <Icon name="crown" size={18} />)
+                        return
+                      }
+                      setFormData((prev) => ({ ...prev, allowSpectators: !prev.allowSpectators }))
+                    }}
+                    aria-pressed={formData.allowSpectators}
+                    aria-label={t('lobby.create.spectatorsToggle')}
+                    className={FOCUS_RING}
+                    style={{
+                      position: 'relative', display: 'inline-flex', height: 28, width: 52,
+                      alignItems: 'center', borderRadius: 999, border: 'none',
+                      cursor: isPremiumUser ? 'pointer' : 'not-allowed',
+                      flexShrink: 0, transition: 'background-color 0.2s',
+                      background: formData.allowSpectators ? 'var(--bd-mint)' : 'var(--bd-bg2)',
+                      opacity: isPremiumUser ? 1 : 0.5,
+                    }}
+                  >
+                    <span style={{
+                      display: 'inline-block', width: 20, height: 20, borderRadius: '50%',
+                      background: 'white', boxShadow: '0 1px 4px rgba(31,27,22,0.2)',
+                      transition: 'transform 0.2s',
+                      transform: formData.allowSpectators ? 'translateX(28px)' : 'translateX(4px)',
+                    }} />
+                  </button>
+                </div>
+
+                {/* Invite friends */}
+                {!isGuest && (
+                  <div className="flex items-center justify-between gap-4 rounded-2xl border-[1.5px] border-bd-line bg-bd-card-warm px-4 py-3.5">
+                    <div>
+                      <p className="font-semibold text-bd-ink"><Icon name="users" size={14} /> {t('lobby.invite.title')}</p>
+                      <p className="text-[13px] text-bd-ink-muted">
+                        {selectedFriendIds.length > 0
+                          ? <span style={{ color: 'var(--bd-mint-deep)', fontWeight: 600 }}><Icon name="check" size={13} /> {t('lobby.create.friendsSelected', { value: selectedFriendIds.length })}</span>
+                          : t('lobby.invite.description')}
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setShowFriendsModal(true)}
+                      className={`bd-btn bd-btn-soft shrink-0 px-3 py-2 text-sm ${FOCUS_RING}`}
+                    >
+                      {selectedFriendIds.length > 0 ? t('common.edit') : t('lobby.invite.title')}
+                    </button>
+                  </div>
+                )}
+              </SettingsGroup>
+            </div>
+          </div>
+        </div>
+      </form>
 
       {needsIdentity && (
         <AuthGateModal

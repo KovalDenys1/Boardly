@@ -58,6 +58,8 @@ export const SERVER_OPERATIONAL_EVENT_NAMES = [
   // Written by lib/bot-turn-metrics.ts once per bot turn: how long a player waits for the
   // bot's reply. A forged row would skew exactly the number it exists to report.
   'bot_turn_applied',
+  // Server-only: a client-posted copy could invent conversions for a prompt nobody clicked.
+  'guest_upgraded',
 ] as const
 
 export type ServerOperationalEventName = (typeof SERVER_OPERATIONAL_EVENT_NAMES)[number]

@@ -9,7 +9,7 @@ const mockListeners = new Set<Listener>()
 
 jest.mock('@/i18n', () => ({
   __esModule: true,
-  availableLocales: ['en', 'uk', 'no', 'ru'],
+  availableLocales: ['en', 'uk', 'no', 'ru', 'de', 'es'],
   defaultLocale: 'en',
   default: {
     on: (_event: string, listener: Listener) => mockListeners.add(listener),
@@ -63,6 +63,23 @@ describe('AccountLanguageSync (#1331)', () => {
     expect(writes()).toEqual([
       ['/api/user/language', 'PUT', 'en'],
       ['/api/user/language', 'PUT', 'no'],
+    ])
+  })
+
+  it('stores German and Spanish, a regional tag as the site locale (#1472)', async () => {
+    window.localStorage.setItem('language', 'en')
+    signedIn()
+    render(<AccountLanguageSync />)
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1))
+
+    switchLanguage('de-DE')
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2))
+    switchLanguage('es')
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(3))
+
+    expect(writes().slice(1)).toEqual([
+      ['/api/user/language', 'PUT', 'de'],
+      ['/api/user/language', 'PUT', 'es'],
     ])
   })
 

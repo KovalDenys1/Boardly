@@ -5,11 +5,13 @@ import { useSession } from 'next-auth/react'
 import { useGuest } from '@/contexts/GuestContext'
 import BoardlyAvatar from '@/components/ui/BoardlyAvatar'
 import { useTranslation } from '@/lib/i18n-helpers'
+import { useIsPlayApp } from '@/hooks/useIsPlayApp'
 
 export default function CtaBanner() {
   const { data: session, status } = useSession()
   const { isGuest, guestName } = useGuest()
   const { t } = useTranslation()
+  const isPlayApp = useIsPlayApp()
   const isLoggedIn = status === 'authenticated'
   const displayName = session?.user?.name || session?.user?.email?.split('@')[0] || 'friend'
 
@@ -36,7 +38,7 @@ export default function CtaBanner() {
       : {
           title: t('home.ctaVisitorTitle'),
           accent: t('home.ctaVisitorAccent'),
-          body: t('home.ctaVisitorBody'),
+          body: t(isPlayApp ? 'home.ctaVisitorBodyPlayApp' : 'home.ctaVisitorBody'),
           primaryHref: '/games',
           primaryLabel: t('home.browseGames'),
           secondaryHref: '/auth/register',

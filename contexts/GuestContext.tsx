@@ -4,6 +4,8 @@ import React, { createContext, useContext, useState, useEffect, ReactNode, useRe
 import { useSession } from 'next-auth/react'
 import { readLocal, removeLocal, writeLocal } from '@/lib/safe-storage'
 import { signupSourceHeaders } from '@/lib/signup-source-client'
+import { clearSignupFrom, peekSignupFrom } from '@/lib/signup-attribution'
+import { BLOCKED_PLAYERS_CHANGED_EVENT, BLOCKED_PLAYERS_STORAGE_KEY } from '@/lib/user-blocks'
 
 interface SetGuestModeOptions {
     guestId?: string
@@ -148,6 +150,8 @@ export function GuestProvider({ children }: { children: ReactNode }) {
     const eraseGuestIdentity = useCallback(() => {
         clearGuestMode()
         removeLocal(GUEST_IDENTITY_KEY)
+        removeLocal(BLOCKED_PLAYERS_STORAGE_KEY)
+        window.dispatchEvent(new CustomEvent(BLOCKED_PLAYERS_CHANGED_EVENT))
     }, [clearGuestMode])
 
     // Load guest data from localStorage on mount
@@ -234,12 +238,15 @@ export function GuestProvider({ children }: { children: ReactNode }) {
 
         ;(async () => {
             try {
-                await fetch('/api/user/upgrade-guest', {
+                const response = await fetch('/api/user/upgrade-guest', {
                     method: 'POST',
                     headers: {
+                        'Content-Type': 'application/json',
                         'X-Guest-Token': activeGuestToken,
                     },
+                    body: JSON.stringify({ from: peekSignupFrom() }),
                 })
+                if (response.ok) clearSignupFrom()
             } catch {
                 // Ignore migration failures in client state transition path.
                 // The backend migration is idempotent and can be retried safely.

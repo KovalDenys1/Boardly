@@ -1,5 +1,6 @@
 'use client'
 
+import { PLAY_APP_SIGNUP_SOURCE, isPlayApp } from './app-shell'
 import {
   SIGNUP_SOURCE_HEADER,
   SIGNUP_SOURCE_PARAM,
@@ -29,6 +30,11 @@ let cached: string | null = null
 export function captureSignupSource(): string | null {
   if (cached !== null) return cached
   if (typeof window === 'undefined' || typeof document === 'undefined') return null
+
+  if (isPlayApp()) {
+    cached = PLAY_APP_SIGNUP_SOURCE
+    return cached
+  }
 
   try {
     const params = new URLSearchParams(window.location.search)

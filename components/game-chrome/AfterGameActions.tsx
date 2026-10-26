@@ -1,11 +1,12 @@
 'use client'
 
 import React from 'react'
+import Link from 'next/link'
 import { useTranslation } from '@/lib/i18n-helpers'
-import GuestConversionNudge from '@/components/GuestConversionNudge'
 import PushOptInNudge from '@/components/PushOptInNudge'
 import { Icon } from '@/components/icons'
 import { useInviteShare } from '@/hooks/useInviteShare'
+import { hasReplayRenderer } from '@/components/replay/registry'
 import { trackDiscordCta, type AnalyticsGameType } from '@/lib/analytics'
 
 /**
@@ -36,7 +37,8 @@ export interface AfterGameActionsProps {
    * Slot 3 — the push opt-in ask (#984) — is gated on it.
    */
   isRegistered?: boolean
-  registerUrl?: string
+  /** The finished game; with it a registered player gets "Watch replay" for a game the replay page can draw. */
+  gameId?: string | null
   /** 'overlay' = white-on-dark inside GameResultOverlay; 'card' = light tokens on a bespoke end screen. */
   variant?: 'overlay' | 'card'
   className?: string
@@ -82,7 +84,7 @@ export default function AfterGameActions({
   gameType,
   isGuest = false,
   isRegistered = false,
-  registerUrl,
+  gameId,
   variant = 'overlay',
   className,
 }: AfterGameActionsProps) {
@@ -95,6 +97,7 @@ export default function AfterGameActions({
    * boxes below are mutually exclusive by construction and at most one ever appears.
    */
   const canAskForPush = isRegistered && !isGuest
+  const replayHref = (isRegistered || isGuest) && gameId && hasReplayRenderer(gameType) ? `/replay/${gameId}` : null
 
   return (
     <div
@@ -111,6 +114,13 @@ export default function AfterGameActions({
           <Icon name="link" size={16} />
           <span>{t('game.ui.playAgainWithFriends')}</span>
         </button>
+      )}
+
+      {replayHref && (
+        <Link href={replayHref} style={{ ...(isOverlay ? overlayShareBtn : cardShareBtn), textDecoration: 'none' }}>
+          <Icon name="play" size={16} />
+          <span>{t('profile.gameReplay.watch')}</span>
+        </Link>
       )}
 
       {/* 2 — the Discord line. Always rendered: it is the only return channel that reaches a guest. */}
@@ -143,13 +153,6 @@ export default function AfterGameActions({
         inside 30 days), so this gate is only about who it makes sense to ask.
       */}
       {canAskForPush && <PushOptInNudge source="after_game" gameType={gameType} />}
-
-      {/* 4 — guest → account. Mutually exclusive with slot 3, so at most one box appears. */}
-      {isGuest && registerUrl && (
-        <div style={{ width: '100%' }}>
-          <GuestConversionNudge registerUrl={registerUrl} />
-        </div>
-      )}
     </div>
   )
 }

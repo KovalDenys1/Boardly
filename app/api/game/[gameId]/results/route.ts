@@ -119,7 +119,7 @@ export async function GET(
       endedAt: endedAt?.toISOString() ?? null,
       durationMs,
       abandonedAt: game.abandonedAt?.toISOString() || null,
-      hasReplay: game.status === 'finished',
+      hasReplay: game.status === 'finished' && game._count.snapshots > 0,
       replayStepCount: game._count.snapshots,
       state: viewerState,
       players: game.players.map(player => ({

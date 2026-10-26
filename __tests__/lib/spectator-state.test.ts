@@ -106,6 +106,25 @@ describe('spectator state sanitization', () => {
   })
 })
 
+describe('sanitizeGameStateForSpectator – a drawing the host hid (#1088)', () => {
+  it('keeps a hidden drawing out of a finished game, and the others in it', () => {
+    const state = {
+      status: 'finished',
+      data: {
+        phase: 'reveal',
+        currentRound: 2,
+        rounds: [
+          { round: 1, drawerId: 'a', drawingContent: '{"strokes":["secret-stroke"]}', drawingHiddenByHost: true },
+          { round: 2, drawerId: 'b', drawingContent: '{"strokes":["kept-stroke"]}' },
+        ],
+      },
+    }
+    const out = JSON.stringify(sanitizeGameStateForSpectator('sketch_and_guess', JSON.stringify(state), 'finished'))
+    expect(out).not.toContain('secret-stroke')
+    expect(out).toContain('kept-stroke')
+  })
+})
+
 describe('sanitizeGameStateForSpectator – Sketch & Guess word list (#1086)', () => {
   it('drops the host\'s word list even from a finished game, which is otherwise returned as is', () => {
     const state = { status: 'finished', data: { rounds: [], customWords: ['office plant'], customWordsOnly: true } }

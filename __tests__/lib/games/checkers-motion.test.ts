@@ -11,7 +11,7 @@ import {
     deriveCheckersMotion,
     extendCheckersMotion,
     timeCheckersMotion,
-} from '@/app/lobby/[code]/checkers-motion'
+} from '@/lib/games/checkers-motion'
 
 const step = (playerId: string, from: Square, to: Square): Move => ({
     playerId,

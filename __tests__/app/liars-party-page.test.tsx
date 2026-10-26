@@ -4,6 +4,7 @@ import LiarsPartyLobbyPage from '@/app/lobby/[code]/liars-party-page'
 import { fetchWithGuest } from '@/lib/fetch-with-guest'
 import { showToast } from '@/lib/i18n-toast'
 import { clientLogger } from '@/lib/client-logger'
+import { playCue } from '@/lib/sound-engine'
 import { frameFor, installSignedRealtime } from '@/__tests__/fixtures/signed-realtime'
 
 const mockReplace = jest.fn()
@@ -40,6 +41,20 @@ jest.mock('next-auth/react', () => ({
   useSession: () => ({
     data: { user: { id: 'user-1' } },
     status: 'authenticated',
+  }),
+}))
+
+jest.mock('@/hooks/useBlockedPlayers', () => ({
+  useBlockedPlayers: () => ({
+    blocked: [],
+    blockedIds: new Set(),
+    ready: true,
+    failed: false,
+    unknown: false,
+    accountId: 'user-1',
+    retry: jest.fn(),
+    block: jest.fn(),
+    unblock: jest.fn(),
   }),
 }))
 
@@ -84,6 +99,11 @@ jest.mock('@/lib/lobby-create-metrics', () => ({
 
 jest.mock('@/lib/analytics', () => ({
   trackMoveSubmitApplied: jest.fn(),
+}))
+
+jest.mock('@/lib/sound-engine', () => ({
+  ...jest.requireActual('@/lib/sound-engine'),
+  playCue: jest.fn(() => true),
 }))
 
 jest.mock('@/components/LoadingSpinner', () => ({
@@ -858,6 +878,33 @@ describe('LiarsPartyLobbyPage', () => {
       for (const name of ['Alice', 'Bob', 'Carol', 'Dave']) {
         expect(within(panel).getByText(name)).toBeTruthy()
       }
+    })
+  })
+
+  describe('a spectator hears the end of the game (#1464)', () => {
+    const resultCues = () => (playCue as jest.Mock).mock.calls.filter(([cue]) => String(cue).startsWith('result.'))
+
+    it('plays result.over once when the game finishes while they watch', async () => {
+      mockFetchWithGuest.mockResolvedValue({ ok: true, json: async () => buildPlayingResponse() } as Response)
+      render(<LiarsPartyLobbyPage code="ABCD" isSpectator />)
+      await waitFor(() => expect(screen.getByTestId('liars-party-claim-screen')).toBeTruthy())
+
+      mockFetchWithGuest.mockResolvedValue({ ok: true, json: async () => buildFinishedResponse() } as Response)
+      act(() => {
+        broadcastHandlers['game-update']?.({ payload: {} })
+      })
+      await waitFor(() => expect(screen.getByTestId('liars-party-game-over-screen')).toBeTruthy())
+
+      expect(screen.queryByRole('button', { name: 'game.ui.viewBoard' })).toBeNull()
+      expect(resultCues()).toEqual([['result.over', { gameId: 'game-1#end', delayMs: 1200 }]])
+    })
+
+    it('stays silent for a spectator who opens a game that has already finished', async () => {
+      mockFetchWithGuest.mockResolvedValue({ ok: true, json: async () => buildFinishedResponse() } as Response)
+      render(<LiarsPartyLobbyPage code="ABCD" isSpectator />)
+      await waitFor(() => expect(screen.getByTestId('liars-party-game-over-screen')).toBeTruthy())
+
+      expect(resultCues()).toEqual([])
     })
   })
 

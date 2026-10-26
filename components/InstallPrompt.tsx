@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from '@/lib/i18n-helpers'
 import { readLocal, removeLocal, writeLocal } from '@/lib/safe-storage'
+import { useIsPlayApp } from '@/hooks/useIsPlayApp'
 
 const DISMISS_KEY = 'boardly:pwa-install-dismissed:v1'
 
@@ -24,6 +25,7 @@ function isStandaloneDisplayMode(): boolean {
 
 export default function InstallPrompt() {
   const { t } = useTranslation()
+  const inPlayApp = useIsPlayApp()
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null)
   const [dismissed, setDismissed] = useState(false)
   const [isInstalled, setIsInstalled] = useState(false)
@@ -83,7 +85,7 @@ export default function InstallPrompt() {
     setDismissed(true)
   }
 
-  if (!visible) return null
+  if (inPlayApp || !visible) return null
 
   return (
     <div className="fixed inset-x-3 bottom-[max(0.75rem,calc(0.75rem+env(safe-area-inset-bottom)))] z-70 sm:inset-x-auto sm:right-4 sm:bottom-[max(1rem,calc(1rem+env(safe-area-inset-bottom)))] sm:max-w-sm">

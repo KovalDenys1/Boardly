@@ -4,6 +4,7 @@ import { rateLimit, rateLimitPresets } from '@/lib/rate-limit'
 import { getRequestAuthUser } from '@/lib/request-auth'
 import { broadcastToLobby } from '@/lib/supabase-server'
 import { parsePersistedGameState } from '@/lib/persisted-game-state'
+import { requiresTermsAcceptance } from '@/lib/terms-gate'
 import { MAX_ALIAS_GUESS_LENGTH, canPostAliasGuess } from '@/lib/games/alias-guess'
 
 const guessLimiter = rateLimit(rateLimitPresets.aliasGuessPost)
@@ -76,6 +77,12 @@ export async function POST(
   }
   if (game.players.length === 0) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  }
+  if (await requiresTermsAcceptance(user.id)) {
+    return NextResponse.json(
+      { error: 'Accept the terms before chatting', code: 'TERMS_REQUIRED' },
+      { status: 403 }
+    )
   }
 
   let state: unknown = null

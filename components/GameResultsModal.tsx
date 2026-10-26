@@ -1,5 +1,7 @@
 'use client'
 
+import Link from 'next/link'
+
 import { useEffect, useState } from 'react'
 import { useTranslation } from '@/lib/i18n-helpers'
 import { Icon } from '@/components/icons'
@@ -65,7 +67,6 @@ interface GameResult {
 interface GameResultsModalProps {
   gameId: string | null
   onClose: () => void
-  onWatchReplay?: (gameId: string) => void
 }
 
 function getScoreValue(player: Player): number {
@@ -73,7 +74,7 @@ function getScoreValue(player: Player): number {
 }
 
 function formatOrdinalPlace(place: number, locale: string): string {
-  if (locale.startsWith('ru') || locale.startsWith('uk') || locale.startsWith('no')) {
+  if (!locale.startsWith('en')) {
     return `#${place}`
   }
 
@@ -90,7 +91,6 @@ function formatOrdinalPlace(place: number, locale: string): string {
 export default function GameResultsModal({
   gameId,
   onClose,
-  onWatchReplay,
 }: GameResultsModalProps) {
   const { t } = useTranslation()
   const [game, setGame] = useState<GameResult | null>(null)
@@ -279,7 +279,9 @@ export default function GameResultsModal({
       })
     : []
 
-  const winner = rankedPlayers.find((player) => player.isWinner) ?? null
+  // A Yahtzee tie records every leader a winner (#1493): that is a draw, not one of them winning.
+  const recordedWinners = rankedPlayers.filter((player) => player.isWinner)
+  const winner = recordedWinners.length === 1 ? recordedWinners[0] : null
   const winnerLabel = winner
     ? getPlayerLabel(winner, rankedPlayers.indexOf(winner))
     : !game
@@ -414,9 +416,9 @@ export default function GameResultsModal({
 
           {/* ── Replay CTA ── */}
           {game.hasReplay ? (
-            <button
-              type="button"
-              onClick={() => onWatchReplay?.(game.id)}
+            <Link
+              href={`/replay/${game.id}`}
+              onClick={onClose}
               className="flex w-full items-center justify-center gap-3 rounded-2xl px-4 py-4 text-sm font-semibold text-white transition-all active:scale-[0.99]"
               style={{ background: 'var(--bd-ink)', boxShadow: '0 3px 0 var(--bd-coral)' }}
             >
@@ -424,7 +426,7 @@ export default function GameResultsModal({
                 <path d="M8 5v14l11-7z" />
               </svg>
               {t('profile.gameReplay.watch')}
-            </button>
+            </Link>
           ) : (
             <div
               className="flex items-start gap-3 rounded-2xl px-4 py-3.5 text-sm"
@@ -482,7 +484,7 @@ export default function GameResultsModal({
                       )}
                     </div>
                     <p className="mt-0.5 text-xs" style={{ color: 'var(--bd-ink-muted)' }}>
-                      {player.isWinner
+                      {player.id === winner?.id
                         ? t('profile.gameResults.winnerBadge')
                         : player.placement
                           ? t('profile.gameResults.placeLabel', { place: formatOrdinalPlace(player.placement, locale) })
@@ -496,7 +498,7 @@ export default function GameResultsModal({
                     <span className="text-xs" style={{ color: 'var(--bd-ink-muted)' }}>
                       {t('profile.gameResults.points')}
                     </span>
-                    {player.isWinner && <Icon name="crown" size={14} />}
+                    {player.id === winner?.id && <Icon name="crown" size={14} />}
                   </div>
                 </div>
               ))}

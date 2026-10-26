@@ -1,19 +1,17 @@
-import { createElement, useState, useCallback, useEffect, useRef } from 'react'
-import { Icon } from '@/components/icons'
+import { useState, useCallback, useEffect, useRef } from 'react'
 import { YahtzeeGame } from '@/lib/games/yahtzee-game'
 import { GameEngine, Move } from '@/lib/game-engine'
 import { restoreGameEngineClient } from '@/lib/restore-game-engine-client'
 import { ALL_CATEGORIES, YahtzeeCategory, calculateScore } from '@/lib/yahtzee'
 import { ROLL_HISTORY_LIMIT, scoreHistoryEntry } from '@/lib/yahtzee-roll-history'
-import { sounds } from '@/lib/sounds'
+import { playCue } from '@/lib/sound-engine'
 import { clientLogger } from '@/lib/client-logger'
 import { getAuthHeaders } from '@/lib/auth-headers'
 import { showToast } from '@/lib/i18n-toast'
-import { showYahtzeeCategoryToast } from '@/lib/yahtzee-notifications'
 import { RollHistoryEntry } from '@/components/RollHistory'
 import { detectPatternOnRoll, detectCelebration, CelebrationEvent } from '@/lib/celebrations'
 import { Game, GamePlayer } from '@/types/game'
-import { trackPlayerAction, trackGameCompleted, trackMoveSubmitApplied } from '@/lib/analytics'
+import { trackGameCompleted, trackMoveSubmitApplied } from '@/lib/analytics'
 import { decideFreshness, type FreshnessWatermark } from '@/lib/game-state-freshness'
 
 interface UseGameActionsProps {
@@ -226,8 +224,7 @@ export function useGameActions(props: UseGameActionsProps) {
     setIsMoveInProgress(true)
     setIsRolling(true)
 
-    // Play sound immediately for instant feedback (force to ensure it plays)
-    sounds.play('diceRoll', { force: true })
+    playCue('dice.roll')
 
     // NOTE: We don't update dice values optimistically because:
     // 1. Client random != server random (will cause "flicker" when values change)
@@ -358,22 +355,6 @@ export function useGameActions(props: UseGameActionsProps) {
         }
       }
 
-      // Sound already played optimistically, no need to play again
-
-      // Track player action
-      if (newEngine) {
-        trackPlayerAction({
-          actionType: 'roll',
-          gameType: 'yahtzee',
-          playerCount: game.players.length,
-          isBot: false,
-          metadata: {
-            rollNumber: 3 - newEngine.getRollsLeft(),
-            diceHeld: held.filter(Boolean).length,
-          },
-        })
-      }
-
       // No snapshot fetch here (#861). `data.game.state` is the authoritative
       // state and it is already applied above, so `GET /api/lobby/:code` would
       // answer with what this client just installed.
@@ -414,6 +395,7 @@ export function useGameActions(props: UseGameActionsProps) {
         })
       }
       if (!isAutoAction) {
+        playCue('ui.error')
         setHeld(preMoveHeld)
         await reconcileAfterMoveError()
         showToast.errorFrom(error, 'toast.rollFailed')
@@ -483,12 +465,6 @@ export function useGameActions(props: UseGameActionsProps) {
     setIsScoring(true)
 
     const diceBeforeScore = gameEngine.getDice()
-    const availableCategoryScores = scorecard
-      ? Object.entries(scorecard)
-          .filter(([, value]) => value === undefined)
-          .map(([candidate]) => calculateScore(diceBeforeScore, candidate as YahtzeeCategory))
-      : []
-    const bestAvailableScore = availableCategoryScores.length > 0 ? Math.max(...availableCategoryScores) : 0
 
     const move: Move = {
       playerId: userId || '',
@@ -518,7 +494,7 @@ export function useGameActions(props: UseGameActionsProps) {
         // Apply optimistic turn + score update for instant feedback.
         setGameEngine(optimisticEngine)
         setHeld([false, false, false, false, false])
-        sounds.play('score', { force: true })
+        playCue('score.add')
       } catch (optimisticError) {
         clientLogger.warn('Failed to apply optimistic score update', optimisticError)
       }
@@ -588,7 +564,6 @@ export function useGameActions(props: UseGameActionsProps) {
 
       // Calculate score for celebration detection
       const scoredValue = calculateScore(diceBeforeScore, category)
-      const isBestPick = scoredValue > 0 && scoredValue === bestAvailableScore
 
       // Get the NEW scorecard (after scoring) to verify category is now filled
       const newScorecard = newEngine.getScorecard(userId || '')
@@ -612,35 +587,17 @@ export function useGameActions(props: UseGameActionsProps) {
       // Check if this score deserves a celebration
       // Only celebrate if we just filled this category (it should now be defined in scorecard)
       if (newScorecard && newScorecard[category] !== undefined) {
-        const celebration = detectCelebration(diceBeforeScore, category, scoredValue)
+        const celebration = scoredValue > 0 ? detectCelebration(diceBeforeScore, category, scoredValue) : null
         if (celebration) {
           setCelebrationEvent(celebration)
           celebrate() // Trigger confetti for good scores
-        } else {
-          showYahtzeeCategoryToast({
-            category,
-            score: scoredValue,
-            isBestPick,
-            id: `yahtzee-score-${category}-${scoredValue}-${newEngine.getRound()}`,
-          })
+          playCue('yahtzee.celebrate')
         }
       }
 
       if (isAutoAction) {
-        sounds.play('score', { force: true })
+        playCue('score.add')
       }
-
-      // Track score action
-      trackPlayerAction({
-        actionType: 'score',
-        gameType: 'yahtzee',
-        playerCount: game.players.length,
-        isBot: false,
-        metadata: {
-          category,
-          score: scoredValue,
-        },
-      })
 
       // No snapshot fetch on an ordinary score, for the reason the roll path
       // above gives (#861): the authoritative state came back on this response
@@ -694,16 +651,9 @@ export function useGameActions(props: UseGameActionsProps) {
 
         if (winner) {
           fireworks()
-          if (winner.id === userId) sounds.play('win')
           showToast.success('toast.gameOver', undefined, { player: winner.name })
-        }
-      } else {
-        const nextPlayer = newEngine.getCurrentPlayer()
-
-        // Only show "next turn" toast if it's NOT our turn now
-        // (don't show to the player who just scored)
-        if (nextPlayer && nextPlayer.id !== userId) {
-          showToast.custom('toast.playerTurn', createElement(Icon, { name: 'info', size: 18 }), undefined, { player: nextPlayer.name })
+        } else {
+          showToast.info('toast.gameTie')
         }
       }
 
@@ -723,6 +673,7 @@ export function useGameActions(props: UseGameActionsProps) {
         })
       }
       if (!isAutoAction) {
+        playCue('ui.error')
         if (shouldApplyOptimisticScore) {
           setGameEngine(previousEngine)
         }

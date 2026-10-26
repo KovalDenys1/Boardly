@@ -7,9 +7,11 @@ import { getCatalogAvailableGames } from '@/lib/game-catalog'
 import { SOCIAL_PLATFORM_LABELS, SOCIAL_PROFILES } from '@/lib/social-profiles'
 import { reopenGoogleConsentMessage } from '@/lib/consent'
 import { isProductionDeployment } from '@/lib/feature-flags'
+import { useIsPlayApp } from '@/hooks/useIsPlayApp'
 
 export default function Footer({ listingBadge = false }: { listingBadge?: boolean }) {
   const { t } = useTranslation()
+  const inPlayApp = useIsPlayApp()
   const currentYear = new Date().getFullYear()
   // The adsbygoogle loader — which is also what delivers Google's consent
   // message — only runs in production (#1152), so the control that reopens
@@ -41,7 +43,7 @@ export default function Footer({ listingBadge = false }: { listingBadge?: boolea
                   width: 34,
                   height: 34,
                   borderRadius: 9,
-                  background: 'var(--bd-ink)',
+                  background: 'var(--bd-logo-tile)',
                   color: 'var(--bd-sun)',
                   display: 'grid',
                   placeItems: 'center',
@@ -63,7 +65,7 @@ export default function Footer({ listingBadge = false }: { listingBadge?: boolea
               </span>
             </div>
             <p className="text-sm leading-relaxed max-w-xs" style={{ color: 'var(--bd-ink-soft)' }}>
-              {t('footer.tagline')}
+              {t(inPlayApp ? 'footer.taglinePlayApp' : 'footer.tagline')}
             </p>
             {listingBadge && (
               // Launchstag publishes the listing once it finds this link on the home page; the image is a local copy, so no visitor request reaches them.
@@ -134,20 +136,22 @@ export default function Footer({ listingBadge = false }: { listingBadge?: boolea
                 { labelKey: 'footer.leaderboard', href: '/leaderboard' },
                 { labelKey: 'footer.guides', href: '/guides' },
                 // The only crawlable link to /premium on the site.
-                { labelKey: 'common.premium', href: '/premium' },
-              ] as { labelKey: TranslationKeys; href: string }[]).map((link) => (
-                <li key={link.href}>
-                  <Link
-                    href={link.href}
-                    className="text-sm transition-colors"
-                    style={{ color: 'var(--bd-ink-soft)' }}
-                    onMouseEnter={e => (e.currentTarget.style.color = 'var(--bd-ink)')}
-                    onMouseLeave={e => (e.currentTarget.style.color = 'var(--bd-ink-soft)')}
-                  >
-                    {t(link.labelKey)}
-                  </Link>
-                </li>
-              ))}
+                { labelKey: 'common.premium', href: '/premium', purchase: true },
+              ] as { labelKey: TranslationKeys; href: string; purchase?: boolean }[])
+                .filter((link) => !(inPlayApp && link.purchase))
+                .map((link) => (
+                  <li key={link.href} data-purchase-ui={link.purchase || undefined}>
+                    <Link
+                      href={link.href}
+                      className="text-sm transition-colors"
+                      style={{ color: 'var(--bd-ink-soft)' }}
+                      onMouseEnter={e => (e.currentTarget.style.color = 'var(--bd-ink)')}
+                      onMouseLeave={e => (e.currentTarget.style.color = 'var(--bd-ink-soft)')}
+                    >
+                      {t(link.labelKey)}
+                    </Link>
+                  </li>
+                ))}
             </ul>
           </div>
 

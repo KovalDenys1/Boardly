@@ -1,5 +1,6 @@
 import { track } from '@vercel/analytics'
 import { clientLogger } from './client-logger'
+import { isPlayApp } from './app-shell'
 import type { OperationalEventName } from './operational-events'
 import type { InviteAttribution } from './invite-attribution'
 import type { InviteShareMethod } from './invite-share'
@@ -52,14 +53,6 @@ interface GameEndEvent {
   wasBot: boolean
   /** Scores in seat order. */
   finalScores: number[]
-}
-
-interface PlayerActionEvent {
-  actionType: string
-  gameType: GameType
-  playerCount: number
-  isBot: boolean  // Keep for backwards compatibility with analytics
-  metadata?: Record<string, unknown>
 }
 
 interface AuthEvent {
@@ -245,24 +238,6 @@ export function trackGameCompleted(event: GameEndEvent): void {
 }
 
 /**
- * Track player actions (roll, hold, score)
- */
-export function trackPlayerAction(event: PlayerActionEvent): void {
-  // Only track significant actions to avoid noise
-  const significantActions = ['roll', 'score', 'hold']
-  
-  if (significantActions.includes(event.actionType)) {
-    track('player_action', {
-      game_type: event.gameType,
-      action: event.actionType,
-      is_bot: event.isBot,
-      player_count: event.playerCount,
-      ...(event.metadata && { metadata: JSON.stringify(event.metadata) }),
-    })
-  }
-}
-
-/**
  * Track authentication events
  */
 export function trackAuth(event: AuthEvent): void {
@@ -350,7 +325,6 @@ export function trackMoveSubmitApplied(event: MoveSubmitAppliedEvent): void {
     ...(event.source ? { source: event.source } : {}),
   } satisfies Record<string, AnalyticsPropertyValue>
 
-  track('move_submit_applied', payload)
   emitOperationalEvent('move_submit_applied', payload)
 
   if (event.applied && durationMs > MOVE_APPLY_TARGET_MS) {
@@ -590,17 +564,25 @@ export function trackUserRetention(data: {
 }
 
 /**
- * Guest → account nudge shown on result screens (GuestConversionNudge).
+ * Guest → account nudge (GuestConversionNudge), not placed anywhere since it left the end screen.
  * Together with `signupSource` on Users this is the guest→registered funnel.
  */
-export function trackSignupPrompt(action: 'shown' | 'clicked' | 'dismissed'): void {
-  track('signup_prompt', { action })
+export function trackSignupPrompt(
+  action: 'shown' | 'clicked' | 'dismissed',
+  context: { gameType?: AnalyticsGameType; lobbyCode?: string | null } = {}
+): void {
+  const payload = {
+    is_guest: true,
+    ...(context.gameType ? { game_type: context.gameType } : {}),
+    ...(context.lobbyCode ? { lobby_code: context.lobbyCode } : {}),
+  } satisfies Record<string, AnalyticsPropertyValue>
+  track('signup_prompt', { action, ...payload })
   // Also to OperationalEvents, because `track` goes to Vercel Analytics and the Hobby plan
   // dropped every custom event until Pro (2026-09-18): the funnel the Revenue Plan defines
   // had never stored a row, and OperationalEvents stays the queryable copy.
   // Note for whoever reads it: `shown` fires per mount and the nudge suppresses itself after
   // a dismissal, so clicked-over-shown is a per-session ratio, not a per-person one.
-  emitOperationalEvent(`signup_prompt_${action}`, { is_guest: true })
+  emitOperationalEvent(`signup_prompt_${action}`, payload)
   clientLogger.log('[analytics] Signup prompt', action)
 }
 
@@ -690,6 +672,7 @@ export function trackInviteOpened(attribution: InviteAttribution, lobbyCode: str
  * /premium can be read against the checkout it did or did not become (#926).
  */
 export function trackPremiumCta(source: string, plan?: PremiumPlan): void {
+  if (isPlayApp()) return
   const payload = { source, ...(plan ? { plan } : {}) } satisfies Record<string, AnalyticsPropertyValue>
   track('feature_used', { feature: 'premium_cta', ...payload })
   emitOperationalEvent('premium_cta_clicked', payload)

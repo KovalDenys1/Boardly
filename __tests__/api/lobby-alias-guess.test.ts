@@ -21,7 +21,7 @@ import { canPostAliasGuess } from '@/lib/games/alias-guess'
 import { __rateLimitTestUtils, rateLimitPresets } from '@/lib/rate-limit'
 
 jest.mock('@/lib/db', () => ({
-  prisma: { lobbies: { findUnique: jest.fn() } },
+  prisma: { lobbies: { findUnique: jest.fn() }, users: { findUnique: jest.fn() } },
 }))
 jest.mock('@/lib/request-auth', () => ({ getRequestAuthUser: jest.fn() }))
 jest.mock('@/lib/supabase-server', () => ({ broadcastToLobby: jest.fn() }))
@@ -33,6 +33,7 @@ const OTHER_TEAM = 'user-other-team'
 const mockAuth = getRequestAuthUser as jest.MockedFunction<typeof getRequestAuthUser>
 const mockBroadcast = broadcastToLobby as jest.MockedFunction<typeof broadcastToLobby>
 const mockFindLobby = prisma.lobbies.findUnique as jest.Mock
+const mockFindUser = prisma.users.findUnique as jest.Mock
 
 function aliasState(phase = 'turn_active') {
   return {
@@ -69,6 +70,7 @@ beforeEach(() => {
   jest.clearAllMocks()
   mockBroadcast.mockResolvedValue(true)
   mockAuth.mockResolvedValue({ id: GUESSER, username: 'Bea', isGuest: true })
+  mockFindUser.mockResolvedValue({ termsAcceptedAt: new Date('2026-10-01T08:30:00.000Z'), bot: null })
 })
 
 describe('POST /api/lobby/[code]/alias-guess', () => {
@@ -145,6 +147,48 @@ describe('POST /api/lobby/[code]/alias-guess', () => {
     mockAuth.mockResolvedValue({ id: OTHER_TEAM, username: 'Otto', isGuest: true })
     expect((await fromHomeNetwork()).status).toBe(200)
     __rateLimitTestUtils.clearInMemoryStore()
+  })
+
+  // #1466: a guess is free text shown to the whole lobby, so it needs the same acceptance as chat.
+  describe('terms (#1466)', () => {
+    it('refuses a guest who has not accepted the terms, and broadcasts nothing', async () => {
+      seed()
+      mockFindUser.mockResolvedValue({ termsAcceptedAt: null, bot: null })
+
+      const res = await post({ message: 'banana' })
+
+      expect(res.status).toBe(403)
+      expect(await res.json()).toEqual(expect.objectContaining({ code: 'TERMS_REQUIRED' }))
+      expect(mockBroadcast).not.toHaveBeenCalled()
+    })
+
+    it('lets the same guest guess once they have accepted', async () => {
+      seed()
+      mockFindUser.mockResolvedValue({ termsAcceptedAt: null, bot: null })
+      expect((await post({ message: 'banana' })).status).toBe(403)
+
+      mockFindUser.mockResolvedValue({ termsAcceptedAt: new Date(), bot: null })
+
+      expect((await post({ message: 'banana' })).status).toBe(200)
+      expect(mockBroadcast).toHaveBeenCalledTimes(1)
+    })
+
+    it('never refuses a bot', async () => {
+      seed()
+      mockFindUser.mockResolvedValue({ termsAcceptedAt: null, bot: { id: 'bot-1' } })
+
+      expect((await post({ message: 'banana' })).status).toBe(200)
+    })
+
+    it('answers someone who is not seated with the plain Forbidden, not the terms prompt', async () => {
+      seed({ seated: false })
+      mockFindUser.mockResolvedValue({ termsAcceptedAt: null, bot: null })
+
+      const res = await post({ message: 'banana' })
+
+      expect(res.status).toBe(403)
+      expect(await res.json()).toEqual({ error: 'Forbidden' })
+    })
   })
 
   it('says so when the broadcast could not be sent', async () => {

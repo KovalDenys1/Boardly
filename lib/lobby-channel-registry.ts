@@ -109,9 +109,9 @@ function bindEvents(entry: RegistryEntry, topic: string, events: Record<string, 
     if (entry.boundEvents.has(event)) continue
     entry.boundEvents.add(event)
     entry.channel.on('broadcast', { event }, ({ payload }) => {
-      // A peer frame (live drawing strokes, ten a second) has no signature to
-      // wait for and must not queue behind one that does; its handlers treat
-      // it as untrusted anyway.
+      // A peer frame (live drawing strokes, ten a second) has no server
+      // signature to wait for and must not queue behind one that does; its
+      // handler checks the sender's own signature.
       if (isLobbyPeerEvent(topic, event) && !isRealtimeEnvelope(payload)) {
         if (payload !== null && typeof payload === 'object') dispatch(entry, event, payload)
         return
@@ -121,6 +121,12 @@ function bindEvents(entry: RegistryEntry, topic: string, events: Record<string, 
         .catch((error) => clientLogger.error('Realtime delivery failed', { event, error }))
     })
   }
+}
+
+/** The topic of a lobby channel this page already holds, so a late consumer joins it without asking for it again. */
+export function openLobbyTopic(code: string): string | null {
+  for (const topic of registry.keys()) if (topic.startsWith(`lobby:${code}:`)) return topic
+  return null
 }
 
 export function acquireLobbyChannel(

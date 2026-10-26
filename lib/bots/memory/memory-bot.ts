@@ -84,6 +84,32 @@ export class MemoryBot extends BaseBot<MemoryGame, MemoryBotDecision> {
     }
   }
 
+  decideSecondCard(decision: MemoryBotDecision): MemoryBotDecision {
+    if (decision.firstCardAlreadyFlipped || decision.strategy !== 'guess') {
+      return decision
+    }
+
+    const gameData = this.gameEngine.getState().data as MemoryGameData
+    const firstCard = gameData.cards.find((card) => card.id === decision.firstCardId)
+    if (!firstCard?.isFlipped) {
+      return decision
+    }
+
+    const profile = MEMORY_BOT_PROFILES[this.config.difficulty]
+    const seenMates = gameData.cards.filter(
+      (card) => !card.isFlipped && !card.isMatched && card.seen && card.value === firstCard.value,
+    )
+    if (seenMates.length === 0 || Math.random() >= profile.mateRecallChance) {
+      return decision
+    }
+
+    return {
+      ...decision,
+      secondCardId: this.pickRandom(seenMates).id,
+      strategy: 'remembered-mate',
+    }
+  }
+
   decisionToMove(decision: MemoryBotDecision): Move {
     const cardId = decision.firstCardAlreadyFlipped ? decision.secondCardId : decision.firstCardId
     return this.createFlipMove(cardId)
@@ -114,7 +140,8 @@ export class MemoryBot extends BaseBot<MemoryGame, MemoryBotDecision> {
     hiddenCards: MemoryCard[],
     profile: MemoryBotProfile,
   ): { first: MemoryCard; second: MemoryCard; strategy: MemoryBotDecision['strategy'] } {
-    const pairs = this.findHiddenPairs(hiddenCards)
+    const seenCards = hiddenCards.filter((card) => card.seen)
+    const pairs = this.findPairs(seenCards)
     const shouldMakeMistake = Math.random() < profile.mistakeChance
     const shouldRecallPair = !shouldMakeMistake && pairs.length > 0 && Math.random() < profile.pairRecallChance
 
@@ -128,7 +155,7 @@ export class MemoryBot extends BaseBot<MemoryGame, MemoryBotDecision> {
     }
 
     if (shouldMakeMistake) {
-      const nonMatchingPair = this.pickNonMatchingPair(hiddenCards)
+      const nonMatchingPair = this.pickNonMatchingPair(seenCards)
       if (nonMatchingPair) {
         return {
           first: nonMatchingPair[0],
@@ -155,7 +182,8 @@ export class MemoryBot extends BaseBot<MemoryGame, MemoryBotDecision> {
       throw new Error('No hidden Memory cards available for bot move')
     }
 
-    const matchingMates = hiddenCards.filter((card) => card.value === firstCard.value)
+    const seenCards = hiddenCards.filter((card) => card.seen)
+    const matchingMates = seenCards.filter((card) => card.value === firstCard.value)
     const shouldMakeMistake = Math.random() < profile.mistakeChance
     const shouldRecallMate = !shouldMakeMistake && matchingMates.length > 0 && Math.random() < profile.mateRecallChance
 
@@ -167,7 +195,7 @@ export class MemoryBot extends BaseBot<MemoryGame, MemoryBotDecision> {
     }
 
     if (shouldMakeMistake) {
-      const nonMatchingCards = hiddenCards.filter((card) => card.value !== firstCard.value)
+      const nonMatchingCards = seenCards.filter((card) => card.value !== firstCard.value)
       if (nonMatchingCards.length > 0) {
         return {
           card: this.pickRandom(nonMatchingCards),
@@ -182,9 +210,9 @@ export class MemoryBot extends BaseBot<MemoryGame, MemoryBotDecision> {
     }
   }
 
-  private findHiddenPairs(hiddenCards: MemoryCard[]): Array<[MemoryCard, MemoryCard]> {
+  private findPairs(cards: MemoryCard[]): Array<[MemoryCard, MemoryCard]> {
     const cardsByValue = new Map<string, MemoryCard[]>()
-    for (const card of hiddenCards) {
+    for (const card of cards) {
       const group = cardsByValue.get(card.value) ?? []
       group.push(card)
       cardsByValue.set(card.value, group)

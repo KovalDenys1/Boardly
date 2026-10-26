@@ -785,6 +785,30 @@ refresh on page load runs before the browser challenge is ready. guest-session n
 call that mints a guest, as join-guest does. Read `botid_flagged` again a week after that release;
 what is left should be token-less calls only.
 
+**Read-out 2026-10-11: not enforced.** The returning-guest flags were gone; the five new ones came
+with first mints during a burst of guests on 09.10, and at least three were people who went on to
+play. Each `botid_flagged` event now carries a `payload` to tell such false positives from bots:
+`route`; `challengeHeaders` for the `x-is-human`, `x-path`, `x-method` headers the browser half
+attaches (`complete`; `empty` when all three came but the challenge in them was blank; `partial`;
+`none`); BotID's verdict fields (`isBot`, `isVerifiedBot`, `verifiedBotName`,
+`verifiedBotCategory`, `bypassed`, `classificationReason`, each string kept only as a plain
+label); `mintedGuest`, whether the call went on to create a guest; `country` from
+`x-vercel-ip-country`; `device` (`mobile`, `tablet`, `desktop`, `unknown`) and `browser` family
+from the User-Agent (`webview` and `headless` included). No IP address, User-Agent string, header
+value or guest id is stored, though a `mintedGuest` event can be matched to its guest by time, as
+the read-outs do. The event is still written at most once a minute per instance, for the first
+request flagged in that minute, so counts are a floor. Read it with
+`select "occurredAt", payload from "OperationalEvents" where "eventName" = 'botid_flagged' order by 1`.
+
+**Read-out 2026-10-26: monitor mode is permanent.** 14–25.10, with the payload: 9 flags against
+120 new guests, every one `isBot: true` with `challengeHeaders: complete`, so the challenge ran and
+BotID still said bot. Seven were mobile or desktop Chrome, Edge and Safari, and the guests minted
+at the same second have 1–8 `Players` rows: people who went on to play, one of them over 20 minutes
+on 18.10. Two were `headless` from Norway, which is our own automation. Enforcing would refuse
+about one new guest in twenty, and the rate limits already cap what a script can mint. So
+`BOTID_MODE=monitor` stays as a signal and is not a pending step; read it only if guest creation
+spikes.
+
 
 Vercel BotID, **Basic** level, on `POST /api/auth/register`, `POST /api/auth/guest-session` and a
 token-less `POST /api/lobby/<code>/join-guest` - the requests that mint an account or a guest.
@@ -924,7 +948,7 @@ step below in order and do not flip the switch if any of steps 1–3 fails.
    (`lib/consent.ts`, `reopenGoogleConsentMessage`) must reopen the same message.
 6. **The variable is set for Production only, never Preview.** A Preview deployment serving
    ads would put a non-production host in front of real ad requests.
-7. **The label reads "Advertisements"** (`common.advertisement` in all four locale files,
+7. **The label reads "Advertisements"** (`common.advertisement` in every locale file,
    per Google's placement policy at
    [support.google.com/adsense/answer/1346295](https://support.google.com/adsense/answer/1346295)),
    and the unit stays the last element before the footer on guide pages — none on any game
@@ -934,6 +958,12 @@ step below in order and do not flip the switch if any of steps 1–3 fails.
    this checklist exists to prevent.
 9. **After go-live, watch AdSense's Transactions page** for invalid-activity deductions in
    the days that follow.
+10. **Ads stay off inside the Play app, and the code enforces it.** In Play mode the head
+    script (`lib/app-shell-script.ts`) sets `adsbygoogle.pauseAdRequests = 1` before the
+    AdSense tag can run, which stops every ad request there, Auto ads included, while Google's
+    consent message still loads; and `AdSlot` renders nothing (`useIsPlayApp()`), whatever this
+    switch says. Turning ads on in the app changes the Play listing's "Contains ads" and Data
+    safety answers (`android/listing/store-settings.md`, `android/listing/data-safety.md`).
 
 ### CSP hardening verification (preview/production)
 

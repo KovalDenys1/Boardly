@@ -9,7 +9,7 @@ import { INACTIVITY_RULE_STARTS, TERMS_FIGURES, TERMS_VERSION } from '@/lib/term
 import PremiumTerms from './PremiumTerms'
 
 /**
- * The Terms of Service (#1166), every section through t() in en, no, ru and uk.
+ * The Terms of Service (#1166), every section through t() in en, no, ru, uk, de and es.
  *
  * angrerettloven § 8 second paragraph wants the information given in Norwegian
  * when the marketing targets Norwegian consumers, and Forbrukertilsynet's

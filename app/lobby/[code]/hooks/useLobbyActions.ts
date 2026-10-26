@@ -1,9 +1,9 @@
 import { sketchCustomWordsRules } from '@/lib/sketch-custom-words'
+import { acceptTerms as postAcceptTerms } from '@/lib/client/terms-consent'
 import { useState, useCallback, useRef, useEffect } from 'react'
 import { DEFAULT_GAME_TYPE } from '@/lib/game-catalog'
 import { toAnalyticsGameType } from '@/lib/analytics-game-types'
 import { restoreGameEngineClient } from '@/lib/restore-game-engine-client'
-import { sounds } from '@/lib/sounds'
 import { clientLogger } from '@/lib/client-logger'
 import { getAuthHeaders } from '@/lib/auth-headers'
 import {
@@ -23,7 +23,7 @@ import {
   isLobbyJoinRefusalCode,
   type LobbyJoinRefusalCode,
 } from '@/lib/lobby-join-errors'
-import { BotDifficulty, normalizeBotDifficulty } from '@/lib/bot-profiles'
+import { BotDifficulty, localizeBotName, normalizeBotDifficulty } from '@/lib/bot-profiles'
 import i18n from '@/i18n'
 import { finalizePendingLobbyCreateMetric } from '@/lib/lobby-create-metrics'
 import type { Game, GamePlayer, Lobby } from '@/types/game'
@@ -72,6 +72,8 @@ interface UseLobbyActionsProps {
   setLoading: (loading: boolean) => void
   setStartingGame: (starting: boolean) => void
   selectedBotDifficulty: BotDifficulty
+  /** The chat's accept, so its composer opens too when the host accepts at the Start button. */
+  acceptTerms?: () => Promise<boolean>
 }
 
 interface AddBotOptions {
@@ -163,6 +165,7 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
     setLoading,
     setStartingGame,
     selectedBotDifficulty,
+    acceptTerms = postAcceptTerms,
   } = props
 
   const [password, setPassword] = useState('')
@@ -172,6 +175,7 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
   // visitor reads; this is what the UI branches on, so neither the branch nor
   // the sentence depends on the server's English prose (#967).
   const [joinRefusalCode, setJoinRefusalCode] = useState<LobbyJoinRefusalCode | null>(null)
+  const [startTermsRequired, setStartTermsRequired] = useState(false)
 
   // Use ref to avoid circular dependencies
   const loadLobbyRef = useRef<((options?: { fresh?: boolean }) => Promise<void>) | null>(null)
@@ -726,6 +730,12 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
           // Ignore JSON parse errors and use status text fallback below.
         }
 
+        if (res.status === 403 && errorPayload?.code === 'TERMS_REQUIRED') {
+          reportAutoBotFlowResult(false, 'start_failed')
+          setStartTermsRequired(true)
+          return
+        }
+
         const hasMessage =
           typeof errorPayload?.error === 'string' ||
           typeof errorPayload?.details === 'string'
@@ -777,7 +787,10 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
       // turn to — was previously always crediting the wrong player in the
       // "goes first" toast/chat message, e.g. always the bot even when the
       // human host moves first).
-      const firstPlayerName = engine.getCurrentPlayer()?.name || data.game.players[0]?.name || 'Player 1'
+      const firstPlayerName = localizeBotName(
+        engine.getCurrentPlayer()?.name || data.game.players[0]?.name || 'Player 1',
+        (key) => i18n.t(key)
+      )
 
       showToast.success('toast.gameStarted', undefined, { player: firstPlayerName }, { id: 'start-game' })
 
@@ -785,7 +798,7 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
         id: Date.now().toString() + '_gamestart',
         userId: 'system',
         username: 'System',
-        message: `Game started! ${firstPlayerName} goes first!`,
+        message: i18n.t('toast.gameStarted', { player: firstPlayerName }),
         timestamp: Date.now(),
         type: 'system'
       }
@@ -806,6 +819,12 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
       setStartingGame(false)
     }
   }, [game, lobby, code, addBotToLobby, announceBotJoined, fetchLobbySnapshot, setGame, setGameEngine, setTimerActive, setTimeLeft, setRollHistory, setCelebrationEvent, setChatMessages, setStartingGame, isGuest, guestId, guestName, guestToken, selectedBotDifficulty])
+
+  const acceptStartTerms = useCallback(async () => {
+    const accepted = await acceptTerms()
+    if (accepted) setStartTermsRequired(false)
+    return accepted
+  }, [acceptTerms])
 
   const updateLobbySettings = useCallback(async (updates: LobbySettingsUpdatePayload) => {
     // Apply immediately — rollback on failure
@@ -909,6 +928,8 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
     handleGuestJoinLobby,
     joinRefusalCode,
     handleStartGame,
+    startTermsRequired,
+    acceptStartTerms,
     updateLobbySettings,
     guestNameInput,
     setGuestNameInput,

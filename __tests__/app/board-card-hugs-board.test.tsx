@@ -49,9 +49,7 @@ import TicTacToeLobbyPage from '@/app/lobby/[code]/tic-tac-toe-page'
 import ConnectFourLobbyPage from '@/app/lobby/[code]/connect-four-page'
 import RockPaperScissorsLobbyPage from '@/app/lobby/[code]/rock-paper-scissors-page'
 import MemoryGameBoard from '@/app/lobby/[code]/components/MemoryGameBoard'
-import YahtzeeGameBoard from '@/app/lobby/[code]/components/YahtzeeGameBoard'
 import { TicTacToeGame } from '@/lib/games/tic-tac-toe-game'
-import { YahtzeeGame } from '@/lib/games/yahtzee-game'
 import { fetchWithGuest } from '@/lib/fetch-with-guest'
 
 const mockChannel: {
@@ -596,66 +594,6 @@ describe('the board card does not paint the space the board leaves (#903)', () =
       await waitFor(() => expect(screen.getAllByTestId('ttt-board').length).toBeGreaterThan(0))
 
       expect(pillsIn(container)).toHaveLength(0)
-    })
-  })
-
-  describe('yahtzee hugs its dice instead of stretching around them (#903)', () => {
-    // The phone-landscape `compact` variant went with #1187 (landscape shows
-    // the tile grid and its own dice bar), so only the desktop column is left.
-    function renderYahtzee() {
-      const engine = new YahtzeeGame('game-1')
-      engine.addPlayer({ id: 'user-1', name: 'Alice', score: 0, isActive: true })
-      engine.addPlayer({ id: 'user-2', name: 'Bob', score: 0, isActive: true })
-      engine.startGame()
-
-      return render(
-        <YahtzeeGameBoard
-          gameEngine={engine}
-          game={{ id: 'game-1' } as never}
-          isMyTurn
-          isMoveInProgress={false}
-          isRolling={false}
-          isScoring={false}
-          isStateReverting={false}
-          celebrationEvent={null}
-          held={[false, false, false, false, false]}
-          getCurrentUserId={() => 'user-1'}
-          onRollDice={() => undefined}
-          onToggleHold={() => undefined}
-          onScore={() => undefined}
-          onCelebrationComplete={() => undefined}
-        />
-      )
-    }
-
-    // #903 names YahtzeeGameBoard.tsx:106,129 as one of its two causes and
-    // measures the result twice. On the branch at 768x1024 the card was 744x797
-    // around a 112px dice strip - ~197px of empty card above it and ~246px
-    // below. `flex-1` on either box is what put it there.
-    it('neither the dice card nor the dice box takes the column\'s spare height', () => {
-      {
-        const { container, unmount } = renderYahtzee()
-
-        const card = container.querySelector('.bd-card')
-        expect(card).toBeTruthy()
-        expect(card!.className).not.toMatch(/(^|\s)flex-1(\s|$)/)
-        // It still shrinks and scrolls when the column is shorter than the
-        // content - the iOS Safari address-bar case the file documents.
-        expect(card!.className).toMatch(/(^|\s)overflow-y-auto(\s|$)/)
-        expect(card!.className).toMatch(/(^|\s)min-h-0(\s|$)/)
-
-        const diceBox = card!.querySelector('.min-h-\\[190px\\]')
-        expect(diceBox).toBeTruthy()
-        expect((diceBox as HTMLElement).className).not.toMatch(/(^|\s)flex-1(\s|$)/)
-
-        unmount()
-      }
-    })
-
-    it('centres what is left, so the freed height is page padding and not empty card', () => {
-      const { container } = renderYahtzee()
-      const root = container.firstElementChild as HTMLElement
-      expect(root.className).toMatch(/(^|\s)justify-center(\s|$)/)
     })
   })
 

@@ -4,6 +4,7 @@ import TicTacToeLobbyPage from '@/app/lobby/[code]/tic-tac-toe-page'
 import { TicTacToeGame } from '@/lib/games/tic-tac-toe-game'
 import { fetchWithGuest } from '@/lib/fetch-with-guest'
 import { showToast } from '@/lib/i18n-toast'
+import { playCue } from '@/lib/sound-engine'
 import { frameFor, installSignedRealtime } from '@/__tests__/fixtures/signed-realtime'
 
 const mockReplace = jest.fn()
@@ -94,6 +95,11 @@ jest.mock('@/lib/lobby-create-metrics', () => ({
 jest.mock('@/lib/analytics', () => ({
   trackLobbyLeaveRedirect: jest.fn(),
   trackMoveSubmitApplied: jest.fn(),
+}))
+
+jest.mock('@/lib/sound-engine', () => ({
+  ...jest.requireActual('@/lib/sound-engine'),
+  playCue: jest.fn(() => true),
 }))
 
 jest.mock('@/components/LoadingSpinner', () => ({
@@ -274,6 +280,30 @@ describe('TicTacToeLobbyPage', () => {
       const titles = await screen.findAllByTestId('game-status-title')
       expect(titles.every((el) => el.getAttribute('data-outcome') === outcome)).toBe(true)
       expect(titles[0].textContent).toContain(badge)
+    })
+
+    describe('a spectator hears the end of the game (#1464)', () => {
+      const resultCues = () => (playCue as jest.Mock).mock.calls.filter(([cue]) => String(cue).startsWith('result.'))
+
+      it('plays result.over once when the game finishes while they watch', async () => {
+        render(<TicTacToeLobbyPage code="ABCD" isSpectator />)
+        await screen.findAllByTestId('game-status-title')
+
+        mockFetchWithGuest.mockResolvedValue({ ok: true, json: async () => finishedResponse('user-1') } as Response)
+        act(() => {
+          broadcastHandlers['game-update']?.({ payload: {} })
+        })
+        await waitFor(() => expect(resultCues()).toEqual([['result.over', { gameId: expect.stringMatching(/^game-1#1:\d+$/), delayMs: 700 }]]))
+        expect(screen.queryByTestId('game-result-overlay')).toBeNull()
+      })
+
+      it('stays silent for a spectator who opens a game that has already finished', async () => {
+        mockFetchWithGuest.mockResolvedValue({ ok: true, json: async () => finishedResponse('user-1') } as Response)
+        render(<TicTacToeLobbyPage code="ABCD" isSpectator />)
+        await screen.findAllByTestId('game-status-title')
+
+        expect(resultCues()).toEqual([])
+      })
     })
   })
 

@@ -6,6 +6,7 @@ import { getChatHistory, persistChatMessage } from '@/lib/chat-history'
 import { broadcastToLobby } from '@/lib/supabase-server'
 import { isSketchAndGuessDrawerMuted, isSketchAndGuessSolverMuted } from '@/lib/games/sketch-and-guess-game'
 import { parsePersistedGameState } from '@/lib/persisted-game-state'
+import { requiresTermsAcceptance } from '@/lib/terms-gate'
 
 const apiLimiter = rateLimit(rateLimitPresets.api)
 
@@ -52,8 +53,11 @@ export async function GET(
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
 
-  const messages = await getChatHistory(code)
-  return NextResponse.json({ messages })
+  const [messages, viewer] = await Promise.all([
+    getChatHistory(code),
+    prisma.users.findUnique({ where: { id: user.id }, select: { termsAcceptedAt: true } }),
+  ])
+  return NextResponse.json({ messages, viewer: { termsAccepted: Boolean(viewer?.termsAcceptedAt) } })
 }
 
 const postLimiter = rateLimit(rateLimitPresets.lobbyChatPost)
@@ -107,6 +111,13 @@ export async function POST(
   const isPlayer = lobby.games.some((g) => g.players.length > 0)
   if (!isPlayer) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  }
+
+  if (await requiresTermsAcceptance(user.id)) {
+    return NextResponse.json(
+      { error: 'Accept the terms before chatting', code: 'TERMS_REQUIRED' },
+      { status: 403 }
+    )
   }
 
   // Sketch & Guess mutes the drawer for the live part of the round: they know

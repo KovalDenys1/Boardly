@@ -49,6 +49,9 @@ export interface AliasGameData {
  */
 export const SOLO_PLAYER_COUNT = 3
 
+/** The names the engine gives the two shared teams; a client shows its own locale's instead. */
+export const DEFAULT_TEAM_NAMES: Readonly<Record<string, string>> = { 'team-1': 'Team 1', 'team-2': 'Team 2' }
+
 export class AliasGame extends GameEngine {
   constructor(gameId: string) {
     super(gameId, 'alias', { maxPlayers: 16, minPlayers: SOLO_PLAYER_COUNT })
@@ -58,8 +61,8 @@ export class AliasGame extends GameEngine {
     return {
       phase: 'team_assignment',
       teams: [
-        { id: 'team-1', name: 'Team 1', playerIds: [], score: 0, describerIndex: 0 },
-        { id: 'team-2', name: 'Team 2', playerIds: [], score: 0, describerIndex: 0 },
+        { id: 'team-1', name: DEFAULT_TEAM_NAMES['team-1'], playerIds: [], score: 0, describerIndex: 0 },
+        { id: 'team-2', name: DEFAULT_TEAM_NAMES['team-2'], playerIds: [], score: 0, describerIndex: 0 },
       ],
       currentTeamIndex: 0,
       turnsPerTeam: 3,
@@ -128,8 +131,8 @@ export class AliasGame extends GameEngine {
       // Back to two teams: the solo layout only ever holds for exactly three.
       const ordered = players.map((p) => p.id)
       data.teams = [
-        { id: 'team-1', name: 'Team 1', playerIds: [], score: 0, describerIndex: 0 },
-        { id: 'team-2', name: 'Team 2', playerIds: [], score: 0, describerIndex: 0 },
+        { id: 'team-1', name: DEFAULT_TEAM_NAMES['team-1'], playerIds: [], score: 0, describerIndex: 0 },
+        { id: 'team-2', name: DEFAULT_TEAM_NAMES['team-2'], playerIds: [], score: 0, describerIndex: 0 },
       ]
       ordered.forEach((id, i) => data.teams[i % 2].playerIds.push(id))
     } else {

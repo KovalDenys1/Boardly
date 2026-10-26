@@ -13,13 +13,14 @@ import { prisma } from '@/lib/db'
 import { GET } from '@/app/api/users/[userId]/card/route'
 import { optionalSessionUser } from '@/lib/session-user'
 import { getGuestClaimsFromRequest } from '@/lib/guest-auth'
+import { soleWinsWhere } from '@/lib/server/sole-wins'
 
 jest.mock('@/lib/db', () => ({
   prisma: {
     users: { findUnique: jest.fn() },
     friendships: { findFirst: jest.fn() },
     friendRequests: { findFirst: jest.fn() },
-    players: { findFirst: jest.fn() },
+    players: { findFirst: jest.fn(), count: jest.fn() },
   },
 }))
 
@@ -95,6 +96,7 @@ describe('GET /api/users/[userId]/card profile visibility (#1226)', () => {
     mockPrisma.friendships.findFirst.mockResolvedValue(null)
     mockPrisma.friendRequests.findFirst.mockResolvedValue(null)
     mockPrisma.players.findFirst.mockResolvedValue(null)
+    mockPrisma.players.count.mockResolvedValue(1)
     mockGuestClaims.mockReturnValue(null)
     signedIn(null)
   })
@@ -107,6 +109,8 @@ describe('GET /api/users/[userId]/card profile visibility (#1226)', () => {
     expect(body).toMatchObject({ image: AVATAR, isPremium: true, gamesPlayed: 2, wins: 1, winRate: 50, favouriteGame: 'yahtzee' })
     expect(body.restricted).toBeUndefined()
     expect(mockPrisma.players.findFirst).not.toHaveBeenCalled()
+    // A shared first place is a draw, not a win (#1493).
+    expect(mockPrisma.players.count).toHaveBeenCalledWith({ where: soleWinsWhere(TARGET) })
   })
 
   it('an account with no preferences row is the legacy public profile', async () => {

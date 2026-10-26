@@ -9,6 +9,8 @@ import en from '@/locales/en'
 import no from '@/locales/no'
 import ru from '@/locales/ru'
 import uk from '@/locales/uk'
+import de from '@/locales/de'
+import es from '@/locales/es'
 
 // The footer reaches session and router state this page does not need.
 jest.mock('@/components/Footer', () => ({
@@ -62,15 +64,15 @@ describe('/rules page (#1173)', () => {
     mockI18n.locale = 'en'
   })
 
-  it('is indexable and canonical on its own URL', () => {
+  it('is noindex (#1498) and canonical on its own URL', () => {
     expect(metadata.alternates?.canonical).toBe('https://boardly.online/rules')
-    expect(metadata.robots).toMatchObject({ index: true, follow: true })
+    expect(metadata.robots).toMatchObject({ index: false, follow: true })
   })
 
   it('uses only keys that exist in all four locales, and never a fallback string', () => {
     const keys = renderedKeys()
     expect(keys.length).toBeGreaterThanOrEqual(30)
-    for (const [name, locale] of Object.entries({ en, no, ru, uk })) {
+    for (const [name, locale] of Object.entries({ en, no, ru, uk, de, es })) {
       const missing = keys.filter((key) => typeof localeValue(locale, key) !== 'string')
       expect({ locale: name, missing }).toEqual({ locale: name, missing: [] })
     }
@@ -121,13 +123,13 @@ describe('/rules page (#1173)', () => {
     expect(rulesLink).toBeGreaterThan(termsCheckbox)
     expect(rulesLink).toBeLessThan(ageCheckbox)
     expect(form).toContain("{t('auth.register.rulesLink')}")
-    for (const locale of [en, no, ru, uk]) {
+    for (const locale of [en, no, ru, uk, de, es]) {
       expect(typeof locale.auth.register.rulesLink).toBe('string')
     }
   })
 
   it('uses no em dash', () => {
-    for (const locale of [en, no, ru, uk]) {
+    for (const locale of [en, no, ru, uk, de, es]) {
       expect(JSON.stringify(locale.rules)).not.toContain('—')
     }
   })

@@ -10,7 +10,6 @@ import {
     TicTacToeMoveRecord,
     TicTacToePendingRequest,
     PlayerSymbol,
-    CellValue,
     isTicTacToeMatchComplete,
     isTicTacToeRoundLostOnTime,
     isTicTacToeRoundDrawnByAgreement,
@@ -28,21 +27,25 @@ import { fetchWithGuest } from '@/lib/fetch-with-guest'
 import { AnyGameState, Game, GameUpdatePayload } from '@/types/game'
 import { normalizeLobbySnapshotResponse } from '@/lib/lobby-snapshot'
 import { finalizePendingLobbyCreateMetric } from '@/lib/lobby-create-metrics'
-import LoadingSpinner from '@/components/LoadingSpinner'
+import { LobbyPageLoadingFallback } from '@/app/lobby/[code]/components/LobbyPageFallbacks'
 import ConfirmModal from '@/components/ConfirmModal'
 import { Move } from '@/lib/game-engine'
 import { trackLobbyLeaveRedirect, trackMoveSubmitApplied } from '@/lib/analytics'
-import { sounds } from '@/lib/sounds'
 import { resolveLifecycleRedirectReason } from '@/lib/lobby-lifecycle'
 import { getLobbyPlayerRequirements } from '@/lib/lobby-player-requirements'
 import Chat from '@/components/Chat'
-import GameResultOverlay from '@/components/game-chrome/GameResultOverlay'
+import GameResultOverlay, { RESULT_REVEAL_DELAY_MS } from '@/components/game-chrome/GameResultOverlay'
 import GamePlayerCard from '@/components/game-chrome/GamePlayerCard'
+import { TttBoard, TttMark, tttCoord } from '@/components/boards/TttBoard'
 import { reportablePlayerId } from '@/lib/reportable-player'
 import ScorePop from '@/components/game-chrome/ScorePop'
 import { useFreshKey } from '@/hooks/useFreshKey'
 import { nextMoveKey, type MoveKey } from '@/lib/move-key'
 import { useTurnSounds } from '@/hooks/useTurnSounds'
+import { useSpectatorResultCue } from '@/hooks/useSpectatorResultCue'
+import { useFreshCue } from '@/hooks/useFreshCue'
+import { playCue } from '@/lib/sound-engine'
+import { tttMarkSemis } from '@/lib/board-sounds'
 import GameScoreboardHeader from '@/components/game-chrome/GameScoreboardHeader'
 import GameStatusBanner from '@/components/game-chrome/GameStatusBanner'
 import { viewerOutcome } from '@/lib/game-outcome'
@@ -69,97 +72,8 @@ function parseLobbyGameState(activeGame: unknown): unknown {
 
 // ─── Design sub-components ───────────────────────────────────────────────────
 
-function tttCoord(row: number, col: number) {
-    return ['A', 'B', 'C'][col] + (row + 1)
-}
-
 const sameMark = (a: TicTacToeMoveRecord, b: TicTacToeMoveRecord) =>
     a.symbol === b.symbol && a.row === b.row && a.col === b.col
-
-function TttMark({ mark, size = 24, responsive = false, pop = false }: {
-    mark: 'X' | 'O'; size?: number; responsive?: boolean; pop?: boolean
-}) {
-    const stroke = mark === 'X' ? 'var(--bd-coral)' : 'var(--bd-lav)'
-    const anim = pop ? 'ttt-mark-in 0.28s cubic-bezier(0.2,1.6,0.4,1) both' : undefined
-    if (responsive) {
-        return (
-            <span style={{ display: 'inline-grid', placeItems: 'center', width: '60%', height: '60%', animation: anim }}>
-                {mark === 'X'
-                    ? <svg viewBox="0 0 24 24" fill="none" width="100%" height="100%">
-                        <path d="M5 5L19 19" stroke={stroke} strokeWidth="2.6" strokeLinecap="round" />
-                        <path d="M19 5L5 19" stroke={stroke} strokeWidth="2.6" strokeLinecap="round" />
-                    </svg>
-                    : <svg viewBox="0 0 24 24" fill="none" width="100%" height="100%">
-                        <circle cx="12" cy="12" r="7" stroke={stroke} strokeWidth="2.6" fill="none" />
-                    </svg>}
-            </span>
-        )
-    }
-    const sw = Math.max(3, size * 0.11)
-    return (
-        <span style={{ display: 'inline-grid', placeItems: 'center', width: size, height: size, animation: anim }}>
-            {mark === 'X'
-                ? <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-                    <path d="M5 5L19 19" stroke={stroke} strokeWidth={sw} strokeLinecap="round" />
-                    <path d="M19 5L5 19" stroke={stroke} strokeWidth={sw} strokeLinecap="round" />
-                </svg>
-                : <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-                    <circle cx="12" cy="12" r="7" stroke={stroke} strokeWidth={sw} fill="none" />
-                </svg>}
-        </span>
-    )
-}
-
-function TttBoard({ board, winningLine, onCellClick, disabled, testId, lastMove, popLastMove = false, onLastMovePopped }: {
-    board: CellValue[][];
-    winningLine: [number, number][] | null;
-    onCellClick: (row: number, col: number) => void;
-    disabled: boolean;
-    testId?: string;
-    /** The most recent move: its cell keeps a ring until the next move (#1114). */
-    lastMove?: { row: number; col: number } | null;
-    /** Only the just-placed mark pops, and only until its animation ends (#1114). */
-    popLastMove?: boolean;
-    onLastMovePopped?: () => void;
-}) {
-    const isLast = (r: number, c: number) => !!lastMove && lastMove.row === r && lastMove.col === c
-    const isWin = (r: number, c: number) => winningLine?.some(([wr, wc]) => wr === r && wc === c) ?? false
-    // Partially-restored or mismatched game state can arrive without a board;
-    // rendering an empty grid beats crashing the whole page (#771).
-    const safeBoard: CellValue[][] = Array.isArray(board)
-        ? board
-        : [[null, null, null], [null, null, null], [null, null, null]]
-    return (
-        <div className="ttt-board-wrap">
-            <div className="ttt-board" data-testid={testId}>
-                {safeBoard.map((row, ri) =>
-                    row.map((cell, ci) => (
-                        <button
-                            key={`${ri}-${ci}`}
-                            className={`ttt-cell${isWin(ri, ci) ? ' ttt-win' : ''}${cell && isLast(ri, ci) && !isWin(ri, ci) ? ' ttt-cell--last' : ''}`}
-                            data-last-move={cell && isLast(ri, ci) ? 'true' : undefined}
-                            onClick={() => onCellClick(ri, ci)}
-                            disabled={disabled || !!cell}
-                            aria-label={`cell ${tttCoord(ri, ci)}`}
-                        >
-                            {/* Decorative only — the cell already carries
-                                aria-label="cell A1" etc., and at 0.5 opacity
-                                this watermark measured 1.81:1, far below the
-                                4.5:1 AA minimum (#1171 axe pass). Hiding it
-                                from the accessibility tree rather than
-                                brightening it keeps the intentionally subtle
-                                look. */}
-                            {!cell && <span className="ttt-cell-coord" aria-hidden="true">{tttCoord(ri, ci)}</span>}
-                            {cell && (isLast(ri, ci) && popLastMove
-                                ? <span className="ttt-mark-pop-host" onAnimationEnd={onLastMovePopped}><TttMark mark={cell} responsive pop /></span>
-                                : <TttMark mark={cell} responsive />)}
-                        </button>
-                    ))
-                )}
-            </div>
-        </div>
-    )
-}
 
 function TttCornerMark({ mark }: { mark: 'X' | 'O' }) {
     return (
@@ -279,6 +193,8 @@ export default function TicTacToeLobbyPage({ code, isSpectator = false, onGameRe
     const {
         chatMessages,
         sendChatMessage,
+        termsAccepted: chatTermsAccepted,
+        acceptTerms: acceptChatTerms,
         unreadCount: chatUnreadCount,
         resetUnread: resetChatUnread,
         someoneTyping,
@@ -579,7 +495,6 @@ export default function TicTacToeLobbyPage({ code, isSpectator = false, onGameRe
             if (winner || resolvedEngine?.getState().status === 'finished') {
                 if (winner) {
                     showToast.success('games.tictactoe.game.gameWon')
-                    if (winner.id === getCurrentUserId()) sounds.play('win')
                 } else showToast.info('game.ui.gameFinished')
             }
             return true
@@ -787,13 +702,14 @@ export default function TicTacToeLobbyPage({ code, isSpectator = false, onGameRe
 
     // Hoisted above the early returns below so this hook always runs, regardless
     // of which (if any) early-return branch fires — violates Rules of Hooks otherwise.
-    const earlyMoveHistory = gameEngine ? (gameEngine.getState().data as TicTacToeGameData).moveHistory : undefined
+    const earlyState = gameEngine?.getState()
+    const earlyMoveHistory = earlyState ? (earlyState.data as TicTacToeGameData).moveHistory : undefined
     const reversedMoveHistory = useMemo(
         () => (Array.isArray(earlyMoveHistory) ? earlyMoveHistory.slice().reverse() : []),
         [earlyMoveHistory]
     )
 
-    // Turn and opponent-move cues (#1111); the win cue stays in handleMove.
+    // The turn cue (#1111); every mark, the opponent's included, taps from useFreshCue below.
     const lastTttMove = Array.isArray(earlyMoveHistory) ? earlyMoveHistory[earlyMoveHistory.length - 1] : undefined
     const lastTttMoveSignature = Array.isArray(earlyMoveHistory) ? `${earlyMoveHistory.length}:${lastTttMove?.timestamp ?? ''}` : null
     // Only the just-placed mark pops and its history row slides in; a board
@@ -804,18 +720,22 @@ export default function TicTacToeLobbyPage({ code, isSpectator = false, onGameRe
     useTurnSounds({
         isMyTurn: isMyTurn(),
         lastMoveSignature: lastTttMoveSignature,
-        opponentMoved: !!lastTttMove && lastTttMove.playerId !== getCurrentUserId(),
-        enabled: !isSpectator && gameEngine?.getState().status === 'playing',
+        enabled: !isSpectator && earlyState?.status === 'playing',
+        moveCue: null,
     })
+    const resolvedStatus = game?.status || earlyState?.status
+    const isFinished = resolvedStatus === 'finished' || earlyState?.status === 'finished'
+    useSpectatorResultCue({ isSpectator, isFinished, gameId: game?.id, finishKey: earlyState ? `${(earlyState.data as TicTacToeGameData).match?.roundsPlayed ?? 0}:${earlyState.lastMoveAt ?? ''}` : null, revealDelayMs: RESULT_REVEAL_DELAY_MS })
+    const playMarkCue = useCallback(() => {
+        if (!lastTttMove) return
+        playCue('tap.mark', { remote: isSpectator || lastTttMove.playerId !== getCurrentUserId(), semis: tttMarkSemis(lastTttMove.symbol) })
+    }, [lastTttMove, isSpectator, getCurrentUserId])
+    useFreshCue(gameEngine ? (markKeyRef.current?.key ?? null) : undefined, lastMoveFresh, playMarkCue, game?.id)
 
     // ─── Early returns ────────────────────────────────────────────────────────
 
     if (loading) {
-        return (
-            <div className="flex justify-center items-center min-h-dvh">
-                <LoadingSpinner size="lg" />
-            </div>
-        )
+        return <LobbyPageLoadingFallback />
     }
 
     if (!lobby) {
@@ -829,9 +749,6 @@ export default function TicTacToeLobbyPage({ code, isSpectator = false, onGameRe
             </div>
         )
     }
-
-    const resolvedStatus = game?.status || gameEngine?.getState().status
-    const isFinished = resolvedStatus === 'finished' || gameEngine?.getState().status === 'finished'
 
     if (!gameEngine || (resolvedStatus !== 'playing' && resolvedStatus !== 'finished')) {
         return (
@@ -1022,7 +939,7 @@ export default function TicTacToeLobbyPage({ code, isSpectator = false, onGameRe
                             borderRadius: 12,
                             fontWeight: 700,
                             background: 'var(--bd-mint-deep)',
-                            color: 'white',
+                            color: 'var(--bd-ink-on-accent)',
                             border: 'none',
                             cursor: isMoveSubmitting ? 'not-allowed' : 'pointer',
                             opacity: isMoveSubmitting ? 0.65 : 1,
@@ -1094,6 +1011,7 @@ export default function TicTacToeLobbyPage({ code, isSpectator = false, onGameRe
             </div>
             {showsResultOverlay && (
                 <GameResultOverlay
+                    isSpectator={isSpectator}
                     title={isDraw ? t('games.tictactoe.game.itsADraw') : t('games.tictactoe.game.playerWins', { player: winnerName })}
                     kicker={isMatchComplete ? t('games.tictactoe.game.seriesComplete') : undefined}
                     isDraw={isDraw}
@@ -1125,10 +1043,11 @@ export default function TicTacToeLobbyPage({ code, isSpectator = false, onGameRe
                         </div>
                     ) : undefined}
                     isGuest={isGuest}
-                    registerUrl={`/auth/register?returnUrl=${encodeURIComponent(`/lobby/${code}`)}`}
                     inviteCode={code}
                     gameType="tic_tac_toe"
+                    outcome={viewerOutcome({ isFinished, isDraw, isSpectator, isSeated: !!mySymbol, isViewerWinner: winnerSymbol && !isDraw ? winnerSymbol === mySymbol : null })}
                     resultKey={`${game?.id}:${gameEngine.getState().lastMoveAt ?? ''}`}
+                    gameId={isMatchComplete ? game?.id : null}
                     isRegistered={status === 'authenticated' && !isGuest}
                 />
             )}
@@ -1184,15 +1103,8 @@ export default function TicTacToeLobbyPage({ code, isSpectator = false, onGameRe
         </div>
     )
 
-    // Hoisted above historySection: whether chat shows decides whether the
-    // Moves card is alone in the right column, and a card that is alone has
-    // to span it (#898). Chat is hidden in bot-only games (#522 parity with
-    // the shared lobby shell); spectators get a read-only feed.
-    const hasMultipleHumans = players.filter((p) => !p.user?.bot && !p.bot).length >= 2
-    const showChat = hasMultipleHumans || isSpectator
-
     const historySection = (
-        <div className={`ttt-history-card${showChat ? '' : ' ttt-history-card--fill'}`}>
+        <div className="ttt-history-card">
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: 10, marginBottom: 10, borderBottom: '1px solid var(--bd-line)' }}>
                 <h3 style={{ fontFamily: 'var(--bd-font-display)', fontWeight: 700, fontSize: 16, color: 'var(--bd-ink)', margin: 0 }}>{t('game.ui.moves')}</h3>
                 <span style={{ display: 'inline-flex', padding: '3px 9px', borderRadius: 999, fontSize: 11, fontWeight: 600, background: 'var(--bd-bg2)', color: 'var(--bd-ink-soft)' }}>
@@ -1208,7 +1120,7 @@ export default function TicTacToeLobbyPage({ code, isSpectator = false, onGameRe
                     : reversedMoveHistory.map((m: TicTacToeMoveRecord, index) => (
                         <div key={`${m.timestamp}-${m.row}-${m.col}`} className={index === 0 && lastMoveFresh ? 'ttt-history-row-in' : undefined} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 10px', borderRadius: 8, background: 'var(--bd-card-warm)' }}>
                             <span style={{ color: 'var(--bd-ink-soft)', width: 22, fontSize: 11, fontFamily: 'ui-monospace,monospace', flexShrink: 0 }}>
-                                #{String(moveHistory.length - index).padStart(2, '0')}
+                                {String(moveHistory.length - index).padStart(2, '0')}
                             </span>
                             <TttMark mark={m.symbol} size={16} />
                             <span style={{ color: 'var(--bd-ink-soft)', fontSize: 12, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{getDisplayName(m.playerId)}</span>
@@ -1220,8 +1132,6 @@ export default function TicTacToeLobbyPage({ code, isSpectator = false, onGameRe
         </div>
     )
 
-    // Chat hidden in bot-only games (#522 parity with the shared lobby shell);
-    // spectators get a read-only feed.
     const chatPlayerProfiles = (() => {
         const map = new Map<string, { avatarUrl?: string | null; isPremium?: boolean }>()
         for (const p of players) {
@@ -1235,12 +1145,14 @@ export default function TicTacToeLobbyPage({ code, isSpectator = false, onGameRe
         return map
     })()
 
-    const chatSection = showChat ? (
+    const chatSection = (
         <section className="game-chat-panel">
             <Chat
                 lobbyCode={code}
                 messages={chatMessages}
                 onSendMessage={sendChatMessage}
+                termsAccepted={chatTermsAccepted}
+                onAcceptTerms={acceptChatTerms}
                 currentUserId={currentUserId || null}
                 playerProfiles={chatPlayerProfiles}
                 isMinimized={false}
@@ -1251,7 +1163,7 @@ export default function TicTacToeLobbyPage({ code, isSpectator = false, onGameRe
                 readOnly={isSpectator}
             />
         </section>
-    ) : null
+    )
 
     // Show score summary below player cards when match has results
     const _ = { myWins, myLosses }
@@ -1304,7 +1216,18 @@ export default function TicTacToeLobbyPage({ code, isSpectator = false, onGameRe
                     <div className="ttt-top-row">{headerSection}{roomSectionCompact}</div>
                     {statusSection}
                     {requestSection}
-                    {chatSection}
+                    <GameTabs
+                        tabs={[
+                            { id: 'history' as const, label: `${t('game.ui.tabMoves')} (${moveHistory.length})` },
+                            { id: 'chat' as const, label: t('game.ui.tabChat'), badge: chatUnreadCount },
+                        ]}
+                        activeTab={mobileTab === 'history' ? 'history' : 'chat'}
+                        onTabChange={(id) => {
+                            setMobileTab(id)
+                            if (id === 'chat') resetChatUnread()
+                        }}
+                    />
+                    {mobileTab === 'history' ? historySection : chatSection}
                     {actionsSection}
                 </div>
             </div>
@@ -1318,7 +1241,7 @@ export default function TicTacToeLobbyPage({ code, isSpectator = false, onGameRe
                     tabs={[
                         { id: 'board' as const, label: t('game.ui.tabBoard') },
                         { id: 'history' as const, label: `${t('game.ui.tabMoves')} (${moveHistory.length})` },
-                        ...(showChat ? [{ id: 'chat' as const, label: t('game.ui.tabChat'), badge: chatUnreadCount }] : []),
+                        { id: 'chat' as const, label: t('game.ui.tabChat'), badge: chatUnreadCount },
                     ]}
                     activeTab={mobileTab}
                     onTabChange={(id) => {

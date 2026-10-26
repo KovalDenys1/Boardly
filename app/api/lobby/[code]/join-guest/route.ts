@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { apiLogger } from '@/lib/logger'
 import { rateLimit, rateLimitPresets } from '@/lib/rate-limit'
-import { refuseIfBot } from '@/lib/bot-protection'
+import { checkBot, type BotCheck } from '@/lib/bot-protection'
 import { z } from 'zod'
 import {
   createGuestId,
@@ -43,6 +43,8 @@ export async function POST(
 ) {
   const log = apiLogger('POST /api/lobby/[code]/join-guest')
 
+  let botCheck: BotCheck | null = null
+  let mintedGuest = false
   try {
     // Rate limit join requests
     const rateLimitResult = await limiter(req)
@@ -78,8 +80,8 @@ export async function POST(
 
       // Only a join that mints a guest is checked (#1157): a guest who already exists has
       // passed guest-session or an earlier join, and their rejoins are gameplay.
-      const botRefusal = await refuseIfBot('POST /api/lobby/[code]/join-guest')
-      if (botRefusal) return botRefusal
+      botCheck = await checkBot('POST /api/lobby/[code]/join-guest', req)
+      if (botCheck.refusal) return botCheck.refusal
     }
 
     // The id the guest row has or will have (getOrCreateGuestUser creates it under exactly
@@ -151,6 +153,7 @@ export async function POST(
           })
         : await getOrCreateGuestUser(guestId, requestedGuestName, signupSource)
       if (!guestUser) return null
+      if (!existingGuestClaims) mintedGuest = true
       const guestName = guestUser.username || requestedGuestName
       return { guestUser, guestName, guestToken: createGuestToken(guestUser.id, guestName) }
     }
@@ -342,5 +345,7 @@ export async function POST(
       { error: 'Failed to join as guest' },
       { status: 500 }
     )
+  } finally {
+    await botCheck?.settle({ mintedGuest })
   }
 }

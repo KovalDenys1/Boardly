@@ -77,7 +77,7 @@ describe('/about content', () => {
     render(<AboutPage />)
     const first = screen.getByTestId('about-entity')
     expect(first.textContent).toMatch(/^Boardly \(boardly\.online\) is a free real-time multiplayer board games website/)
-    expect(first.textContent).toMatch(/English, Norwegian, Russian and Ukrainian/)
+    expect(first.textContent).toMatch(/English, Norwegian, Russian, Ukrainian, German and Spanish/)
     expect(screen.getByText(/not boardly\.co, boardly\.ai or joinboardly\.com/)).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'support@boardly.online' })).toHaveAttribute('href', 'mailto:support@boardly.online')
   })

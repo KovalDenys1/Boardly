@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react'
+import React, { useState, useEffect, useCallback, useMemo } from 'react'
 import LeaveIcon from '@/components/LeaveIcon'
 import { useRouter } from 'next/navigation'
 import { useSession } from 'next-auth/react'
@@ -10,8 +10,6 @@ import {
     ConnectFourMoveRecord,
     ConnectFourPendingRequest,
     PlayerDisc,
-    ROWS,
-    COLS,
     isConnectFourRoundLostOnTime,
 } from '@/lib/games/connect-four-game'
 import { clientLogger } from '@/lib/client-logger'
@@ -26,22 +24,24 @@ import { fetchWithGuest } from '@/lib/fetch-with-guest'
 import { AnyGameState, Game, GameUpdatePayload, type ChatMessagePayload } from '@/types/game'
 import { normalizeLobbySnapshotResponse } from '@/lib/lobby-snapshot'
 import { finalizePendingLobbyCreateMetric } from '@/lib/lobby-create-metrics'
-import LoadingSpinner from '@/components/LoadingSpinner'
+import { LobbyPageLoadingFallback } from '@/app/lobby/[code]/components/LobbyPageFallbacks'
+import C4Board, { DISC_RED, DISC_YELLOW } from '@/components/boards/C4Board'
 import ConfirmModal from '@/components/ConfirmModal'
 import { Move } from '@/lib/game-engine'
 import GameIcon from '@/components/GameIcon'
 import { trackLobbyLeaveRedirect, trackMoveSubmitApplied } from '@/lib/analytics'
-import { sounds } from '@/lib/sounds'
 import { resolveLifecycleRedirectReason } from '@/lib/lobby-lifecycle'
 import { getLobbyPlayerRequirements } from '@/lib/lobby-player-requirements'
 import Chat from '@/components/Chat'
-import GameResultOverlay from '@/components/game-chrome/GameResultOverlay'
+import GameResultOverlay, { RESULT_REVEAL_DELAY_MS } from '@/components/game-chrome/GameResultOverlay'
 import GamePlayerCard from '@/components/game-chrome/GamePlayerCard'
 import { reportablePlayerId } from '@/lib/reportable-player'
 import ScorePop from '@/components/game-chrome/ScorePop'
 import { useFreshKey } from '@/hooks/useFreshKey'
 import { nextDropKey, type DropKey } from '@/lib/connect-four-drop-key'
-import { useTurnSounds } from '@/hooks/useTurnSounds'
+import { TURN_AFTER_MOVE_MS, useTurnSounds } from '@/hooks/useTurnSounds'
+import { useSpectatorResultCue } from '@/hooks/useSpectatorResultCue'
+import { useConnectFourDropSound } from './hooks/useConnectFourDropSound'
 import GameScoreboardHeader from '@/components/game-chrome/GameScoreboardHeader'
 import GameRoomCard from '@/components/game-chrome/GameRoomCard'
 import GameStatusBanner from '@/components/game-chrome/GameStatusBanner'
@@ -67,228 +67,6 @@ function parseLobbyGameState(activeGame: unknown): unknown {
 
 
 // ─── Design sub-components ────────────────────────────────────────────────────
-
-const DISC_RED = 'var(--bd-coral)'
-const DISC_YELLOW = 'var(--bd-sun)'
-// Fixed (not var(--bd-bg2)) — the board is a self-contained "black plastic
-// with pale holes" look that must stay the same in light and dark theme.
-// --bd-bg2 flips to a dark color in html.dark, which inverted this into a
-// light frame with near-black holes on real devices. Matches --bd-bg2's
-// light-mode value exactly, so light mode is visually unchanged.
-const DISC_EMPTY = '#F2E9D8'
-
-/**
- * Last-disc marker (#1114): a small ring on the newest disc that stays until
- * the next move. When the disc is still falling it fades in once the drop has
- * landed (animation-delay = the drop's duration), so it never rides the fall.
- */
-function C4LastMarker({ delayMs }: { delayMs?: number }) {
-    return (
-        <span
-            className={delayMs !== undefined ? 'c4-last-marker c4-last-marker--in' : 'c4-last-marker'}
-            data-testid="c4-last-marker"
-            style={delayMs !== undefined ? { animationDelay: `${delayMs}ms` } : undefined}
-            aria-hidden
-        />
-    )
-}
-
-function C4Disc({ disc, isWin, pop, ghost, ghostDisc, fallDistancePx, isLast, onDropEnd }: {
-    disc: PlayerDisc | null; isWin?: boolean; pop?: boolean; ghost?: boolean; ghostDisc?: PlayerDisc; fallDistancePx?: number
-    isLast?: boolean; onDropEnd?: () => void
-}) {
-    if (ghost) {
-        const fill = ghostDisc === 1 ? DISC_RED : DISC_YELLOW
-        return (
-            <div style={{ width: '100%', height: '100%', borderRadius: '50%', background: fill, position: 'relative' }}>
-                <svg style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }} viewBox="0 0 36 36">
-                    <circle cx="18" cy="18" r="16" fill="none" stroke="rgba(255,255,255,0.85)" strokeWidth="2.5" strokeDasharray="4.5 3" strokeLinecap="round" />
-                </svg>
-            </div>
-        )
-    }
-    const color = disc === 1 ? DISC_RED : disc === 2 ? DISC_YELLOW : DISC_EMPTY
-    const shadow = disc === 1 ? '0 2px 6px rgba(255,107,91,0.45)' : disc === 2 ? '0 2px 6px rgba(255,196,77,0.45)' : 'none'
-    const isAnimating = pop && !!fallDistancePx
-
-    if (isAnimating) {
-        const durationMs = 240 + Math.round(fallDistancePx! * 0.9)
-        return (
-            <div style={{ position: 'relative', width: '100%', height: '100%' }}>
-                {/* Keep the empty hole visible while disc is in flight */}
-                <div style={{ width: '100%', height: '100%', borderRadius: '50%', background: DISC_EMPTY }} />
-                {/* Falling disc, animated from above */}
-                <div
-                    onAnimationEnd={(e) => { if (e.target === e.currentTarget) onDropEnd?.() }}
-                    style={{
-                        position: 'absolute', inset: 0,
-                        borderRadius: '50%',
-                        background: color,
-                        boxShadow: isWin ? `inset 0 0 0 3px white, ${shadow}` : shadow,
-                        animation: `c4-drop ${durationMs}ms linear both`,
-                        '--c4-fall-dist': `${fallDistancePx}px`,
-                        '--c4-end-scale': isWin ? '1.12' : '1',
-                    } as React.CSSProperties}
-                >
-                    {isLast && !isWin && <C4LastMarker delayMs={durationMs} />}
-                </div>
-            </div>
-        )
-    }
-
-    return (
-        <div style={{
-            width: '100%',
-            height: '100%',
-            borderRadius: '50%',
-            background: color,
-            boxShadow: isWin ? `inset 0 0 0 3px white, ${shadow}` : shadow,
-            transform: isWin ? 'scale(1.12)' : 'scale(1)',
-            transition: 'transform 0.15s, box-shadow 0.15s',
-            position: 'relative',
-        }}>
-            {isLast && !!disc && !isWin && <C4LastMarker />}
-        </div>
-    )
-}
-
-function C4Board({ board, winningLine, hoverCol, onColHover, onColClick, disabled, currentDisc, lastDroppedRow, lastDroppedCol, dropFresh = true, onDropSettled }: {
-    board: (PlayerDisc | null)[][]
-    winningLine: [number, number][] | null
-    hoverCol: number | null
-    onColHover: (col: number | null) => void
-    onColClick: (col: number) => void
-    disabled: boolean
-    currentDisc: PlayerDisc
-    lastDroppedRow: number | null
-    lastDroppedCol: number | null
-    /** The newest disc falls only while this is true, so a remount does not replay it (#1114). */
-    dropFresh?: boolean
-    onDropSettled?: () => void
-}) {
-    const isWin = (r: number, c: number) => winningLine?.some(([wr, wc]) => wr === r && wc === c) ?? false
-    const cellRef = useRef<HTMLButtonElement>(null)
-
-    const getDropRow = (col: number): number | null => {
-        if (board[0]?.[col] !== null) return null
-        for (let r = ROWS - 1; r >= 0; r--) {
-            if (board[r]?.[col] === null) return r
-        }
-        return null
-    }
-    const ghostRow = hoverCol !== null && !disabled ? getDropRow(hoverCol) : null
-
-    const getFallDistancePx = (targetRow: number): number => {
-        const cellH = cellRef.current?.getBoundingClientRect().height ?? 46
-        return (targetRow + 1) * (cellH + 6)
-    }
-
-    return (
-        <div style={{ position: 'relative', userSelect: 'none' }}>
-            {/* Drop indicator arrows */}
-            <div style={{ display: 'grid', gridTemplateColumns: `repeat(${COLS}, 1fr)`, marginBottom: 4, gap: 3 }}>
-                {Array.from({ length: COLS }, (_, c) => (
-                    <div key={c} style={{
-                        height: 20, display: 'grid', placeItems: 'center',
-                        opacity: hoverCol === c && !disabled && board[0]?.[c] === null ? 1 : 0,
-                        transition: 'opacity 0.12s',
-                    }}>
-                        <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                            <path d="M7 1v9M3 7l4 5 4-5" stroke={currentDisc === 1 ? DISC_RED : DISC_YELLOW} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                        </svg>
-                    </div>
-                ))}
-            </div>
-
-            {/* Board grid — fixed dark frame (not var(--bd-ink), which
-                flips to a light color in html.dark) so the board keeps its
-                self-contained look in both themes; see DISC_EMPTY above. */}
-            <div style={{
-                background: '#1F1B16',
-                borderRadius: 16,
-                padding: 8,
-                boxShadow: '0 8px 24px rgba(31,27,22,0.24)',
-                display: 'grid',
-                gridTemplateColumns: `repeat(${COLS}, 1fr)`,
-                gridTemplateRows: `repeat(${ROWS}, 1fr)`,
-                gap: 6,
-                overflow: 'hidden',
-            }}>
-                {Array.from({ length: ROWS }, (_, r) =>
-                    Array.from({ length: COLS }, (_, c) => {
-                        const cell = board[r]?.[c] ?? null
-                        const win = isWin(r, c)
-                        const colFull = board[0]?.[c] !== null
-                        const isHoveredCol = hoverCol === c && !disabled && !colFull
-                        const isGhost = isHoveredCol && r === ghostRow && !cell
-                        const hoverTint = currentDisc === 1 ? 'rgba(255,107,91,0.28)' : 'rgba(255,196,77,0.28)'
-                        const isLastDropped = !!cell && r === lastDroppedRow && c === lastDroppedCol
-                        const fallDistancePx = isLastDropped && dropFresh && lastDroppedRow !== null
-                            ? getFallDistancePx(lastDroppedRow)
-                            : undefined
-                        return (
-                            <button
-                                key={`${r}-${c}`}
-                                ref={r === 0 && c === 0 ? cellRef : undefined}
-                                onClick={() => !colFull && !disabled && onColClick(c)}
-                                onMouseEnter={() => !disabled && !colFull && onColHover(c)}
-                                onMouseLeave={() => onColHover(null)}
-                                disabled={disabled || colFull}
-                                aria-label={`column ${c + 1}`}
-                                style={{
-                                    width: 'var(--c4-cell, 44px)',
-                                    height: 'var(--c4-cell, 44px)',
-                                    borderRadius: '50%',
-                                    padding: 3,
-                                    background: isHoveredCol && !cell ? hoverTint : 'rgba(255,255,255,0.10)',
-                                    transition: 'background 0.1s',
-                                    border: 'none',
-                                    cursor: disabled || colFull ? 'not-allowed' : 'pointer',
-                                    outline: 'none',
-                                    display: 'grid',
-                                    placeItems: 'center',
-                                    overflow: 'visible',
-                                }}
-                            >
-                                <C4Disc
-                                    disc={cell}
-                                    isWin={win}
-                                    pop={isLastDropped && dropFresh}
-                                    fallDistancePx={fallDistancePx}
-                                    isLast={isLastDropped}
-                                    onDropEnd={onDropSettled}
-                                    ghost={isGhost}
-                                    ghostDisc={isGhost ? currentDisc : undefined}
-                                />
-                            </button>
-                        )
-                    })
-                )}
-            </div>
-
-            {/* Column click zones (overlay on entire column for easier clicking) */}
-            <div style={{
-                position: 'absolute', inset: 0,
-                display: 'grid',
-                gridTemplateColumns: `repeat(${COLS}, 1fr)`,
-                pointerEvents: disabled ? 'none' : 'auto',
-            }}>
-                {Array.from({ length: COLS }, (_, c) => {
-                    const colFull = board[0]?.[c] !== null
-                    return (
-                        <div
-                            key={c}
-                            onClick={() => !colFull && onColClick(c)}
-                            onMouseEnter={() => !colFull && onColHover(c)}
-                            onMouseLeave={() => onColHover(null)}
-                            style={{ cursor: colFull ? 'not-allowed' : 'pointer' }}
-                        />
-                    )
-                })}
-            </div>
-        </div>
-    )
-}
 
 function C4DiscBadge({ disc }: { disc: PlayerDisc }) {
     return (
@@ -392,6 +170,8 @@ export default function ConnectFourLobbyPage({ code, isSpectator = false, onGame
     const {
         chatMessages,
         sendChatMessage,
+        termsAccepted: chatTermsAccepted,
+        acceptTerms: acceptChatTerms,
         unreadCount: chatUnreadCount,
         resetUnread: resetChatUnread,
         someoneTyping,
@@ -678,7 +458,6 @@ export default function ConnectFourLobbyPage({ code, isSpectator = false, onGame
             if (winner || resolvedEngine?.getState().status === 'finished') {
                 if (winner) {
                     showToast.success('games.connect_four.game.gameWon')
-                    if (winner.id === getCurrentUserId()) sounds.play('win')
                 } else showToast.info('game.ui.gameFinished')
             }
             return true
@@ -850,36 +629,39 @@ export default function ConnectFourLobbyPage({ code, isSpectator = false, onGame
 
     // Hoisted above the early returns below so this hook always runs, regardless
     // of which (if any) early-return branch fires — violates Rules of Hooks otherwise.
-    const earlyMoveHistory = gameEngine ? (gameEngine.getState().data as ConnectFourGameData).moveHistory : undefined
+    const earlyState = gameEngine?.getState()
+    const earlyMoveHistory = earlyState ? (earlyState.data as ConnectFourGameData).moveHistory : undefined
     const reversedMoveHistory = useMemo(
         () => (Array.isArray(earlyMoveHistory) ? earlyMoveHistory.slice().reverse() : []),
         [earlyMoveHistory]
     )
 
-    // Turn and opponent-move cues (#1111); the win cue stays in handleMove.
     // Seat 0 plays disc 1, seat 1 disc 2 (the same mapping as myDisc below).
     const lastC4Move = Array.isArray(earlyMoveHistory) ? earlyMoveHistory[earlyMoveHistory.length - 1] : undefined
-    const soundSeat = gameEngine ? gameEngine.getState().players.findIndex(p => p.id === getCurrentUserId()) : -1
+    const soundSeat = earlyState ? earlyState.players.findIndex(p => p.id === getCurrentUserId()) : -1
     const lastC4MoveSignature = Array.isArray(earlyMoveHistory) ? `${earlyMoveHistory.length}:${lastC4Move?.timestamp ?? ''}` : null
     // The newest disc falls once; a remount shows it landed, marker and all (#1114).
     const dropKeyRef = React.useRef<DropKey | null>(null)
     dropKeyRef.current = nextDropKey(dropKeyRef.current, Array.isArray(earlyMoveHistory) ? earlyMoveHistory : undefined)
     const { fresh: lastDropFresh, settle: settleLastDrop } = useFreshKey(gameEngine ? (dropKeyRef.current?.key ?? null) : undefined)
+    const c4Drop = lastC4Move ? { row: lastC4Move.row, remote: isSpectator || soundSeat < 0 || lastC4Move.disc !== soundSeat + 1 } : null
+    const dropSound = useConnectFourDropSound(gameEngine ? (dropKeyRef.current?.key ?? null) : undefined, lastDropFresh, c4Drop, game?.id)
+    // The disc plays its own landing; the turn cue waits until it has landed.
     useTurnSounds({
         isMyTurn: isMyTurn(),
         lastMoveSignature: lastC4MoveSignature,
-        opponentMoved: !!lastC4Move && soundSeat >= 0 && lastC4Move.disc !== soundSeat + 1,
-        enabled: !isSpectator && gameEngine?.getState().status === 'playing',
+        enabled: !isSpectator && earlyState?.status === 'playing',
+        moveCue: null,
+        turnDelayMs: (lastDropFresh && lastC4Move ? dropSound.landingMs(lastC4Move.row) : 0) + TURN_AFTER_MOVE_MS,
     })
+    const resolvedStatus = game?.status || earlyState?.status
+    const isFinished = resolvedStatus === 'finished' || earlyState?.status === 'finished'
+    useSpectatorResultCue({ isSpectator, isFinished, gameId: game?.id, finishKey: earlyState?.lastMoveAt, revealDelayMs: RESULT_REVEAL_DELAY_MS })
 
     // ─── Early returns ────────────────────────────────────────────────────────
 
     if (loading) {
-        return (
-            <div className="flex justify-center items-center min-h-dvh">
-                <LoadingSpinner size="lg" />
-            </div>
-        )
+        return <LobbyPageLoadingFallback />
     }
 
     if (!lobby) {
@@ -893,9 +675,6 @@ export default function ConnectFourLobbyPage({ code, isSpectator = false, onGame
             </div>
         )
     }
-
-    const resolvedStatus = game?.status || gameEngine?.getState().status
-    const isFinished = resolvedStatus === 'finished' || gameEngine?.getState().status === 'finished'
 
     if (!gameEngine || (resolvedStatus !== 'playing' && resolvedStatus !== 'finished')) {
         return (
@@ -1036,17 +815,8 @@ export default function ConnectFourLobbyPage({ code, isSpectator = false, onGame
         />
     )
 
-    const COLUMN_LABELS = ['A', 'B', 'C', 'D', 'E', 'F', 'G']
-
-    // Hoisted above historySection: whether chat shows decides whether the
-    // Moves card is alone in the right column, and a card that is alone has
-    // to span it (#898). Chat is hidden in bot-only games (#522 parity with
-    // the shared lobby shell); spectators get a read-only feed.
-    const hasMultipleHumans = players.filter((p) => !p.user?.bot && !p.bot).length >= 2
-    const showChat = hasMultipleHumans || isSpectator
-
     const historySection = (
-        <div className={`ttt-history-card${showChat ? '' : ' ttt-history-card--fill'}`}>
+        <div className="ttt-history-card">
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: 10, marginBottom: 10, borderBottom: '1px solid var(--bd-line)' }}>
                 <h3 style={{ fontFamily: 'var(--bd-font-display)', fontWeight: 700, fontSize: 16, color: 'var(--bd-ink)', margin: 0 }}>{t('game.ui.moves')}</h3>
                 <span style={{ display: 'inline-flex', padding: '3px 9px', borderRadius: 999, fontSize: 11, fontWeight: 600, background: 'var(--bd-bg2)', color: 'var(--bd-ink-soft)' }}>
@@ -1059,14 +829,14 @@ export default function ConnectFourLobbyPage({ code, isSpectator = false, onGame
                     : reversedMoveHistory.map((m: ConnectFourMoveRecord, index) => (
                         <div key={`${m.timestamp}-${m.col}`} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 10px', borderRadius: 8, background: 'var(--bd-card-warm)' }}>
                             <span style={{ color: 'var(--bd-ink-muted)', width: 22, fontSize: 11, fontFamily: 'ui-monospace,monospace', flexShrink: 0 }}>
-                                #{String(moveHistory.length - index).padStart(2, '0')}
+                                {String(moveHistory.length - index).padStart(2, '0')}
                             </span>
                             <div style={{ width: 16, height: 16, borderRadius: '50%', background: m.disc === 1 ? DISC_RED : DISC_YELLOW, flexShrink: 0, boxShadow: 'inset 0 0 0 1.5px var(--bd-ink)' }} />
                             <span style={{ color: 'var(--bd-ink-soft)', fontSize: 12, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>
                                 {m.disc === 1 ? p1Name : p2Name}
                             </span>
                             <span style={{ marginLeft: 'auto', fontSize: 12, fontFamily: 'ui-monospace,monospace', fontWeight: 700, flexShrink: 0, color: 'var(--bd-ink)' }}>
-                                {t('games.connect_four.game.moveColumn', { col: COLUMN_LABELS[m.col] })}
+                                {t('games.connect_four.game.moveColumn', { col: m.col + 1 })}
                             </span>
                         </div>
                     ))
@@ -1086,7 +856,7 @@ export default function ConnectFourLobbyPage({ code, isSpectator = false, onGame
             </div>
             {isPendingResponder ? (
                 <div style={{ display: 'flex', gap: 6 }}>
-                    <button onClick={() => void handleRespondToUndo(true)} disabled={isMoveSubmitting} style={{ padding: '6px 11px', fontSize: 12, borderRadius: 12, fontWeight: 700, background: 'var(--bd-mint-deep)', color: 'white', border: 'none', cursor: isMoveSubmitting ? 'not-allowed' : 'pointer', opacity: isMoveSubmitting ? 0.65 : 1, fontFamily: 'inherit' }}>
+                    <button onClick={() => void handleRespondToUndo(true)} disabled={isMoveSubmitting} style={{ padding: '6px 11px', fontSize: 12, borderRadius: 12, fontWeight: 700, background: 'var(--bd-mint-deep)', color: 'var(--bd-ink-on-accent)', border: 'none', cursor: isMoveSubmitting ? 'not-allowed' : 'pointer', opacity: isMoveSubmitting ? 0.65 : 1, fontFamily: 'inherit' }}>
                         {t('games.connect_four.game.undoAccept')}
                     </button>
                     <button onClick={() => void handleRespondToUndo(false)} disabled={isMoveSubmitting} style={{ padding: '6px 11px', fontSize: 12, borderRadius: 12, fontWeight: 600, background: 'var(--bd-card-warm)', border: '1px solid var(--bd-line)', color: 'var(--bd-ink-soft)', cursor: isMoveSubmitting ? 'not-allowed' : 'pointer', opacity: isMoveSubmitting ? 0.65 : 1, fontFamily: 'inherit' }}>
@@ -1125,6 +895,7 @@ export default function ConnectFourLobbyPage({ code, isSpectator = false, onGame
                     lastDroppedCol={gameData.lastDroppedCol}
                     dropFresh={lastDropFresh}
                     onDropSettled={settleLastDrop}
+                    onCellMeasured={dropSound.onCellMeasured}
                 />
                 {/* Inside the surface, not beside it: this pill is
                     `position: absolute; bottom`, so it hangs off the nearest
@@ -1145,6 +916,7 @@ export default function ConnectFourLobbyPage({ code, isSpectator = false, onGame
                 <>
                     {showsResultOverlay && (
                         <GameResultOverlay
+                            isSpectator={isSpectator}
                             title={finishedTitle}
                             kicker={isWonOnTime ? t('games.connect_four.game.outOfTime') : undefined}
                             isDraw={isDraw}
@@ -1157,9 +929,9 @@ export default function ConnectFourLobbyPage({ code, isSpectator = false, onGame
                             onReturnToLobby={handleReturnToWaiting}
                             onLeave={() => setShowLeaveConfirmModal(true)}
                             isGuest={isGuest}
-                            registerUrl={`/auth/register?returnUrl=${encodeURIComponent(`/lobby/${code}`)}`}
                             inviteCode={code}
                             gameType="connect_four"
+                            outcome={viewerOutcome({ isFinished, isDraw, isSpectator, isSeated: myDisc !== null, isViewerWinner: winnerDisc && !isDraw ? isMyWin : null })}
                             resultKey={`${game?.id}:${gameEngine.getState().lastMoveAt ?? ''}`}
                             isRegistered={status === 'authenticated' && !isGuest}
                         />
@@ -1186,8 +958,6 @@ export default function ConnectFourLobbyPage({ code, isSpectator = false, onGame
         </div>
     )
 
-    // Chat hidden in bot-only games (#522 parity with the shared lobby shell);
-    // spectators get a read-only feed.
     const chatPlayerProfiles = (() => {
         const map = new Map<string, { avatarUrl?: string | null; isPremium?: boolean }>()
         for (const p of players) {
@@ -1201,12 +971,14 @@ export default function ConnectFourLobbyPage({ code, isSpectator = false, onGame
         return map
     })()
 
-    const chatSection = showChat ? (
+    const chatSection = (
         <section className="game-chat-panel">
             <Chat
                 lobbyCode={code}
                 messages={chatMessages}
                 onSendMessage={sendChatMessage}
+                termsAccepted={chatTermsAccepted}
+                onAcceptTerms={acceptChatTerms}
                 currentUserId={currentUserId || null}
                 playerProfiles={chatPlayerProfiles}
                 isMinimized={false}
@@ -1217,7 +989,7 @@ export default function ConnectFourLobbyPage({ code, isSpectator = false, onGame
                 readOnly={isSpectator}
             />
         </section>
-    ) : null
+    )
 
     const themeStyle = getThemePageStyle(lobby.theme)
 
@@ -1265,7 +1037,18 @@ export default function ConnectFourLobbyPage({ code, isSpectator = false, onGame
                     <div className="ttt-top-row">{headerSection}{roomSectionCompact}</div>
                     {statusSection}
                     {requestSection}
-                    {chatSection}
+                    <GameTabs
+                        tabs={[
+                            { id: 'history' as const, label: `${t('game.ui.tabMoves')} (${moveHistory.length})` },
+                            { id: 'chat' as const, label: t('game.ui.tabChat'), badge: chatUnreadCount },
+                        ]}
+                        activeTab={mobileTab === 'history' ? 'history' : 'chat'}
+                        onTabChange={(id) => {
+                            setMobileTab(id)
+                            if (id === 'chat') resetChatUnread()
+                        }}
+                    />
+                    {mobileTab === 'history' ? historySection : chatSection}
                     {actionsSection}
                 </div>
             </div>
@@ -1279,7 +1062,7 @@ export default function ConnectFourLobbyPage({ code, isSpectator = false, onGame
                     tabs={[
                         { id: 'board' as const, label: t('game.ui.tabBoard') },
                         { id: 'history' as const, label: `${t('game.ui.tabMoves')} (${moveHistory.length})` },
-                        ...(showChat ? [{ id: 'chat' as const, label: t('game.ui.tabChat'), badge: chatUnreadCount }] : []),
+                        { id: 'chat' as const, label: t('game.ui.tabChat'), badge: chatUnreadCount },
                     ]}
                     activeTab={mobileTab}
                     onTabChange={(id) => {

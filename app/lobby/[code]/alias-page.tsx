@@ -1,15 +1,16 @@
 'use client'
 
-import React, { useState, useEffect, useCallback, useRef } from 'react'
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { useIsMobileViewport } from '@/hooks/useIsMobileViewport'
 import { useActiveGameLayout } from '@/hooks/useActiveGameLayout'
 import LeaveIcon from '@/components/LeaveIcon'
 import { useRouter } from 'next/navigation'
 import { useSession } from 'next-auth/react'
-import { useTranslation } from '@/lib/i18n-helpers'
+import { useTranslation, type TranslationKeys } from '@/lib/i18n-helpers'
 import { Icon } from '@/components/icons'
 import { useGuest } from '@/contexts/GuestContext'
 import { fetchWithGuest } from '@/lib/fetch-with-guest'
+import { acceptTerms, isTermsRequired } from '@/lib/client/terms-consent'
 import { clientLogger } from '@/lib/client-logger'
 import { showToast } from '@/lib/i18n-toast'
 import { useRealtimeConnection } from '@/app/lobby/[code]/hooks/useRealtimeConnection'
@@ -18,11 +19,16 @@ import { useLobbyHeartbeat } from '@/app/lobby/[code]/hooks/useLobbyHeartbeat'
 import type { ChatMessagePayload, GameUpdatePayload } from '@/types/game'
 import { finalizePendingLobbyCreateMetric } from '@/lib/lobby-create-metrics'
 import { trackMoveSubmitApplied } from '@/lib/analytics'
-import LoadingSpinner from '@/components/LoadingSpinner'
+import { LobbyPageLoadingFallback } from '@/app/lobby/[code]/components/LobbyPageFallbacks'
 import ConfirmModal from '@/components/ConfirmModal'
-import { AliasGame, type AliasGameData } from '@/lib/games/alias'
+import TermsConsentPanel from '@/components/TermsConsentPanel'
+import BlockedText from '@/components/BlockedText'
+import { useBlockedPlayers } from '@/hooks/useBlockedPlayers'
+import { AliasGame, DEFAULT_TEAM_NAMES, type AliasGameData } from '@/lib/games/alias'
 import { guessesForTurn } from '@/lib/games/alias-guess'
-import { sounds } from '@/lib/sounds'
+import { playCue } from '@/lib/sound-engine'
+import { viewerOutcome } from '@/lib/game-outcome'
+import { useAliasSounds } from './hooks/useAliasSounds'
 import { getThemePageStyle } from '@/lib/lobby-themes'
 import AfterGameActions from '@/components/game-chrome/AfterGameActions'
 import GameScoreboardHeader from '@/components/game-chrome/GameScoreboardHeader'
@@ -96,6 +102,20 @@ interface GuessMessage {
  * describing in turn while the other two guess (#847). The waiting room has to
  * show that, or it promises a game that will not be played.
  */
+/** The engine stores the shared teams as "Team 1" / "Team 2"; a solo team keeps its player's name. */
+function withLocalizedTeamNames(data: AliasGameData, t: (key: TranslationKeys) => string): AliasGameData {
+  if (!data.teams) return data
+  const keys: Record<string, TranslationKeys> = { 'team-1': 'alias.team1', 'team-2': 'alias.team2' }
+  return {
+    ...data,
+    teams: data.teams.map((team) =>
+      data.teams.length === 2 && DEFAULT_TEAM_NAMES[team.id] === team.name && keys[team.id]
+        ? { ...team, name: t(keys[team.id]) }
+        : team
+    ),
+  }
+}
+
 function isSoloPlayerCount(playerCount: number): boolean {
   return playerCount === 3
 }
@@ -459,8 +479,10 @@ const AliasGameHeader: React.FC<{
 }
 
 // Guess chat panel — shown on describer + guesser screens
-function GuessChatPanel({ guesses, guessInput, onInputChange, onSend, onKeyDown, canType, endRef, currentUserId, fillHeight = false, guessedWords = [] }: {
+function GuessChatPanel({ guesses, guessInput, onInputChange, onSend, onKeyDown, canType, endRef, currentUserId, fillHeight = false, guessedWords = [], termsRequired = false, onAcceptTerms, blockedIds }: {
   guesses: GuessMessage[]
+  /** Players the viewer blocked: their guesses fold to one line. */
+  blockedIds: ReadonlySet<string>
   /** Words the describer has marked guessed this turn; matching bubbles are celebrated (#1115). */
   guessedWords?: readonly string[]
   guessInput: string
@@ -472,8 +494,26 @@ function GuessChatPanel({ guesses, guessInput, onInputChange, onSend, onKeyDown,
   currentUserId: string | null | undefined
   /** On its own mobile tab the panel owns the pane; stacked it keeps its 220px. */
   fillHeight?: boolean
+  /** A guess came back 403 TERMS_REQUIRED (#1466): the consent panel stands in for the input. */
+  termsRequired?: boolean
+  onAcceptTerms?: () => Promise<boolean>
 }) {
   const { t } = useTranslation()
+  const inputRef = useRef<HTMLInputElement>(null)
+  const focusInputAfterConsent = useRef(false)
+  const showTermsConsent = canType && termsRequired && !!onAcceptTerms
+  useEffect(() => {
+    if (showTermsConsent || !focusInputAfterConsent.current) return
+    focusInputAfterConsent.current = false
+    inputRef.current?.focus()
+  }, [showTermsConsent])
+  const handleAcceptTerms = async () => {
+    if (!onAcceptTerms) return false
+    focusInputAfterConsent.current = true
+    const accepted = await onAcceptTerms()
+    if (!accepted) focusInputAfterConsent.current = false
+    return accepted
+  }
   // Guesses arrive live only (there is no history to load), so `[]` is a
   // loaded empty feed and every guess after it is fresh.
   const { fresh: newestFresh, settle: settleNewest } = useFreshKey(latestEntryKey(guesses, (g) => String(g.id)))
@@ -533,16 +573,25 @@ function GuessChatPanel({ guesses, guessInput, onInputChange, onSend, onKeyDown,
                 display: 'inline-flex', alignItems: 'center', gap: 6,
               }}>
                 {isHit && <Icon name="check" size={14} />}
-                {g.text}
+                <BlockedText blocked={blockedIds.has(g.userId)} from={g.userId}>{g.text}</BlockedText>
               </span>
             </div>
           )
         })}
         <div ref={endRef} />
       </div>
-      {canType && (
+      {showTermsConsent ? (
+        <TermsConsentPanel
+          onAccept={handleAcceptTerms}
+          autoFocus
+          context="play"
+          compact
+          style={{ padding: '10px 12px', borderTop: '1px solid var(--bd-line)', flexShrink: 0 }}
+        />
+      ) : canType && (
         <div style={{ padding: '10px 12px', borderTop: '1px solid var(--bd-line)', display: 'flex', gap: 8 }}>
           <input
+            ref={inputRef}
             type="text"
             value={guessInput}
             onChange={e => onInputChange(e.target.value)}
@@ -552,7 +601,7 @@ function GuessChatPanel({ guesses, guessInput, onInputChange, onSend, onKeyDown,
             style={{
               flex: 1, background: 'var(--bd-bg2)',
               border: '1.5px solid var(--bd-line)', borderRadius: 10,
-              padding: '8px 12px', fontSize: 14, color: 'var(--bd-ink)',
+              padding: '8px 12px', fontSize: 16, color: 'var(--bd-ink)',
               outline: 'none',
               fontFamily: 'inherit',
             }}
@@ -613,7 +662,9 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
   // Guess chat
   const [guesses, setGuesses] = useState<GuessMessage[]>([])
   const [guessInput, setGuessInput] = useState('')
+  const [guessTermsRequired, setGuessTermsRequired] = useState(false)
   const guessesEndRef = useRef<HTMLDivElement | null>(null)
+  const { blockedIds } = useBlockedPlayers()
 
   // Lives outside the timer effect on purpose: the effect is rebuilt whenever
   // loadLobby is rebuilt, and a recovery rebuilt with it would forget how many
@@ -624,7 +675,6 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
 
   const lifecycleRedirectInFlightRef = React.useRef(false)
   const activeGameIdRef = React.useRef<string | null>(null)
-  const winSoundPlayedForRef = React.useRef<string | null>(null)
   const { isLeavingLobbyRef: isLeavingRef, leaveLobby } = useLeaveLobby(code, 'Alias')
   // Zero-signal disconnect detection (#675) — see tic-tac-toe-page.tsx for why every dedicated page needs its own.
   useLobbyHeartbeat(code, !isSpectator)
@@ -649,23 +699,11 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
     fresh.restoreState(authoritativeState as any)
     setGameEngine(fresh)
 
-    if (fresh.isGameFinished() && winSoundPlayedForRef.current !== gameId) {
-      const data = fresh.getState().data as AliasGameData
-      if (data.winnerId && data.winnerId !== 'tie') {
-        const userId = getCurrentUserId()
-        const myTeam = data.teams.find(t => userId && t.playerIds.includes(userId))
-        if (myTeam && myTeam.id === data.winnerId) {
-          winSoundPlayedForRef.current = gameId
-          sounds.play('win')
-        }
-      }
-    }
-
     setGame(prev => {
       if (!prev || prev.id !== gameId) return prev
       return { ...prev, status: fresh.getState().status, state: authoritativeState }
     })
-  }, [getCurrentUserId])
+  }, [])
 
   const loadLobby = useCallback(async (attempt = 1) => {
     try {
@@ -765,6 +803,8 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
     const uid = getCurrentUserId()
     if (msg.userId === uid) return
     if (typeof msg.message !== 'string') return
+    // The same topic carries the lobby's chat; only the guess route's frames belong in the feed.
+    if ((msg as unknown as Record<string, unknown>).type !== 'alias-guess') return
     const rawId = (msg as unknown as Record<string, unknown>).id
     const id = typeof rawId === 'string' || typeof rawId === 'number' ? rawId : Date.now()
     setGuesses(prev => prev.some(g => g.id === id) ? prev : [...prev.slice(-99), {
@@ -797,10 +837,10 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
     onGameReset: handleGameReset,
   })
 
-  const handleMove = useCallback(async (type: string, payload: Record<string, unknown>) => {
-    if (!game || isMoveSubmitting) return
+  const handleMove = useCallback(async (type: string, payload: Record<string, unknown>): Promise<boolean> => {
+    if (!game || isMoveSubmitting) return false
     const userId = getCurrentUserId()
-    if (!userId) return
+    if (!userId) return false
 
     const move = { type, playerId: userId, data: payload, timestamp: new Date() }
 
@@ -830,16 +870,20 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
         if (authoritativeState) {
           applyAuthoritativeState(game.id, authoritativeState)
         }
-      } else if (res.status === 409) {
+        return true
+      }
+      if (res.status === 409) {
         // STATE_CONFLICT: another player's move already advanced the phase; reconcile silently
         await loadLobby()
       } else {
         clientLogger.error('Alias move failed', { type, status: res.status })
         await loadLobby()
       }
+      return false
     } catch (err) {
       clientLogger.error('Alias handleMove error', err)
       await loadLobby()
+      return false
     } finally {
       setIsMoveSubmitting(false)
     }
@@ -970,9 +1014,14 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ message: text }),
     }))
-      .then((res) => {
+      .then(async (res) => {
         if (!res || res.ok) return
         setGuesses(prev => prev.filter(g => g.id !== localId))
+        if (await isTermsRequired(res)) {
+          setGuessInput(current => (current ? `${text} ${current}` : text))
+          setGuessTermsRequired(true)
+          return
+        }
         if (res.status === 429) {
           showToast.error('alias.guessRateLimited', undefined, undefined, { id: 'alias-guess-rate-limited' })
         }
@@ -982,6 +1031,12 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
       })
   }, [guessInput, getCurrentUserId, isGuest, guestName, session, code, turnStartedAt])
 
+  const acceptGuessTerms = useCallback(async () => {
+    const accepted = await acceptTerms()
+    if (accepted) setGuessTermsRequired(false)
+    return accepted
+  }, [])
+
   const handleGuessKeyDown = useCallback((e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault()
@@ -989,14 +1044,11 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
     }
   }, [sendGuess])
 
-  // Turn and table cues (#1111), read off the engine here because the derived
-  // values below sit after the loading return and a hook cannot. Describing is
-  // the viewer's turn; each word the describer settles is a move for the rest.
+  // Read off the engine here because the derived values below sit after the loading return and a hook cannot.
   const soundUserId = getCurrentUserId()
   const soundData = game?.status === 'playing' ? (gameEngine?.getState()?.data as AliasGameData | undefined) : undefined
   const soundTeam = soundData?.teams?.[soundData.currentTeamIndex]
   const soundDescriberId = soundTeam?.playerIds[soundTeam.describerIndex ?? 0]
-  const soundResults = soundData?.phase === 'turn_active' ? soundData.currentCardResults.length : 0
   // The turn-results screen counts in only when the turn ended while this page
   // was open (#1115); undefined until a playing game is loaded.
   const turnResultsKey = soundData
@@ -1007,23 +1059,51 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
   const { fresh: turnResultsFresh, settle: settleTurnResults } = useFreshKey(turnResultsKey)
   useTurnSounds({
     isMyTurn: soundData?.phase === 'turn_active' && !!soundUserId && soundDescriberId === soundUserId,
-    lastMoveSignature: soundData ? `${soundData.turnStartedAt ?? ''}:${soundResults}` : null,
-    opponentMoved: soundResults > 0 && soundDescriberId !== soundUserId,
+    lastMoveSignature: soundData ? soundData.turnStartedAt ?? '' : null,
+    moveCue: null,
     enabled: !isSpectator && !!soundData,
+  })
+  const confirmedState = useMemo(() => {
+    const raw = game?.state
+    let parsed: unknown = raw
+    if (typeof raw === 'string') {
+      try {
+        parsed = JSON.parse(raw)
+      } catch {
+        parsed = null
+      }
+    }
+    return parsed && typeof parsed === 'object' ? (parsed as { data?: AliasGameData; lastMoveAt?: unknown }) : null
+  }, [game?.state])
+  const finishedData = game?.status === 'finished' ? (gameEngine?.getState()?.data as AliasGameData | undefined) : undefined
+  const finishedTeam = finishedData?.teams?.find((team) => !!soundUserId && team.playerIds.includes(soundUserId))
+  useAliasSounds({
+    data: game?.status === 'playing' ? confirmedState?.data : undefined,
+    lastMoveAt: typeof confirmedState?.lastMoveAt === 'number' ? confirmedState.lastMoveAt : null,
+    game: game ? { id: game.id, status: game.status } : null,
+    outcome: finishedData
+      ? viewerOutcome({
+          isFinished: true,
+          isDraw: finishedData.winnerId === 'tie',
+          isSpectator,
+          isSeated: !!finishedTeam,
+          isViewerWinner: finishedData.winnerId && finishedData.winnerId !== 'tie' ? finishedTeam?.id === finishedData.winnerId : null,
+        })
+      : undefined,
+    viewerId: soundUserId,
+    isSpectator,
+    remaining,
   })
 
   // ─── Loading ───────────────────────────────────────────────────────────────
 
   if (loading) {
-    return (
-      <div style={{ ...pageBg(lobby?.theme), display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <LoadingSpinner />
-      </div>
-    )
+    return <LobbyPageLoadingFallback />
   }
 
   const resolvedStatus = game?.status ?? 'waiting'
-  const data = gameEngine?.getState()?.data as AliasGameData | undefined
+  const engineData = gameEngine?.getState()?.data as AliasGameData | undefined
+  const data = engineData ? withLocalizedTeamNames(engineData, t) : undefined
   const isHost = lobby?.creatorId === getCurrentUserId()
   const players = game?.players ?? []
   const currentUserId = getCurrentUserId()
@@ -1250,7 +1330,7 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
           }} />
           <div className="alias-team-head" style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 16 }}>
             <div>
-              <BdLabel style={{ color: accentDeep }}>{isSolo ? t('alias.soloBadge') : `Team 0${i + 1}`}</BdLabel>
+              <BdLabel style={{ color: accentDeep }}>{isSolo ? t('alias.soloBadge') : t('alias.teamNumbered', { num: `0${i + 1}` })}</BdLabel>
               <div className="alias-team-name" style={{ fontFamily: FONT_DISPLAY, fontWeight: 700, fontSize: 28, marginTop: 4 }}>
                 {team.name}
               </div>
@@ -1451,11 +1531,7 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
   // phase has already moved past team_assignment — fall back to the same
   // loading state used while data itself is still unset, instead of crashing.
   if (!data.teams || data.teams.length === 0) {
-    return (
-      <div style={{ ...pageBg(lobby?.theme), display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <LoadingSpinner />
-      </div>
-    )
+    return <LobbyPageLoadingFallback />
   }
 
   const currentTeam = data.teams[data.currentTeamIndex]
@@ -1487,6 +1563,9 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
     onKeyDown: handleGuessKeyDown,
     endRef: guessesEndRef,
     currentUserId,
+    termsRequired: guessTermsRequired,
+    onAcceptTerms: acceptGuessTerms,
+    blockedIds,
     guessedWords: data.currentCardResults.filter((r) => r.result === 'guessed').map((r) => r.word),
   }
 
@@ -1622,7 +1701,7 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: isMobile ? 10 : 16, width: inRow ? undefined : '100%', flex: inRow ? '1 1 auto' : undefined, minWidth: 0, ...(isMobile && !inRow ? { position: 'sticky' as const, bottom: 8, zIndex: 2 } : {}) }}>
         <button
           aria-label={t('alias.guessedCorrectly')}
-          onClick={() => handleMove('word_action', { action: 'guess' })}
+          onClick={() => void handleMove('word_action', { action: 'guess' }).then((ok) => ok && playCue('card.correct'))}
           disabled={isMoveSubmitting}
           style={{
             background: 'var(--bd-mint)', color: '#06322a',
@@ -1640,7 +1719,7 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
         </button>
         <button
           aria-label={t('alias.skipWord')}
-          onClick={() => handleMove('word_action', { action: 'skip' })}
+          onClick={() => void handleMove('word_action', { action: 'skip' }).then((ok) => ok && playCue('card.skip'))}
           disabled={isMoveSubmitting}
           style={{
             background: 'var(--bd-sun)', color: '#4a3a09',
@@ -2182,7 +2261,6 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
               gameType="alias"
               isGuest={!isSpectator && isGuest}
               isRegistered={!isSpectator && status === 'authenticated' && !isGuest}
-              registerUrl={`/auth/register?returnUrl=${encodeURIComponent(`/lobby/${code}`)}`}
             />
           </div>
         </main>
@@ -2201,9 +2279,5 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
     )
   }
 
-  return (
-    <div style={{ ...pageBg(lobby?.theme), display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      <LoadingSpinner />
-    </div>
-  )
+  return <LobbyPageLoadingFallback />
 }

@@ -5,6 +5,7 @@ import { apiLogger } from '@/lib/logger'
 import { ValidationError, withErrorHandler } from '@/lib/error-handler'
 import { rateLimit, rateLimitPresets } from '@/lib/rate-limit'
 import { getSessionUserOrThrow } from '@/lib/session-user'
+import { parseSignupFrom, type SignupFrom } from '@/lib/signup-attribution'
 
 const limiter = rateLimit(rateLimitPresets.auth)
 
@@ -232,6 +233,43 @@ async function upgradeGuestInTransaction(
   }
 }
 
+/** An account younger than this when the guest is merged into it was created for the merge. */
+const NEW_ACCOUNT_WINDOW_MS = 24 * 60 * 60 * 1000
+
+async function readSignupFrom(request: NextRequest): Promise<SignupFrom | null> {
+  try {
+    const body = (await request.json()) as { from?: unknown } | null
+    return parseSignupFrom(body?.from)
+  } catch {
+    return null
+  }
+}
+
+/** Never throws: a lost analytics row must not fail the migration that already committed. */
+async function recordGuestUpgraded(
+  result: UpgradeGuestResult,
+  from: SignupFrom | null
+): Promise<void> {
+  try {
+    const target = await prisma.users.findUnique({
+      where: { id: result.targetUserId },
+      select: { createdAt: true },
+    })
+    const newAccount = target ? Date.now() - target.createdAt.getTime() < NEW_ACCOUNT_WINDOW_MS : null
+    await prisma.operationalEvents.create({
+      data: {
+        eventName: 'guest_upgraded',
+        metricType: 'flow',
+        isGuest: false,
+        source: from,
+        payload: { moved_players: result.movedPlayers, new_account: newAccount },
+      },
+    })
+  } catch (err) {
+    log.error('Failed to record guest_upgraded', err instanceof Error ? err : new Error(String(err)))
+  }
+}
+
 async function upgradeGuestHandler(request: NextRequest) {
   const rateLimitResult = await limiter(request)
   if (rateLimitResult) return rateLimitResult
@@ -262,9 +300,14 @@ async function upgradeGuestHandler(request: NextRequest) {
     })
   }
 
+  const from = await readSignupFrom(request)
   const result = await prisma.$transaction((tx) =>
     upgradeGuestInTransaction(tx, guestUserId, targetUserId)
   )
+
+  if (result.migrated) {
+    await recordGuestUpgraded(result, from)
+  }
 
   log.info('Guest account upgrade processed', {
     guestUserId,

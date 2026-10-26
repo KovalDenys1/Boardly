@@ -57,7 +57,7 @@ availability, stats, achievements, and replay expectations.
 1. Implement game class extending `GameEngine` in `lib/games/`.
 2. Add game type support in `prisma/schema.prisma` and lobby create API.
 3. Add UI board/page integration in lobby flow.
-4. Add translations to all four locales (`locales/en.ts`, `ru.ts`, `no.ts`, `uk.ts`); the pre-commit hook enforces key parity.
+4. Add translations to every locale (`locales/en.ts`, `ru.ts`, `no.ts`, `uk.ts`, `de.ts`, `es.ts`); the pre-commit hook enforces key parity.
 5. Add unit tests for game logic.
 6. Update docs if architecture/workflow changed.
 

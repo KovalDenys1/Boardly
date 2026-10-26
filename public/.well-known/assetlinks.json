@@ -1,0 +1,12 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "online.boardly.app",
+      "sha256_cert_fingerprints": [
+        "7A:F0:E5:28:69:F1:5C:81:32:3C:F6:59:2D:D9:C5:92:86:A3:DC:14:C2:CA:55:EA:EA:E1:19:12:49:21:34:57"
+      ]
+    }
+  }
+]

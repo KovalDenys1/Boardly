@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { useTranslation, type TranslationKeys } from '@/lib/i18n-helpers'
 import GameIcon from '@/components/GameIcon'
 import { Icon, type IconName } from '@/components/icons'
+import { useIsPlayApp } from '@/hooks/useIsPlayApp'
 
 /**
  * A marquee row is either a game (drawn with its own GameIcon, bare so it sits
@@ -25,6 +26,9 @@ const ITEM_ICONS: readonly MarqueeItemSpec[] = [
   { key: 'home.marquee.noDownload',     icon: 'bolt',        color: 'var(--bd-sky)'   },
   { key: 'home.marquee.playInBrowser',  icon: 'globe',       color: 'var(--bd-sun)'   },
 ] as const
+
+// Claims that are false inside the installed Play app.
+const WEB_ONLY_KEYS: ReadonlySet<TranslationKeys> = new Set(['home.marquee.noDownload', 'home.marquee.playInBrowser'])
 
 function MarqueeItem({
   spec,
@@ -64,6 +68,8 @@ interface MarqueeStripProps {
 
 export default function MarqueeStrip({ variant = 'section' }: MarqueeStripProps) {
   const { t } = useTranslation()
+  const isPlayApp = useIsPlayApp()
+  const items = isPlayApp ? ITEM_ICONS.filter((spec) => !WEB_ONLY_KEYS.has(spec.key)) : ITEM_ICONS
   const [canAnimate, setCanAnimate] = useState(false)
   const isHero = variant === 'hero'
 
@@ -135,7 +141,7 @@ export default function MarqueeStrip({ variant = 'section' }: MarqueeStripProps)
       <div className={`bd-marquee-track ${canAnimate ? 'is-ready' : ''}`}>
         {[0, 1, 2].map((groupIndex) => (
           <div key={groupIndex} className="bd-marquee-group">
-            {ITEM_ICONS.map((spec, itemIndex) => (
+            {items.map((spec, itemIndex) => (
               <MarqueeItem
                 key={`${groupIndex}-${spec.key}`}
                 spec={spec}

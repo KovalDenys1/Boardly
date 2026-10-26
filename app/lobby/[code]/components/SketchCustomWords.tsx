@@ -63,7 +63,7 @@ export default function SketchCustomWords() {
             maxLength={20000}
             aria-label={t('games.guess_my_drawing.customWords.title')}
             placeholder={t('games.guess_my_drawing.customWords.placeholder')}
-            className="w-full rounded-xl border p-3 text-sm text-bd-ink"
+            className="w-full rounded-xl border p-3 text-base text-bd-ink desk:text-sm"
             style={{ borderColor: 'var(--bd-line)', background: 'var(--bd-bg)' }}
           />
           <p className={`text-xs ${draftShort ? 'text-(--bd-coral-deep)' : 'text-bd-ink-soft'}`} aria-live="polite">

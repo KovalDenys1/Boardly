@@ -158,14 +158,6 @@ const no = {
       subtitle: '{{playerCount}}/{{maxPlayers}} spillere',
       returnButton: 'Gå tilbake til lobby',
     },
-    players: {
-      title: 'Spillere',
-      clickToView: 'Klikk for å se',
-      fullList: 'Alle spillere',
-      position: 'Posisjon',
-      ready: 'Klar',
-      viewCards: 'Se kort'
-    },
     create: {
       title: 'Opprett lobby',
       lobbyName: 'Lobbynavn',
@@ -173,7 +165,6 @@ const no = {
       gameType: 'Spilltype',
       maxPlayers: 'Maks spillere',
       player: 'Spiller',
-      players: 'Spillere',
       turnTimer: 'Turgrense',
       turnTimerHelper: 'Hver spiller har så mye tid til å fullføre sin tur',
       memoryDifficulty: 'Memory-vanskelighetsgrad',
@@ -211,7 +202,6 @@ const no = {
       bestOfShort: 'Bo{{rounds}}',
       setUpRoom: 'Sett opp ditt {{game}}-rom',
       sectionGameSettings: 'Spillinnstillinger',
-      sectionLobbyOptions: 'Lobbyvalg',
       themeTitle: 'Lobbytema',
       themePremiumOnly: '{{name}} — kun Premium',
       themeDefaultHint: 'Klassisk varmt utseende',
@@ -222,6 +212,16 @@ const no = {
       spectatorsToggle: 'Slå tilskuere av eller på',
       friendsSelected: '{{value}} valgt',
       inviteCodeNotice: 'Invitasjonskoden lages når du oppretter lobbyen',
+      changeGame: 'Bytt spill',
+      chooseGame: 'Velg et spill',
+      settingsTitle: 'Lobbyinnstillinger',
+      settingsOptional: 'Alt er valgfritt. Standardvalgene er klare til å spille.',
+      settingsRowHint: 'Navn, passord, regler og mer',
+      groupRoom: 'Rom',
+      groupExtras: 'Ekstra',
+      upToPlayers: 'Opptil {{count}} spillere',
+      playersRange: '{{range}} spillere',
+      turnSeconds: '{{seconds}} s per trekk',
       tips: {
         title: 'Raske tips',
         autoAdd: 'Du blir automatisk lagt til som den første spilleren',
@@ -229,15 +229,6 @@ const no = {
         startReady: 'Start spillet når alle er klare!'
       },
       preview: {
-        title: 'Forhåndsvisning',
-        untitled: 'Lobby uten navn',
-        grid: '{{size}}×{{size}} rutenett',
-        memoryCaption: '{{difficulty}} · finn par',
-        yahtzeeCaption: 'Kast terninger · scor kombo',
-        spyCaption: 'Finn bedrageren',
-        rpsCaption: '2 spillere · klassisk duell',
-        aliasCaption: 'Forklar uten å si ordet',
-        liarsPartyCaption: 'Bløff deg til seier',
         aliasPrompt: 'Forklar dette:',
         aliasWord: 'ALGORITME',
         spyCardBeach: 'Strand',
@@ -394,10 +385,15 @@ const no = {
     mute: 'Demp',
     unmute: 'Aktiver lyd',
     volume: 'Volum',
+    silentSwitchHint: 'På iPhone demper lydløs-bryteren også spillydene.',
     themeLabel: 'Tema',
     themeLight: 'Lys',
     themeDark: 'Mørk',
     themeSystem: 'System',
+    themeCurrent: 'Tema: {{mode}}',
+    themeSystemHint: 'Følger enheten din',
+    quickSettings: 'Hurtiginnstillinger',
+    openUserMenu: 'Kontomeny',
   },
   home: {
     welcomeBack: 'Velkommen tilbake, {{name}}!',
@@ -408,11 +404,12 @@ const no = {
     browseGamesArrow: 'Se spill →',
     viewLobbies: 'Se lobbyer',
     playAsGuest: 'Spill som gjest',
-    quickPlay: 'Rask spill',
+    quickPlay: 'Raskt spill',
     openProfile: 'Åpne profil',
     keepPlaying: 'Fortsett å spille',
     createFreeAccount: 'Opprett gratis konto',
     heroSubtitle: 'Velg et spill, opprett et rom og del lenken. Ingen nedlasting, ingen konto nødvendig — gjester kan bli med på sekunder.',
+    heroSubtitlePlayApp: 'Velg et spill, opprett et rom og del lenken. Ingen konto nødvendig — gjester kan bli med på sekunder.',
     gamesReadyBadge: '{{count}} spill klare',
     moreComingLater: '{{count}} spill til på vei',
     statsGamesReady: 'Spill tilgjengelig',
@@ -448,6 +445,13 @@ const no = {
     ctaVisitorTitle: 'Spillkvelden starter her.',
     ctaVisitorAccent: 'Ingen planlegging nødvendig.',
     ctaVisitorBody: 'Velg et spill, åpne et rom, del lenken. Venner er med på sekunder — ingen konto, ingen nedlasting.',
+    ctaVisitorBodyPlayApp: 'Velg et spill, åpne et rom, del lenken. Venner er med på sekunder — ingen konto.',
+    promoVideo: {
+      kicker: 'Se det i bruk',
+      title: 'Boardly på ett minutt',
+      label: 'Video om Boardly: velg et spill, send lenken og spill sammen',
+      play: 'Spill av videoen',
+    },
     howItWorks: {
       kicker: 'Slik fungerer det',
       title: 'Tre steg for å spille',
@@ -462,6 +466,7 @@ const no = {
       step3: {
         title: 'Begynn å spille',
         description: 'Alle ser samme brett, poeng og trekk i nettleseren sin. Ingen nedlasting nødvendig.',
+        descriptionPlayApp: 'Alle ser samme brett, poeng og trekk i samme øyeblikk.',
       },
     },
     demo: {
@@ -487,7 +492,21 @@ const no = {
     viewLobbies: 'Se lobbyer',
     catalog: 'Katalog',
     seeGame: 'Se spillet →',
-    noGamesFound: 'Ingen spill funnet for dette filteret.',
+    noGamesFound: 'Ingen spill passer til disse filtrene.',
+    filters: {
+      reset: 'Nullstill filtre',
+      players: {
+        label: 'Spillere',
+        any: 'Alle',
+      },
+      difficulty: {
+        label: 'Vanskelighetsgrad',
+        any: 'Alle',
+        easy: 'Lett',
+        medium: 'Middels',
+        hard: 'Vanskelig',
+      },
+    },
     loading: 'Laster…',
     redirecting: 'Omdirigerer…',
     gameGuide: 'Om spillet',
@@ -569,7 +588,7 @@ const no = {
           oneUsePerRow: 'Hver rute tar ett resultat per spill, null medregnet, og kan ikke endres etterpå.',
           yahtzeeOnce: 'Yatzy gir 50 poeng én gang. Fem like en gang til gir ingen bonus og må føres i en annen rad.',
           upperBonus: 'I klassisk modus gir 63 eller mer fra Enere til Seksere 35 ekstra poeng. Kort modus har ingen bonus.',
-          gameEnd: 'Spillet er over når alle poenglister er fulle, og høyest sum, bonus medregnet, vinner.',
+          gameEnd: 'Spillet er over når alle poenglister er fulle, og høyest sum, bonus medregnet, vinner. Deler flere den høyeste summen, blir det uavgjort.',
           timerExpiry: 'Går turtiden ut, spiller spillet ferdig turen din og fører poengene for deg.',
         },
         scoring: {
@@ -961,7 +980,7 @@ const no = {
         faq: {
           isItFree: {
             q: 'Er Gjett spionen på Boardly gratis?',
-            a: 'Ja, for alle, også gjester. Bare å slippe inn tilskuere (verten), reprise (den som ser) og premium-lobbytemaer krever Premium.',
+            a: 'Ja, for alle, også gjester. Bare å slippe inn tilskuere (verten), en lengre spillhistorikk med nedlasting av repriser og premium-lobbytemaer krever Premium.',
           },
           worksOnPhone: {
             q: 'Fungerer Gjett spionen på mobil?',
@@ -1125,7 +1144,7 @@ const no = {
         multiplayer: {
           withFriends: {
             title: 'Spill mot en venn langt unna',
-            desc: 'Send den firesifrede koden eller lenken og spill hvor som helst fra. Hvert merke vises på begge skjermene idet det settes, og det er chat når to personer spiller.',
+            desc: 'Send den firesifrede koden eller lenken og spill hvor som helst fra. Hvert merke vises på begge skjermene idet det settes, og en chat står ved siden av brettet.',
           },
           botsAndSolo: {
             title: 'Øv alene',
@@ -1150,7 +1169,7 @@ const no = {
         faq: {
           isItFree: {
             q: 'Koster Tre på rad på Boardly noe?',
-            a: 'Nei. Venner, alle tre robotene og alle serielengder er gratis. Premium gir ekstra ting som tilskuere, repriser av partier og egne lobbytemaer; selve spillet er det samme.',
+            a: 'Nei. Venner, alle tre robotene og alle serielengder er gratis. Premium gir ekstra ting som tilskuere, lengre spillhistorikk og egne lobbytemaer; selve spillet er det samme.',
           },
           needAccount: {
             q: 'Må jeg registrere meg først?',
@@ -1414,7 +1433,7 @@ const no = {
           },
           worksOnPhone: {
             q: 'Fungerer Hukommelse på mobil?',
-            a: 'Ja, i mobilnettleseren. Trekkene ligger i en fane ved siden av brettet, og chatten også når to eller flere spiller.',
+            a: 'Ja, i mobilnettleseren. Kortene tilpasser seg skjermen, og trekkene og chatten ligger i faner ved siden av brettet.',
           },
           timerRunsOut: {
             q: 'Hva skjer hvis turklokken min går ut?',
@@ -1483,6 +1502,7 @@ const no = {
         cardFaceDown: 'Kort {{num}}, vendt ned',
         cardFaceUp: 'Kort {{num}}, {{value}}',
         cardMatched: 'Kort {{num}}, {{value}}, funnet par',
+        boardLabel: 'Memory-brett',
         tabBoard: 'Brett',
         tabScore: 'Poeng',
         tabMoves: 'Trekk',
@@ -1711,6 +1731,13 @@ const no = {
         full: 'Fullt',
         newGame: 'NYTT SPILL',
       },
+      board: {
+        label: 'Fire på rad-brett',
+        cell: 'Rad {{row}}, kolonne {{col}}: {{disc}}',
+        red: 'rød brikke',
+        yellow: 'gul brikke',
+        empty: 'tom',
+      },
       game: {
         lobbyNotFoundTitle: 'Lobby ikke funnet',
         lobbyNotFoundDescription: 'Lobbyen du leter etter eksisterer ikke eller er lukket.',
@@ -1746,7 +1773,7 @@ const no = {
         disc1: 'Rød',
         disc2: 'Gul',
         noMovesYet: 'Ingen trekk ennå — Rød starter.',
-        moveColumn: 'kol. {{col}}',
+        moveColumn: 'Kolonne {{col}}',
         tapToInspect: 'Se brettet',
         showResults: 'Vis resultat',
         spectator: 'Tilskuer',
@@ -1861,7 +1888,7 @@ const no = {
         multiplayer: {
           withFriends: {
             title: 'Spill mot en venn hvor som helst',
-            desc: 'Del koden eller lenken; trekkene vises live på begge brettene, med chat når to personer spiller.',
+            desc: 'Del koden eller lenken; trekkene vises live på begge brettene, med en chat ved siden av brettet.',
           },
           botsAndSolo: {
             title: 'Øv alene',
@@ -1886,7 +1913,7 @@ const no = {
         faq: {
           isItFree: {
             q: 'Er dam på Boardly gratis?',
-            a: 'Ja, også alle tre botene. Premium gir ekstra ting som tilskuere og lobbytemaer for verten, og reprise av partier; selve spillet er det samme.',
+            a: 'Ja, også alle tre botene. Premium gir ekstra ting som tilskuere og lobbytemaer for verten, og lengre spillhistorikk; selve spillet er det samme.',
           },
           needAccount: {
             q: 'Trenger jeg en konto for å spille?',
@@ -1972,6 +1999,10 @@ const no = {
       },
     },
     rock_paper_scissors: {
+      replay: {
+        rounds: 'Runder',
+        roundItem: 'Runde {{num}}: {{left}} mot {{right}}',
+      },
       name: 'Stein, saks, papir',
       description: 'Samtidig valgspill der stein slår saks, saks slår papir, og papir slår stein',
       difficulty: 'Lett',
@@ -2231,7 +2262,7 @@ const no = {
           },
           turnClock: {
             title: 'Klokke på hver tur',
-            desc: 'Lobbyer du oppretter, har 30 sekunder som standard; før start kan verten sette 30 til 180. Rask spill og Spill mot bot bruker 45.',
+            desc: 'Lobbyer du oppretter, har 30 sekunder som standard; før start kan verten sette 30 til 180. Raskt spill og Spill mot bot bruker 45.',
           },
           botLevels: {
             title: 'Tre robotnivåer',
@@ -2289,7 +2320,7 @@ const no = {
         multiplayer: {
           withFriends: {
             title: 'Spill med venner hvor som helst',
-            desc: 'Del koden med opptil tre venner; chatten åpnes når to personer sitter ved bordet.',
+            desc: 'Del koden med opptil tre venner; chatten står ved siden av brettet.',
           },
           botsAndSolo: {
             title: 'Roboter når du spiller alene',
@@ -2313,7 +2344,7 @@ const no = {
         faq: {
           isItFree: {
             q: 'Er Ludo på Boardly gratis?',
-            a: 'Ja, alle plasser, moduser, roboter og tidsvalg. Premium gir ekstra rundt spillet, som tilskuere og lobbytemaer for verten, reprise og profilutseende.',
+            a: 'Ja, alle plasser, moduser, roboter og tidsvalg. Premium gir ekstra rundt spillet, som tilskuere og lobbytemaer for verten, lengre spillhistorikk og profilutseende.',
           },
           worksOnPhone: {
             q: 'Kan jeg spille Ludo på mobilen?',
@@ -2333,7 +2364,7 @@ const no = {
           },
           whoPicksMode: {
             q: 'Hvem velger rask eller klassisk modus?',
-            a: 'Verten, når lobbyen opprettes; Spill igjen og Tilbake til venterom beholder modusen. Rom som Rask spill eller Spill mot bot oppretter, bruker rask.',
+            a: 'Verten, når lobbyen opprettes; Spill igjen og Tilbake til venterom beholder modusen. Rom som Raskt spill eller Spill mot bot oppretter, bruker rask.',
           },
           playAgain: {
             q: 'Kan vi spille igjen med de samme folkene?',
@@ -2679,7 +2710,7 @@ const no = {
         step2Title: 'Tegn ordet ditt',
         step2Desc: 'Du har 15 sekunder på å velge ett av tre ord. Deretter har du inntil 80 sekunder på å tegne det.',
         step3Title: 'Gjett før tiden går ut',
-        step3Desc: 'De andre kan gjette opptil 40 ganger mens du tegner, på hvilket som helst av sidens språk. Raske riktige svar gir flere poeng.',
+        step3Desc: 'De andre kan gjette opptil 40 ganger mens du tegner, på engelsk, norsk, russisk eller ukrainsk. Raske riktige svar gir flere poeng.',
         step4Title: 'Avsløring og ny tegner',
         step4Desc: 'Ordet avsløres; poengene kom etter hvert som hvert gjett landet. Så tegner neste spiller, eller spillet slutter når alle har tegnet.',
         benefitsTitle: 'Hvorfor spille Tegn og gjett på Boardly?',
@@ -2712,7 +2743,7 @@ const no = {
         modes: {
           oneRoundEach: { title: 'Én runde per spiller', desc: 'Alle tegner én gang, så fire spillere gir fire runder; det finnes ingen innstilling for antall runder.' },
           phaseClocks: { title: 'Faste klokker for hver fase', desc: '15 sekunder til å velge, 80 til å tegne, 8 til avsløringen; lobbytimeren endrer ingen av dem.' },
-          roomSize: { title: 'Tre til ti plasser', desc: 'Rom laget i opprettingsskjemaet starter med seks plasser; rom fra Rask spill åpner med alle ti.' },
+          roomSize: { title: 'Tre til ti plasser', desc: 'Rom laget i opprettingsskjemaet starter med seks plasser; rom fra Raskt spill åpner med alle ti.' },
         },
         strategy: {
           pickTheDrawableWord: { title: 'Velg ordet som lar seg tegne', desc: 'Av de tre, ta det med det tydeligste omrisset.' },
@@ -3146,7 +3177,6 @@ const no = {
       perTurn: 'per tur',
       timeLimit: 'Tidsgrense',
       gameFinished: 'Spillet er ferdig!',
-      score: 'Poeng',
       chatPlaceholder: 'Skriv…',
       spectatingBadge: 'Ser på',
       spectator: 'Tilskuer',
@@ -3158,6 +3188,9 @@ const no = {
       decline: 'Avslå',
       returnToLobby: 'Tilbake til venterom',
       roundOver: 'Runden er over',
+      askRematch: 'Be om omkamp',
+      rematchAsked: 'Omkamp etterspurt – venter på verten',
+      rematchWanted: '{{player}} vil ha omkamp',
       theirTurn: 'Motstanderens tur',
       winBadge: 'SEIER',
       victoryBadge: 'SEIER',
@@ -3172,7 +3205,6 @@ const no = {
       settings: 'Innstillinger',
       botBadge: 'AI',
       playerLeft: 'forlot',
-      viewPlayerProfile: 'Se spillerprofil',
       stepOf: 'Steg {{current}} av {{total}}',
       vs: 'mot',
       removeBot: 'Fjern bot',
@@ -3218,7 +3250,6 @@ const no = {
     },
     actions: {
       roll: 'Kast terninger',
-      hold: 'Behold',
       score: 'Poeng',
       rollsLeft: 'Kast igjen',
       myCards: 'Mine kort',
@@ -3237,7 +3268,8 @@ const no = {
         yahtzee: 'YAHTZEE! Alle fem terninger matcher!',
         largeStraight: 'Stor straight! Fem på rad!',
         fullHouse: 'Hus! Tre like + par!',
-        fourOfKind: 'Fire like! Fire matchende terninger!'
+        fourOfKind: 'Fire like! Fire matchende terninger!',
+        highScore: 'Sterk poengsum!'
       }
     },
     results: {
@@ -3262,9 +3294,13 @@ const no = {
       matchComplete: 'Kamp fullført',
       winnerLabel: 'Vinner',
       winnerBadge: 'VINNER',
+      tieLabel: 'Delt førsteplass',
+      tie: 'Uavgjort!',
+      tieBadge: 'UAVGJORT',
       upperSectionShort: 'Øvre',
       lowerSectionShort: 'Nedre',
       winnerScore: 'Vinner {{score}}',
+      tieScore: 'Uavgjort på {{score}}',
       marginScore: 'Margin +{{margin}}',
       nextStep: 'Neste steg',
       nextStepHint: 'Start en ny runde, be om en revansje, eller gå tilbake til lobbyer.',
@@ -3283,12 +3319,8 @@ const no = {
     ui: {
       hurry: 'Skynd deg!',
       moveReverted: 'Trekket feilet. Tilstanden ble gjenopprettet fra serveren.',
-      waitTurnHint: 'Vent på turen din...',
-      rollFirstHint: 'Kast terningene først',
-      holdHint: 'Trykk på terning for å holde/slippe',
+      holdHint: 'Trykk på en terning for å beholde den',
       rollDice: 'Kast',
-      rolling: 'Kaster...',
-      rollsLeft: '{{count}} / 3',
       timeLeft: '{{time}} s',
       startingGame: 'Starter spill...',
       readyToPlay: 'Klar til å spille Yahtzee?',
@@ -3314,7 +3346,6 @@ const no = {
       strong: 'Sterkt',
       playable: 'Greit',
       fallbackOption: 'Strykning',
-      best: 'Best',
       bestPlus: 'Best +{{score}}',
       burnSlot: 'Stryk en rute',
       subtotal: 'Delsum',
@@ -3327,7 +3358,6 @@ const no = {
       bankStrongScore: 'Du kan sikre en sterk score nå.',
       rollsLeftCount: '{{count}} kast igjen',
       rollsLeftCount_other: '{{count}} kast igjen',
-      noRollsLeft: 'Ingen kast igjen',
       holdingDice: 'Holder {{count}} terning',
       holdingDice_other: 'Holder {{count}} terninger',
       scorecardTitle: 'Poengtabell',
@@ -3336,32 +3366,15 @@ const no = {
       rollsLeftChip: '{{count}} igjen',
       holdChip: 'Holdt {{held}}/{{total}}',
       reviewScorecard: 'Se poengtabellen',
-      tileScoredAria: '{{category}}: ført {{score}}',
-      tileOpenAria: '{{category}}: ledig',
       tileScoreAria: '{{category}}: før {{score}}',
       tileConfirmZeroAria: '{{category}}: trykk igjen for å føre 0',
       tapAgainZero: 'Trykk igjen: 0',
-      burnBadge: 'Stryk',
-      upperShort: 'Øvre',
-      lowerShort: 'Nedre',
-      categoriesShort: 'Kategorier',
-      shortModeNote: 'Kort spill: 9 runder, én rute per runde. Klassisk modus legger til enere til seksere og bonusen.',
-      bonusEarned: '+35 bonuspoeng',
-      onPar: 'i rute',
-      aheadOfPar: '+{{count}} foran',
-      behindPar: '{{count}} bak',
-      playersCard: 'Kortet til {{player}}',
-      pickArrow: 'Velg {{category}} →',
-      burnArrow: 'Stryk {{category}} →',
-      backToMine: 'Mitt kort',
       scoresLabel: 'Poeng',
       youPill: 'Du',
-      pillAria: '{{player}}: {{score}} poeng, vis kortet',
+      pillAria: '{{player}}: {{score}} poeng',
       dieAria: 'Terning med {{value}}, trykk for å holde',
       dieHeldAria: 'Terning med {{value}}, holdt, trykk for å slippe',
       dieBlankAria: 'Terning, ikke kastet ennå',
-      rollWaiting: 'Venter',
-      rollWithCount: 'Kast · {{count}}',
       playerTurn: '{{player}} sin tur',
       turnRollFirst: 'Din tur: kast',
       turnHoldOrPick: 'Kast igjen eller velg en rute',
@@ -3369,6 +3382,9 @@ const no = {
       roundOf: 'Runde {{current}}/{{total}}',
       tabGame: 'Spill',
       pointsShort: '{{count}} p',
+      heldLabel: 'Holdt',
+      cellOpen: 'Åpen',
+      tabRolls: 'Kast',
     }
   },
   chat: {
@@ -3390,9 +3406,19 @@ const no = {
     sendHelp: 'Trykk Enter for å sende • Shift+Enter for ny linje',
     rules: 'Regler',
     rulesNewTab: 'Regler for fellesskapet (åpnes i ny fane)',
-    mutePlayer: 'Skjul meldinger fra {{player}} på denne enheten',
-    unmuteAll: 'Vis {{count}} skjult spiller igjen',
-    unmuteAll_other: 'Vis {{count}} skjulte spillere igjen',
+    blockPlayer: 'Blokker {{player}}',
+    blockConfirm: 'Blokkere {{player}}? Du vil ikke se meldinger fra denne spilleren i noe spill. Du kan oppheve blokkeringen senere under Blokkerte spillere.',
+    blockAction: 'Blokker',
+    blockFailed: 'Kunne ikke blokkere {{player}}. Prøv igjen.',
+    cancel: 'Avbryt',
+    termsPrompt: 'Før din første melding må du godta bruksvilkårene og fellesskapsreglene.',
+    termsTerms: 'Bruksvilkår',
+    termsRules: 'Fellesskapsregler',
+    termsAccept: 'Godta og chat',
+    termsPromptPlay: 'Før andre spillere ser det du skriver, må du godta bruksvilkårene og fellesskapsreglene.',
+    termsAcceptPlay: 'Godta',
+    termsCompactLead: 'Kreves før du skriver:',
+    termsFailed: 'Kunne ikke lagre det. Prøv igjen.',
   },
   auth: {
     signedInProvidersHidden: 'Du er allerede logget inn. Logg ut først for å logge inn med Google, GitHub eller Discord.',
@@ -3403,9 +3429,9 @@ const no = {
       copied: 'Lenken er kopiert – lim den inn i nettleseren',
     },
     login: {
-      heroQuote: '«Beste\nfredagskvelden\nnoensinne»',
-      heroQuoteBy: '— spillerne våre om boardly',
-      heroPlayers: '180 000+ spillere er her allerede',
+      heroQuote: 'Fredags-\nkvelden\ner ordnet',
+      heroQuoteBy: 'Brettspill med venner, rett i nettleseren',
+      heroPlayers: 'Gjester spiller uten konto',
       heroChipGames: '{{games}} spill klare til å spille',
       heroChipInstant: 'Ingen nedlasting — spill i nettleseren',
       heroChipGuests: 'Venner blir med via én lenke',
@@ -3433,7 +3459,9 @@ const no = {
     },
     guestConversion: {
       headline: 'Lagre fremgangen din — det er gratis',
+      headlineReplay: 'Ta vare på dette spillet — det er gratis',
       body: 'Opprett en konto for å beholde spillhistorikk, statistikk og rekker.',
+      bodyReplay: 'Opprett en konto for å beholde denne replayen, spillhistorikken og statistikken din.',
       cta: 'Opprett konto',
       dismiss: 'Kanskje senere',
     },
@@ -3441,8 +3469,8 @@ const no = {
       kicker: 'Opprett konto',
       catchphrase: '20 sekunder — og du er i gang.',
       heroTagline: 'Spill.\nKoble til.\nVinn.',
-      heroDesc: 'Bli med tusenvis av spillere for episke brettspilarrangement.',
-      heroPlayers: '180 000+ spillere er allerede her',
+      heroDesc: 'Inviter vennene dine til brettspillkveld med én lenke.',
+      heroPlayers: 'Gratis i nettleseren, ingenting å installere',
       title: 'Opprett konto',
       username: 'Brukernavn',
       usernamePlaceholder: 'Velg et brukernavn',
@@ -3581,6 +3609,8 @@ const no = {
       favourite: 'Favoritt:',
       requestSent: 'Forespørsel sendt',
       requestReceived: 'Venneforespørsel mottatt',
+      block: 'Blokker',
+      unblock: 'Opphev blokkering',
     },
     premiumCard: {
       level: 'Nivå',
@@ -3839,7 +3869,7 @@ const no = {
       sections: {
         appearance: {
           title: 'Utseende',
-          subtitle: 'Språk og tema for denne enheten.',
+          subtitle: 'Språk, tema og lyd på denne enheten.',
         },
         privacyGame: {
           title: 'Personvern og spill',
@@ -3854,6 +3884,10 @@ const no = {
         title: 'Språk',
         subtitle: 'Velg foretrukket språk for grensesnittet',
         current: 'Gjeldende: {{language}}'
+      },
+      sound: {
+        title: 'Lyd',
+        subtitle: 'Lydeffekter og volum på denne enheten.',
       },
       theme: {
         title: 'Tema',
@@ -3935,6 +3969,17 @@ const no = {
       cancel: 'Avbryt'
     },
     gameHistory: {
+      result: {
+        won: 'Vant',
+        lost: 'Tapte',
+        draw: 'Uavgjort',
+        abandoned: 'Forlatt',
+        cancelled: 'Avlyst',
+        inProgress: 'Pågår',
+      },
+      moreWithPremium: '{{count}} spill til med Premium',
+      moreWithPremium_one: '{{count}} spill til med Premium',
+      soloGame: 'Solospill',
       title: 'Spillhistorikk',
       status: 'Spillstatus',
       gameType: 'Spilltype',
@@ -3950,6 +3995,75 @@ const no = {
       clickToView: 'Klikk for å se detaljerte resultater'
     },
     gameReplay: {
+      youBadge: 'du',
+      backToLobby: 'Tilbake til lobbyen',
+      first: 'Første trekk',
+      last: 'Siste trekk',
+      backToHistory: 'Tilbake til historikken',
+      stepCounter: '{{current}} av {{total}}',
+      captions: {
+        common: {
+          gameStarted: 'Spillet begynner',
+          gameFinished: 'Spillet er over',
+          drawGame: 'Spillet endte uavgjort',
+          timeout: 'Tiden gikk ut',
+          nextRound: '{{player}} startet neste runde',
+          undoRequested: '{{player}} ba om å ta tilbake et trekk',
+          undoAccepted: '{{player}} godtok angringen',
+          undoDeclined: '{{player}} avslo angringen',
+          drawRequested: '{{player}} tilbød remis',
+          drawAccepted: '{{player}} godtok remis',
+          drawDeclined: '{{player}} avslo remis',
+          forfeit: '{{player}} gikk tom for tid og taper',
+        },
+        ticTacToe: {
+          mark: '{{player}} satte {{symbol}} på rad {{row}}, kolonne {{col}}',
+          winsRound: '{{player}} vinner runden',
+          drawRound: 'Runden endte uavgjort',
+        },
+        connectFour: {
+          drop: '{{player}} slapp en brikke i kolonne {{col}}',
+          winsRound: '{{player}} vinner runden',
+          drawRound: 'Runden endte uavgjort',
+        },
+        checkers: {
+          move: '{{player}} flyttet {{from}} til {{to}}',
+          jump: '{{player}} slo {{count}} brikker, {{from}} til {{to}}',
+          jump_one: '{{player}} slo en brikke, {{from}} til {{to}}',
+          jump_other: '{{player}} slo {{count}} brikker, {{from}} til {{to}}',
+          crowned: '{{player}} nådde siste rad og ble dame, {{from}} til {{to}}',
+          wins: '{{player}} vinner',
+        },
+        ludo: {
+          roll: '{{player}} kastet {{roll}}',
+          rollNoMove: '{{player}} kastet {{roll}} og kan ikke flytte',
+          tripleSix: '{{player}} kastet tre seksere og mistet turen',
+          enter: '{{player}} satte en brikke ut',
+          move: '{{player}} flyttet en brikke {{roll}} felt',
+          capture: '{{player}} slo en brikke til {{opponent}}',
+          home: '{{player}} fikk en brikke i mål',
+          wins: '{{player}} vinner',
+        },
+        memory: {
+          flip: '{{player}} snudde {{value}}',
+          match: '{{player}} fant et par {{value}}',
+          miss: '{{player}} snudde {{value}}, ikke et par',
+          wins: '{{player}} vinner',
+        },
+        yahtzee: {
+          roll: '{{player}} kastet {{dice}}',
+          hold: '{{player}} beholdt {{dice}}',
+          holdNone: '{{player}} slapp alle terningene',
+          score: '{{player}} fikk {{points}} i {{category}}',
+          wins: '{{player}} vinner',
+        },
+        rockPaperScissors: {
+          round: '{{player}} tar runden: {{winning}} slår {{losing}}',
+          draw: 'Begge valgte {{choice}}: runden er uavgjort',
+          locked: '{{player}} har valgt',
+          wins: '{{player}} vinner kampen: {{winning}} slår {{losing}}',
+        },
+      },
       title: 'Kampreplay',
       watch: 'Se replay',
       unavailable: 'Replay utilgjengelig',
@@ -4014,13 +4128,6 @@ const no = {
       claimSubmitted: 'Påstand sendt',
       challengeSubmitted: 'Svar på utfordring sendt',
       roundAdvanced: 'Runden gikk videre',
-      board: {
-        dice: 'Terninger',
-        winsRound: '{{player}} vinner denne runden',
-        redDisc: 'Rød',
-        yellowDisc: 'Gul',
-        toMove: 'skal flytte',
-      },
     },
     gameResults: {
       title: 'Spillresultater',
@@ -4603,7 +4710,7 @@ const no = {
     allDiceHeld: 'Alle terningene er holdt fast — slipp en eller skriv inn poeng!',
     notYourTurn: 'Det er ikke din tur!',
     gameOver: 'Spillet er over! {{player}} vinner!',
-    playerTurn: '{{player}} sin tur!',
+    gameTie: 'Spillet er over! Uavgjort!',
     rollFailed: 'Kunne ikke kaste terningene',
     scoreFailed: 'Kunne ikke registrere poeng',
     linkCopied: 'Invitasjonslenke kopiert til utklippstavlen!',
@@ -4710,6 +4817,68 @@ const no = {
   celebration: {
     scorePoints: '+{{count}} poeng',
   },
+  botNames: {
+    yahtzee: {
+      easy: 'Terningnybegynner',
+      medium: 'Terningstrateg',
+      hard: 'Terningorakel',
+    },
+    tic_tac_toe: {
+      easy: 'Rutenybegynner',
+      medium: 'Rutetaktiker',
+      hard: 'Rutestormester',
+    },
+    rock_paper_scissors: {
+      easy: 'Tempo-nybegynner',
+      medium: 'Mønsterleser',
+      hard: 'Tankegambit',
+    },
+    guess_the_spy: {
+      easy: 'Spionkadett',
+      medium: 'Etterretningsanalytiker',
+      hard: 'Skyggedirektør',
+    },
+    memory: {
+      easy: 'Minnespeider',
+      medium: 'Mønstersøker',
+      hard: 'Minnemester',
+    },
+    connect_four: {
+      easy: 'Slipp-nybegynner',
+      medium: 'Kolonnetaktiker',
+      hard: 'Tyngdekraft-stormester',
+    },
+    checkers: {
+      easy: 'Dam-nybegynner',
+      medium: 'Diagonaltaktiker',
+      hard: 'Kongemaker',
+    },
+    alias: {
+      easy: 'Ord-nybegynner',
+      medium: 'Ordtaktiker',
+      hard: 'Ordorakel',
+    },
+    liars_party: {
+      easy: 'Ærlig nybegynner',
+      medium: 'Blufftaktiker',
+      hard: 'Bedragermester',
+    },
+    sketch_and_guess: {
+      easy: 'Skisse-nybegynner',
+      medium: 'Streketaktiker',
+      hard: 'Blekkmester',
+    },
+    ludo: {
+      easy: 'Brikke-nybegynner',
+      medium: 'Brikketaktiker',
+      hard: 'Ludo-stormester',
+    },
+    fallback: {
+      easy: 'AI-nybegynner',
+      medium: 'AI-strateg',
+      hard: 'AI-geni',
+    },
+  },
   faq: {
     kicker: 'FAQ',
     title: 'Ofte stilte spørsmål',
@@ -4757,9 +4926,10 @@ const no = {
     brandLine: 'brettspill på nett',
     about: 'Om Boardly',
     tagline: 'Spill brettspill online med venner i sanntid. Gratis, ingen nedlasting nødvendig.',
+    taglinePlayApp: 'Spill brettspill online med venner i sanntid. Gratis.',
     games: 'Spill',
     play: 'Spill',
-    quickPlay: 'Rask spilling',
+    quickPlay: 'Raskt spill',
     createRoom: 'Opprett rom',
     leaderboard: 'Resultattavle',
     guides: 'Guider',
@@ -4779,10 +4949,21 @@ const no = {
   about: {
     breadcrumb: 'Om',
     title: 'Om Boardly',
-    entity: 'Boardly (boardly.online) er et gratis nettsted for brettspill med flere spillere i sanntid: Yahtzee, Guess the Spy, tre på rad, fire på rad, dam, Ludo, Memory, Alias, Løgnerfest, Tegn og gjett og stein, saks, papir, spilt i nettleseren med venner via en delt lenke, uten registrering, på engelsk, norsk, russisk og ukrainsk.',
+    entity: 'Boardly (boardly.online) er et gratis nettsted for brettspill med flere spillere i sanntid: Yahtzee, Guess the Spy, tre på rad, fire på rad, dam, Ludo, Memory, Alias, Løgnerfest, Tegn og gjett og stein, saks, papir, spilt i nettleseren med venner via en delt lenke, uten registrering, på engelsk, norsk, russisk, ukrainsk, tysk og spansk.',
     originTitle: 'Hvor det kom fra',
     origin1: 'Boardly begynte som en idé utvikleren hadde båret på lenge: et sted å spille brettspill med venner på nett, uten nedlasting og uten konto.',
     origin2: 'Dyttet til å bygge det kom fra en skoleoppgave om å implementere Yahtzee. Da oppgaven var ferdig, var det øyeblikket for å starte nettstedet. Yahtzee ble det første spillet på Boardly, og alt annet vokste ut fra det.',
+    howTitle: 'Slik foregår et spill',
+    how1: 'Én spiller velger et spill og oppretter en lobby. Lobbyen får en lenke og en kort kode, og alle som åpner lenken, havner i samme rom så lenge det er ledig plass og spillet ikke har startet. Ingen trenger konto. En besøkende spiller som gjest under et navn de velger selv, og kan registrere seg senere for å beholde profil, venner og statistikk.',
+    how2: 'Verten velger innstillingene før start, og en lobby kan få et passord når den opprettes, slik at bare de som kjenner det, kan bli med. Alle spill unntatt Alias har en chat ved siden av brettet – i Alias skriver de som gjetter, gjetningene sine i en egen strøm i stedet – og i en lobby uten passord kan en vert med Premium også slippe inn tilskuere.',
+    botsTitle: 'Boter og mennesker',
+    bots: 'Sju spill har boter med tre vanskelighetsgrader: Yahtzee, tre på rad, fire på rad, dam, Ludo, Memory og stein, saks, papir, så én person kan spille når som helst. Guess the Spy, Alias, Løgnerfest og Tegn og gjett har ingen boter, med vilje. Disse spillene består av samtale – spisse spørsmål, bløff og gjetting – og en bot har ingenting å bidra med der, så de trenger tre eller flere personer, og Løgnerfest fire.',
+    fairTitle: 'Rettferdig spill',
+    fair: 'Hvert trekk går til serveren, som sjekker det mot spillets regler før det teller, så en endret side kan ikke få godkjent et ulovlig trekk. Hver spiller får bare det plassen deres har lov til å vite, så spionen i Guess the Spy får ikke stedet mens runden pågår. En chatmelding, en tegning, eller en spillers navn eller bilde som bryter fellesskapsreglene, kan i de fleste spill rapporteres fra spillskjermen, og en bio fra spillerens profil. Alle rapporter når Boardly-teamet.',
+    dataTitle: 'Kontoer og data',
+    data: 'En gjest trenger ingen e-postadresse. En gjest som aldri har spilt, slettes etter tre dager uten aktivitet, og en som har spilt, etter 90 dager. Repriser av ferdige spill lagres i 90 dager. Personvernerklæringen viser alt Boardly lagrer, hvorfor og hvor lenge.',
+    builtTitle: 'Slik er det bygget',
+    built: 'Boardly er en nettapp bygget med Next.js og React, med dataene i PostgreSQL og hvert trekk levert til de andre spillerne i sanntid. Den kjører i alle moderne nettlesere på mobil, nettbrett eller datamaskin, uten noe å installere. Kildekoden er offentlig på GitHub under MIT-lisensen, og den automatiske testpakken kjøres ved hver endring.',
     notTitle: 'Hva Boardly ikke er',
     not: 'Boardly er ikke boardly.co, boardly.ai eller joinboardly.com – det er urelaterte produkter som deler navnet; brettspillnettstedet finnes bare på boardly.online.',
     fundingTitle: 'Hvordan det finansieres',
@@ -4819,15 +5000,15 @@ const no = {
       },
       guest: {
         title: 'Spille som gjest',
-        data: 'Et gjestenavn, en tilfeldig gjeste-id, når du sist var aktiv, og plassene dine i spill. Ingen e-postadresse og intet passord.',
+        data: 'Et gjestenavn, en tilfeldig gjeste-id, når du sist var aktiv, plassene dine i spill, og når du godtok vilkårene, noe du gjør før din første chatmelding eller Alias-gjetning. Ingen e-postadresse og intet passord.',
         basis: 'Avtale: vi trenger dette for at du skal kunne spille uten konto.',
         retention: 'En gjest som aldri har spilt, slettes etter {{guestIdle}} dager uten aktivitet, en gjest som har spilt, etter {{guestPlayed}} dager. Navnet erstattes da med «Deleted player» i andre spilleres spillhistorikk og reprise.',
       },
       games: {
         title: 'Spill, lobbyer, chat og venner',
-        data: 'Lobbyene du oppretter eller blir med i, trekkene, poengene og resultatene dine, reprise av spill, chatmeldinger i lobbyen, venner, venneforespørsler, lobbyinvitasjoner, varsler og prestasjoner.',
+        data: 'Lobbyene du oppretter eller blir med i, trekkene, poengene og resultatene dine, reprise av spill, chatmeldinger i lobbyen, venner, venneforespørsler, spillere du har blokkert, lobbyinvitasjoner, varsler og prestasjoner.',
         basis: 'Avtale: dette er selve tjenesten.',
-        retention: 'Spill: {{gamesMonths}} måneder etter at spillet er slutt, fjerner vi navn, spørsmål, svar, gjetninger og tegninger fra spilloppføringen; poengene og resultatene blir værende, knyttet til en spiller-ID i stedet for et navn, for statistikken din, topplisten og prestasjonene. Lobbyer: {{lobbiesMonths}} måneder etter at de ble opprettet, slettes en inaktiv lobby der ingen spill noen gang startet, sammen med disse spillene; en lobby der det ble spilt, får et nøytralt navn, og koden frigjøres for nye lobbyer, når spillene i den har vært gjennom trinnet over. Reprise: {{replayDays}} dager. Lobbychat: {{chatHours}} timer, bortsett fra en melding noen rapporterer: rapporten beholder en kopi av den (se «Rapporter om chat, tegninger og profiler»). Varsler: {{notificationsMonths}} måneder. Venner og prestasjoner: til kontoen slettes.',
+        retention: 'Spill: {{gamesMonths}} måneder etter at spillet er slutt, fjerner vi navn, spørsmål, svar, gjetninger og tegninger fra spilloppføringen; poengene og resultatene blir værende, knyttet til en spiller-ID i stedet for et navn, for statistikken din, topplisten og prestasjonene. Lobbyer: {{lobbiesMonths}} måneder etter at de ble opprettet, slettes en inaktiv lobby der ingen spill noen gang startet, sammen med disse spillene; en lobby der det ble spilt, får et nøytralt navn, og koden frigjøres for nye lobbyer, når spillene i den har vært gjennom trinnet over. Reprise: {{replayDays}} dager. Lobbychat: {{chatHours}} timer, bortsett fra en melding noen rapporterer: rapporten beholder en kopi av den (se «Rapporter om chat, tegninger og profiler»). Varsler: {{notificationsMonths}} måneder. Venner, blokkerte spillere og prestasjoner: til kontoen slettes.',
       },
       signIn: {
         title: 'Innlogging med Google, GitHub eller Discord',
@@ -4919,7 +5100,7 @@ const no = {
         where: 'USA. Discord er sertifisert under EU–US Data Privacy Framework og bruker EUs standard personvernbestemmelser.',
       },
       google: {
-        purpose: 'Innlogging med Google, og AdSense-skriptet med samtykkemeldingen (på egne vegne)',
+        purpose: 'Innlogging med Google, og AdSense-skriptet med samtykkemeldingen (på egne vegne). Google Play, som distribuerer Android-appen vår, behandler sine egne installasjons- og krasjdata på egne vegne; appen kjører det samme nettstedet og samler ikke inn noe mer.',
         where: 'USA. Google er sertifisert under EU–US Data Privacy Framework og bruker også EUs standard personvernbestemmelser.',
       },
       github: {
@@ -4949,8 +5130,8 @@ const no = {
     storage: {
       title: '6. Informasjonskapsler og lagring på enheten din',
       lead: 'Vi lagrer bare det nettstedet trenger for å fungere, i tillegg til punktene her:',
-      session: 'En innloggingskapsel som holder deg innlogget.',
-      guest: 'For gjester: gjeste-id-en, navnet og identitetsnøkkelen som holder deg knyttet til spillene dine. Nøkkelen varer i {{guestTokenDays}} dager fra siste besøk, og «Glem meg» fjerner alt sammen.',
+      session: 'En innloggingskapsel som holder deg innlogget, og mens du er innlogget, en kopi av listen over spillere du har blokkert, så chatten kan skjule dem før listen er lastet. Når du logger ut, fjernes kopien.',
+      guest: 'For gjester: gjeste-id-en, navnet og identitetsnøkkelen som holder deg knyttet til spillene dine, og listen over spillere du har blokkert. Nøkkelen varer i {{guestTokenDays}} dager fra siste besøk, og «Glem meg» fjerner alt sammen.',
       preferences: 'Språk, tema, lyd og lignende valg, og hvilke meldinger du har lukket.',
       lastAccount: 'Bare hvis du krysser av for «Husk meg» når du logger inn med e-postadresse og passord: den adressen, så innloggingssiden kan foreslå den neste gang. Den blir liggende på enheten etter at du logger ut; å logge inn uten «Husk meg», eller å slette dette nettstedets data i nettleseren, fjerner den.',
       google: 'Googles samtykkekapsel, beskrevet i punkt 5.',
@@ -4960,9 +5141,9 @@ const no = {
     rights: {
       title: '7. Rettighetene dine',
       lead: 'Du har rett til innsyn i opplysningene dine, til å få dem rettet eller slettet, til å begrense behandlingen, til å få dem i et maskinlesbart format, og til å protestere mot behandling som bygger på vår berettigede interesse. Der vi bygger på samtykke, kan du trekke det tilbake når som helst; det påvirker ikke det vi gjorde før.',
-      export: 'Last ned dataene dine: knappen «Last ned dataene mine» i delen «Dataene dine» på profilsiden gir deg en JSON-fil med profil, innstillinger, tilkoblede innloggingstjenester, spill, lobbyer du har opprettet, kjøp og oversikter fra kassen, venner, venneforespørsler, invitasjoner, varsler, tilbakemeldinger, rapporter du har sendt, prestasjoner og pushabonnementer.',
+      export: 'Last ned dataene dine: knappen «Last ned dataene mine» i delen «Dataene dine» på profilsiden gir deg en JSON-fil med profil, innstillinger, tilkoblede innloggingstjenester, spill, lobbyer du har opprettet, kjøp og oversikter fra kassen, venner, venneforespørsler, spillere du har blokkert, invitasjoner, varsler, tilbakemeldinger, rapporter du har sendt, prestasjoner og pushabonnementer.',
       correct: 'Rett opplysningene dine: rediger profilen, også e-postadressen, på profilsiden.',
-      delete: 'Slett kontoen din fra profilsiden; vi bekrefter på e-post. Da fjernes også profilbildet ditt, navnet ditt erstattes med «Deleted player» i andre spilleres spillhistorikk og reprise, tilbakemeldinger du har sendt, beholdes uten e-postadressen og kontoen din, kopien av dem i Discord-kanalen vår for tilbakemeldinger slettes, og et eventuelt abonnement avsluttes og kundeoppføringen din hos Stripe slettes. Rapporter du har sendt, og rapporter om deg, mister koblingen til kontoen din; kopien av det rapporterte innholdet blir værende så lenge rapporten lagres.',
+      delete: 'Slett kontoen din på profilsiden, i nettleseren eller i Android-appen: velg «Slett konto» under «Faresone», og bekreft med lenken vi sender deg på e-post. Da fjernes også profilbildet ditt, navnet ditt erstattes med «Deleted player» i andre spilleres spillhistorikk og reprise, tilbakemeldinger du har sendt, beholdes uten e-postadressen og kontoen din, kopien av dem i Discord-kanalen vår for tilbakemeldinger slettes, og et eventuelt abonnement avsluttes og kundeoppføringen din hos Stripe slettes. Rapporter du har sendt, og rapporter om deg, mister koblingen til kontoen din; kopien av det rapporterte innholdet blir værende så lenge rapporten lagres. Hvis du ikke lenger kan logge inn, skriv til {{email}} fra adressen kontoen er registrert med, så sletter vi den for deg.',
       forget: 'Gjester: «Glem meg» i gjestemenyen sletter gjesteoppføringen og plassene dine i spill, erstatter navnet ditt med «Deleted player» i andre spilleres historikk, og fjerner gjestedataene på denne enheten. Hvis du sitter i et pågående spill, må du fullføre eller forlate det først.',
       email: 'Alt annet, også opplysninger nedlastingen ikke inneholder, sender du til {{email}}. Vi svarer innen én måned og kan be deg bekrefte at kontoen er din.',
       required: 'Du trenger en e-postadresse og et passord, eller en innloggingstjeneste, for å opprette en konto; som gjest kan du spille uten noen av delene. Vi tar ingen avgjørelser om deg som bare bygger på automatisert behandling.',
@@ -5003,6 +5184,7 @@ const no = {
     ctaManage: 'Administrer abonnement',
     ctaLoading: 'Åpner kassen...',
     ctaNote: 'Si opp når som helst. Har du en rabattkode? Skriv den inn på betalingssiden.',
+    playAppNotice: 'Premium kan kjøpes på boardly.online i nettleseren.',
     withdrawalTitle: 'Din angrerett',
     withdrawalBody: 'Du har 14 dagers angrerett fra den dagen du kjøper Premium, uten å oppgi noen grunn. Angrer du, betaler vi tilbake alt du har betalt for kjøpet innen 14 dager etter at vi fikk beskjeden, med samme betalingsmåte og uten gebyr.',
     withdrawalHow: 'For å angre sender du en e-post til support@boardly.online, eller bruker angreskjemaet på siden om angrerett.',
@@ -5078,6 +5260,7 @@ const no = {
       q2: {
         question: 'Hva skjer hvis jeg sier opp?',
         answer: 'Premium er aktivt ut perioden du allerede har betalt for, og fornyes ikke etter det. Oppsigelse gjøres i faktureringsportalen på profilsiden din.',
+        answerApp: 'Premium er aktivt ut perioden du allerede har betalt for, og fornyes ikke etter det. Du kan si opp fra Premium-fanen på profilsiden din.',
       },
       q3: {
         question: 'Hvilken valuta blir jeg belastet i?',
@@ -5086,6 +5269,7 @@ const no = {
       q4: {
         question: 'Kan jeg bytte mellom månedlig og årlig?',
         answer: 'Ja. Åpne faktureringsportalen fra profilsiden din og bytt plan der; Link håndterer differansen for tiden du allerede har betalt.',
+        answerApp: 'Ja, på boardly.online i nettleseren: åpne faktureringsportalen fra profilsiden din og bytt plan der. Link håndterer differansen for tiden du allerede har betalt.',
       },
       q5: {
         question: 'Tar dere imot rabattkoder?',
@@ -5104,6 +5288,7 @@ const no = {
     soldThroughLink: 'Premium selges gjennom Link: Sold through Link, LLC, et selskap i Stripe-konsernet, er «merchant of record» for kjøpet. Link tar imot betalingen og sender kvittering, faktura og eventuelt varsel om refusjon på e-post. Du angrer hos oss slik det står nedenfor, og vi betaler tilbake gjennom Link.',
     laterTitle: 'Etter de 14 dagene',
     later: 'Du kan si opp når som helst i faktureringsportalen på profilsiden din. En månedsplan løper da ut måneden du har betalt for. Sier du opp en årsplan før tiden, betaler vi tilbake de ubrukte hele månedene. Sier du opp i Link-kontoen din på link.com, eller sletter den kontoen, gjelder Links vilkår i stedet.',
+    laterApp: 'Du kan si opp når som helst fra Premium-fanen på profilsiden din. En månedsplan løper da ut måneden du har betalt for. Sier du opp en årsplan før tiden, betaler vi tilbake de ubrukte hele månedene. Sier du opp i Link-kontoen din på link.com, eller sletter den kontoen, gjelder Links vilkår i stedet.',
     howTitle: 'Slik angrer du',
     howIntro: 'Gi oss en tydelig beskjed om at du vil gå fra avtalen, før fristen på 14 dager er ute. Du kan bruke skjemaet nedenfor, men du må ikke.',
     howEmailLabel: 'På e-post til',
@@ -5145,7 +5330,7 @@ const no = {
       title: '1. Om vilkårene',
       scope: 'Vilkårene er avtalen mellom deg og oss om bruk av boardly.online: når du spiller som gjest, når du har en konto, og når du kjøper Boardly Premium. Hvordan vi behandler personopplysninger, står i personvernerklæringen.',
       accept: 'Du godtar vilkårene når du oppretter en konto eller kjøper Premium. Spiller du som gjest, gjelder de samme reglene for deg.',
-      languages: 'Vilkårene finnes på norsk, engelsk, russisk og ukrainsk og har samme innhold på alle språkene. Skulle språkversjonene si noe forskjellig, eller et vilkår være uklart, tolkes det slik det er best for deg som forbruker.',
+      languages: 'Vilkårene finnes på norsk, engelsk, russisk og ukrainsk og har samme innhold på alle språkene. De finnes også på tysk og spansk, som oversettelser. Skulle språkversjonene si noe forskjellig, eller et vilkår være uklart, tolkes det slik det er best for deg som forbruker.',
       version: 'Datoen nederst viser når denne versjonen gjelder fra, og den endres bare når teksten endres. Du kan lagre eller skrive ut siden for å ta vare på en kopi.',
     },
     accounts: {
@@ -5233,7 +5418,7 @@ const no = {
       body: 'Spørsmål om vilkårene, meldinger om innhold og klager sender du til',
     },
     updated: 'Sist oppdatert: {{date}}',
-    changeNote: 'Nytt i denne versjonen: regelen i punkt 2 om kontoer som ikke brukes, som gjelder fra {{inactiveFrom}}. Ingenting annet er endret.',
+    changeNote: 'Nytt i denne versjonen: punkt 1 nevner oversettelsene til tysk og spansk. Regelen i punkt 2 om kontoer som ikke brukes, som kom i forrige versjon, gjelder fra {{inactiveFrom}}. Ingenting annet er endret.',
     premium: {
       title: '3. Boardly Premium: abonnement og angrerett',
       price: 'Boardly Premium er et betalt abonnement som faktureres månedlig eller årlig. Prisen står på Premium-siden i amerikanske dollar og er full pris: eventuell merverdiavgift eller salgsskatt for landet ditt er inkludert, og Link krever den inn i kassen. Betaler du i en annen valuta, inkluderer vekslingskursen et vekslingsgebyr på 2 til 4 %, og på betalingssiden kan du velge å betale i amerikanske dollar uten dette gebyret.',
@@ -5429,6 +5614,16 @@ const no = {
       notFound: 'Dette kan ikke lenger rapporteres.',
       self: 'Du kan ikke rapportere deg selv.',
     },
+  },
+  blockedPlayers: {
+    title: 'Blokkerte spillere',
+    empty: 'Du har ikke blokkert noen.',
+    unblock: 'Opphev blokkering',
+    blockedOn: 'Blokkert {{date}}',
+    loadFailed: 'Kunne ikke laste inn de blokkerte spillerne dine.',
+    retry: 'Prøv igjen',
+    hiddenText: 'Fra en spiller du har blokkert',
+    show: 'Vis',
   },
   discordLink: {
     title: 'Koble Boardly til Discord',

@@ -61,7 +61,7 @@ export default function HowToPlayYahtzeeGuide() {
         title="How to Play Yahtzee Online with Friends"
         subtitle="6 min read · Free to play on Boardly · 1–4 players"
         question="How do you play Yahtzee online with friends?"
-        answer="On your turn you roll five dice up to three times, holding whichever you want to keep between rolls, then commit the result to one of the categories on your scorecard – and when every category is filled, the highest total wins."
+        answer="On your turn you roll five dice up to three times, holding whichever you want to keep between rolls, then commit the result to one of the categories on your scorecard – and when every category is filled, the highest total wins, or players who share it tie."
         accentColor="var(--bd-sky)"
         cta={{ href: '/games/yahtzee/lobbies', label: 'Play Yahtzee Now', detail: 'Ready to put this into practice?' }}
         related={[
@@ -76,7 +76,7 @@ export default function HowToPlayYahtzeeGuide() {
             { mark: 'yes', text: '1–4 players (play solo against AI or with friends)' },
             { mark: 'yes', text: 'A browser — desktop, tablet, or mobile' },
             { mark: 'yes', text: 'No account required (guest play available)' },
-            { mark: 'yes', text: 'Free — no ads, no download' },
+            { mark: 'yes', text: 'Free — no download' },
           ]} />
         </GuideSection>
 
@@ -85,7 +85,7 @@ export default function HowToPlayYahtzeeGuide() {
             Each turn, you roll five dice. You may re-roll any or all of them up to two more times (three rolls total). After your rolls, you must assign your result to one of 15 scoring categories. Once a category is filled, it cannot be changed, and that includes Yahtzee itself: five of a kind scores 50 once, and a second one has to go somewhere else. The game ends when all 15 categories are filled by every player, or all 9 of them in short mode.
           </p>
           <p className="text-sm leading-relaxed" style={{ color: 'var(--bd-ink-soft)' }}>
-            The player with the highest total score wins. A bonus of 35 points is awarded if your upper section score totals 63 or more. Short mode, the turn timer and bot opponents are chosen when you create a game from the <Link href="/games/yahtzee" className="font-semibold underline transition-colors hover:text-bd-coral" style={{ color: 'var(--bd-ink)' }}>Yahtzee game page</Link>.
+            The player with the highest total score wins, and players who share the top total tie. A bonus of 35 points is awarded if your upper section score totals 63 or more. Short mode, the turn timer and bot opponents are chosen when you create a game from the <Link href="/games/yahtzee" className="font-semibold underline transition-colors hover:text-bd-coral" style={{ color: 'var(--bd-ink)' }}>Yahtzee game page</Link>.
           </p>
         </GuideSection>
 

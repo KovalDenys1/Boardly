@@ -1,6 +1,26 @@
+import type { Page } from '@playwright/test'
 import { test, expect } from './support/fixtures'
 import { contextForGuest, createGuestLobby, joinAsGuest } from './support/lobby'
 import { watchRealtimeSubscription } from './support/realtime'
+
+/**
+ * A guest who has not accepted the terms gets the consent panel where the composer
+ * would be (#1466), and the server answers a chat post 403 TERMS_REQUIRED until they
+ * do. The opponent is minted fresh by every test, so it is the one that writes: the
+ * cached host may have accepted on an earlier run, and the panel would then never show.
+ */
+async function acceptTermsInChat(page: Page) {
+  const accept = page.getByRole('button', { name: /accept and chat/i })
+  await expect(accept).toBeVisible({ timeout: 20_000 })
+  await expect(page.getByPlaceholder(/type a message/i)).toHaveCount(0)
+  await accept.click()
+  await expect(page.getByPlaceholder(/type a message/i)).toBeVisible()
+}
+
+/** The chat panel is open for a reader, whichever of the composer or the consent panel it shows. */
+function chatFooter(page: Page) {
+  return page.getByPlaceholder(/type a message/i).or(page.getByRole('button', { name: /accept and chat/i }))
+}
 
 /**
  * The two-window check that used to be done by hand.
@@ -14,7 +34,10 @@ import { watchRealtimeSubscription } from './support/realtime'
  */
 test('a chat message written in one browser arrives in another', async ({ browser, request, baseURL }) => {
   const url = baseURL!
-  const { code, host } = await createGuestLobby(request, 'tic_tac_toe', url, 2)
+  // A role per test: one creator may hold only one open lobby, and none of these finishes its game.
+  const { code, host } = await createGuestLobby(request, 'tic_tac_toe', url, 2, undefined, {
+    hostRole: 'chat-relay-host',
+  })
   const opponent = await joinAsGuest(request, code, url)
 
   const hostContext = await contextForGuest(browser, host)
@@ -47,20 +70,20 @@ test('a chat message written in one browser arrives in another', async ({ browse
       await page.getByRole('button', { name: /chat/i }).first().click()
     }
 
-    const message = `hello from the host ${Date.now()}`
-    const hostChat = hostPage.getByPlaceholder(/type a message/i)
-    await expect(hostChat).toBeVisible()
-    await expect(opponentPage.getByPlaceholder(/type a message/i)).toBeVisible()
+    const message = `hello from the opponent ${Date.now()}`
+    await expect(chatFooter(hostPage)).toBeVisible()
+    await acceptTermsInChat(opponentPage)
+    const opponentChat = opponentPage.getByPlaceholder(/type a message/i)
 
-    await hostChat.fill(message)
-    await hostChat.press('Enter')
+    await opponentChat.fill(message)
+    await opponentChat.press('Enter')
 
     // The sender sees it at once: it is added locally under a temp id.
-    await expect(hostPage.getByText(message)).toBeVisible()
+    await expect(opponentPage.getByText(message)).toBeVisible()
 
     // The actual assertion. The other browser received only a signal on the
     // topic and had to fetch the body from GET /api/lobby/[code]/chat.
-    await expect(opponentPage.getByText(message)).toBeVisible({ timeout: 20_000 })
+    await expect(hostPage.getByText(message)).toBeVisible({ timeout: 20_000 })
   } finally {
     await hostContext.close()
     await opponentContext.close()
@@ -75,7 +98,9 @@ test('a chat message written in one browser arrives in another', async ({ browse
  */
 test('every player in a lobby can resolve its realtime topic, and nobody else can', async ({ request, baseURL }) => {
   const url = baseURL!
-  const { code, host } = await createGuestLobby(request, 'tic_tac_toe', url, 2)
+  const { code, host } = await createGuestLobby(request, 'tic_tac_toe', url, 2, undefined, {
+    hostRole: 'chat-topic-host',
+  })
   const opponent = await joinAsGuest(request, code, url)
 
   for (const player of [host, opponent]) {
@@ -102,7 +127,9 @@ test('every player in a lobby can resolve its realtime topic, and nobody else ca
  */
 test('a message is still there after a reload', async ({ browser, request, baseURL }) => {
   const url = baseURL!
-  const { code, host } = await createGuestLobby(request, 'tic_tac_toe', url, 2)
+  const { code, host } = await createGuestLobby(request, 'tic_tac_toe', url, 2, undefined, {
+    hostRole: 'chat-history-host',
+  })
   const opponent = await joinAsGuest(request, code, url)
 
   const hostContext = await contextForGuest(browser, host)
@@ -112,34 +139,34 @@ test('a message is still there after a reload', async ({ browser, request, baseU
     const hostPage = await hostContext.newPage()
     const opponentPage = await opponentContext.newPage()
 
-    const hostSubscribed = watchRealtimeSubscription(hostPage, code)
+    const opponentSubscribed = watchRealtimeSubscription(opponentPage, code)
     await hostPage.goto(`/lobby/${code}`)
     await opponentPage.goto(`/lobby/${code}`)
-    await hostSubscribed
+    await opponentSubscribed
 
-    await hostPage.getByRole('button', { name: /chat/i }).first().click()
+    await opponentPage.getByRole('button', { name: /chat/i }).first().click()
     const message = `still here after a reload ${Date.now()}`
-    const hostChat = hostPage.getByPlaceholder(/type a message/i)
-    await expect(hostChat).toBeVisible()
+    await acceptTermsInChat(opponentPage)
+    const opponentChat = opponentPage.getByPlaceholder(/type a message/i)
 
     // Wait for the server's answer, not for the message appearing on the
     // sender's screen: that copy is optimistic and shows up before the POST has
     // been handled, so reloading on it races the write into the store.
-    const persisted = hostPage.waitForResponse(
+    const persisted = opponentPage.waitForResponse(
       (response) =>
         response.url().includes(`/api/lobby/${code}/chat`) &&
         response.request().method() === 'POST' &&
         response.ok()
     )
-    await hostChat.fill(message)
-    await hostChat.press('Enter')
+    await opponentChat.fill(message)
+    await opponentChat.press('Enter')
     await persisted
 
     // A reload throws away everything the page held in memory, so whatever
     // comes back was read from the store.
-    await opponentPage.reload()
-    await opponentPage.getByRole('button', { name: /chat/i }).first().click()
-    await expect(opponentPage.getByText(message)).toBeVisible({ timeout: 20_000 })
+    await hostPage.reload()
+    await hostPage.getByRole('button', { name: /chat/i }).first().click()
+    await expect(hostPage.getByText(message)).toBeVisible({ timeout: 20_000 })
   } finally {
     await hostContext.close()
     await opponentContext.close()

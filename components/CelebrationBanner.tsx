@@ -1,8 +1,17 @@
 'use client'
 
 import React, { useEffect, useState } from 'react'
-import { CelebrationEvent, getCategoryDisplayName } from '@/lib/celebrations'
-import { useTranslation } from '@/lib/i18n-helpers'
+import type { CelebrationEvent } from '@/lib/celebrations'
+import type { YahtzeeCategory } from '@/lib/yahtzee'
+import { useTranslation, type TranslationKeys } from '@/lib/i18n-helpers'
+
+const TITLE_KEYS: Record<CelebrationEvent['type'], TranslationKeys> = {
+  yahtzee: 'yahtzee.messages.celebrations.yahtzee',
+  largeStraight: 'yahtzee.messages.celebrations.largeStraight',
+  fullHouse: 'yahtzee.messages.celebrations.fullHouse',
+  perfectRoll: 'yahtzee.messages.celebrations.fourOfKind',
+  highScore: 'yahtzee.messages.celebrations.highScore',
+}
 
 interface CelebrationBannerProps {
   event: CelebrationEvent | null
@@ -80,13 +89,13 @@ export default function CelebrationBanner({ event, onComplete }: CelebrationBann
   return (
     <div
       className={`
-        pointer-events-none fixed top-20 left-1/2 z-50 -translate-x-1/2
+        yz-celebration pointer-events-none fixed left-1/2 z-50 -translate-x-1/2
         ${visible ? 'animate-bounce-in opacity-100' : 'animate-fade-out opacity-0'}
       `}
     >
       <div
         className="w-[min(92vw,460px)] rounded-bd-lg border px-4 py-3 shadow-[0_18px_40px_rgba(41,37,36,0.18)] backdrop-blur-xs"
-        style={{ borderColor: tone.border, background: tone.gradient }}
+        style={{ borderColor: tone.border, background: `${tone.gradient}, var(--bd-card)` }}
       >
         <div className="flex items-center gap-3">
           <div className={`flex h-14 w-14 shrink-0 items-center justify-center rounded-[18px] text-[30px] shadow-xs ${tone.icon}`}>
@@ -94,13 +103,13 @@ export default function CelebrationBanner({ event, onComplete }: CelebrationBann
           </div>
 
           <div className="min-w-0 flex-1">
-            <div className="bd-kicker">{t('yahtzee.ui.hotHand')}</div>
+            <div className="text-xs font-semibold text-bd-ink-soft">{event.playerName ?? t('yahtzee.ui.hotHand')}</div>
             <h3 className="mt-0.5 text-lg font-semibold leading-tight text-bd-ink sm:text-xl sm:leading-7">
-              {event.title}
+              {t(TITLE_KEYS[event.type])}
             </h3>
             <p className="mt-1 text-sm leading-relaxed text-bd-ink-soft">
               {event.category && (
-                <span className="font-semibold text-bd-ink">{getCategoryDisplayName(event.category)} </span>
+                <span className="font-semibold text-bd-ink">{t(`yahtzee.categories.${event.category as YahtzeeCategory}`)} </span>
               )}
               {t('celebration.scorePoints', { count: event.score })}
             </p>

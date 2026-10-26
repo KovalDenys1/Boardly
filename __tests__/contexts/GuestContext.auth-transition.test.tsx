@@ -12,6 +12,7 @@ const mockUseSession = useSession as jest.MockedFunction<typeof useSession>
 const GUEST_ID_KEY = 'boardly_guest_id'
 const GUEST_NAME_KEY = 'boardly_guest_name'
 const GUEST_TOKEN_KEY = 'boardly_guest_token'
+const BLOCKED_PLAYERS_KEY = 'boardly_blocked_players'
 
 describe('GuestContext auth transitions', () => {
   const originalFetch = global.fetch
@@ -122,8 +123,10 @@ describe('GuestContext auth transitions', () => {
         expect.objectContaining({
           method: 'POST',
           headers: {
+            'Content-Type': 'application/json',
             'X-Guest-Token': 'token-2',
           },
+          body: JSON.stringify({ from: null }),
         })
       )
     })
@@ -134,5 +137,40 @@ describe('GuestContext auth transitions', () => {
     expect(window.localStorage.getItem(GUEST_ID_KEY)).toBeNull()
     expect(window.localStorage.getItem(GUEST_NAME_KEY)).toBeNull()
     expect(window.localStorage.getItem(GUEST_TOKEN_KEY)).toBeNull()
+  })
+
+  it('keeps the blocked players when a guest signs in, so they can move to the account', async () => {
+    const blocked = JSON.stringify([{ id: 'u2', username: 'Rival', blockedAt: 'x' }])
+    window.localStorage.setItem(GUEST_ID_KEY, 'guest-3')
+    window.localStorage.setItem(GUEST_NAME_KEY, 'Auth Guest')
+    window.localStorage.setItem(GUEST_TOKEN_KEY, 'token-3')
+    window.localStorage.setItem(BLOCKED_PLAYERS_KEY, blocked)
+    mockFetch.mockResolvedValue({
+      ok: true,
+      json: async () => ({ guestId: 'guest-3', guestName: 'Auth Guest', guestToken: 'token-3' }),
+    })
+
+    const { result, rerender } = renderHook(() => useGuest(), { wrapper })
+    await waitFor(() => expect(result.current.isGuest).toBe(true))
+
+    setSessionStatus('authenticated')
+    rerender()
+
+    await waitFor(() => expect(result.current.isGuest).toBe(false))
+    await waitFor(() => expect(window.localStorage.getItem(GUEST_TOKEN_KEY)).toBeNull())
+    expect(window.localStorage.getItem(BLOCKED_PLAYERS_KEY)).toBe(blocked)
+  })
+
+  it('keeps the blocked players when a signed-in visit finds only leftover guest keys', async () => {
+    const blocked = JSON.stringify([{ id: 'u2', username: 'Rival', blockedAt: 'x' }])
+    window.localStorage.setItem(GUEST_NAME_KEY, 'Leftover')
+    window.localStorage.setItem(BLOCKED_PLAYERS_KEY, blocked)
+    setSessionStatus('authenticated')
+    mockFetch.mockResolvedValue({ ok: false, status: 500, json: async () => ({}) })
+
+    renderHook(() => useGuest(), { wrapper })
+
+    await waitFor(() => expect(window.localStorage.getItem(GUEST_NAME_KEY)).toBeNull())
+    expect(window.localStorage.getItem(BLOCKED_PLAYERS_KEY)).toBe(blocked)
   })
 })

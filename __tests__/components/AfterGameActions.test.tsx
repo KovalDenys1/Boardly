@@ -8,8 +8,8 @@ jest.mock('@/lib/i18n-helpers', () => ({
 }))
 
 jest.mock('@/components/GuestConversionNudge', () => {
-  return function MockNudge() {
-    return <div data-testid="guest-nudge" />
+  return function MockNudge({ hasReplay }: { hasReplay?: boolean }) {
+    return <div data-testid="guest-nudge" data-has-replay={String(Boolean(hasReplay))} />
   }
 })
 
@@ -72,26 +72,16 @@ describe('AfterGameActions (#982)', () => {
     expect(mockTrackDiscordCta).toHaveBeenCalledWith('after_game', 'yahtzee')
   })
 
-  it('shows the guest nudge only for a guest with a registerUrl', () => {
-    const { unmount } = render(
-      <AfterGameActions gameType="memory" isGuest registerUrl="/auth/register" />
-    )
-    expect(screen.getByTestId('guest-nudge')).toBeTruthy()
-    unmount()
-
-    render(<AfterGameActions gameType="memory" isGuest />)
+  it('shows a guest who finished a game no signup prompt (#1515)', () => {
+    render(<AfterGameActions gameType="memory" inviteCode="AB12" gameId="game-42" isGuest />)
     expect(screen.queryByTestId('guest-nudge')).toBeNull()
-  })
-
-  it('never shows the guest nudge to a registered player', () => {
-    render(<AfterGameActions gameType="alias" isRegistered registerUrl="/auth/register" />)
-    expect(screen.queryByTestId('guest-nudge')).toBeNull()
+    expect(screen.getByText('game.ui.playAgainWithFriends')).toBeTruthy()
     expect(screen.getByText('game.ui.discordAfterGame')).toBeTruthy()
   })
 
   it('offers the push ask to a registered player and never to a guest (#984)', () => {
     const { unmount } = render(
-      <AfterGameActions gameType="alias" isRegistered registerUrl="/auth/register" />
+      <AfterGameActions gameType="alias" isRegistered />
     )
     const nudge = screen.getByTestId('push-nudge')
     expect(nudge.getAttribute('data-source')).toBe('after_game')
@@ -99,17 +89,43 @@ describe('AfterGameActions (#982)', () => {
     expect(screen.queryByTestId('guest-nudge')).toBeNull()
     unmount()
 
-    // A guest has no account to hang a subscription on, so the two boxes can never coexist.
-    render(<AfterGameActions gameType="alias" isGuest registerUrl="/auth/register" />)
+    // A guest has no account to hang a subscription on.
+    render(<AfterGameActions gameType="alias" isGuest />)
     expect(screen.queryByTestId('push-nudge')).toBeNull()
-    expect(screen.getByTestId('guest-nudge')).toBeTruthy()
   })
 
   it('gives a spectator (neither guest nor registered) share and Discord only', () => {
-    render(<AfterGameActions gameType="guess_the_spy" inviteCode="AB12" registerUrl="/auth/register" />)
+    render(<AfterGameActions gameType="guess_the_spy" inviteCode="AB12" />)
     expect(screen.getByText('game.ui.playAgainWithFriends')).toBeTruthy()
     expect(screen.getByText('game.ui.discordAfterGame')).toBeTruthy()
     expect(screen.queryByTestId('guest-nudge')).toBeNull()
     expect(screen.queryByTestId('push-nudge')).toBeNull()
+  })
+
+  describe('Watch replay (#1421)', () => {
+    const replayLink = () => screen.queryByRole('link', { name: 'profile.gameReplay.watch' }) as HTMLAnchorElement | null
+
+    it('links a signed-in player of a finished game to its replay', () => {
+      render(<AfterGameActions gameType="memory" gameId="game-42" isRegistered />)
+      expect(replayLink()?.getAttribute('href')).toBe('/replay/game-42')
+    })
+
+    it('links a guest to the replay of the game they just played (#1440)', () => {
+      render(<AfterGameActions gameType="memory" gameId="game-42" isGuest />)
+      expect(replayLink()?.getAttribute('href')).toBe('/replay/game-42')
+    })
+
+    it('shows a spectator no replay link', () => {
+      render(<AfterGameActions gameType="memory" gameId="game-42" />)
+      expect(replayLink()).toBeNull()
+    })
+
+    it('needs the game id and a game the replay page can draw', () => {
+      const { unmount } = render(<AfterGameActions gameType="memory" isRegistered />)
+      expect(replayLink()).toBeNull()
+      unmount()
+      render(<AfterGameActions gameType="alias" gameId="game-42" isRegistered />)
+      expect(replayLink()).toBeNull()
+    })
   })
 })

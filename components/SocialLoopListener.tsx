@@ -8,8 +8,14 @@ import { useTranslation } from '@/lib/i18n-helpers'
 import { acquireRealtimeChannel, type LobbyChannelHandle } from '@/lib/lobby-channel-registry'
 import { fetchUserTopic } from '@/lib/user-realtime-topic-client'
 import { readLobbyInviteEvent, readRematchRequestEvent } from '@/lib/social-loop-events'
+import type { CueId } from '@/lib/sound-map'
 
 const EVENT_TTL_MS = 60000
+
+// No consumer of its own: the cue sounds only where a lobby or game page holds the engine, so content pages stay silent.
+function playSocialCue(cue: CueId) {
+  void import('@/lib/sound-engine').then(({ playCue }) => playCue(cue))
+}
 
 /**
  * Invite and rematch toasts, pushed to the user's own realtime topic.
@@ -47,6 +53,7 @@ export default function SocialLoopListener() {
       const dedupeKey = `invite:${invite.sequenceId || `${invite.lobbyCode}:${invite.actorId}`}`
       if (isDuplicateEvent(dedupeKey)) return
 
+      playSocialCue('social.invite')
       const message = t('toast.socialInviteMessage', {
         player: invite.actorName,
         lobby: invite.lobbyName,
@@ -71,9 +78,12 @@ export default function SocialLoopListener() {
     const showRematch = (payload: unknown) => {
       const rematch = readRematchRequestEvent(payload)
       if (!rematch) return
+      // Already on that lobby's page: its end screen shows the ask itself.
+      if (window.location.pathname === `/lobby/${rematch.lobbyCode}`) return
       const dedupeKey = `rematch:${rematch.sequenceId || `${rematch.lobbyCode}:${rematch.actorId}`}`
       if (isDuplicateEvent(dedupeKey)) return
 
+      playSocialCue('social.ask')
       const message = t('toast.socialRematchMessage', {
         player: rematch.actorName,
         lobby: rematch.lobbyName,

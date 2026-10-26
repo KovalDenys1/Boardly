@@ -5,7 +5,7 @@ import LanguageDetector from 'i18next-browser-languagedetector'
 // Only 'en' loads eagerly: the server always renders <html lang="en"> (see
 // app/layout.tsx) and htmlTag detection keeps the first client render aligned
 // with that SSR output, so 'en' resources are the only ones ever needed
-// before hydration. The other 3 locales (~340KB combined) are fetched on
+// before hydration. The other locales (~300-450KB of source each) are fetched on
 // demand by changeLanguageLazy, below, the moment a user's stored preference
 // actually needs them.
 import en from './locales/en'
@@ -98,8 +98,18 @@ async function loadLocaleResource(locale: Locale): Promise<void> {
     case 'ru':
       mod = await import('./locales/ru')
       break
-    default:
+    case 'de':
+      mod = await import('./locales/de')
+      break
+    case 'es':
+      mod = await import('./locales/es')
+      break
+    default: {
+      // 'en' is bundled eagerly; a new locale without a case above fails tsc here.
+      const preloaded: 'en' = locale
+      void preloaded
       return
+    }
   }
 
   i18n.addResourceBundle(
