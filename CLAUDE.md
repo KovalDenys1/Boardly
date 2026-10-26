@@ -546,7 +546,9 @@ comes. On 2026-09-20 one agent sat blocked behind three stacked prompts for over
 and had to be killed; the transcript had reached 3.6 MB.
 
 - **Launch with `--use-mock-keychain`.** Chromium then never asks. There is nothing in a
-  throwaway automation profile worth encrypting anyway.
+  throwaway automation profile worth encrypting anyway. The Playwright MCP gets it from
+  `~/.config/playwright-mcp/config.json` (`--config` in its user-scope entry, since 2026-10-27);
+  before that it launched without the flag.
 - A fresh `--user-data-dir` does not avoid this on its own - the prompt is about the
   keychain, not the profile.
 - If it happens anyway, the automation instance is safe to kill: its command line carries
