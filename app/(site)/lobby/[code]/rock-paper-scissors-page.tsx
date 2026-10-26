@@ -780,13 +780,15 @@ export default function RockPaperScissorsLobbyPage({ code, isSpectator = false, 
         )
     }
 
-    const activeTitle = isSpectator
-        ? readyCount === 1
-            ? t('games.rock_paper_scissors.playerLockedIn', { player: getDisplayName(rpsData.playersReady[0]) })
-            : t('games.rock_paper_scissors.bothChoosing')
-        : mySubmitted
-            ? t('games.rock_paper_scissors.waitingForPick', { player: opponentName })
-            : t('games.rock_paper_scissors.pickPrompt')
+    const activeTitle = readyCount >= 2
+        ? t('games.rock_paper_scissors.revealing')
+        : isSpectator
+            ? readyCount === 1
+                ? t('games.rock_paper_scissors.playerLockedIn', { player: getDisplayName(rpsData.playersReady[0]) })
+                : t('games.rock_paper_scissors.bothChoosing')
+            : mySubmitted
+                ? t('games.rock_paper_scissors.waitingForPick', { player: opponentName })
+                : t('games.rock_paper_scissors.pickPrompt')
 
     const finishedMessage = iWon
         ? t('games.rock_paper_scissors.youWin')

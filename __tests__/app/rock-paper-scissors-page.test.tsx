@@ -424,6 +424,50 @@ describe('RockPaperScissorsLobbyPage', () => {
     })
   })
 
+  // #1522: picking second put "Waiting for Bob to pick 2/2" next to Bob's LOCKED IN badge.
+  describe('the header with both picks in (#1522)', () => {
+    const withReady = (playersReady: string[]) => ({
+      id: 'game-1',
+      status: 'playing',
+      currentPlayerIndex: 0,
+      lastMoveAt: Date.now(),
+      players: [
+        { id: 'user-1', name: 'Alice' },
+        { id: 'user-2', name: 'Bob' },
+      ],
+      data: { mode: 'best-of-3', rounds: [], playerChoices: {}, scores: {}, playersReady, gameWinner: null },
+    })
+    const waitingTitles = () => screen.queryAllByText('games.rock_paper_scissors.waitingForPick')
+    const revealingTitles = () => screen.queryAllByText('games.rock_paper_scissors.revealing')
+
+    it('says the round is being revealed once this player picks second', async () => {
+      mockFetchWithGuest.mockResolvedValue({ ok: true, json: async () => buildLobbyResponse(withReady(['user-2'])) } as Response)
+      render(<RockPaperScissorsLobbyPage code="ABCD" />)
+      await waitFor(() => expect(screen.getAllByTestId('rps-board').length).toBeGreaterThan(0))
+      expect(screen.getAllByText('games.rock_paper_scissors.pickPrompt').length).toBeGreaterThan(0)
+
+      mockFetchWithGuest.mockImplementation(async (_url: string, init?: RequestInit) => {
+        if (init?.method === 'POST') return new Promise<Response>(() => {})
+        return { ok: true, json: async () => buildLobbyResponse(withReady(['user-2'])) } as Response
+      })
+      await act(async () => {
+        fireEvent.click(screen.getAllByTestId('rps-pick-rock')[0])
+      })
+
+      await waitFor(() => expect(revealingTitles().length).toBeGreaterThan(0))
+      expect(waitingTitles()).toHaveLength(0)
+    })
+
+    it('never says it waits for a player the state already has locked in', async () => {
+      mockFetchWithGuest.mockResolvedValue({ ok: true, json: async () => buildLobbyResponse(withReady(['user-1', 'user-2'])) } as Response)
+      render(<RockPaperScissorsLobbyPage code="ABCD" />)
+      await waitFor(() => expect(screen.getAllByTestId('rps-board').length).toBeGreaterThan(0))
+
+      expect(waitingTitles()).toHaveLength(0)
+      expect(revealingTitles().length).toBeGreaterThan(0)
+    })
+  })
+
   describe('a submit that fails (#995)', () => {
     /** Round 1 as the server resolved it while this player's request was out. */
     const resolvedRoundState = () => ({
