@@ -581,6 +581,7 @@ describe('TicTacToeLobbyPage – a host change carried by a read the next move o
       broadcastHandlers['game-update']?.({ payload: { action: 'state-change', gameId: 'game-1', payload: twoMarks } })
     })
     await act(async () => { await settleRealtime() })
+    await waitFor(() => expect(screen.getAllByRole('button', { name: 'cell A1' })[0].querySelector('.ttt-cell-coord')).toBeNull())
 
     // The read left after the host moved to user-1 and before the opponent's move.
     const hostMoved = buildLobbyResponse()
