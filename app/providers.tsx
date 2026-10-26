@@ -90,9 +90,8 @@ export default function Providers({
             <ToastProvider>
               <GlobalToaster position="top-right" />
               <DeferredGlobalEffects />
-              {/* The tour walks /games, /lobby and /profile, English-only past /games, so it starts on an English page. */}
-              {!pathLocale && <OnboardingModal />}
-              {!pathLocale && <TourOverlay />}
+              <OnboardingModal />
+              <TourOverlay />
               {children}
             </ToastProvider>
           </TourProvider>
