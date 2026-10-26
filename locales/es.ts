@@ -3441,6 +3441,7 @@ const es: TranslationWithPlurals = {
     termsAccept: 'Aceptar y chatear',
     termsPromptPlay: 'Antes de que otros jugadores vean lo que escribes, acepta las Condiciones del servicio y las Normas de la comunidad.',
     termsAcceptPlay: 'Aceptar',
+    termsCompactLead: 'Necesario antes de escribir:',
     termsFailed: 'No se pudo guardar. Inténtalo de nuevo.',
   },
   auth: {

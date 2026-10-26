@@ -3511,6 +3511,7 @@ const uk: TranslationWithPlurals = {
     termsAccept: 'Прийняти й спілкуватися',
     termsPromptPlay: 'Перш ніж інші гравці побачать ваш текст, прийміть Умови використання та Правила спільноти.',
     termsAcceptPlay: 'Прийняти',
+    termsCompactLead: 'Потрібно, перш ніж писати:',
     termsFailed: 'Не вдалося зберегти. Спробуйте ще раз.',
   },
   auth: {

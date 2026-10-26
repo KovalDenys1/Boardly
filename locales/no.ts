@@ -3417,6 +3417,7 @@ const no = {
     termsAccept: 'Godta og chat',
     termsPromptPlay: 'Før andre spillere ser det du skriver, må du godta bruksvilkårene og fellesskapsreglene.',
     termsAcceptPlay: 'Godta',
+    termsCompactLead: 'Kreves før du skriver:',
     termsFailed: 'Kunne ikke lagre det. Prøv igjen.',
   },
   auth: {

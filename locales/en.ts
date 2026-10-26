@@ -3417,6 +3417,7 @@ const en = {
     termsAccept: 'Accept and chat',
     termsPromptPlay: 'Before other players see what you type, accept the Terms of Use and the Community Rules.',
     termsAcceptPlay: 'Accept',
+    termsCompactLead: 'Needed before you type:',
     termsFailed: 'Could not save that. Try again.',
   },
   auth: {

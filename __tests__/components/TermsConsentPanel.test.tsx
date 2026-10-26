@@ -17,10 +17,11 @@ describe('TermsConsentPanel', () => {
     expect(screen.getByRole('button', { name: 'chat.termsAcceptPlay' })).toBeTruthy()
   })
 
-  it('keeps the sentence as the group name and both links in the compact row', () => {
+  it('keeps the sentence as the group name and shows a lead and both links in the compact row', () => {
     render(<TermsConsentPanel onAccept={async () => true} context="play" compact />)
     expect(screen.getByRole('group', { name: 'chat.termsPromptPlay' })).toBeTruthy()
     expect(screen.getByText('chat.termsPromptPlay').className).toContain('sr-only')
+    expect(screen.getByText('chat.termsCompactLead')).toBeTruthy()
     expect(screen.getByRole('link', { name: 'chat.termsTerms' }).getAttribute('href')).toBe('/terms')
     expect(screen.getByRole('link', { name: 'chat.termsRules' }).getAttribute('href')).toBe('/rules')
   })

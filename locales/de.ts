@@ -3429,6 +3429,7 @@ const de: TranslationWithPlurals = {
     termsAccept: 'Akzeptieren und chatten',
     termsPromptPlay: 'Bevor andere Spieler sehen, was du schreibst, akzeptiere die Nutzungsbedingungen und die Community-Regeln.',
     termsAcceptPlay: 'Akzeptieren',
+    termsCompactLead: 'Nötig, bevor du schreibst:',
     termsFailed: 'Das konnte nicht gespeichert werden. Bitte versuch es noch einmal.',
   },
   auth: {

@@ -81,10 +81,12 @@ export default function TermsConsentPanel({
   if (compact) {
     return (
       <div role="group" aria-labelledby={promptId} tabIndex={-1} className={`terms-consent focus:outline-hidden ${className}`} style={style}>
-        {/* The sentence is the group's name for a screen reader; on screen the two links beside Accept say it. */}
         <p id={promptId} className="sr-only">{prompt}</p>
         <div className="flex items-center gap-3">
-          <div className="flex min-w-0 flex-1 flex-wrap gap-x-3 text-xs leading-snug font-semibold">{links}</div>
+          <div className="flex min-w-0 flex-1 flex-wrap items-baseline gap-x-3 text-xs leading-snug font-semibold">
+            <span aria-hidden="true" className="font-normal text-bd-ink-muted">{t('chat.termsCompactLead')}</span>
+            {links}
+          </div>
           {button}
         </div>
         {failed}
