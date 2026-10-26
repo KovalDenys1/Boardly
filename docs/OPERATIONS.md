@@ -800,6 +800,15 @@ the read-outs do. The event is still written at most once a minute per instance,
 request flagged in that minute, so counts are a floor. Read it with
 `select "occurredAt", payload from "OperationalEvents" where "eventName" = 'botid_flagged' order by 1`.
 
+**Read-out 2026-10-26: monitor mode is permanent.** 14–25.10, with the payload: 9 flags against
+120 new guests, every one `isBot: true` with `challengeHeaders: complete`, so the challenge ran and
+BotID still said bot. Seven were mobile or desktop Chrome, Edge and Safari, and the guests minted
+at the same second have 1–8 `Players` rows: people who went on to play, one of them over 20 minutes
+on 18.10. Two were `headless` from Norway, which is our own automation. Enforcing would refuse
+about one new guest in twenty, and the rate limits already cap what a script can mint. So
+`BOTID_MODE=monitor` stays as a signal and is not a pending step; read it only if guest creation
+spikes.
+
 
 Vercel BotID, **Basic** level, on `POST /api/auth/register`, `POST /api/auth/guest-session` and a
 token-less `POST /api/lobby/<code>/join-guest` - the requests that mint an account or a guest.
