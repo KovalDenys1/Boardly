@@ -4,6 +4,9 @@ import { resolveBoundedRuleNumber, getStringField } from './shared-helpers'
 export type LiarsPartyPhase = 'claim' | 'challenge' | 'reveal'
 export type LiarsPartyChallengeDecision = 'challenge' | 'believe'
 
+/** From the reveal to Next Round: the verdict, the vote rows and the scoreboard land, then a second to read them. */
+export const LIARS_REVEAL_HOLD_MS = 3_000
+
 export interface LiarsPartyClaim {
   playerId: string
   text: string
@@ -51,6 +54,8 @@ export interface LiarsPartyGameData {
   challengeVotes: LiarsPartyChallengeVote[]
   submittedPlayerIds: string[]
   currentRoundResolved: boolean
+  /** Server time Next Round is taken from; null outside the reveal, absent on a reveal saved before the hold existed. */
+  advanceOpensAt?: number | null
   roundResults: LiarsPartyRoundResult[]
   scores: Record<string, number>
   strikes: Record<string, number>
@@ -115,6 +120,7 @@ export class LiarsPartyGame extends GameEngine {
       challengeVotes: [],
       submittedPlayerIds: [],
       currentRoundResolved: false,
+      advanceOpensAt: null,
       roundResults: [],
       scores: {},
       strikes: {},
@@ -147,6 +153,7 @@ export class LiarsPartyGame extends GameEngine {
     data.challengeVotes = []
     data.submittedPlayerIds = []
     data.currentRoundResolved = false
+    data.advanceOpensAt = null
     data.roundResults = []
     data.scores = {}
     data.strikes = {}
@@ -214,7 +221,7 @@ export class LiarsPartyGame extends GameEngine {
     }
 
     if (data.phase === 'reveal') {
-      return move.type === 'advance-round'
+      return move.type === 'advance-round' && !this.isRevealHeld(data, Date.now())
     }
 
     return false
@@ -242,7 +249,7 @@ export class LiarsPartyGame extends GameEngine {
       this.state.lastMoveAt = nowMs
 
       if (this.getCurrentRoundVoterIds(data).length === 0) {
-        data.phase = 'reveal'
+        this.enterReveal(data, nowMs)
       }
       return
     }
@@ -261,8 +268,7 @@ export class LiarsPartyGame extends GameEngine {
       data.submittedPlayerIds.push(move.playerId)
 
       if (data.submittedPlayerIds.length >= this.getCurrentRoundVoterIds(data).length) {
-        data.phase = 'reveal'
-        data.submittedPlayerIds = []
+        this.enterReveal(data, nowMs)
         this.state.lastMoveAt = nowMs
       }
       return
@@ -348,8 +354,7 @@ export class LiarsPartyGame extends GameEngine {
       const remainingVoters = this.getCurrentRoundVoterIds(data)
       const pendingVoters = remainingVoters.filter(id => !data.submittedPlayerIds.includes(id))
       if (pendingVoters.length === 0) {
-        data.phase = 'reveal'
-        data.submittedPlayerIds = []
+        this.enterReveal(data, nowMs)
         this.state.lastMoveAt = nowMs
       }
     }
@@ -418,10 +423,11 @@ export class LiarsPartyGame extends GameEngine {
 
         // A claim that was never made has nothing to challenge or believe, so a
         // timed-out claimant skips the vote. A claim that exists goes to it.
-        data.phase = data.claim.autoSubmitted ? 'reveal' : 'challenge'
-        data.submittedPlayerIds = []
-        if (this.getCurrentRoundVoterIds(data).length === 0) {
-          data.phase = 'reveal'
+        if (data.claim.autoSubmitted || this.getCurrentRoundVoterIds(data).length === 0) {
+          this.enterReveal(data, timeoutAt)
+        } else {
+          data.phase = 'challenge'
+          data.submittedPlayerIds = []
         }
         this.state.lastMoveAt = timeoutAt
 
@@ -456,8 +462,7 @@ export class LiarsPartyGame extends GameEngine {
           break
         }
 
-        data.phase = 'reveal'
-        data.submittedPlayerIds = []
+        this.enterReveal(data, timeoutAt)
         this.state.lastMoveAt = timeoutAt
 
         result.changed = true
@@ -468,12 +473,16 @@ export class LiarsPartyGame extends GameEngine {
       }
 
       if (data.phase === 'reveal') {
-        this.advanceAfterReveal(data, timeoutAt)
-        this.state.lastMoveAt = timeoutAt
+        const revealEndsAt = Math.max(timeoutAt, data.advanceOpensAt ?? timeoutAt)
+        if (revealEndsAt > nowMs) {
+          break
+        }
+        this.advanceAfterReveal(data, revealEndsAt)
+        this.state.lastMoveAt = revealEndsAt
         result.changed = true
         result.timeoutWindowsConsumed += 1
         result.revealAdvances += 1
-        phaseStartedAt = timeoutAt
+        phaseStartedAt = revealEndsAt
         continue
       }
 
@@ -483,10 +492,26 @@ export class LiarsPartyGame extends GameEngine {
     return result
   }
 
-  private advanceAfterReveal(data: LiarsPartyGameData, nowMs: number): void {
+  /** Every way into the reveal comes through here, so the round is scored as the table first sees it. */
+  private enterReveal(data: LiarsPartyGameData, nowMs: number): void {
+    data.phase = 'reveal'
+    data.submittedPlayerIds = []
     if (!data.currentRoundResolved) {
       this.resolveCurrentRound(data, nowMs)
     }
+    data.advanceOpensAt = nowMs + LIARS_REVEAL_HOLD_MS
+  }
+
+  private isRevealHeld(data: LiarsPartyGameData, nowMs: number): boolean {
+    return typeof data.advanceOpensAt === 'number' && Number.isFinite(data.advanceOpensAt) && nowMs < data.advanceOpensAt
+  }
+
+  private advanceAfterReveal(data: LiarsPartyGameData, nowMs: number): void {
+    // A reveal saved before scoring moved into enterReveal arrives here unscored.
+    if (!data.currentRoundResolved) {
+      this.resolveCurrentRound(data, nowMs)
+    }
+    data.advanceOpensAt = null
 
     if (data.activePlayerIds.length <= 1) {
       this.finalizeGame(data, 'last-player-standing', nowMs)

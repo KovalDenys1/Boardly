@@ -29,15 +29,18 @@ import GameStatusBanner from '@/components/game-chrome/GameStatusBanner'
 import { viewerOutcome } from '@/lib/game-outcome'
 import GameTabs from '@/components/game-chrome/GameTabs'
 import { getThemePageStyle } from '@/lib/lobby-themes'
-import { LiarsPartyGame, type LiarsPartyGameData, type LiarsPartyRoundResult } from '@/lib/games/liars-party-game'
+import { LIARS_REVEAL_HOLD_MS, LiarsPartyGame, type LiarsPartyGameData, type LiarsPartyRoundResult } from '@/lib/games/liars-party-game'
 import { createStuckTurnRecovery, turnSignatureOf } from '@/lib/stuck-turn-recovery'
 import { useTurnSounds } from '@/hooks/useTurnSounds'
 import { useSpectatorResultCue } from '@/hooks/useSpectatorResultCue'
 import { playCue } from '@/lib/sound-engine'
 import { useLiarsPartySounds } from './hooks/useLiarsPartySounds'
 import { useFreshFor } from '@/hooks/useFreshFor'
+import { useHeldValue } from '@/hooks/useHeldValue'
+import { useRpsRoundOpen } from '@/hooks/useRpsRoundOpen'
+import { prefersReducedMotion } from '@/lib/motion'
 import ScorePop from '@/components/game-chrome/ScorePop'
-import { LIARS_BREAKDOWN_FIRST_STEP, LIARS_VERDICT_STEP, liarsRevealLastStep, staggerDelayMs, staggerStyle } from '@/lib/social-motion'
+import { LIARS_BREAKDOWN_FIRST_STEP, LIARS_CLAIMANT_STEP, LIARS_REVEAL_MS, LIARS_VERDICT_STEP, liarsRevealLastStep, staggerDelayMs, staggerStyle } from '@/lib/social-motion'
 import { useBlockedPlayers } from '@/hooks/useBlockedPlayers'
 import BlockedText from '@/components/BlockedText'
 import TermsConsentPanel from '@/components/TermsConsentPanel'
@@ -117,8 +120,6 @@ interface Game {
 const LIARS_PARTY_ACCENT = 'var(--bd-lav)'
 const LIARS_PARTY_ACCENT_DEEP = 'var(--bd-lav-deep)'
 
-/** Long enough for the last staggered row and the eliminated card to land. */
-const LIARS_REVEAL_MS = 1600
 /**
  * The last round's verdict is the thing the table wants to read; the result
  * overlay waits this long before covering it.
@@ -162,6 +163,23 @@ function WaitingContent({ data, rules, t }: WaitingContentProps) {
   )
 }
 
+/** One round's points for one player, as the engine recorded them – a floored score can show -6 beside 0. */
+function ScoreDelta({ value, label }: { value: number; label: string }) {
+  return (
+    <span className="liars-delta" title={label} style={{ color: value >= 0 ? 'var(--bd-mint-deep)' : 'var(--bd-coral-deep)' }}>
+      {value >= 0 ? `+${value}` : value}
+    </span>
+  )
+}
+
+/** This round's points for `playerId`, once the engine has scored the round on screen; undefined otherwise. */
+function revealDeltaOf(data: LiarsPartyGameData | undefined, playerId: string): number | undefined {
+  if (!data || data.phase !== 'reveal') return undefined
+  const result = data.roundResults.find(entry => entry.round === data.currentRound)
+  if (!result) return undefined
+  return playerId === result.claimantId ? result.claimantScoreDelta : result.voterScoreDeltas[playerId]
+}
+
 /** The numbered rules, shared by the waiting room and a round with no history yet. */
 function LiarsRules({ rules, t, fill = false }: { rules: string[]; t: (key: TranslationKeys, opts?: Record<string, unknown>) => string; fill?: boolean }) {
   return (
@@ -193,7 +211,8 @@ function LiarsRoundHistory({ data, players, rules, blockedIds, t }: {
   blockedIds: ReadonlySet<string>
   t: (key: TranslationKeys, opts?: Record<string, unknown>) => string
 }) {
-  const results = data.roundResults
+  // The round being revealed is the reveal's own card above this one.
+  const results = data.roundResults.filter(result => !(data.phase === 'reveal' && result.round === data.currentRound))
   if (results.length === 0) return <LiarsRules rules={rules} t={t} fill />
 
   return (
@@ -277,6 +296,7 @@ function LiarsPlayersPanel({ data, players, maxPlayers, currentUserId, isFinishe
               // Only while somebody is actually claiming – the marker read as
               // stale on the reveal screen, where the claim is already settled.
               const isClaimant = data.phase === 'claim' && pid === data.currentClaimantId
+              const delta = isFinished ? undefined : revealDeltaOf(data, pid)
               return (
                 <div key={pid} className={`liars-seat${pid === currentUserId ? ' liars-seat--me' : ''}`}>
                   <span className="flex min-w-0 flex-1 items-center gap-1.5">
@@ -293,6 +313,7 @@ function LiarsPlayersPanel({ data, players, maxPlayers, currentUserId, isFinishe
                     style={{ display: 'inline-block' }}
                   >
                     {t('liarsParty.points', { count: data.scores[pid] ?? 0 })} · {t('liarsParty.strikes', { count: data.strikes[pid] ?? 0, max: data.eliminationThreshold })}
+                    {delta !== undefined && <> <ScoreDelta value={delta} label={t('liarsParty.scoreDelta')} /></>}
                   </ScorePop>
                 </div>
               )
@@ -545,16 +566,11 @@ function RevealContent({ data, players, rules, blockedIds, animate = false, t }:
   /** The reveal just started while the page was open: play it in order (#1115). */
   animate?: boolean
 }) {
-  // The engine only resolves a round inside `advanceAfterReveal`, which runs
-  // when somebody submits `advance-round` – i.e. on the way OUT of this phase
-  // (lib/games/liars-party-game.ts:479). So while this screen is on show there
-  // is no `roundResults` entry for the round it is revealing: reading the last
-  // one gave `undefined` in round 1, which hid the vote breakdown, the scores
-  // and the elimination card and left this screen a single claim card; and from
-  // round 2 on it gave the *previous* round's numbers, presented as this
-  // round's result. Prefer the resolved entry when there is one (a timeout
-  // fallback can resolve before re-entering reveal) and otherwise read the vote
-  // off the live state, which holds every fact this screen shows.
+  // The engine scores the round as it enters this phase (`enterReveal`), so the
+  // entry for the round on screen is there – read it by round, never as the
+  // last entry, which is the previous round's. A reveal saved before scoring
+  // moved there has no entry yet: the vote is read off the live state, which
+  // holds every fact this screen shows except the points.
   const resolved: LiarsPartyRoundResult | undefined =
     data.roundResults.find(result => result.round === data.currentRound)
   const wasBluff = resolved?.wasBluff ?? data.claim?.isBluff ?? false
@@ -571,6 +587,16 @@ function RevealContent({ data, players, rules, blockedIds, animate = false, t }:
         // No claim was made, so there is no verdict either (#1202).
         <LiarsCard testId="liars-claim-timed-out">
           <div className="liars-claim">{t('liarsParty.claimTimedOut', { name: playerNameById(players, data.claim.playerId, t) })}</div>
+          {resolved && (
+            <div
+              className={`liars-reveal-claimant${animate ? ' social-rise' : ''}`}
+              data-testid="liars-claimant-result"
+              style={animate ? staggerStyle(LIARS_CLAIMANT_STEP, lastStep) : undefined}
+            >
+              <span className="min-w-0 flex-1 truncate">{t('liarsParty.scoreDelta')}</span>
+              <ScoreDelta value={resolved.claimantScoreDelta} label={t('liarsParty.scoreDelta')} />
+            </div>
+          )}
         </LiarsCard>
       )}
 
@@ -586,6 +612,17 @@ function RevealContent({ data, players, rules, blockedIds, animate = false, t }:
           >
             {data.claim.isBluff ? t('liarsParty.wasBluff') : t('liarsParty.wasTruth')}
           </div>
+          {resolved && (
+            <div
+              className={`liars-reveal-claimant${animate ? ' social-rise' : ''}`}
+              data-testid="liars-claimant-result"
+              style={animate ? staggerStyle(LIARS_CLAIMANT_STEP, lastStep) : undefined}
+            >
+              <span className="min-w-0 flex-1 truncate">{t('liarsParty.claimedBy', { name: playerNameById(players, data.claim.playerId, t) })}</span>
+              {resolved.claimantStrikeDelta > 0 && <span className="liars-strike-chip">{t('liarsParty.strikeAdded')}</span>}
+              <ScoreDelta value={resolved.claimantScoreDelta} label={t('liarsParty.scoreDelta')} />
+            </div>
+          )}
         </LiarsCard>
       )}
 
@@ -613,9 +650,7 @@ function RevealContent({ data, players, rules, blockedIds, animate = false, t }:
                   <span className="min-w-0 flex-1 truncate">{playerNameOf(voter, t)}</span>
                   <span className="text-bd-ink-soft">{vote.decision === 'challenge' ? t('liarsParty.challenge') : t('liarsParty.believe')}</span>
                   <span style={{ color: correct ? 'var(--bd-mint-deep)' : 'var(--bd-coral-deep)' }}><Icon name={correct ? 'check' : 'close'} size={14} /></span>
-                  {delta !== undefined && (
-                    <span style={{ color: delta >= 0 ? 'var(--bd-mint-deep)' : 'var(--bd-coral-deep)' }}>{delta >= 0 ? `+${delta}` : delta}</span>
-                  )}
+                  {delta !== undefined && <ScoreDelta value={delta} label={t('liarsParty.scoreDelta')} />}
                 </div>
               )
             })}
@@ -640,6 +675,40 @@ function RevealContent({ data, players, rules, blockedIds, animate = false, t }:
       <LiarsRoundHistory data={data} players={players} rules={rules} blockedIds={blockedIds} t={t} />
     </>
   )
+}
+
+/** Next Round stays shut for the reveal's hold; the server refuses it until then as well. */
+function NextRoundButton({ label, opensAt, busy, onAdvance, t }: {
+  label: string
+  opensAt: number | null | undefined
+  busy: boolean
+  onAdvance: () => void
+  t: (key: TranslationKeys, opts?: Record<string, unknown>) => string
+}) {
+  const open = useRpsRoundOpen(opensAt)
+  const held = !open && typeof opensAt === 'number'
+  const secondsLeft = held ? Math.max(1, Math.ceil((opensAt - Date.now()) / 1000)) : 0
+  return (
+    <button
+      onClick={onAdvance}
+      disabled={busy || !open}
+      className="bd-btn bd-btn-primary liars-next disabled:cursor-not-allowed disabled:opacity-50"
+      data-testid="liars-next-round"
+    >
+      {label}
+      {held && <span className="liars-next__count" data-testid="liars-next-round-countdown">{t('liarsParty.timeLeft', { seconds: secondsLeft })}</span>}
+      {held && <HoldFill key={opensAt} opensAt={opensAt} />}
+    </button>
+  )
+}
+
+/** The hold as a bar that fills up to the moment Next Round opens, picked up where the clock already is. */
+function HoldFill({ opensAt }: { opensAt: number }) {
+  const [style] = useState<React.CSSProperties>(() => ({
+    animationDuration: `${LIARS_REVEAL_HOLD_MS}ms`,
+    animationDelay: `${Math.min(0, opensAt - LIARS_REVEAL_HOLD_MS - Date.now())}ms`,
+  }))
+  return <span className="liars-next__fill" style={style} aria-hidden />
 }
 
 /**
@@ -687,6 +756,11 @@ function FinishedContent({ data, players, winnerName, t }: {
       </LiarsCard>
     </>
   )
+}
+
+/** What the standings and the header seats show, so a change to any of it is one change. */
+function standingsKeyOf(data: LiarsPartyGameData): string {
+  return JSON.stringify([data.phase, data.currentRound, data.scores, data.strikes, data.activePlayerIds, data.eliminatedPlayerIds, data.ranking, data.roundResults.length])
 }
 
 // ─── Main page ────────────────────────────────────────────────────────────────
@@ -1070,6 +1144,15 @@ export default function LiarsPartyPage({ code, isSpectator = false, onGameReset 
     { gameId: game?.id, viewerId: soundUserId, isSpectator },
   )
   useSpectatorResultCue({ isSpectator, isFinished: game?.status === 'finished', gameId: game?.id, revealDelayMs: LIARS_RESULT_REVEAL_DELAY_MS })
+  // The round is scored as the reveal starts; the standings move once the reveal has played, so they do not give the verdict away.
+  const liveData = gameEngine?.getState().data as LiarsPartyGameData | undefined
+  const standingsData = useHeldValue(
+    liveData,
+    liveData ? standingsKeyOf(liveData) : '',
+    liveData?.roundResults.length ?? 0,
+    prefersReducedMotion() ? 0 : LIARS_REVEAL_MS,
+    !!liveData,
+  )
 
   if (loading) {
     return <LobbyPageLoadingFallback />
@@ -1129,7 +1212,7 @@ export default function LiarsPartyPage({ code, isSpectator = false, onGameReset 
   const contenderIds = players
     .map(p => p.userId)
     .filter(id => !!id && id !== featuredId)
-    .sort((a, b) => (data?.scores[b] ?? 0) - (data?.scores[a] ?? 0))
+    .sort((a, b) => (standingsData?.scores[b] ?? 0) - (standingsData?.scores[a] ?? 0))
   const mySeatId = !isSpectator && currentUserId && currentUserId !== featuredId
     ? currentUserId
     : contenderIds[0] ?? ''
@@ -1154,7 +1237,7 @@ export default function LiarsPartyPage({ code, isSpectator = false, onGameReset 
       lobbyCode={code}
       accentColor={side === 'left' ? LIARS_PARTY_ACCENT : 'var(--bd-coral)'}
       turnDotColor="var(--bd-mint-deep)"
-      subline={t('liarsParty.points', { count: id ? (data?.scores[id] ?? 0) : 0 })}
+      subline={t('liarsParty.points', { count: id ? (standingsData?.scores[id] ?? 0) : 0 })}
     />
   )
 
@@ -1346,13 +1429,13 @@ export default function LiarsPartyPage({ code, isSpectator = false, onGameReset 
     // advance). Gating this to isHost made the game permanently soft-lock for
     // everyone else whenever the host didn't click through. See #642.
     phaseAction = !isSpectator ? (
-      <button
-        onClick={() => handleMove('advance-round', {})}
-        disabled={isMoveSubmitting}
-        className="bd-btn bd-btn-primary disabled:opacity-50"
-      >
-        {data!.currentRound >= data!.maxRounds ? t('liarsParty.seeResults') : t('liarsParty.nextRound')}
-      </button>
+      <NextRoundButton
+        label={data!.currentRound >= data!.maxRounds ? t('liarsParty.seeResults') : t('liarsParty.nextRound')}
+        opensAt={data!.advanceOpensAt}
+        busy={isMoveSubmitting}
+        onAdvance={() => void handleMove('advance-round', {})}
+        t={t}
+      />
     ) : null
   } else if (isFinished && data) {
     phaseTestId = 'liars-party-game-over-screen'
@@ -1403,7 +1486,7 @@ export default function LiarsPartyPage({ code, isSpectator = false, onGameReset 
   )
 
   const playersSection = (
-    <LiarsPlayersPanel data={data} players={players} maxPlayers={maxPlayers} currentUserId={currentUserId} isFinished={isFinished} t={t} />
+    <LiarsPlayersPanel data={standingsData} players={players} maxPlayers={maxPlayers} currentUserId={currentUserId} isFinished={isFinished} t={t} />
   )
 
   const chatPlayerProfiles = new Map<string, { avatarUrl?: string | null; isPremium?: boolean }>()

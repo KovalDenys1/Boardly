@@ -3,7 +3,7 @@
 import { motionCues, useLiveCues, type CuePlay } from '@/hooks/useLiveCues'
 import type { LiarsPartyGameData } from '@/lib/games/liars-party-game'
 import { prefersReducedMotion } from '@/lib/motion'
-import { LIARS_BREAKDOWN_FIRST_STEP, LIARS_VERDICT_STEP, liarsRevealLastStep, staggerDelayMs } from '@/lib/social-motion'
+import { LIARS_BREAKDOWN_FIRST_STEP, LIARS_REVEAL_MS, LIARS_VERDICT_STEP, liarsRevealLastStep, staggerDelayMs } from '@/lib/social-motion'
 
 export interface LiarsPartySnapshot {
   round: number
@@ -17,6 +17,8 @@ export interface LiarsPartySnapshot {
   votes: { id: string; challenge: boolean }[]
   /** Struck out by the rounds: a player who leaves is eliminated too, but with the strikes they had. */
   struckOut: string[]
+  /** The reveal on screen carries its round's points, so the standings move during it. */
+  scored: boolean
 }
 
 export interface LiarsPartyCueContext {
@@ -35,6 +37,7 @@ export function liarsPartySnapshot(data: LiarsPartyGameData): LiarsPartySnapshot
     bluff: data.phase === 'reveal' ? resolved?.wasBluff ?? data.claim?.isBluff ?? false : null,
     votes: data.challengeVotes.map((vote) => ({ id: vote.playerId, challenge: vote.decision === 'challenge' })),
     struckOut: data.eliminatedPlayerIds.filter((id) => (data.strikes[id] ?? 0) >= data.eliminationThreshold).sort(),
+    scored: data.phase === 'reveal' && !!resolved,
   }
 }
 
@@ -67,9 +70,14 @@ export function liarsPartyCues(prev: LiarsPartySnapshot, next: LiarsPartySnapsho
   if (sameRound && next.votes.some((vote) => vote.id !== ownId && !prev.votes.some((seen) => seen.id === vote.id))) {
     cues.push({ cue: 'vote.cast', options: { remote: true } })
   }
-  if (next.phase === 'reveal' && !(sameRound && prev.phase === 'reveal')) cues.push(...revealCues(next, ownId))
-  // The engine strikes a player out in resolveCurrentRound, as the reveal ends; the last round's arrives with the finish.
-  if (next.struckOut.some((id) => !prev.struckOut.includes(id))) cues.push({ cue: 'player.out' })
+  const revealStarts = next.phase === 'reveal' && !(sameRound && prev.phase === 'reveal')
+  if (revealStarts) cues.push(...revealCues(next, ownId))
+  // The engine strikes a player out as the reveal starts, where the eliminated card lands last; a reveal saved before that strikes them out on the way out.
+  if (next.struckOut.some((id) => !prev.struckOut.includes(id))) {
+    const lastStep = liarsRevealLastStep(next.votes.length)
+    cues.push(revealStarts ? { cue: 'player.out', options: { delayMs: staggerDelayMs(lastStep, lastStep) } } : { cue: 'player.out' })
+  }
+  if (revealStarts && next.scored) cues.push({ cue: 'score.add', options: { delayMs: LIARS_REVEAL_MS } })
   return motionCues(cues, reducedMotion)
 }
 

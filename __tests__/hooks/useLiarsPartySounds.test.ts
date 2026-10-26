@@ -1,7 +1,7 @@
 import { renderHook } from '@testing-library/react'
 import { useLiarsPartySounds } from '@/app/lobby/[code]/hooks/useLiarsPartySounds'
 import type { LiarsPartyGameData } from '@/lib/games/liars-party-game'
-import { LIARS_BREAKDOWN_FIRST_STEP, LIARS_VERDICT_STEP, liarsRevealLastStep, staggerDelayMs } from '@/lib/social-motion'
+import { LIARS_BREAKDOWN_FIRST_STEP, LIARS_REVEAL_MS, LIARS_VERDICT_STEP, liarsRevealLastStep, staggerDelayMs } from '@/lib/social-motion'
 import { REDUCED_MOTION_GAP_MS } from '@/lib/board-sounds'
 import { prefersReducedMotion } from '@/lib/motion'
 import { playCue } from '@/lib/sound-engine'
@@ -19,6 +19,7 @@ const game = (patch: {
   votes?: Vote[]
   eliminated?: string[]
   strikes?: Record<string, number>
+  results?: Array<{ round: number; claimantId: string; claimantScoreDelta: number; voterScoreDeltas: Record<string, number> }>
 }): LiarsPartyGameData =>
   ({
     currentRound: patch.round ?? 1,
@@ -28,7 +29,7 @@ const game = (patch: {
     eliminatedPlayerIds: patch.eliminated ?? [],
     strikes: patch.strikes ?? {},
     eliminationThreshold: 2,
-    roundResults: [],
+    roundResults: patch.results ?? [],
   }) as unknown as LiarsPartyGameData
 
 function setup(initial: LiarsPartyGameData | undefined, { viewerId = 'me', isSpectator = false } = {}) {
@@ -104,6 +105,32 @@ describe('useLiarsPartySounds (#1464)', () => {
     const { rerender } = setup(game({ phase: 'challenge', claim: { playerId: 'a' }, votes }))
     rerender(game({ phase: 'reveal', claim: { playerId: 'a', isBluff: false }, votes }))
     expect(play.mock.calls).toEqual([['verdict.stamp', { delayMs: 0 }], ['round.won', { delayMs: REDUCED_MOTION_GAP_MS }]])
+  })
+
+  it('plays the strike-out with its card and the score cue as the standings move, when the reveal arrives scored (#1379)', () => {
+    const votes: Vote[] = [{ playerId: 'a', decision: 'challenge' }, { playerId: 'b', decision: 'challenge' }]
+    const { rerender } = setup(game({ phase: 'challenge', claim: { playerId: 'me' }, votes: votes.slice(0, 1), strikes: { me: 1 } }))
+    rerender(game({
+      phase: 'reveal',
+      claim: { playerId: 'me', isBluff: true },
+      votes,
+      eliminated: ['me'],
+      strikes: { me: 2 },
+      results: [{ round: 1, claimantId: 'me', claimantScoreDelta: -12, voterScoreDeltas: { a: 14, b: 14 } }],
+    }))
+    expect(play.mock.calls).toEqual([
+      ['vote.cast', { remote: true }],
+      ['verdict.stamp', { delayMs: at(LIARS_VERDICT_STEP, 2) }],
+      ['round.lost', { delayMs: at(LIARS_BREAKDOWN_FIRST_STEP, 2) }],
+      ['player.out', { delayMs: at(liarsRevealLastStep(2), 2) }],
+      ['score.add', { delayMs: LIARS_REVEAL_MS }],
+    ])
+  })
+
+  it('moves the score cue for a timed-out claim too, which has no verdict', () => {
+    const { rerender } = setup(game({ phase: 'claim' }))
+    rerender(game({ phase: 'reveal', claim: { playerId: 'b', autoSubmitted: true }, results: [{ round: 1, claimantId: 'b', claimantScoreDelta: -4, voterScoreDeltas: {} }] }))
+    expect(play.mock.calls).toEqual([['score.add', { delayMs: LIARS_REVEAL_MS }]])
   })
 
   it('gives a spectator the table and the verdict but no round result, and no verdict for a timed-out claim', () => {

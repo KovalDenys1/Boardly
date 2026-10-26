@@ -4628,6 +4628,7 @@ const no = {
     rules: 'Regler',
     voteBreakdown: 'Stemmeoversikt',
     scoreDelta: 'Poeng denne runden',
+    strikeAdded: '+1 strike',
     totalScores: 'Total poeng',
     eliminatedThisRound: 'Eliminert denne runden',
     claimingNow: 'Kommer med en påstand nå',

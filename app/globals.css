@@ -4281,6 +4281,58 @@ html.dark .liars-seat { background: var(--bd-bg2); }
   display: inline-block;
   transform-origin: left center;
 }
+/* A round's points beside a name: the reveal's rows and the standings. */
+.liars-delta {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+/* The claimant's line under the verdict: who claimed, their strike, their points. */
+.liars-reveal-claimant {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+  font-size: 14px;
+  color: var(--bd-ink-soft);
+}
+.liars-strike-chip {
+  flex-shrink: 0;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+  background: color-mix(in srgb, var(--bd-coral) 18%, var(--bd-card));
+  color: var(--bd-coral-deep);
+}
+/* Next Round during the reveal's hold: a countdown, and a bar that fills to
+   the moment it opens. Transform only; under reduced motion the bar is simply
+   full and the countdown carries the wait. */
+.liars-next { position: relative; }
+.liars-next__count {
+  margin-left: 6px;
+  font-variant-numeric: tabular-nums;
+}
+.liars-next__fill {
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: 5px;
+  height: 3px;
+  border-radius: 2px;
+  background: currentColor;
+  opacity: 0.6;
+  transform-origin: left center;
+  animation-name: liars-hold-fill;
+  animation-timing-function: linear;
+  animation-fill-mode: both;
+  pointer-events: none;
+}
+@keyframes liars-hold-fill {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
 
 /* Truth / Bluff and Challenge / Believe: two equal buttons that stay on one
    row at 320px rather than wrapping to a single-button row. */
