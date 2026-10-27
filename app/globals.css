@@ -622,7 +622,7 @@ html.dark {
 }
 
 .home-cta-button-on-dark {
-  color: var(--bd-bg);
+  color: var(--bd-ink-on-inverse);
   border-color: rgba(251,246,238,0.55);
 }
 
@@ -693,12 +693,12 @@ html.dark {
 
 .home-video-play {
   align-items: center;
-  background: var(--bd-ink);
+  background: var(--bd-inverse);
   border: 0;
   border-radius: 999px;
   bottom: clamp(10px, 2.4vw, 20px);
   box-shadow: 0 4px 0 rgba(31, 27, 22, 0.16);
-  color: var(--bd-bg);
+  color: var(--bd-ink-on-inverse);
   cursor: pointer;
   display: flex;
   font-family: var(--bd-font-display);
@@ -734,7 +734,7 @@ html.dark {
 }
 
 .home-cta-section {
-  background: var(--bd-ink);
+  background: var(--bd-inverse);
   padding: clamp(64px, 8vw, 90px) clamp(16px, 4vw, 48px);
 }
 

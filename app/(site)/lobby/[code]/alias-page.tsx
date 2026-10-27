@@ -370,12 +370,12 @@ const AliasPregameHeader: React.FC<{
       <div style={{ display: 'flex', alignItems: 'center', gap: 14, minWidth: 0 }}>
         <div className="alias-context-logo" style={{
           width: 38, height: 38, borderRadius: 12,
-          background: 'var(--bd-ink)',
+          background: 'var(--bd-logo-tile)',
           display: 'grid', placeItems: 'center',
           boxShadow: '0 3px 0 var(--bd-coral)',
           flexShrink: 0,
         }}>
-          <span style={{ fontFamily: FONT_DISPLAY, color: 'var(--bd-bg)', fontWeight: 700, fontSize: 20, lineHeight: 1 }}>B</span>
+          <span style={{ fontFamily: FONT_DISPLAY, color: 'var(--bd-ink-on-inverse)', fontWeight: 700, fontSize: 20, lineHeight: 1 }}>B</span>
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 2, minWidth: 0 }}>
           <BdLabel>{t('alias.headerKicker')}</BdLabel>
@@ -2266,7 +2266,7 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
             )}
           </div>
 
-          <div style={{ ...cardBase, width: '100%', padding: 28, background: 'var(--bd-ink)', borderColor: 'var(--bd-ink)', color: 'var(--bd-bg)', boxShadow: '0 8px 0 var(--bd-coral), 0 18px 36px -12px rgba(31,27,22,0.5)' }}>
+          <div style={{ ...cardBase, width: '100%', padding: 28, background: 'var(--bd-inverse)', borderColor: 'var(--bd-inverse)', color: 'var(--bd-ink-on-inverse)', boxShadow: '0 8px 0 var(--bd-coral), 0 18px 36px -12px rgba(31,27,22,0.5)' }}>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr auto 1fr', gap: 24, alignItems: 'center' }}>
               {sorted.map((team, i) => {
                 const isWinner = !isTie && team.id === data.winnerId
@@ -2281,7 +2281,7 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
                           : (isTie ? t('alias.teamLabel') : t('alias.runnerUpLabel'))}
                       </BdLabel>
                       <div style={{ fontFamily: FONT_DISPLAY, fontWeight: 700, fontSize: 30, color: accent, lineHeight: 1.1, marginBottom: 4 }}>{team.name}</div>
-                      <div style={{ fontFamily: FONT_DISPLAY, fontWeight: 700, fontSize: 72, lineHeight: 1, fontVariantNumeric: 'tabular-nums', color: 'var(--bd-bg)' }}>{team.score}</div>
+                      <div style={{ fontFamily: FONT_DISPLAY, fontWeight: 700, fontSize: 72, lineHeight: 1, fontVariantNumeric: 'tabular-nums', color: 'var(--bd-ink-on-inverse)' }}>{team.score}</div>
                     </div>
                     {i === 0 && <span style={{ fontFamily: FONT_DISPLAY, fontSize: 28, fontStyle: 'italic', color: 'rgba(251,246,238,0.5)' }}>{t('game.ui.vs')}</span>}
                   </React.Fragment>
