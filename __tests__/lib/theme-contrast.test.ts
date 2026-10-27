@@ -119,8 +119,9 @@ describe.each(SHADE_SURFACES)('%s: accent shades', (_name, tokens, page) => {
     expect(ratio('#FFFFFF', tokens['--bd-lav-deep'])).toBeGreaterThanOrEqual(3)
   })
 
-  it('the lav-deep focus ring reaches 3:1 on the page', () => {
-    expect(ratio(tokens['--bd-lav-deep'], page)).toBeGreaterThanOrEqual(3)
+  // On an ink-filled control only light and dark are pinned (below): Ocean's ink was 2.72:1 before #1538 too.
+  it.each(['page', '--bd-bg2', '--bd-card', '--bd-input-bg'])('the lav-deep focus ring reaches 3:1 on %s', (surface) => {
+    expect(ratio(tokens['--bd-lav-deep'], surface === 'page' ? page : tokens[surface])).toBeGreaterThanOrEqual(3)
   })
 })
 
