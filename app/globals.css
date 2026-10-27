@@ -5251,10 +5251,6 @@ html.dark .btn-social-unlink:hover {
   color: var(--bd-coral-text);
 }
 
-html.dark .ttt-cell:not(:disabled):hover {
-  background: var(--bd-bg2);
-}
-
 html.dark .game-tabs {
   background: var(--bd-bg2);
 }
