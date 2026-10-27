@@ -1245,7 +1245,7 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
             <div style={{
               ...cardBase, padding: '18px 22px',
               display: 'flex', alignItems: 'center', gap: 18,
-              background: 'var(--bd-ink)', borderColor: 'var(--bd-ink)', color: 'var(--bd-bg)',
+              background: 'var(--bd-inverse)', borderColor: 'var(--bd-inverse)', color: 'var(--bd-ink-on-inverse)',
               boxShadow: '0 6px 0 var(--bd-coral), 0 14px 28px -10px rgba(31,27,22,0.4)',
             }}>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
@@ -2090,9 +2090,9 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
             <section style={{ display: 'flex', flexDirection: 'column', gap: 18, alignSelf: 'start' }}>
               <div style={{
                 ...cardBase, padding: 24,
-                background: positive ? 'var(--bd-ink)' : 'var(--bd-card-warm)',
-                borderColor: positive ? 'var(--bd-ink)' : 'var(--bd-line)',
-                color: positive ? 'var(--bd-bg)' : 'var(--bd-ink)',
+                background: positive ? 'var(--bd-inverse)' : 'var(--bd-card-warm)',
+                borderColor: positive ? 'var(--bd-inverse)' : 'var(--bd-line)',
+                color: positive ? 'var(--bd-ink-on-inverse)' : 'var(--bd-ink)',
                 boxShadow: positive ? '0 6px 0 var(--bd-mint), 0 14px 28px -10px rgba(31,27,22,0.3)' : '0 6px 0 var(--bd-sun), 0 14px 28px -10px rgba(31,27,22,0.18)',
                 display: 'flex', alignItems: 'center', gap: 18,
               }}>
