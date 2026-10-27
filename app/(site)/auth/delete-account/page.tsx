@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { signOut } from 'next-auth/react'
 import LoadingSpinner from '@/components/LoadingSpinner'
 import { Icon } from '@/components/icons'
-import { useTranslation } from '@/lib/i18n-helpers'
+import { useTranslation, type TranslationKeys } from '@/lib/i18n-helpers'
 import { showToast } from '@/lib/i18n-toast'
 
 function DeleteAccountContent() {
@@ -98,11 +98,11 @@ function DeleteAccountContent() {
               <h1 className="text-2xl font-bold text-(--bd-ink) mb-2">
                 {t('deleteAccount.error')}
               </h1>
-              <p className="text-(--bd-ink-soft)">{error}</p>
+              <p className="text-(--bd-ink-soft)">{error.startsWith('errors.') ? t(error as TranslationKeys) : error}</p>
             </div>
             <button
               onClick={() => router.push('/')}
-              className="w-full text-white py-3 rounded-xl font-semibold transition-colors" style={{ background: 'var(--bd-ink)' }}
+              className="w-full text-bd-bg py-3 rounded-xl font-semibold transition-colors" style={{ background: 'var(--bd-ink)' }}
             >
               {t('common.goHome')}
             </button>

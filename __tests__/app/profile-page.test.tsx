@@ -709,7 +709,9 @@ describe('ProfilePage', () => {
     expect(publicOption).toHaveAttribute('aria-pressed', 'false')
     expect(onlineBox).toBeDisabled()
     expect(onlineBox).not.toBeChecked()
-    expect(screen.getByRole('status')).toHaveTextContent('common.loading')
+    // The blocked-players list below has its own loading status while /api/user/blocks is pending.
+    const privacy = screen.getByRole('region', { name: /profile\.settings\.privacy\.title/ })
+    expect(within(privacy).getByRole('status')).toHaveTextContent('common.loading')
 
     releasePreferences()
 

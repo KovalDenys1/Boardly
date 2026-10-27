@@ -43,7 +43,7 @@ export default function MaintenanceContent() {
         <div className="mb-6 flex justify-center">
           <div
             className="w-24 h-24 rounded-2xl flex items-center justify-center"
-            style={{ background: 'var(--bd-ink)', boxShadow: '5px 5px 0 var(--bd-coral)' }}
+            style={{ background: 'var(--bd-logo-tile)', boxShadow: '5px 5px 0 var(--bd-coral)' }}
           >
             <span style={{ fontSize: 56, fontWeight: 900, color: 'var(--bd-sun)', lineHeight: 1 }}>B</span>
           </div>
@@ -85,7 +85,7 @@ export default function MaintenanceContent() {
               className="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-semibold transition-opacity hover:opacity-80"
               style={{
                 background: 'var(--bd-ink)',
-                color: 'white',
+                color: 'var(--bd-bg)',
                 boxShadow: '0 4px 0 var(--bd-coral)',
               }}
             >

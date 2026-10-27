@@ -167,7 +167,7 @@ function WaitingContent({ data, rules, t }: WaitingContentProps) {
 /** One round's points for one player, as the engine recorded them – a floored score can show -6 beside 0. */
 function ScoreDelta({ value, label }: { value: number; label: string }) {
   return (
-    <span className="liars-delta" title={label} style={{ color: value >= 0 ? 'var(--bd-mint-deep)' : 'var(--bd-coral-deep)' }}>
+    <span className="liars-delta" title={label} style={{ color: value >= 0 ? 'var(--bd-mint-text)' : 'var(--bd-coral-text)' }}>
       {value >= 0 ? `+${value}` : value}
     </span>
   )
@@ -227,7 +227,7 @@ function LiarsRoundHistory({ data, players, rules, blockedIds, t }: {
               {!result.claimTimedOut && (
                 <span
                   className="font-bold"
-                  style={{ color: result.wasBluff ? 'var(--bd-coral-deep)' : 'var(--bd-mint-deep)' }}
+                  style={{ color: result.wasBluff ? 'var(--bd-coral-text)' : 'var(--bd-mint-text)' }}
                 >
                   {result.wasBluff ? t('liarsParty.wasBluff') : t('liarsParty.wasTruth')}
                 </span>
@@ -609,7 +609,7 @@ function RevealContent({ data, players, rules, blockedIds, animate = false, t }:
           <div
             className={`liars-verdict${animate ? ' social-stamp' : ''}`}
             data-testid="liars-verdict"
-            style={{ color: data.claim.isBluff ? 'var(--bd-coral-deep)' : 'var(--bd-mint-deep)', ...(animate ? staggerStyle(LIARS_VERDICT_STEP, lastStep) : null) }}
+            style={{ color: data.claim.isBluff ? 'var(--bd-coral-text)' : 'var(--bd-mint-text)', ...(animate ? staggerStyle(LIARS_VERDICT_STEP, lastStep) : null) }}
           >
             {data.claim.isBluff ? t('liarsParty.wasBluff') : t('liarsParty.wasTruth')}
           </div>
@@ -650,7 +650,7 @@ function RevealContent({ data, players, rules, blockedIds, animate = false, t }:
                 >
                   <span className="min-w-0 flex-1 truncate">{playerNameOf(voter, t)}</span>
                   <span className="text-bd-ink-soft">{vote.decision === 'challenge' ? t('liarsParty.challenge') : t('liarsParty.believe')}</span>
-                  <span style={{ color: correct ? 'var(--bd-mint-deep)' : 'var(--bd-coral-deep)' }}><Icon name={correct ? 'check' : 'close'} size={14} /></span>
+                  <span style={{ color: correct ? 'var(--bd-mint-text)' : 'var(--bd-coral-text)' }}><Icon name={correct ? 'check' : 'close'} size={14} /></span>
                   {delta !== undefined && <ScoreDelta value={delta} label={t('liarsParty.scoreDelta')} />}
                 </div>
               )

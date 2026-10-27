@@ -192,7 +192,7 @@ export default function UsernameInput({
       {/* Suggestions */}
       {status === 'taken' && suggestions.length > 0 && (
         <div className="mt-2 rounded-2xl border border-bd-line p-3">
-          <p className="mb-2 text-xs font-semibold text-bd-lav-deep">
+          <p className="mb-2 text-xs font-semibold text-bd-lav-text">
             {t('auth.username.suggestions', 'Try these available usernames')}:
           </p>
           <div className="flex flex-wrap gap-2">
@@ -201,7 +201,7 @@ export default function UsernameInput({
                 key={suggestion}
                 type="button"
                 onClick={() => handleSuggestionClick(suggestion)}
-                className="rounded-xl border border-bd-line bg-(--bd-card-warm) px-3 py-1 text-xs font-medium text-bd-lav-deep transition-colors hover:bg-bd-bg2"
+                className="rounded-xl border border-bd-line bg-(--bd-card-warm) px-3 py-1 text-xs font-medium text-bd-lav-text transition-colors hover:bg-bd-bg2"
               >
                 {suggestion}
               </button>

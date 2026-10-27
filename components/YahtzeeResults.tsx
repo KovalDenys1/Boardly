@@ -91,7 +91,7 @@ export default function YahtzeeResults({
       className="flex h-full min-h-0 flex-col overflow-y-auto px-3 pb-6 pt-4 sm:px-5 sm:pb-8"
       style={{
         background:
-          'radial-gradient(circle at top, rgba(255,196,77,0.18), transparent 30%), linear-gradient(180deg, rgba(255,252,247,1) 0%, rgba(252,246,236,1) 100%)',
+          'radial-gradient(circle at top, rgba(255,196,77,0.18), transparent 30%), linear-gradient(180deg, var(--bd-card-warm) 0%, var(--bd-bg) 100%)',
       }}
     >
       <div className="mx-auto w-full max-w-6xl">
@@ -207,10 +207,10 @@ export default function YahtzeeResults({
               style={{
                 borderColor: 'rgba(255,196,77,0.32)',
                 background:
-                  'linear-gradient(180deg, rgba(255,244,213,0.68) 0%, var(--bd-bg) 100%)',
+                  'linear-gradient(180deg, rgba(255,196,77,0.16) 0%, var(--bd-bg) 100%)',
               }}
             >
-              <div className="flex items-center gap-2 text-(--bd-coral-deep)">
+              <div className="flex items-center gap-2 text-(--bd-coral-text)">
                 <Icon name={isTie ? 'handshake' : 'crown'} size={20} />
                 <span className="bd-kicker">{isTie ? t('yahtzee.results.tieLabel') : t('yahtzee.results.winnerLabel')}</span>
               </div>
@@ -236,7 +236,7 @@ export default function YahtzeeResults({
                   <div className="mt-1 text-2xl font-bold text-bd-ink">
                     {winner.upperSectionScore}
                     {winner.bonusAchieved && (
-                      <span className="ml-1 text-sm font-semibold text-(--bd-mint-deep)">+{winner.bonusPoints}</span>
+                      <span className="ml-1 text-sm font-semibold text-(--bd-mint-text)">+{winner.bonusPoints}</span>
                     )}
                   </div>
                 </div>
@@ -341,7 +341,7 @@ export default function YahtzeeResults({
                             : 'var(--bd-line)',
                     background:
                       player.rank === 0
-                        ? 'linear-gradient(135deg, rgba(255,244,213,0.8), var(--bd-bg))'
+                        ? 'linear-gradient(135deg, rgba(255,196,77,0.2), var(--bd-bg))'
                         : player.rank === 1
                           ? 'linear-gradient(135deg, rgba(155,140,255,0.12), var(--bd-bg))'
                           : player.rank === 2
@@ -390,7 +390,7 @@ export default function YahtzeeResults({
                       <span className="font-medium">{t('yahtzee.results.upper')}</span>{' '}
                       <span className="font-semibold text-bd-ink">{player.upperSectionScore}</span>
                       {player.bonusAchieved && (
-                        <span className="ml-1 text-(--bd-mint-deep)">
+                        <span className="ml-1 text-(--bd-mint-text)">
                           {t('yahtzee.results.bonus', { count: player.bonusPoints })}
                         </span>
                       )}

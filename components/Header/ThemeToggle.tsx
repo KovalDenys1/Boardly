@@ -159,7 +159,7 @@ export function ThemeToggle() {
                     onClick={() => setTheme(value)}
                     className={`flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left transition-colors duration-150 ${
                       active
-                        ? 'bg-bd-lav/15 text-bd-lav-deep dark:text-bd-lav'
+                        ? 'bg-bd-lav/15 text-bd-lav-text dark:text-bd-lav'
                         : focus
                           ? 'bg-bd-card-warm text-bd-ink'
                           : 'text-bd-ink-soft'

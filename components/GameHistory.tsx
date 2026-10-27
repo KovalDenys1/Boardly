@@ -369,7 +369,7 @@ export default function GameHistory() {
               })}
               {hiddenCount > 0 && !inPlayApp && (
                 <li data-purchase-ui className="px-1 pt-1 text-sm text-bd-ink-soft">
-                  <Link href="/profile?tab=premium" className={`font-semibold text-bd-lav-deep underline-offset-2 hover:underline ${focusRing}`}>
+                  <Link href="/profile?tab=premium" className={`font-semibold text-bd-lav-text underline-offset-2 hover:underline ${focusRing}`}>
                     {t('profile.gameHistory.moreWithPremium', { count: hiddenCount })}
                   </Link>
                 </li>

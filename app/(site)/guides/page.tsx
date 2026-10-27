@@ -220,7 +220,7 @@ export default function GuidesPage() {
                 {unguidedGames.map((game, index) => (
                   <span key={game.id}>
                     {index > 0 && (index === unguidedGames.length - 1 ? ' and ' : ', ')}
-                    <Link href={game.href} className="underline underline-offset-2" style={{ color: 'var(--bd-coral-deep)' }}>
+                    <Link href={game.href} className="underline underline-offset-2" style={{ color: 'var(--bd-coral-text)' }}>
                       {game.name}
                     </Link>
                   </span>

@@ -32,8 +32,8 @@ const rankAccent = (rank: number) => {
 }
 
 const winRateColor = (winRate: number) => {
-  if (winRate >= 60) return 'var(--bd-mint-deep)'
-  if (winRate >= 40) return 'var(--bd-sun-deep)'
+  if (winRate >= 60) return 'var(--bd-mint-text)'
+  if (winRate >= 40) return 'var(--bd-sun-text)'
   return 'var(--bd-ink-soft)'
 }
 
@@ -253,7 +253,7 @@ function LeaderboardPageContent({ initial }: { initial: LeaderboardPage | null }
                                 <span className="truncate text-sm font-bold">{label}</span>
                               </span>
                               {selected && (
-                                <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-(--bd-bg) text-bd-lav-deep">
+                                <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-(--bd-bg) text-bd-lav-text">
                                   <Icon name="check" size={14} weight="bold" />
                                 </span>
                               )}
@@ -283,7 +283,7 @@ function LeaderboardPageContent({ initial }: { initial: LeaderboardPage | null }
               </div>
               <div className="bd-card p-4">
                 <p className="bd-kicker">{t('leaderboard.gamesPlayed', 'Played')}</p>
-                <p className="mt-2 truncate text-2xl font-extrabold text-bd-lav-deep" style={{ fontFamily: 'var(--bd-font-display)' }}>
+                <p className="mt-2 truncate text-2xl font-extrabold text-bd-lav-text" style={{ fontFamily: 'var(--bd-font-display)' }}>
                   {totalGamesPlayed}
                 </p>
               </div>
@@ -309,7 +309,7 @@ function LeaderboardPageContent({ initial }: { initial: LeaderboardPage | null }
                 </div>
               ) : error ? (
                 <div className="py-16 text-center">
-                  <p className="text-sm font-semibold text-bd-coral-deep">{error}</p>
+                  <p className="text-sm font-semibold text-bd-coral-text">{error}</p>
                 </div>
               ) : entries.length === 0 ? (
                 <div className="py-16 text-center">
