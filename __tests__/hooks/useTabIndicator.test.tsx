@@ -73,6 +73,19 @@ describe('useTabIndicator', () => {
     await waitFor(() => expect(pill).toHaveClass('animated'))
   })
 
+  it('lands without sliding again when the list comes back after a session update', async () => {
+    const { rerender } = render(<Tabs loading={false} initialTab="settings" />)
+    await waitFor(() => expect(screen.getByTestId('pill')).toHaveClass('animated'))
+
+    rerender(<Tabs loading initialTab="settings" />)
+    rerender(<Tabs loading={false} initialTab="settings" />)
+
+    const pill = screen.getByTestId('pill')
+    expect(pill.style.transform).toBe(`translateX(${2 * TAB_WIDTH + 2}px)`)
+    expect(pill).not.toHaveClass('animated')
+    await waitFor(() => expect(pill).toHaveClass('animated'))
+  })
+
   it('moves to the tab that is clicked', () => {
     render(<Tabs loading={false} />)
 

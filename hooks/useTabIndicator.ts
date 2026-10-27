@@ -76,7 +76,12 @@ export function useTabIndicator<T extends string>(
   // The first placement lands without a transition, so a deep link to a later tab does not slide in from the left.
   const [animate, setAnimate] = useState(false)
   useEffect(() => {
-    if (animate || style.opacity === 0) return
+    // Hidden again (the tab list unmounted, e.g. a session update): the next placement must not slide in either.
+    if (style.opacity === 0) {
+      setAnimate(false)
+      return
+    }
+    if (animate) return
     let second = 0
     const first = window.requestAnimationFrame(() => {
       second = window.requestAnimationFrame(() => setAnimate(true))
