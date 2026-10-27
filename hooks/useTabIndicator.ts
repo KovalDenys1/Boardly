@@ -73,5 +73,19 @@ export function useTabIndicator<T extends string>(
     }
   }, [activeTab, listElement, measure])
 
-  return { indicatorStyle: style, setList, setButton }
+  // The first placement lands without a transition, so a deep link to a later tab does not slide in from the left.
+  const [animate, setAnimate] = useState(false)
+  useEffect(() => {
+    if (animate || style.opacity === 0) return
+    let second = 0
+    const first = window.requestAnimationFrame(() => {
+      second = window.requestAnimationFrame(() => setAnimate(true))
+    })
+    return () => {
+      window.cancelAnimationFrame(first)
+      window.cancelAnimationFrame(second)
+    }
+  }, [animate, style.opacity])
+
+  return { indicatorStyle: style, animate, setList, setButton }
 }

@@ -299,6 +299,7 @@ export default function ProfilePage() {
   const tabListRef = useRef<HTMLElement | null>(null)
   const {
     indicatorStyle: activeTabIndicatorStyle,
+    animate: animateTabIndicator,
     setList: setTabList,
     setButton: setTabButton,
   } = useTabIndicator(activeTab, { insetPx: PROFILE_TAB_INDICATOR_X_INSET_PX, listRef: tabListRef })
@@ -2071,7 +2072,7 @@ export default function ProfilePage() {
             >
               <div
                 aria-hidden="true"
-                className="pointer-events-none absolute left-0 bottom-1.5 top-1.5 rounded-xl bg-bd-lav shadow-[0_3px_0_#7867E8] transition-[transform,width,opacity] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]"
+                className={`pointer-events-none absolute left-0 bottom-1.5 top-1.5 rounded-xl bg-bd-lav shadow-[0_3px_0_#7867E8] ${animateTabIndicator ? 'transition-[transform,width,opacity] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]' : ''}`}
                 style={{
                   width: activeTabIndicatorStyle.width
                     ? `${activeTabIndicatorStyle.width}px`

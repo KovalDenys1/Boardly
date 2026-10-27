@@ -1,4 +1,4 @@
-import { act, render, screen } from '@testing-library/react'
+import { act, render, screen, waitFor } from '@testing-library/react'
 import { useState } from 'react'
 import { useTabIndicator } from '@/hooks/useTabIndicator'
 
@@ -16,13 +16,14 @@ function fakeRect(el: HTMLElement): DOMRect {
 
 function Tabs({ loading, initialTab = 'profile' }: { loading: boolean; initialTab?: Tab }) {
   const [active, setActive] = useState<Tab>(initialTab)
-  const { indicatorStyle, setList, setButton } = useTabIndicator(active, { insetPx: 2 })
+  const { indicatorStyle, animate, setList, setButton } = useTabIndicator(active, { insetPx: 2 })
   // The profile page returns a loading screen before the tab list exists.
   if (loading) return <p>loading</p>
   return (
     <nav ref={setList} role="tablist">
       <div
         data-testid="pill"
+        className={animate ? 'animated' : undefined}
         style={{ width: indicatorStyle.width, transform: `translateX(${indicatorStyle.left}px)`, opacity: indicatorStyle.opacity }}
       />
       {TABS.map((tab) => (
@@ -61,6 +62,15 @@ describe('useTabIndicator', () => {
     const pill = screen.getByTestId('pill')
     expect(pill.style.opacity).toBe('1')
     expect(pill.style.transform).toBe(`translateX(${2 * TAB_WIDTH + 2}px)`)
+  })
+
+  it('lands on a deep-linked tab without sliding, then animates later moves', async () => {
+    render(<Tabs loading={false} initialTab="settings" />)
+
+    const pill = screen.getByTestId('pill')
+    expect(pill.style.transform).toBe(`translateX(${2 * TAB_WIDTH + 2}px)`)
+    expect(pill).not.toHaveClass('animated')
+    await waitFor(() => expect(pill).toHaveClass('animated'))
   })
 
   it('moves to the tab that is clicked', () => {
