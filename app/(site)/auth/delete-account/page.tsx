@@ -102,7 +102,7 @@ function DeleteAccountContent() {
             </div>
             <button
               onClick={() => router.push('/')}
-              className="w-full text-white py-3 rounded-xl font-semibold transition-colors" style={{ background: 'var(--bd-ink)' }}
+              className="w-full text-bd-bg py-3 rounded-xl font-semibold transition-colors" style={{ background: 'var(--bd-ink)' }}
             >
               {t('common.goHome')}
             </button>

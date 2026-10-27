@@ -278,7 +278,7 @@ export default function LoginForm() {
     const avatarClassName = tone === 'dark'
       ? 'h-10 w-10 shrink-0 bg-white/15 text-white'
       : 'h-10 w-10 shrink-0 text-white'
-    const avatarStyle = tone === 'light' ? { background: 'var(--bd-ink)', color: 'var(--bd-sun)' } : undefined
+    const avatarStyle = tone === 'light' ? { background: 'var(--bd-logo-tile)', color: 'var(--bd-sun)' } : undefined
 
     return (
       <div>

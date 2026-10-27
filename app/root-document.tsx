@@ -45,7 +45,7 @@ function HeaderSkeleton() {
       <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8" style={{ height: '100%' }}>
         <div className="flex justify-between items-center" style={{ height: '100%' }}>
           <div className="flex items-center gap-2" style={{ minWidth: '120px', fontFamily: "'Bricolage Grotesque', Georgia, serif", fontWeight: 800, fontSize: 22, color: 'var(--bd-ink)' }}>
-            <span style={{ width: 34, height: 34, borderRadius: 9, background: 'var(--bd-ink)', color: '#FFC44D', display: 'grid', placeItems: 'center', fontSize: 20, boxShadow: '3px 3px 0 #FF6B5B', flexShrink: 0 }}>B</span>
+            <span style={{ width: 34, height: 34, borderRadius: 9, background: 'var(--bd-logo-tile)', color: '#FFC44D', display: 'grid', placeItems: 'center', fontSize: 20, boxShadow: '3px 3px 0 #FF6B5B', flexShrink: 0 }}>B</span>
             boardly
           </div>
           <div className="flex items-center gap-4" style={{ minWidth: '200px' }}>

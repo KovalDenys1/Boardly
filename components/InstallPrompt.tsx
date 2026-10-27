@@ -98,8 +98,8 @@ export default function InstallPrompt() {
       >
         <div className="flex items-start gap-3">
           <div
-            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-white"
-            style={{ background: 'var(--bd-ink)', boxShadow: '3px 3px 0 var(--bd-coral)' }}
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl"
+            style={{ background: 'var(--bd-logo-tile)', boxShadow: '3px 3px 0 var(--bd-coral)' }}
           >
             <span aria-hidden="true" style={{ fontWeight: 900, color: 'var(--bd-sun)', fontSize: 18 }}>B</span>
           </div>
@@ -113,7 +113,7 @@ export default function InstallPrompt() {
                 type="button"
                 onClick={handleInstall}
                 disabled={isPrompting}
-                className="rounded-xl px-3 py-2 text-xs font-semibold text-white transition disabled:opacity-60"
+                className="rounded-xl px-3 py-2 text-xs font-semibold text-bd-bg transition disabled:opacity-60"
                 style={{ background: 'var(--bd-ink)' }}
               >
                 {isPrompting ? t('installPrompt.installing') : t('installPrompt.install')}
