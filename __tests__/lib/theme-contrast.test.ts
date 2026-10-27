@@ -80,33 +80,66 @@ describe.each(Object.entries(THEMES))('%s theme tokens', (_name, tokens) => {
   })
 })
 
-describe('dark -deep accents', () => {
+describe('dark accent text', () => {
   const v = (name: string) => THEMES.dark[`--bd-${name}`]
 
-  it.each(['coral', 'mint', 'lav'])('%s-deep reads on the dark surfaces and on its own 15 %% tint', (accent) => {
-    const deep = v(`${accent}-deep`)
+  it.each(['coral', 'mint', 'lav'])('%s-text reads on the dark surfaces and on its own 15 %% tint', (accent) => {
+    const text = v(`${accent}-text`)
     const pairs: Array<[string, string, string]> = []
-    for (const s of ['bg', 'bg2', 'card']) pairs.push([`on ${s}`, deep, v(s)])
-    // Tinted chips and buttons sit on the page or a card. Over bg2 a tint would need a
-    // -deep lighter than its fill, which the next test rules out.
-    for (const s of ['bg', 'card']) pairs.push([`on ${accent}/15 over ${s}`, deep, tint(v(accent), 0.15, v(s))])
+    for (const s of ['bg', 'bg2', 'card']) {
+      pairs.push([`on ${s}`, text, v(s)], [`on ${accent}/15 over ${s}`, text, tint(v(accent), 0.15, v(s))])
+    }
     expect(below(pairs)).toEqual([])
   })
+})
 
-  it.each(['coral', 'mint', 'lav'])('%s-deep stays a shade below its fill, so the hard shadow under a button is still a shadow', (accent) => {
-    expect(luminance(v(`${accent}-deep`))).toBeLessThan(luminance(v(accent)))
+/**
+ * The -deep shades draw the border and hard shadow of a filled button, a checked box and
+ * the focus ring, so they hold their own floors: in every theme, lobby themes included.
+ */
+const SHADE_SURFACES: Array<[name: string, tokens: Record<string, string>, page: string]> = [
+  ['light', THEMES.light, THEMES.light['--bd-bg']],
+  ['dark', THEMES.dark, THEMES.dark['--bd-bg']],
+  ...LOBBY_THEME_IDS.filter((id) => id !== 'default').map((id): [string, Record<string, string>, string] => [
+    `lobby ${id}`,
+    { ...THEMES.light, ...(getThemePageStyle(id) as Record<string, string>) },
+    LOBBY_THEMES[id].bg,
+  ]),
+]
+
+describe.each(SHADE_SURFACES)('%s: accent shades', (_name, tokens, page) => {
+  it.each(['coral', 'mint', 'lav'])('%s-deep stays a visible step darker than its fill', (accent) => {
+    const shade = tokens[`--bd-${accent}-deep`]
+    const fill = tokens[`--bd-${accent}`]
+    expect(luminance(shade)).toBeLessThan(luminance(fill))
+    expect(ratio(shade, fill)).toBeGreaterThanOrEqual(1.3)
+  })
+
+  it('a checked box draws its white tick on lav-deep at 3:1 or more', () => {
+    expect(ratio('#FFFFFF', tokens['--bd-lav-deep'])).toBeGreaterThanOrEqual(3)
+  })
+
+  it('the lav-deep focus ring reaches 3:1 on the page', () => {
+    expect(ratio(tokens['--bd-lav-deep'], page)).toBeGreaterThanOrEqual(3)
+  })
+})
+
+describe.each(Object.entries(THEMES))('%s: focus ring on a control filled with ink', (_name, tokens) => {
+  // The Roll button, the drawer's ink buttons and a selected plate are ink: cream in dark.
+  it('reaches 3:1', () => {
+    expect(ratio(tokens['--bd-lav-deep'], tokens['--bd-ink'])).toBeGreaterThanOrEqual(3)
   })
 })
 
 describe('lobby themes', () => {
-  it.each(LOBBY_THEME_IDS.filter((id) => id !== 'default'))('%s sets readable -deep text and inverse slab values', (id) => {
+  it.each(LOBBY_THEME_IDS.filter((id) => id !== 'default'))('%s sets readable accent text and inverse slab values', (id) => {
     const theme = LOBBY_THEMES[id]
     const style = getThemePageStyle(id) as Record<string, string>
     const pairs: Array<[string, string, string]> = [['on-inverse on inverse', style['--bd-ink-on-inverse'], style['--bd-inverse']]]
     for (const accent of ['coral', 'mint', 'lav']) {
-      const deep = style[`--bd-${accent}-deep`]
-      expect(deep).toMatch(/^#[0-9A-F]{6}$/i)
-      if (theme.dark) pairs.push([`${accent}-deep on bg`, deep, theme.bg], [`${accent}-deep on bg2`, deep, theme.bg2])
+      const text = style[`--bd-${accent}-text`]
+      expect(text).toMatch(/^#[0-9A-F]{6}$/i)
+      if (theme.dark) pairs.push([`${accent}-text on bg`, text, theme.bg], [`${accent}-text on bg2`, text, theme.bg2])
     }
     expect(below(pairs)).toEqual([])
   })

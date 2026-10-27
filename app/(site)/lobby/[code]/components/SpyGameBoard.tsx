@@ -790,7 +790,7 @@ export default function SpyGameBoard({
   const roleCard = showRoleCard && roleInfo ? (
     <section className="spy-panel p-4">
       <p className="bd-kicker">{t('spy.yourRole')}</p>
-      <h3 className={`mt-1 text-2xl font-black ${roleInfo.role === 'Spy' ? 'text-(--bd-coral-deep)' : 'text-(--bd-mint-deep)'}`}>
+      <h3 className={`mt-1 text-2xl font-black ${roleInfo.role === 'Spy' ? 'text-(--bd-coral-text)' : 'text-(--bd-mint-text)'}`}>
         {t(roleInfo.role === 'Spy' ? 'spy.roles.spy' : 'spy.roles.regular')}
       </h3>
       {roleInfo.role === 'Spy' ? (

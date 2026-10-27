@@ -41,7 +41,7 @@ export default function TicTacToeGameIcon({
         <span
           key={`${mark}-${index}`}
           style={{
-            color: mark === 'X' ? 'var(--bd-coral)' : 'var(--bd-lav-deep)',
+            color: mark === 'X' ? 'var(--bd-coral)' : 'var(--bd-lav-text)',
             display: 'grid',
             fontFamily: 'var(--bd-font-display)',
             fontSize,

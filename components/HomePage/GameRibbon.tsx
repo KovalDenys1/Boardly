@@ -188,7 +188,7 @@ function MoreGamesCard({ count }: { count: number }) {
               fontSize: 56,
               fontWeight: 700,
               lineHeight: 1,
-              color: 'var(--bd-lav-deep)',
+              color: 'var(--bd-lav-text)',
             }}
           >
             +{count}

@@ -101,7 +101,7 @@ export default function SpyVoting({
               {t('spy.confirmVote')}
             </button>
           ) : (
-            <div className="mt-5 rounded-xl border border-(--bd-line) bg-(--bd-card-warm) px-4 py-3 text-center text-sm font-bold text-(--bd-mint-deep)">
+            <div className="mt-5 rounded-xl border border-(--bd-line) bg-(--bd-card-warm) px-4 py-3 text-center text-sm font-bold text-(--bd-mint-text)">
               {t('spy.confirmVote')}
             </div>
           )}

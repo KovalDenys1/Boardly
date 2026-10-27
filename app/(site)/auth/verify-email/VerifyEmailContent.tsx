@@ -182,7 +182,7 @@ export default function VerifyEmailContent() {
       </p>
 
       {sent && (
-        <div className="mb-4 flex items-center justify-center gap-2 rounded-xl border border-bd-mint/40 bg-bd-mint/10 px-4 py-3 text-sm font-semibold text-bd-mint-deep">
+        <div className="mb-4 flex items-center justify-center gap-2 rounded-xl border border-bd-mint/40 bg-bd-mint/10 px-4 py-3 text-sm font-semibold text-bd-mint-text">
           <Icon name="check" size={16} />
           <span>{t('auth.verifyEmail.emailSent')}</span>
         </div>

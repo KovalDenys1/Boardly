@@ -100,7 +100,7 @@ function CueCard({ id, onPlay, outcome }: { id: CueId; onPlay: (key: string, ste
           </button>
         ))}
         {Object.entries(outcome).some(([key, value]) => key.startsWith(`${id}:`) && value === 'skipped') && (
-          <span className="text-[11px]" style={{ color: 'var(--bd-coral-deep)' }}>skipped</span>
+          <span className="text-[11px]" style={{ color: 'var(--bd-coral-text)' }}>skipped</span>
         )}
       </div>
     </div>

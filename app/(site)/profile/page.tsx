@@ -372,13 +372,13 @@ export default function ProfilePage() {
         id: 'friends',
         label: t('profile.friends.title'),
         value: String(profileSummary?.friendsCount ?? 0),
-        accent: 'bg-bd-coral text-bd-coral-deep',
+        accent: 'bg-bd-coral text-bd-coral-text',
       },
       {
         id: 'games',
         label: t('profile.stats.gamesCompleted'),
         value: String(profileSummary?.achievementStats?.completedGamesCount ?? 0),
-        accent: 'bg-bd-mint text-bd-mint-deep',
+        accent: 'bg-bd-mint text-bd-mint-text',
       },
       {
         id: 'memberSince',
@@ -390,7 +390,7 @@ export default function ProfilePage() {
         id: 'premium',
         label: t('profile.premiumAccount'),
         value: hasUploadPack ? (premiumCancelAtPeriodEnd ? 'Cancels soon' : 'Active') : 'Free',
-        accent: hasUploadPack ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' : 'bg-bd-lav text-bd-lav-deep',
+        accent: hasUploadPack ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' : 'bg-bd-lav text-bd-lav-text',
         onClick: () => {
           setActiveTab('premium')
           setTimeout(() => tabListRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 0)
@@ -1813,13 +1813,13 @@ export default function ProfilePage() {
   const actionSecondaryButtonClassName =
     'inline-flex items-center justify-center gap-2 rounded-2xl border-[1.5px] border-bd-line bg-bd-card-warm px-5 py-3 text-sm font-semibold text-bd-ink shadow-[0_3px_0_var(--bd-line)] transition-all hover:-translate-y-0.5 hover:bg-bd-bg2'
   const actionDangerButtonClassName =
-    'inline-flex items-center justify-center gap-2 rounded-2xl border border-bd-danger-border bg-bd-card-warm px-4 py-2.5 text-sm font-semibold text-bd-coral-deep transition-colors hover:bg-bd-danger-bg dark:border-red-500/30 dark:text-red-300 dark:hover:bg-red-500/10'
+    'inline-flex items-center justify-center gap-2 rounded-2xl border border-bd-danger-border bg-bd-card-warm px-4 py-2.5 text-sm font-semibold text-bd-coral-text transition-colors hover:bg-bd-danger-bg dark:border-red-500/30 dark:text-red-300 dark:hover:bg-red-500/10'
   const profileSurfaceClassName =
     'rounded-3xl border border-bd-line bg-bd-bg p-5'
   const fieldInputClassName =
     'w-full rounded-2xl border bg-(--bd-input-bg) px-4 py-3 text-base text-bd-ink shadow-xs outline-hidden desk:text-sm transition-all focus:ring-2 focus:ring-inset focus:ring-bd-lav-deep'
   const settingsSyncBadgeClassName =
-    'inline-flex w-fit rounded-full bg-bd-lav/15 px-2.5 py-1 text-xs font-semibold text-bd-lav-deep dark:text-bd-lav'
+    'inline-flex w-fit rounded-full bg-bd-lav/15 px-2.5 py-1 text-xs font-semibold text-bd-lav-text dark:text-bd-lav'
 
   if (status === 'loading') {
     return (
@@ -1918,7 +1918,7 @@ export default function ProfilePage() {
                           value: username,
                           title: t('profile.inline.editUsername'),
                           displayClassName:
-                            'font-display text-4xl font-bold leading-none text-bd-ink hover:text-bd-coral-deep dark:hover:text-bd-sun sm:text-5xl',
+                            'font-display text-4xl font-bold leading-none text-bd-ink hover:text-bd-coral-text dark:hover:text-bd-sun sm:text-5xl',
                           inputClassName:
                             'font-display text-4xl font-bold leading-none text-bd-ink placeholder:text-bd-ink-muted sm:text-5xl',
                         })}
@@ -1928,19 +1928,19 @@ export default function ProfilePage() {
                           value: email,
                           title: t('profile.inline.editEmail'),
                           displayClassName:
-                            'text-sm font-medium text-bd-ink-soft hover:text-bd-coral-deep dark:hover:text-bd-sun sm:text-base',
+                            'text-sm font-medium text-bd-ink-soft hover:text-bd-coral-text dark:hover:text-bd-sun sm:text-base',
                           inputClassName:
                             'text-sm font-medium text-bd-ink-soft placeholder:text-bd-ink-muted sm:text-base',
                         })}
 
                         <div className="flex flex-wrap justify-center gap-2 pt-2 sm:justify-start">
-                          <span className="inline-flex items-center rounded-full bg-bd-mint/20 px-3 py-1.5 text-xs font-bold text-bd-mint-deep">
+                          <span className="inline-flex items-center rounded-full bg-bd-mint/20 px-3 py-1.5 text-xs font-bold text-bd-mint-text">
                             {t('profile.chips.games', { count: profileSummary?.gamesPlayed ?? 0 })}
                           </span>
                           <span className="inline-flex items-center rounded-full bg-bd-sun/25 px-3 py-1.5 text-xs font-bold text-bd-sun-text">
                             {t('profile.chips.friends', { count: profileSummary?.friendsCount ?? 0 })}
                           </span>
-                          <span className="inline-flex items-center rounded-full bg-bd-coral/15 px-3 py-1.5 text-xs font-bold text-bd-coral-deep">
+                          <span className="inline-flex items-center rounded-full bg-bd-coral/15 px-3 py-1.5 text-xs font-bold text-bd-coral-text">
                             {effectiveEmailVerified ? t('profile.verified') : t('profile.verificationBanner.title')}
                           </span>
                         </div>
@@ -2172,7 +2172,7 @@ export default function ProfilePage() {
                       <label htmlFor="profile-email-input" className="mb-2 block text-sm font-semibold text-bd-ink">
                         {t('profile.email')}
                         {effectiveEmailVerified && (
-                          <span className="ml-2 inline-flex items-center gap-1 rounded-full bg-bd-mint/20 px-2.5 py-1 text-xs font-bold text-bd-mint-deep dark:bg-bd-mint/15 dark:text-bd-mint">
+                          <span className="ml-2 inline-flex items-center gap-1 rounded-full bg-bd-mint/20 px-2.5 py-1 text-xs font-bold text-bd-mint-text dark:bg-bd-mint/15 dark:text-bd-mint">
                             <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" strokeWidth="2.5" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>
                             {t('profile.verified')}
                           </span>
@@ -2336,7 +2336,7 @@ export default function ProfilePage() {
                               <div>
                                 <p className="text-sm font-semibold text-bd-ink">{provider.name}</p>
                                 {isConnected ? (
-                                  <p className="text-xs font-medium text-bd-mint-deep dark:text-bd-mint">
+                                  <p className="text-xs font-medium text-bd-mint-text dark:text-bd-mint">
                                     {t('profile.linkedAccounts.connected')}
                                   </p>
                                 ) : (
@@ -2382,7 +2382,7 @@ export default function ProfilePage() {
                 </div>
 
                 <div className="rounded-3xl border border-bd-danger-border bg-bd-danger-bg p-5 dark:border-red-500/20 dark:bg-red-500/10">
-                  <h3 className="text-base font-bold text-bd-coral-deep dark:text-red-300">
+                  <h3 className="text-base font-bold text-bd-coral-text dark:text-red-300">
                     {t('profile.dangerZone.title')}
                   </h3>
                   <p className="mt-1 text-sm text-bd-danger-text dark:text-red-200/70">
@@ -2403,7 +2403,7 @@ export default function ProfilePage() {
                       aria-labelledby="delete-confirm-title"
                       className="mt-4 rounded-2xl border border-bd-danger-border bg-bd-card-warm p-4 dark:border-red-500/20"
                     >
-                      <p id="delete-confirm-title" className="text-sm font-semibold text-bd-coral-deep dark:text-red-300">
+                      <p id="delete-confirm-title" className="text-sm font-semibold text-bd-coral-text dark:text-red-300">
                         {t('profile.dangerZone.confirmTitle')}
                       </p>
                       <p className="mt-2 break-all text-sm text-bd-danger-text dark:text-red-200/70">
@@ -2515,7 +2515,7 @@ export default function ProfilePage() {
                         options={SETTINGS_LANGUAGE_OPTIONS}
                         renderValue={(option) => (
                           <span className="flex items-center gap-3">
-                            <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-bd-bg2 font-mono text-[11px] font-bold uppercase tracking-[0.16em] text-bd-lav-deep dark:text-bd-lav">
+                            <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-bd-bg2 font-mono text-[11px] font-bold uppercase tracking-[0.16em] text-bd-lav-text dark:text-bd-lav">
                               {option?.badge ?? '--'}
                             </span>
                             <span className="min-w-0">
@@ -2795,7 +2795,7 @@ export default function ProfilePage() {
                               aria-pressed={accountPreferencesLoaded && accountPreferences.profileVisibility === option.value}
                               className={`rounded-2xl border px-4 py-3 text-left transition-all disabled:cursor-not-allowed ${
                                 accountPreferencesLoaded && accountPreferences.profileVisibility === option.value
-                                  ? 'border-bd-lav-deep bg-bd-lav/15 text-bd-lav-deep shadow-xs dark:border-bd-lav dark:bg-bd-lav/15 dark:text-bd-lav'
+                                  ? 'border-bd-lav-deep bg-bd-lav/15 text-bd-lav-text shadow-xs dark:border-bd-lav dark:bg-bd-lav/15 dark:text-bd-lav'
                                   : 'border-bd-line bg-bd-card-warm text-bd-ink-soft hover:bg-bd-bg2'
                               }`}
                             >
@@ -2972,7 +2972,7 @@ export default function ProfilePage() {
                         <p className="text-sm font-semibold text-bd-ink">{t(labelKey)}</p>
                         <p className="text-xs text-bd-ink-soft">{t(descKey)}</p>
                       </div>
-                      <span className="ml-auto shrink-0 text-bd-mint-deep dark:text-bd-mint"><Icon name="check" size={15} /></span>
+                      <span className="ml-auto shrink-0 text-bd-mint-text dark:text-bd-mint"><Icon name="check" size={15} /></span>
                     </div>
                   ))}
                 </div>

@@ -129,7 +129,7 @@ export default function SpyResults({
         <div className="text-center">
           <p className="bd-kicker">{t('spy.phases.results')}</p>
           <h2
-            className={`mt-1 text-3xl font-black sm:text-4xl ${spyWon ? 'text-(--bd-coral-deep)' : 'text-(--bd-mint-deep)'} ${rise(0, 'social-reveal').className}`}
+            className={`mt-1 text-3xl font-black sm:text-4xl ${spyWon ? 'text-(--bd-coral-text)' : 'text-(--bd-mint-text)'} ${rise(0, 'social-reveal').className}`}
             style={rise(0, 'social-reveal').style}
           >
             {spyWon ? t('spy.spyWins') : t('spy.regularsWin')}
@@ -214,7 +214,7 @@ export default function SpyResults({
                       {player.isPremium && <Icon name="crown" size={13} tone="premium" label="Premium" className="shrink-0" />}
                     </span>
                   </div>
-                  <span className="text-lg font-black text-(--bd-mint-deep)">
+                  <span className="text-lg font-black text-(--bd-mint-text)">
                     {scores[player.id] || 0} {t('profile.gameResults.points')}
                   </span>
                 </div>

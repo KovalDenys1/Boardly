@@ -3,7 +3,7 @@
  * with (`/dev/theme`).
  *
  * Boardly's whole visual language is two dozen colour custom properties in
- * `:root`, the inks, surfaces and -deep shades of which `html.dark` redefines. There are no radius, shadow or spacing
+ * `:root`, the inks, surfaces and accent text colours of which `html.dark` redefines. There are no radius, shadow or spacing
  * tokens — those are written into the rules — so the panel is a colour tool,
  * and the useful control is HSL rather than a hex field: hue and saturation
  * are what you move to make a palette feel like a different product, and a hex
@@ -40,14 +40,17 @@ export interface ThemeToken {
  */
 export const THEME_TOKENS: readonly ThemeToken[] = [
   { name: 'bd-coral', group: 'accent', note: 'Primary accent: buttons, the brand mark, tic-tac-toe', light: '#FF6B5B', dark: null },
-  { name: 'bd-coral-deep', group: 'accent', note: 'Coral text and icons, and the shade under a coral button', light: '#E04B3B', dark: '#F57062' },
+  { name: 'bd-coral-deep', group: 'accent', note: 'The border and hard shadow of a coral fill. Does not flip', light: '#E04B3B', dark: null },
+  { name: 'bd-coral-text', group: 'accent', note: 'Coral text and icons', light: '#E04B3B', dark: '#FF8273' },
   { name: 'bd-mint', group: 'accent', note: 'Success, memory, the ready state', light: '#4FC9A6', dark: null },
-  { name: 'bd-mint-deep', group: 'accent', note: 'Mint text and icons, and the shade under a mint button', light: '#2FA787', dark: '#40BA97' },
+  { name: 'bd-mint-deep', group: 'accent', note: 'The border, shadow and dot of a mint fill. Does not flip', light: '#2FA787', dark: null },
+  { name: 'bd-mint-text', group: 'accent', note: 'Mint text and icons', light: '#2FA787', dark: '#45BF9C' },
   { name: 'bd-sun', group: 'accent', note: 'Yahtzee, highlights, the win badge', light: '#FFC44D', dark: null },
   { name: 'bd-sun-deep', group: 'accent', note: 'Sun text and icons on a light fill', light: '#E5A82E', dark: null },
   { name: 'bd-lav', group: 'accent', note: 'Spy, rock paper scissors, planned games', light: '#9B8CFF', dark: null },
   { name: 'bd-lav-mid', group: 'accent', note: 'Lavender between the base and the deep', light: '#8B7DFF', dark: null },
-  { name: 'bd-lav-deep', group: 'accent', note: 'Lavender text, focus rings, the border and shade of a lavender button', light: '#7867E8', dark: '#9A8CFA' },
+  { name: 'bd-lav-deep', group: 'accent', note: 'Focus rings, a checked box, the border and shadow of a lavender fill. Does not flip', light: '#7867E8', dark: null },
+  { name: 'bd-lav-text', group: 'accent', note: 'Lavender text and icons', light: '#7867E8', dark: '#A99BFF' },
   { name: 'bd-sun-text', group: 'accent', note: 'Sun-coloured text on a sun tint (--bd-sun-deep is a border shade)', light: '#8A5F00', dark: '#FFC44D' },
   { name: 'bd-sky', group: 'accent', note: 'Connect four, links, the info state', light: '#6BC1F0', dark: null },
   { name: 'bd-premium', group: 'accent', note: 'The crown and every premium marker', light: '#F59E0B', dark: null },

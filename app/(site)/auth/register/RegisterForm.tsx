@@ -291,9 +291,9 @@ export default function RegisterForm() {
 
           {isLobbyInviteFlow && (
             <div style={{ marginBottom: 20, padding: 16, background: 'rgba(79,201,166,0.12)', border: '1.5px solid rgba(79,201,166,0.3)', borderRadius: 16, display: 'flex', gap: 12, alignItems: 'center' }}>
-              <Icon name="gamepad" size={24} style={{ color: 'var(--bd-mint-deep)' }} />
+              <Icon name="gamepad" size={24} style={{ color: 'var(--bd-mint-text)' }} />
               <div>
-                <div style={{ fontWeight: 600, color: 'var(--bd-mint-deep)', fontSize: 14 }}>{t('auth.login.invited', "You've been invited to a game!")}</div>
+                <div style={{ fontWeight: 600, color: 'var(--bd-mint-text)', fontSize: 14 }}>{t('auth.login.invited', "You've been invited to a game!")}</div>
                 <div style={{ fontSize: 13, color: 'var(--bd-ink-soft)', marginTop: 2 }}>{t('auth.login.loginToJoin', 'Login to join the lobby')}</div>
               </div>
             </div>
@@ -334,7 +334,7 @@ export default function RegisterForm() {
                     placeholder={t('auth.register.emailPlaceholder')}
                     autoComplete="email"
                   />
-                  {fieldErrors.email && <p style={{ fontSize: 13, color: 'var(--bd-coral-deep)', marginTop: 2 }}>{fieldErrors.email}</p>}
+                  {fieldErrors.email && <p style={{ fontSize: 13, color: 'var(--bd-coral-text)', marginTop: 2 }}>{fieldErrors.email}</p>}
                 </div>
 
                 <div>
@@ -361,7 +361,7 @@ export default function RegisterForm() {
                     hintLabel={t('auth.password.requirements')}
                     required={true}
                   />
-                  {fieldErrors.password && <p style={{ fontSize: 13, color: 'var(--bd-coral-deep)', marginTop: 2 }}>{fieldErrors.password}</p>}
+                  {fieldErrors.password && <p style={{ fontSize: 13, color: 'var(--bd-coral-text)', marginTop: 2 }}>{fieldErrors.password}</p>}
                 </div>
 
                 <div>
@@ -372,7 +372,7 @@ export default function RegisterForm() {
                     autoComplete="new-password"
                     label={t('auth.register.confirmPassword')}
                   />
-                  {fieldErrors.confirmPassword && <p style={{ fontSize: 13, color: 'var(--bd-coral-deep)', marginTop: 2 }}>{fieldErrors.confirmPassword}</p>}
+                  {fieldErrors.confirmPassword && <p style={{ fontSize: 13, color: 'var(--bd-coral-text)', marginTop: 2 }}>{fieldErrors.confirmPassword}</p>}
                 </div>
               </div>
 
@@ -423,7 +423,7 @@ export default function RegisterForm() {
               </div>
 
               {error && (
-                <div style={{ padding: '12px 16px', background: 'rgba(255,107,91,0.1)', border: '1.5px solid rgba(255,107,91,0.3)', borderRadius: 12, fontSize: 14, color: 'var(--bd-coral-deep)' }}>
+                <div style={{ padding: '12px 16px', background: 'rgba(255,107,91,0.1)', border: '1.5px solid rgba(255,107,91,0.3)', borderRadius: 12, fontSize: 14, color: 'var(--bd-coral-text)' }}>
                   {error}
                 </div>
               )}

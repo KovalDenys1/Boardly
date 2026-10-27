@@ -345,7 +345,7 @@ export default function PublicProfileView({
 
     if (relation === 'friends') {
       return (
-        <div className="rounded-2xl border border-bd-mint/40 bg-bd-mint/15 px-4 py-3 text-sm font-semibold text-bd-mint-deep dark:text-emerald-300">
+        <div className="rounded-2xl border border-bd-mint/40 bg-bd-mint/15 px-4 py-3 text-sm font-semibold text-bd-mint-text dark:text-emerald-300">
           {t('profile.publicProfile.alreadyFriends')}
         </div>
       )
@@ -412,7 +412,7 @@ export default function PublicProfileView({
         <span>{t(note.key)}</span>
         <Link
           href={PRIVACY_SETTINGS_HREF}
-          className={`font-bold underline underline-offset-2 ${isDark ? 'text-bd-lav hover:text-white' : 'text-bd-lav-deep hover:text-bd-ink dark:text-bd-lav'}`}
+          className={`font-bold underline underline-offset-2 ${isDark ? 'text-bd-lav hover:text-white' : 'text-bd-lav-text hover:text-bd-ink dark:text-bd-lav'}`}
         >
           {t('profile.publicProfile.privacySettingsLink')}
         </Link>
@@ -599,7 +599,7 @@ export default function PublicProfileView({
                     <p className={`font-mono text-[11px] uppercase tracking-[0.22em] ${tc.statLabel}`}>
                       {t('profile.friends.title')}
                     </p>
-                    <p className={`mt-3 font-display text-3xl font-bold ${isDark ? 'text-bd-coral' : 'text-bd-coral-deep dark:text-white'}`}>
+                    <p className={`mt-3 font-display text-3xl font-bold ${isDark ? 'text-bd-coral' : 'text-bd-coral-text dark:text-white'}`}>
                       {profile.friendsCount ?? 0}
                     </p>
                   </div>
@@ -608,7 +608,7 @@ export default function PublicProfileView({
                     <p className={`font-mono text-[11px] uppercase tracking-[0.22em] ${tc.statLabel}`}>
                       {t('profile.stats.gamesCompleted')}
                     </p>
-                    <p className={`mt-3 font-display text-3xl font-bold ${isDark ? 'text-bd-mint' : 'text-bd-mint-deep dark:text-white'}`}>
+                    <p className={`mt-3 font-display text-3xl font-bold ${isDark ? 'text-bd-mint' : 'text-bd-mint-text dark:text-white'}`}>
                       {levelSourceGames}
                     </p>
                   </div>

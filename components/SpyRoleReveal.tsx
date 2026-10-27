@@ -58,7 +58,7 @@ export default function SpyRoleReveal({
 
               <div className="text-center">
                 <p className="bd-kicker">{t('spy.yourRole')}</p>
-                <h2 className={`spy-role-title ${isSpy ? 'text-(--bd-coral-deep)' : 'text-(--bd-mint-deep)'}`}>
+                <h2 className={`spy-role-title ${isSpy ? 'text-(--bd-coral-text)' : 'text-(--bd-mint-text)'}`}>
                   {t(isSpy ? 'spy.roles.spy' : 'spy.roles.regular')}
                 </h2>
               </div>
@@ -87,7 +87,7 @@ export default function SpyRoleReveal({
                   </div>
                   <div className="spy-secret-tile">
                     <p className="bd-kicker">{t('spy.roleAtLocation')}</p>
-                    <p className="mt-1 text-xl font-black text-(--bd-mint-deep)">{locationRole}</p>
+                    <p className="mt-1 text-xl font-black text-(--bd-mint-text)">{locationRole}</p>
                   </div>
                   <p className="sm:col-span-2 text-sm font-medium text-(--bd-ink-muted)">
                     {t('spy.rules.identifySpy')}

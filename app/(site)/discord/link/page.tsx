@@ -251,7 +251,7 @@ function DiscordLinkContent() {
         <ul className="mb-4 space-y-2">
           {sharedItems.map((item) => (
             <li key={item} className="flex items-start gap-2 text-sm text-bd-ink-soft">
-              <Icon name="check" size={16} className="mt-0.5 shrink-0 text-bd-mint-deep" />
+              <Icon name="check" size={16} className="mt-0.5 shrink-0 text-bd-mint-text" />
               <span>{item}</span>
             </li>
           ))}

@@ -374,7 +374,7 @@ export default function GameLobbiesPage({
                     >
                       <div className="mb-3 flex items-start justify-between gap-2">
                         <h3 className="truncate font-bold text-bd-ink">{lobby.name}</h3>
-                        <span className="shrink-0 rounded-lg border border-bd-lav/40 bg-bd-lav/15 px-2 py-0.5 font-mono text-xs font-bold text-bd-lav-deep">
+                        <span className="shrink-0 rounded-lg border border-bd-lav/40 bg-bd-lav/15 px-2 py-0.5 font-mono text-xs font-bold text-bd-lav-text">
                           {lobby.code}
                         </span>
                       </div>
@@ -395,13 +395,13 @@ export default function GameLobbiesPage({
                             </span>
                           )}
                           {isPlaying && (
-                            <span className="flex items-center gap-1 rounded-full bg-bd-mint/20 px-2.5 py-1 text-[11px] font-bold text-bd-mint-deep">
+                            <span className="flex items-center gap-1 rounded-full bg-bd-mint/20 px-2.5 py-1 text-[11px] font-bold text-bd-mint-text">
                               <span className="h-1.5 w-1.5 rounded-full bg-bd-mint-deep" />
                               {tx('playing')}
                             </span>
                           )}
                           {isFull && (
-                            <span className="rounded-full bg-bd-coral/15 px-2.5 py-1 text-[11px] font-bold text-bd-coral-deep">
+                            <span className="rounded-full bg-bd-coral/15 px-2.5 py-1 text-[11px] font-bold text-bd-coral-text">
                               {tx('full')}
                             </span>
                           )}

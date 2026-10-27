@@ -49,7 +49,7 @@ export default function ForgotPasswordPage() {
 
   const linkButtonStyle = {
     background: 'none', border: 'none', padding: 0, cursor: 'pointer',
-    color: 'var(--bd-coral-deep)', fontWeight: 600, textDecoration: 'underline', fontSize: 14,
+    color: 'var(--bd-coral-text)', fontWeight: 600, textDecoration: 'underline', fontSize: 14,
   } as const
 
   if (sent) {

@@ -677,7 +677,7 @@ function CreateLobbyPage() {
                 <div
                   role="alert"
                   className="mb-3 flex items-center gap-2 rounded-2xl px-4 py-3 text-sm"
-                  style={{ background: 'rgba(255,107,91,0.10)', border: '1.5px solid rgba(255,107,91,0.3)', color: 'var(--bd-coral-deep)' }}
+                  style={{ background: 'rgba(255,107,91,0.10)', border: '1.5px solid rgba(255,107,91,0.3)', color: 'var(--bd-coral-text)' }}
                 >
                   <Icon name="warning" size={16} />
                   {error}
@@ -776,7 +776,7 @@ function CreateLobbyPage() {
                     onBlur={() => setShowNameWarning(false)}
                   />
                   {showNameWarning && (
-                    <p className="text-sm" style={{ color: 'var(--bd-coral-deep)' }}>
+                    <p className="text-sm" style={{ color: 'var(--bd-coral-text)' }}>
                       <Icon name="warning" size={14} /> {t('lobby.create.maxCharacters', { max: LOBBY_NAME_MAX })}
                     </p>
                   )}
@@ -1015,7 +1015,7 @@ function CreateLobbyPage() {
                       <p className="font-semibold text-bd-ink"><Icon name="users" size={14} /> {t('lobby.invite.title')}</p>
                       <p className="text-[13px] text-bd-ink-muted">
                         {selectedFriendIds.length > 0
-                          ? <span style={{ color: 'var(--bd-mint-deep)', fontWeight: 600 }}><Icon name="check" size={13} /> {t('lobby.create.friendsSelected', { value: selectedFriendIds.length })}</span>
+                          ? <span style={{ color: 'var(--bd-mint-text)', fontWeight: 600 }}><Icon name="check" size={13} /> {t('lobby.create.friendsSelected', { value: selectedFriendIds.length })}</span>
                           : t('lobby.invite.description')}
                       </p>
                     </div>

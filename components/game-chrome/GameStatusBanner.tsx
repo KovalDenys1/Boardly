@@ -194,7 +194,7 @@ export default function GameStatusBanner({
       {showTimer && (
         <div style={{
           fontFamily: 'ui-monospace, monospace', fontSize: 18, fontWeight: 700, minWidth: 44, textAlign: 'right',
-          color: danger ? 'var(--bd-coral-deep)' : 'var(--bd-ink)',
+          color: danger ? 'var(--bd-coral-text)' : 'var(--bd-ink)',
         }}>
           {formatSeconds(secs)}
         </div>

@@ -99,13 +99,13 @@ function OAuthErrorContent() {
 
           <div className="mb-6 space-y-3 text-left">
             <div className="rounded-xl border border-bd-lav/40 bg-bd-lav/10 p-4">
-              <p className="text-sm font-bold text-bd-lav-deep">{t('auth.oauthError.optionProviderTitle', { provider: getProviderName() })}</p>
+              <p className="text-sm font-bold text-bd-lav-text">{t('auth.oauthError.optionProviderTitle', { provider: getProviderName() })}</p>
               <p className="mt-1 text-xs text-bd-ink-soft">
                 {t('auth.oauthError.optionProviderBody', { provider: getProviderName() })}
               </p>
             </div>
             <div className="rounded-xl border border-bd-mint/40 bg-bd-mint/10 p-4">
-              <p className="text-sm font-bold text-bd-mint-deep">{t('auth.oauthError.optionExistingTitle')}</p>
+              <p className="text-sm font-bold text-bd-mint-text">{t('auth.oauthError.optionExistingTitle')}</p>
               <p className="mt-1 text-xs text-bd-ink-soft">
                 {t('auth.oauthError.optionExistingBody', { provider: getProviderName() })}
               </p>
@@ -148,7 +148,7 @@ function OAuthErrorContent() {
         </div>
 
         <div className="mb-6 rounded-xl border border-bd-coral/40 bg-bd-coral/10 p-4">
-          <p className="text-sm font-semibold text-bd-coral-deep">
+          <p className="text-sm font-semibold text-bd-coral-text">
             {t('auth.oauthError.cannotLinkBody', { provider: getProviderName() })}
           </p>
         </div>

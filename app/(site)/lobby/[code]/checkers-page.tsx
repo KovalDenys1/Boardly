@@ -963,7 +963,7 @@ export default function CheckersLobbyPage({ code, isSpectator = false, onGameRes
             className="ck-hint"
             data-testid="checkers-hint"
             data-must-capture={mustCapture || undefined}
-            style={{ color: hint && (mustCapture || chainFrom) ? 'var(--bd-mint-deep)' : 'var(--bd-ink-soft)' }}
+            style={{ color: hint && (mustCapture || chainFrom) ? 'var(--bd-mint-text)' : 'var(--bd-ink-soft)' }}
         >
             {hint ?? lastMoveLine}
         </div>

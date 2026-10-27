@@ -42,13 +42,20 @@ All tokens are defined in `app/globals.css` (`:root`) and mirrored in its `@them
 | Card warm (card surfaces) | `var(--bd-card-warm)` | `bd-card-warm` | `#FFF8EC` |
 | Inverse (dark slab) | `var(--bd-inverse)` | `bd-inverse` | `#1F1B16` |
 | Ink on inverse | `var(--bd-ink-on-inverse)` | `bd-ink-on-inverse` | `#FBF6EE` |
+| Coral text | `var(--bd-coral-text)` | `bd-coral-text` | `#E04B3B` |
+| Mint text | `var(--bd-mint-text)` | `bd-mint-text` | `#2FA787` |
+| Lav text | `var(--bd-lav-text)` | `bd-lav-text` | `#7867E8` |
 | Sun text (on a sun tint) | `var(--bd-sun-text)` | `bd-sun-text` | `#8A5F00` |
 
 Dark values (`html.dark`) that are not obvious from the light ones: `--bd-ink-muted` `#9C8E7E`,
-`--bd-coral-deep` `#F57062`, `--bd-mint-deep` `#40BA97`, `--bd-lav-deep` `#9A8CFA`, `--bd-inverse`
-`#35302A`, `--bd-ink-on-inverse` `#F0E8DB`, `--bd-sun-text` `#FFC44D`. The -deep shades get lighter so
-they read as text on a dark surface, and each stays a shade below its fill so a hard shadow under a
-button is still a shadow.
+`--bd-coral-text` `#FF8273`, `--bd-mint-text` `#45BF9C`, `--bd-lav-text` `#A99BFF`, `--bd-inverse`
+`#35302A`, `--bd-ink-on-inverse` `#F0E8DB`, `--bd-sun-text` `#FFC44D`.
+
+**Accent text is `-text`; `-deep` is a shade.** `--bd-*-deep` draws what belongs to a fill: the border
+and hard shadow of a coral or lavender button, a checked box, a status dot, the lavender focus ring. It
+never flips, because the fills never flip. Coloured words and icons on a surface use `--bd-*-text`,
+which turns lighter in dark. One token for both jobs cannot work: light enough to read on a dark card
+is as light as the fill, and the button loses its shadow (#1538).
 
 **`--bd-ink` is never a background for a band, a banner or a card.** It turns cream in dark, so a band
 painted with it becomes a light slab and anything coloured on it disappears (#1538). A dark slab in both

@@ -20,6 +20,9 @@
   --color-bd-coral-deep: var(--bd-coral-deep);
   --color-bd-mint-deep: var(--bd-mint-deep);
   --color-bd-lav-deep: var(--bd-lav-deep);
+  --color-bd-coral-text: var(--bd-coral-text);
+  --color-bd-mint-text: var(--bd-mint-text);
+  --color-bd-lav-text: var(--bd-lav-text);
   --color-bd-sun-text: var(--bd-sun-text);
   --color-bd-inverse: var(--bd-inverse);
   --color-bd-ink-on-inverse: var(--bd-ink-on-inverse);
@@ -240,7 +243,10 @@
   /* A slab that stays dark in dark, where --bd-ink turns cream; text on it is --bd-ink-on-inverse. */
   --bd-inverse: #1F1B16;
   --bd-ink-on-inverse: #FBF6EE;
-  /* Sun text on a sun tint: --bd-sun-deep is a border shade and reads 1.9:1 as text. */
+  /* Accent-coloured text. The -deep shades are the border and shadow of a fill and do not flip. */
+  --bd-coral-text: #E04B3B;
+  --bd-mint-text: #2FA787;
+  --bd-lav-text: #7867E8;
   --bd-sun-text: #8A5F00;
   --bd-btn-ink: var(--bd-ink);
   --bd-line: #E8DDC8;
@@ -291,10 +297,9 @@ html.dark {
   --bd-ink:       #F0E8DB;
   --bd-ink-soft:  #B5A494;
   --bd-ink-muted: #9C8E7E;
-  /* Light enough to read as text on dark, still below each fill so a button's hard shadow stays a shadow. */
-  --bd-coral-deep: #F57062;
-  --bd-mint-deep: #40BA97;
-  --bd-lav-deep:  #9A8CFA;
+  --bd-coral-text: #FF8273;
+  --bd-mint-text: #45BF9C;
+  --bd-lav-text:  #A99BFF;
   --bd-inverse:   #35302A;
   --bd-ink-on-inverse: #F0E8DB;
   --bd-sun-text:  #FFC44D;
@@ -3179,7 +3184,7 @@ input[type="range"].slider-thumb::-moz-range-track {
   color: var(--bd-ink);
   text-align: center;
 }
-.yz-sheet__ph-marks { display: flex; align-items: center; justify-content: center; gap: 4px; height: 12px; color: var(--bd-lav-deep); }
+.yz-sheet__ph-marks { display: flex; align-items: center; justify-content: center; gap: 4px; height: 12px; color: var(--bd-lav-text); }
 /* Three or four players: the marks go above the name, which gets the column's whole width. */
 .yz-sheet:is([data-players='3'], [data-players='4']) .yz-sheet__ph { flex-direction: column; }
 .yz-sheet__ph.is-current { background-color: color-mix(in srgb, var(--bd-sun) 26%, var(--bd-card-warm)); }
@@ -3610,7 +3615,7 @@ button.yz-pill:focus-visible { outline: 3px solid var(--bd-lav-deep); outline-of
   background: var(--bd-card-warm); font-size: 12px; overflow: hidden;
 }
 .yz-event__icon { flex-shrink: 0; display: inline-flex; color: var(--bd-ink-soft); }
-.yz-event--bot .yz-event__icon { color: var(--bd-lav-deep); }
+.yz-event--bot .yz-event__icon { color: var(--bd-lav-text); }
 .yz-event__name {
   flex: 0 1 auto; max-width: 40%; min-width: 0;
   font-weight: 700; color: var(--bd-ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
@@ -4321,7 +4326,7 @@ html.dark .liars-seat { background: var(--bd-bg2); }
   font-weight: 700;
   white-space: nowrap;
   background: color-mix(in srgb, var(--bd-coral) 18%, var(--bd-card));
-  color: var(--bd-coral-deep);
+  color: var(--bd-coral-text);
 }
 /* Next Round during the reveal's hold: a countdown, and a bar that fills to
    the moment it opens. Transform only; under reduced motion the bar is simply
@@ -4497,7 +4502,7 @@ html.dark .liars-seat { background: var(--bd-bg2); }
 }
 .rps-hand--win .rps-hand__state { color: var(--hand-accent); }
 .rps-hand--loss { animation: rps-loss-dim 0.35s ease 1s both; }
-.rps-hand--loss .rps-hand__state { color: var(--bd-coral-deep); }
+.rps-hand--loss .rps-hand__state { color: var(--bd-coral-text); }
 .rps-hand--draw .rps-hand__state { color: var(--bd-ink-soft); }
 
 .rps-stage__center {
@@ -5243,7 +5248,7 @@ html.dark .btn-social-unlink {
 }
 html.dark .btn-social-unlink:hover {
   background: rgba(255,107,91,0.15);
-  color: var(--bd-coral-deep);
+  color: var(--bd-coral-text);
 }
 
 html.dark .ttt-cell:not(:disabled):hover {
@@ -5498,7 +5503,7 @@ html.dark .spy-secret-tile {
   color: var(--bd-ink);
   min-width: 0;
 }
-.sketch-feed__item--correct { background: rgba(93, 211, 158, 0.18); color: var(--bd-mint-deep); }
+.sketch-feed__item--correct { background: rgba(93, 211, 158, 0.18); color: var(--bd-mint-text); }
 .sketch-feed__text { flex: 1 1 auto; min-width: 0; overflow-wrap: anywhere; }
 .sketch-feed__guess { color: var(--bd-ink-soft); }
 .sketch-feed__text--close { color: var(--bd-ink-muted); font-style: italic; }
