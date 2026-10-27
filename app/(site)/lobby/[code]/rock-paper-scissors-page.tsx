@@ -790,7 +790,7 @@ export default function RockPaperScissorsLobbyPage({ code, isSpectator = false, 
         return (
             <div style={{
                 position: 'absolute', bottom: -3, right: -3, width: 22, height: 22, borderRadius: 7,
-                background: pending ? 'var(--bd-mint-deep)' : 'var(--bd-bg)', color: pending ? '#fff' : 'inherit',
+                background: pending ? 'var(--bd-mint-deep)' : 'var(--bd-bg)', color: pending ? 'var(--bd-ink-on-accent)' : 'inherit',
                 border: '2px solid var(--bd-ink)', display: 'grid', placeItems: 'center', fontSize: 12, fontWeight: 800,
             }}>
                 {symbol}

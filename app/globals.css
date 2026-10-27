@@ -4452,7 +4452,7 @@ html.dark .liars-seat { background: var(--bd-bg2); }
   place-items: center;
   font-size: 11px;
   font-weight: 800;
-  color: #fff;
+  color: var(--bd-ink-on-accent);
 }
 .rps-hand__name {
   font-weight: 700;
@@ -4741,7 +4741,7 @@ html.dark .liars-seat { background: var(--bd-bg2); }
   font-family: var(--bd-font-display);
   font-size: 34px;
   font-weight: 800;
-  color: #fff;
+  color: var(--bd-ink-on-accent);
 }
 
 .spy-role-mark-alert { background: var(--bd-coral); }

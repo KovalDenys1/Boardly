@@ -353,7 +353,7 @@ export default function PublicProfileView({
 
     if (relation === 'request_sent') {
       return (
-        <div className="rounded-2xl border border-bd-sun/60 bg-bd-sun/20 px-4 py-3 text-sm font-semibold text-[#9b6b00] dark:text-amber-300">
+        <div className="rounded-2xl border border-bd-sun/60 bg-bd-sun/20 px-4 py-3 text-sm font-semibold text-bd-sun-text">
           {t('profile.publicProfile.requestPending')}
         </div>
       )

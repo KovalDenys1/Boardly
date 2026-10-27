@@ -214,7 +214,7 @@ const BdAvatar: React.FC<{ name?: string; color?: string; size?: number }> = ({ 
     justifyContent: 'center',
     fontWeight: 700,
     fontSize: size * 0.35,
-    color: 'var(--bd-ink)',
+    color: color ? 'var(--bd-ink-on-accent)' : 'var(--bd-ink)',
     background: color ?? 'var(--bd-bg2)',
     border: `1.5px solid ${color ?? 'var(--bd-line)'}`,
     flexShrink: 0,
@@ -345,7 +345,7 @@ function AliasWordSwap({ word, lastResult, style }: {
  * with a score subline, so nothing about the card had to be special-cased.
  */
 const TEAM_ACCENTS = ['var(--bd-coral)', 'var(--bd-lav)', 'var(--bd-mint)']
-const TEAM_ACCENTS_DEEP = ['var(--bd-coral-deep)', '#7A6AE8', 'var(--bd-mint-deep)']
+const TEAM_ACCENTS_DEEP = ['var(--bd-coral-deep)', 'var(--bd-lav-deep)', 'var(--bd-mint-deep)']
 
 /**
  * The pre-game bar (lobby and team selection). Those screens have no score and
@@ -1267,7 +1267,7 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
                   side={i === 0 ? 'left' : 'right'}
                   name={playerDisplayName(player) ?? t('game.ui.playerFallback')}
                   accent={['var(--bd-coral)', 'var(--bd-lav)', 'var(--bd-mint)'][i] ?? 'var(--bd-lav)'}
-                  accentDeep={['var(--bd-coral-deep)', '#7A6AE8', 'var(--bd-mint-deep)'][i] ?? '#7A6AE8'}
+                  accentDeep={['var(--bd-coral-deep)', 'var(--bd-lav-deep)', 'var(--bd-mint-deep)'][i] ?? 'var(--bd-lav-deep)'}
                   list={[player]}
                 />
               ))}
@@ -1278,7 +1278,7 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
             <div className="hidden md:flex items-center justify-center">
               <span className="bd-float" style={{ fontFamily: FONT_DISPLAY, fontSize: 36, color: 'var(--bd-ink-muted)', fontStyle: 'italic' }}>{t('game.ui.vs')}</span>
             </div>
-            <TeamCard side="right" name={t('alias.team2')} accent="var(--bd-lav)" accentDeep="#7A6AE8" list={team2} />
+            <TeamCard side="right" name={t('alias.team2')} accent="var(--bd-lav)" accentDeep="var(--bd-lav-deep)" list={team2} />
             </div>
           )}
 
@@ -1349,7 +1349,7 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
 
     const renderTeamCard = (team: (typeof data.teams)[0], i: number) => {
       const accent = TEAM_ACCENTS[i] ?? 'var(--bd-lav)'
-      const accentDeep = TEAM_ACCENTS_DEEP[i] ?? '#7A6AE8'
+      const accentDeep = TEAM_ACCENTS_DEEP[i] ?? 'var(--bd-lav-deep)'
       const isMyTeam = myTeamId === team.id
       return (
         <div key={team.id} className="alias-team-card" style={{
@@ -1421,7 +1421,7 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
               disabled={isMoveSubmitting}
               style={{
                 width: '100%',
-                background: accent, color: 'var(--bd-ink)',
+                background: accent, color: 'var(--bd-ink-on-accent)',
                 border: 'none', borderRadius: 12,
                 padding: '12px 16px', fontWeight: 700, fontSize: 15,
                 cursor: 'pointer',
@@ -1578,7 +1578,7 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
   const skipped = data.currentCardResults.filter(r => r.result === 'skipped').length
   const teamIndex = data.currentTeamIndex
   const teamAccent = teamIndex === 0 ? 'var(--bd-coral)' : 'var(--bd-lav)'
-  const teamAccentDeep = teamIndex === 0 ? 'var(--bd-coral-deep)' : '#7A6AE8'
+  const teamAccentDeep = teamIndex === 0 ? 'var(--bd-coral-deep)' : 'var(--bd-lav-deep)'
   const describerPlayer = players.find(p => p.userId === describerId)
   const describerDisplayName = playerDisplayName(describerPlayer) ?? t('game.ui.playerFallback')
 
@@ -1614,7 +1614,7 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
       name: team.name,
       score: team.score,
       accent: TEAM_ACCENTS[index] ?? 'var(--bd-lav)',
-      accentDeep: TEAM_ACCENTS_DEEP[index] ?? '#7A6AE8',
+      accentDeep: TEAM_ACCENTS_DEEP[index] ?? 'var(--bd-lav-deep)',
       isMine: index === myTeamIndex,
     }
   }

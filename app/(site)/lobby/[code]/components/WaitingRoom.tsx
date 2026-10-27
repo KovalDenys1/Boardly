@@ -131,7 +131,7 @@ export default function WaitingRoom({
                 <Icon name="crown" size={12} tone="premium" label="Premium" className="shrink-0" />
               )}
               {isCurrentUser && !isBot && (
-                <span className="rounded-full bg-bd-mint px-1.5 py-0.5 text-[10px] font-bold text-bd-mint-deep">
+                <span className="rounded-full bg-bd-mint px-1.5 py-0.5 text-[10px] font-bold text-(--bd-ink-on-accent)">
                   {t('game.ui.you')}
                 </span>
               )}

@@ -389,8 +389,8 @@ export default function GameLobbiesPage({
                             <Icon name="users" size={13} /> {playerCount}/{lobby.maxPlayers}
                           </span>
                           {isWaiting && (
-                            <span className="flex items-center gap-1 rounded-full bg-bd-sun/20 px-2.5 py-1 text-[11px] font-bold text-[#9b6b00]">
-                              <span className="h-1.5 w-1.5 animate-ping rounded-full bg-[#9b6b00]" />
+                            <span className="flex items-center gap-1 rounded-full bg-bd-sun/20 px-2.5 py-1 text-[11px] font-bold text-bd-sun-text">
+                              <span className="h-1.5 w-1.5 animate-ping rounded-full bg-bd-sun-text" />
                               {tx('waiting')}
                             </span>
                           )}

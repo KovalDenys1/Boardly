@@ -384,7 +384,7 @@ export default function ProfilePage() {
         id: 'memberSince',
         label: t('profile.memberSince'),
         value: memberSinceLabel,
-        accent: 'bg-bd-sun text-[#9b6b00]',
+        accent: 'bg-bd-sun text-bd-sun-text',
       },
       {
         id: 'premium',
@@ -1989,7 +1989,7 @@ export default function ProfilePage() {
                           <span className="inline-flex items-center rounded-full bg-bd-mint/20 px-3 py-1.5 text-xs font-bold text-bd-mint-deep">
                             {t('profile.chips.games', { count: profileSummary?.gamesPlayed ?? 0 })}
                           </span>
-                          <span className="inline-flex items-center rounded-full bg-bd-sun/25 px-3 py-1.5 text-xs font-bold text-[#9b6b00]">
+                          <span className="inline-flex items-center rounded-full bg-bd-sun/25 px-3 py-1.5 text-xs font-bold text-bd-sun-text">
                             {t('profile.chips.friends', { count: profileSummary?.friendsCount ?? 0 })}
                           </span>
                           <span className="inline-flex items-center rounded-full bg-bd-coral/15 px-3 py-1.5 text-xs font-bold text-bd-coral-deep">
