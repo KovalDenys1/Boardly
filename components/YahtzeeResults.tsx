@@ -91,7 +91,7 @@ export default function YahtzeeResults({
       className="flex h-full min-h-0 flex-col overflow-y-auto px-3 pb-6 pt-4 sm:px-5 sm:pb-8"
       style={{
         background:
-          'radial-gradient(circle at top, rgba(255,196,77,0.18), transparent 30%), linear-gradient(180deg, rgba(255,252,247,1) 0%, rgba(252,246,236,1) 100%)',
+          'radial-gradient(circle at top, rgba(255,196,77,0.18), transparent 30%), linear-gradient(180deg, var(--bd-card-warm) 0%, var(--bd-bg) 100%)',
       }}
     >
       <div className="mx-auto w-full max-w-6xl">
@@ -207,7 +207,7 @@ export default function YahtzeeResults({
               style={{
                 borderColor: 'rgba(255,196,77,0.32)',
                 background:
-                  'linear-gradient(180deg, rgba(255,244,213,0.68) 0%, var(--bd-bg) 100%)',
+                  'linear-gradient(180deg, rgba(255,196,77,0.16) 0%, var(--bd-bg) 100%)',
               }}
             >
               <div className="flex items-center gap-2 text-(--bd-coral-deep)">
@@ -341,7 +341,7 @@ export default function YahtzeeResults({
                             : 'var(--bd-line)',
                     background:
                       player.rank === 0
-                        ? 'linear-gradient(135deg, rgba(255,244,213,0.8), var(--bd-bg))'
+                        ? 'linear-gradient(135deg, rgba(255,196,77,0.2), var(--bd-bg))'
                         : player.rank === 1
                           ? 'linear-gradient(135deg, rgba(155,140,255,0.12), var(--bd-bg))'
                           : player.rank === 2

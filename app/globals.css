@@ -3638,8 +3638,9 @@ button.yz-pill:focus-visible { outline: 3px solid var(--bd-lav-deep); outline-of
      exempt it (axe still checks visually-rendered contrast for anyone with
      low vision, hidden from AT or not). bd-ink-soft at full opacity clears
      4.5:1; the cell already carries aria-label="cell A1" etc. for the
-     accessible name, so this stays a purely visual hint either way. */
-  color: var(--bd-ink-soft);
+     accessible name, so this stays a purely visual hint either way.
+     Fixed like the cell under it: --bd-ink-soft turns light in dark. */
+  color: #4A3F33;
   font-family: ui-monospace, monospace;
   pointer-events: none;
   user-select: none;
@@ -4993,7 +4994,7 @@ html.dark .liars-seat { background: var(--bd-bg2); }
   width: 44%;
   height: 44%;
   border-radius: 50%;
-  background: #fff;
+  background: var(--bd-card);
   color: var(--bd-ink);
   font-family: var(--bd-font-display);
   font-size: clamp(12px, 3vw, 28px);
