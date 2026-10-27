@@ -24,6 +24,7 @@ import { AppearanceDevicePanels } from '@/components/profile/AppearanceDevicePan
 import AvatarPicker from '@/components/AvatarPicker'
 import { PlayAppOnly, PurchaseOnly } from '@/components/PurchaseOnly'
 import { useIsPlayApp } from '@/hooks/useIsPlayApp'
+import { useTabIndicator } from '@/hooks/useTabIndicator'
 import PublicProfileView from '@/components/PublicProfileView'
 import BlockedPlayersList from '@/components/BlockedPlayersList'
 import { buildAuthUrl } from '@/lib/auth-redirect'
@@ -293,15 +294,14 @@ export default function ProfilePage() {
   const [editingStatus, setEditingStatus] = useState<InlineEditorStatus>('idle')
   const [editingMessage, setEditingMessage] = useState('')
   const [submittingInlineEdit, setSubmittingInlineEdit] = useState(false)
-  const [activeTabIndicatorStyle, setActiveTabIndicatorStyle] = useState({
-    left: 0,
-    width: 0,
-    opacity: 0,
-  })
   const lastVisibilityRefreshAtRef = useRef(0)
   const publicProfilePreviewTimerIdsRef = useRef<number[]>([])
   const tabListRef = useRef<HTMLElement | null>(null)
-  const tabButtonRefs = useRef<Partial<Record<TabType, HTMLButtonElement | null>>>({})
+  const {
+    indicatorStyle: activeTabIndicatorStyle,
+    setList: setTabList,
+    setButton: setTabButton,
+  } = useTabIndicator(activeTab, { insetPx: PROFILE_TAB_INDICATOR_X_INSET_PX, listRef: tabListRef })
   const sessionUserName = profileSummary?.username || session?.user?.name || ''
 
   // Profile customization state
@@ -1599,58 +1599,6 @@ export default function ProfilePage() {
       }[accountPreferences.profileVisibility]
     : null
 
-  const updateActiveTabIndicator = useCallback(() => {
-    const tabListElement = tabListRef.current
-    const activeTabButton = tabButtonRefs.current[activeTab]
-
-    if (!tabListElement || !activeTabButton) {
-      setActiveTabIndicatorStyle((currentStyle) =>
-        currentStyle.opacity === 0
-          ? currentStyle
-          : {
-              left: 0,
-              width: 0,
-              opacity: 0,
-            }
-      )
-      return
-    }
-
-    const tabListRect = tabListElement.getBoundingClientRect()
-    const activeTabRect = activeTabButton.getBoundingClientRect()
-
-    setActiveTabIndicatorStyle({
-      left: activeTabRect.left - tabListRect.left + PROFILE_TAB_INDICATOR_X_INSET_PX,
-      width: Math.max(activeTabRect.width - PROFILE_TAB_INDICATOR_X_INSET_PX * 2, 0),
-      opacity: 1,
-    })
-  }, [activeTab])
-
-  useEffect(() => {
-    const frameId = window.requestAnimationFrame(() => {
-      updateActiveTabIndicator()
-    })
-
-    const handleResize = () => {
-      updateActiveTabIndicator()
-    }
-
-    window.addEventListener('resize', handleResize)
-
-    let resizeObserver: ResizeObserver | null = null
-    if (typeof ResizeObserver === 'function' && tabListRef.current) {
-      resizeObserver = new ResizeObserver(() => {
-        updateActiveTabIndicator()
-      })
-      resizeObserver.observe(tabListRef.current)
-    }
-
-    return () => {
-      window.cancelAnimationFrame(frameId)
-      window.removeEventListener('resize', handleResize)
-      resizeObserver?.disconnect()
-    }
-  }, [updateActiveTabIndicator])
 
   const tabItems: Array<{ id: TabType; icon: IconName; label: string }> = [
     { id: 'profile', icon: 'user', label: t('profile.title') },
@@ -2116,7 +2064,7 @@ export default function ProfilePage() {
           {/* ── Tab Navigation ── */}
           <div className="mt-6 overflow-x-auto">
             <nav
-              ref={tabListRef}
+              ref={setTabList}
               role="tablist"
               aria-label={t('profile.title')}
               className="relative flex w-full min-w-max gap-1 rounded-2xl border-[1.5px] border-bd-line bg-bd-card-warm p-1.5 shadow-bd-soft"
@@ -2135,9 +2083,7 @@ export default function ProfilePage() {
               {tabItems.map((tab) => (
                 <button
                   key={tab.id}
-                  ref={(node) => {
-                    tabButtonRefs.current[tab.id] = node
-                  }}
+                  ref={setTabButton(tab.id)}
                   role="tab"
                   aria-selected={activeTab === tab.id}
                   aria-controls={`profile-tab-panel-${tab.id}`}
@@ -2145,7 +2091,7 @@ export default function ProfilePage() {
                   onClick={() => handleTabChange(tab.id)}
                   className={`relative z-10 flex flex-1 items-center justify-center gap-1.5 rounded-xl px-3 py-2.5 text-sm font-semibold transition-colors duration-300 sm:px-4 ${
                     activeTab === tab.id
-                      ? 'text-(--bd-ink-on-accent)'
+                      ? `text-(--bd-ink-on-accent) ${activeTabIndicatorStyle.opacity ? '' : 'bg-bd-lav'}`
                       : 'text-bd-ink-soft hover:bg-bd-bg2 hover:text-bd-ink'
                   }`}
                 >
