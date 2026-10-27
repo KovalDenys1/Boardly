@@ -17,6 +17,12 @@
   --color-bd-bg: var(--bd-bg);
   --color-bd-bg2: var(--bd-bg2);
   --color-bd-card-warm: var(--bd-card-warm);
+  --color-bd-coral-deep: var(--bd-coral-deep);
+  --color-bd-mint-deep: var(--bd-mint-deep);
+  --color-bd-lav-deep: var(--bd-lav-deep);
+  --color-bd-sun-text: var(--bd-sun-text);
+  --color-bd-inverse: var(--bd-inverse);
+  --color-bd-ink-on-inverse: var(--bd-ink-on-inverse);
   --font-display: var(--bd-font-display), Georgia, serif;
 }
 
@@ -32,14 +38,11 @@
   --color-primary: #3b82f6;
   --color-secondary: #8b5cf6;
   --color-bd-coral: #FF6B5B;
-  --color-bd-coral-deep: #E04B3B;
   --color-bd-mint: #4FC9A6;
-  --color-bd-mint-deep: #2FA787;
   --color-bd-sun: #FFC44D;
   --color-bd-sun-deep: #E5A82E;
   --color-bd-lav: #9B8CFF;
   --color-bd-lav-mid: #8B7DFF;
-  --color-bd-lav-deep: var(--bd-lav-deep);
   --color-bd-sky: #6BC1F0;
   --color-bd-danger-border: #F0B3AC;
   --color-bd-danger-bg: #FFF2EF;
@@ -232,7 +235,13 @@
      darker fills on 2026-09-28 so the brand colours stay as they are (#1171). */
   --bd-ink-on-accent: #1F1B16;
   --bd-ink-soft: #4A3F33;
-  --bd-ink-muted: #8A7A66;
+  /* 4.5:1 or more on the page, the cards and the inputs, in both themes. */
+  --bd-ink-muted: #736451;
+  /* A slab that stays dark in dark, where --bd-ink turns cream; text on it is --bd-ink-on-inverse. */
+  --bd-inverse: #1F1B16;
+  --bd-ink-on-inverse: #FBF6EE;
+  /* Sun text on a sun tint: --bd-sun-deep is a border shade and reads 1.9:1 as text. */
+  --bd-sun-text: #8A5F00;
   --bd-btn-ink: var(--bd-ink);
   --bd-line: #E8DDC8;
   /* A plate raised above whatever is behind it - a player pill on a team card,
@@ -281,7 +290,14 @@ html.dark {
   --bd-bg2:       #2B2720;
   --bd-ink:       #F0E8DB;
   --bd-ink-soft:  #B5A494;
-  --bd-ink-muted: #7A6E62;
+  --bd-ink-muted: #9C8E7E;
+  /* Light enough to read as text on dark, still below each fill so a button's hard shadow stays a shadow. */
+  --bd-coral-deep: #F57062;
+  --bd-mint-deep: #40BA97;
+  --bd-lav-deep:  #9A8CFA;
+  --bd-inverse:   #35302A;
+  --bd-ink-on-inverse: #F0E8DB;
+  --bd-sun-text:  #FFC44D;
   --bd-line:      #3A3530;
   --bd-card-warm: #242018;
   --bd-card:      #242018;

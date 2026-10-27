@@ -20,6 +20,10 @@ export function getLobbyTheme(theme: string | null | undefined) {
   return LOBBY_THEMES.default
 }
 
+/** -deep text on a dark theme's cards (bg2 on Midnight is lighter than html.dark's), 4.5:1 or more. */
+const DARK_THEME_DEEP: Record<string, string> = { '--bd-coral-deep': '#FF8273', '--bd-mint-deep': '#45BF9C', '--bd-lav-deep': '#A99BFF' }
+const LIGHT_THEME_DEEP: Record<string, string> = { '--bd-coral-deep': '#E04B3B', '--bd-mint-deep': '#2FA787', '--bd-lav-deep': '#7867E8' }
+
 export function getThemePageStyle(theme: string | null | undefined): CSSProperties {
   const t = getLobbyTheme(theme)
   const isDefault = !theme || theme === 'default'
@@ -40,7 +44,11 @@ export function getThemePageStyle(theme: string | null | undefined): CSSProperti
     '--bd-surface-raised': t.dark ? 'rgba(255, 255, 255, 0.06)' : 'rgba(255, 255, 255, 0.55)',
     '--bd-input-bg': t.dark ? t.bg2 : '#ffffff',
     '--bd-btn-ink': t.text,
-    ...(t.dark ? { '--bd-lav-deep': '#A99BFF' } : {}),
+    // A light theme sets them too, or inside html.dark it would inherit the pale dark values.
+    ...(t.dark ? DARK_THEME_DEEP : LIGHT_THEME_DEEP),
+    '--bd-inverse': t.dark ? t.bg2 : t.text,
+    '--bd-ink-on-inverse': t.dark ? t.text : t.bg,
+    '--bd-sun-text': t.dark ? '#FFC44D' : '#8A5F00',
     background: t.bg,
     color: t.text,
     transition: 'background 0.3s ease, color 0.3s ease',

@@ -34,7 +34,10 @@ describe('theme token registry', () => {
   it('knows which tokens html.dark redefines', () => {
     const scoped = THEME_TOKENS.filter(isThemeScoped).map((t) => t.name).sort()
     expect(scoped).toEqual(
-      ['bd-bg', 'bd-bg2', 'bd-card', 'bd-card-warm', 'bd-line', 'bd-ink', 'bd-ink-muted', 'bd-ink-soft', 'bd-input-bg'].sort()
+      [
+        'bd-bg', 'bd-bg2', 'bd-card', 'bd-card-warm', 'bd-line', 'bd-ink', 'bd-ink-muted', 'bd-ink-soft', 'bd-input-bg',
+        'bd-coral-deep', 'bd-mint-deep', 'bd-lav-deep', 'bd-sun-text', 'bd-inverse', 'bd-ink-on-inverse',
+      ].sort()
     )
     // The accents do not flip, which is the whole reason --bd-ink-on-accent exists
     expect(isThemeScoped(THEME_TOKENS.find((t) => t.name === 'bd-coral')!)).toBe(false)
