@@ -88,7 +88,8 @@ const nextConfig = {
         permanent: true,
       },
       // Typeable links for social posts (#1096): /tt, /ig, /yt, /fb, /th,
-      // /pin, /x -> the home page with UTM. 307, so they can be retargeted.
+      // /pin, /x -> the home page with UTM, or a game page when the campaign
+      // starts with its slug (#1540). 307, so they can be retargeted.
       ...socialShortLinkRedirects(),
     ]
   },

@@ -221,7 +221,7 @@ export default function FriendsListModal({
                 const avatarBlock = (
                   <div className="relative">
                     <div
-                      className="w-10 h-10 rounded-full flex items-center justify-center font-bold text-white"
+                      className="w-10 h-10 rounded-full flex items-center justify-center font-bold text-bd-bg"
                       style={{ background: 'var(--bd-ink)' }}
                     >
                       {friend.username?.[0]?.toUpperCase() || '?'}

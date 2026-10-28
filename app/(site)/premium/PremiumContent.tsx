@@ -455,7 +455,7 @@ export default function PremiumContent({ pricing }: { pricing: PremiumPricing })
             <ul className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
               {FREE_FEATURES.map(({ key, icon }) => (
                 <li key={key} className="flex items-start gap-3">
-                  <span className="mt-0.5 shrink-0" style={{ color: 'var(--bd-mint-deep)' }}>
+                  <span className="mt-0.5 shrink-0" style={{ color: 'var(--bd-mint-text)' }}>
                     <Icon name={icon} size={18} />
                   </span>
                   <span className="min-w-0">

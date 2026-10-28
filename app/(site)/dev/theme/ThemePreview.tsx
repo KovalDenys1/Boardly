@@ -115,10 +115,10 @@ const CONTRAST_GROUPS: ContrastGroup[] = [
   {
     title: 'Deep accent text on a card',
     pairs: [
-      { label: 'Coral deep', fg: 'var(--bd-coral-deep)', bg: 'var(--bd-card-warm)', where: '.bd-chip-coral' },
-      { label: 'Mint deep', fg: 'var(--bd-mint-deep)', bg: 'var(--bd-card-warm)', where: '.bd-chip-mint, .bd-live-dot' },
+      { label: 'Coral text', fg: 'var(--bd-coral-text)', bg: 'var(--bd-card-warm)', where: '.bd-chip-coral' },
+      { label: 'Mint text', fg: 'var(--bd-mint-text)', bg: 'var(--bd-card-warm)', where: '.bd-chip-mint, .bd-live-dot' },
       { label: 'Sun deep', fg: 'var(--bd-sun-deep)', bg: 'var(--bd-card-warm)', where: '.bd-chip-sun' },
-      { label: 'Lavender deep', fg: 'var(--bd-lav-deep)', bg: 'var(--bd-card-warm)', where: '.bd-chip-lav' },
+      { label: 'Lavender text', fg: 'var(--bd-lav-text)', bg: 'var(--bd-card-warm)', where: '.bd-chip-lav' },
     ],
   },
 ]
@@ -228,7 +228,7 @@ function GameCard({ game }: { game: PreviewGame }) {
               fontSize: 12,
               fontWeight: 600,
               background: 'rgba(79,201,166,0.18)',
-              color: 'var(--bd-mint-deep)',
+              color: 'var(--bd-mint-text)',
               whiteSpace: 'nowrap',
             }}
           >
@@ -321,7 +321,7 @@ function ContrastRow({ pair, ratio }: { pair: ContrastPair; ratio: number | null
           fontFamily: "'JetBrains Mono', ui-monospace, monospace",
           fontSize: 12,
           fontWeight: 700,
-          color: ratio === null ? 'var(--bd-ink-muted)' : pass ? 'var(--bd-mint-deep)' : 'var(--bd-coral-deep)',
+          color: ratio === null ? 'var(--bd-ink-muted)' : pass ? 'var(--bd-mint-text)' : 'var(--bd-coral-text)',
         }}
       >
         {ratio === null ? '–' : `${ratio.toFixed(2)}:1`}

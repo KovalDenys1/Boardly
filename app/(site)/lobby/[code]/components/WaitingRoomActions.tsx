@@ -94,9 +94,9 @@ export default function WaitingRoomActions({
               <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-bd-mint opacity-75" />
               <span className="relative inline-flex h-2 w-2 rounded-full bg-bd-mint" />
             </span>
-            <span className="text-sm font-semibold text-bd-mint-deep">{t('game.ui.lobbyFull')}</span>
+            <span className="text-sm font-semibold text-bd-mint-text">{t('game.ui.lobbyFull')}</span>
           </div>
-          <span className="text-xs text-bd-mint-deep/75">{playerCount}/{maxPlayers}</span>
+          <span className="text-xs text-bd-mint-text/75">{playerCount}/{maxPlayers}</span>
         </div>
       )}
 
@@ -112,7 +112,7 @@ export default function WaitingRoomActions({
           that never started had exactly one person in them, and not one of them
           used the add-bot action buried in the empty player slot (#814). */}
       {isAloneAndCanStart && (
-        <p className="text-center text-xs font-semibold text-bd-mint-deep">
+        <p className="text-center text-xs font-semibold text-bd-mint-text">
           {canStartWithAutoBot ? t('game.ui.botAutoAddTip') : t('game.ui.startSoloTip')}
         </p>
       )}

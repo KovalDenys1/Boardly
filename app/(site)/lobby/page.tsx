@@ -147,7 +147,7 @@ function LobbyListPageContent() {
               onClick={handleRefresh}
               disabled={isRefreshLocked}
               className={`bd-btn bd-btn-soft px-4 py-2.5 text-[13px] ${
-                isRefreshUpdated ? 'border-[rgba(79,201,166,0.4)] bg-[rgba(79,201,166,0.15)] text-bd-mint-deep' : ''
+                isRefreshUpdated ? 'border-[rgba(79,201,166,0.4)] bg-[rgba(79,201,166,0.15)] text-bd-mint-text' : ''
               }`}
               title={t('lobby.refresh')}
             >

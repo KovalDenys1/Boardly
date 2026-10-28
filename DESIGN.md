@@ -35,11 +35,33 @@ All tokens are defined in `app/globals.css` (`:root`) and mirrored in its `@them
 | Sky | `var(--bd-sky)` | `bd-sky` | `#6BC1F0` |
 | Ink (primary text/dark bg) | `var(--bd-ink)` | `bd-ink` | `#1F1B16` |
 | Ink soft | `var(--bd-ink-soft)` | `bd-ink-soft` | `#4A3F33` |
-| Ink muted | `var(--bd-ink-muted)` | `bd-ink-muted` | `#8A7A66` |
+| Ink muted | `var(--bd-ink-muted)` | `bd-ink-muted` | `#736451` |
 | Line (borders) | `var(--bd-line)` | `bd-line` | `#E8DDC8` |
 | BG (page background) | `var(--bd-bg)` | `bd-bg` | `#FBF6EE` |
 | BG2 (hover bg/chips) | `var(--bd-bg2)` | `bd-bg2` | `#F2E9D8` |
 | Card warm (card surfaces) | `var(--bd-card-warm)` | `bd-card-warm` | `#FFF8EC` |
+| Inverse (dark slab) | `var(--bd-inverse)` | `bd-inverse` | `#1F1B16` |
+| Ink on inverse | `var(--bd-ink-on-inverse)` | `bd-ink-on-inverse` | `#FBF6EE` |
+| Coral text | `var(--bd-coral-text)` | `bd-coral-text` | `#E04B3B` |
+| Mint text | `var(--bd-mint-text)` | `bd-mint-text` | `#2FA787` |
+| Lav text | `var(--bd-lav-text)` | `bd-lav-text` | `#7867E8` |
+| Sun text (on a sun tint) | `var(--bd-sun-text)` | `bd-sun-text` | `#8A5F00` |
+
+Dark values (`html.dark`) that are not obvious from the light ones: `--bd-ink-muted` `#9C8E7E`,
+`--bd-coral-text` `#FF8273`, `--bd-mint-text` `#45BF9C`, `--bd-lav-text` `#A99BFF`, `--bd-inverse`
+`#35302A`, `--bd-ink-on-inverse` `#F0E8DB`, `--bd-sun-text` `#FFC44D`.
+
+**Accent text is `-text`; `-deep` is a shade.** `--bd-*-deep` draws what belongs to a fill: the border
+and hard shadow of a coral or lavender button, a checked box, a status dot, the lavender focus ring. It
+never flips, because the fills never flip. Coloured words and icons on a surface use `--bd-*-text`,
+which turns lighter in dark. One token for both jobs cannot work: light enough to read on a dark card
+is as light as the fill, and the button loses its shadow (#1538).
+
+**`--bd-ink` is never a background for a band, a banner or a card.** It turns cream in dark, so a band
+painted with it becomes a light slab and anything coloured on it disappears (#1538). A dark slab in both
+themes is `--bd-inverse` with `--bd-ink-on-inverse` text. A small control can still be `bg-bd-ink
+text-bd-bg` (the primary button, an active chip): it inverts to a cream pill in dark, which is the point,
+but its text must be `--bd-bg`, never white. A logo tile is `--bd-logo-tile`.
 
 ---
 
@@ -56,8 +78,11 @@ Ratios below are computed straight from the hex values in the Color tokens table
 |---|---|---|
 | `bd-ink` text on `bd-bg` (body copy) | 15.9:1 | AA text + large |
 | `bd-ink-soft` text on `bd-bg` (secondary copy) | 9.5:1 | AA text + large |
-| `bd-ink-muted` text on `bd-bg` (placeholders, captions) | 3.9:1 | AA large only — **do not use for normal-size body text** |
-| `bd-ink-muted` text on `bd-bg2` (chip/hover captions) | 3.4:1 | AA large only |
+| `bd-ink-muted` text on `bd-bg` (placeholders, captions) | 5.3:1 (dark 5.4:1) | AA text + large |
+| `bd-ink-muted` text on `bd-bg2` / the input (chip captions, hints) | 4.75:1 (dark 4.66:1) | AA text + large |
+| `bd-ink-on-inverse` on `bd-inverse` (marquee, CTA band, finished banner) | 15.9:1 (dark 10.7:1) | AA text + large |
+| accents on `bd-inverse` in dark (coral, lav, mint, sky, sun) | 4.67-8.25:1 | AA text + large |
+| `bd-sun-text` on a `bd-sun/25` tint | 5.0:1 (dark 5.5:1) | AA text + large |
 | `bd-bg` text on `bd-ink` (primary button) | 15.9:1 | AA text + large |
 | `bd-ink` text on `bd-sun` (badges) | 10.8:1 | AA text + large |
 | `bd-ink` text on `bd-mint` | 8.3:1 | AA text + large |
@@ -77,6 +102,8 @@ so the brand colours stay as they are. `.bd-input`'s resting border is its own t
 
 Recompute with the WCAG relative-luminance formula (not perceived brightness) whenever a
 new token or a new text-on-fill pairing is added, and add it to this table.
+`__tests__/lib/theme-contrast.test.ts` reads the token values out of `app/globals.css` and fails
+when one of the pairs above drops under 4.5:1 in either theme; add a new pairing there too.
 
 ---
 

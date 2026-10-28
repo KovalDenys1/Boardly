@@ -330,7 +330,7 @@ export default function LobbySettingsPanel({
                       {lobby?.allowSpectators && (
                         <>
                           <span aria-hidden className="mx-1 h-4 w-px shrink-0 bg-bd-line" />
-                          <span className="shrink-0 whitespace-nowrap text-[11px] font-semibold text-bd-mint-deep">{t('lobby.maxSpectatorsLabel')}</span>
+                          <span className="shrink-0 whitespace-nowrap text-[11px] font-semibold text-bd-mint-text">{t('lobby.maxSpectatorsLabel')}</span>
                           {([0, 5, 10, 20] as const).map((limit) => {
                             const isLimitActive = (lobby?.maxSpectators ?? 0) === limit
                             return (
@@ -459,7 +459,7 @@ export default function LobbySettingsPanel({
               >
                 <span aria-hidden className="flex w-6 shrink-0 items-center justify-center">{meta ? <GameIcon gameId={meta.svgId} accentColor={meta.accentColor} size={20} variant="bare" /> : <Icon name="gamepad" size={20} />}</span>
                 <span className="min-w-0 flex-1 truncate text-sm font-semibold text-bd-ink">{meta?.name ?? g.id}</span>
-                {isGameActive && <span className="shrink-0 text-bd-mint-deep"><Icon name="check" size={15} /></span>}
+                {isGameActive && <span className="shrink-0 text-bd-mint-text"><Icon name="check" size={15} /></span>}
               </button>
             )
           })}

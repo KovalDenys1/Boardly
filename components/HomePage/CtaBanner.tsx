@@ -72,7 +72,7 @@ export default function CtaBanner() {
     <section className="home-cta-section">
       <div
         style={{
-          color: 'var(--bd-bg)',
+          color: 'var(--bd-ink-on-inverse)',
           maxWidth: 1280,
           margin: '0 auto',
           padding: 'clamp(36px, 6vw, 56px) clamp(28px, 5vw, 64px)',
@@ -100,7 +100,7 @@ export default function CtaBanner() {
           <p
             style={{
               fontSize: 17,
-              color: 'var(--bd-bg)',
+              color: 'var(--bd-ink-on-inverse)',
               opacity: 0.7,
               marginBottom: 28,
               maxWidth: 420,

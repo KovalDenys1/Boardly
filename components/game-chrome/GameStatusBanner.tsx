@@ -122,12 +122,12 @@ export default function GameStatusBanner({
     const badge = BADGE[result]
     const badgeStyle: React.CSSProperties = {
       display: 'inline-flex', padding: '4px 10px', borderRadius: 999, fontSize: 11, fontWeight: 700,
-      border: '2px solid var(--bd-ink)', boxShadow: '2px 2px 0 var(--bd-ink)', fontFamily: 'var(--bd-font-display)',
+      border: '2px solid var(--bd-ink-on-accent)', boxShadow: '2px 2px 0 var(--bd-ink-on-accent)', fontFamily: 'var(--bd-font-display)',
       whiteSpace: 'nowrap', flexShrink: 0, background: badge.background, color: badge.color,
     }
     return (
       <div key={finishedMessage ?? 'finished'} className="game-status-cue" data-testid="game-status-title" data-outcome={result} style={{
-        padding: '10px 16px', borderRadius: 14, background: 'var(--bd-ink)', color: 'var(--bd-bg)',
+        padding: '10px 16px', borderRadius: 14, background: 'var(--bd-inverse)', color: 'var(--bd-ink-on-inverse)',
         display: 'flex', alignItems: 'center', gap: 12,
         boxShadow: `0 4px 0 ${badge.plate}`,
       }}>
@@ -194,7 +194,7 @@ export default function GameStatusBanner({
       {showTimer && (
         <div style={{
           fontFamily: 'ui-monospace, monospace', fontSize: 18, fontWeight: 700, minWidth: 44, textAlign: 'right',
-          color: danger ? 'var(--bd-coral-deep)' : 'var(--bd-ink)',
+          color: danger ? 'var(--bd-coral-text)' : 'var(--bd-ink)',
         }}>
           {formatSeconds(secs)}
         </div>

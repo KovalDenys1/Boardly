@@ -214,7 +214,7 @@ const BdAvatar: React.FC<{ name?: string; color?: string; size?: number }> = ({ 
     justifyContent: 'center',
     fontWeight: 700,
     fontSize: size * 0.35,
-    color: 'var(--bd-ink)',
+    color: color ? 'var(--bd-ink-on-accent)' : 'var(--bd-ink)',
     background: color ?? 'var(--bd-bg2)',
     border: `1.5px solid ${color ?? 'var(--bd-line)'}`,
     flexShrink: 0,
@@ -259,7 +259,7 @@ const CountdownRing: React.FC<{ remaining: number; total: number; size?: number;
         <span style={{
           fontFamily: FONT_MONO,
           fontSize: size * 0.32, fontWeight: 700,
-          color: danger ? 'var(--bd-coral-deep)' : 'var(--bd-ink)',
+          color: danger ? 'var(--bd-coral-text)' : 'var(--bd-ink)',
           fontVariantNumeric: 'tabular-nums', lineHeight: 1,
         }}>{label}</span>
         {showLabel && <BdLabel style={{ fontSize: 10 }}>{t('alias.secondsLabel')}</BdLabel>}
@@ -345,7 +345,8 @@ function AliasWordSwap({ word, lastResult, style }: {
  * with a score subline, so nothing about the card had to be special-cased.
  */
 const TEAM_ACCENTS = ['var(--bd-coral)', 'var(--bd-lav)', 'var(--bd-mint)']
-const TEAM_ACCENTS_DEEP = ['var(--bd-coral-deep)', '#7A6AE8', 'var(--bd-mint-deep)']
+const TEAM_ACCENTS_DEEP = ['var(--bd-coral-deep)', 'var(--bd-lav-deep)', 'var(--bd-mint-deep)']
+const TEAM_ACCENTS_TEXT = ['var(--bd-coral-text)', 'var(--bd-lav-text)', 'var(--bd-mint-text)']
 
 /**
  * The pre-game bar (lobby and team selection). Those screens have no score and
@@ -370,12 +371,12 @@ const AliasPregameHeader: React.FC<{
       <div style={{ display: 'flex', alignItems: 'center', gap: 14, minWidth: 0 }}>
         <div className="alias-context-logo" style={{
           width: 38, height: 38, borderRadius: 12,
-          background: 'var(--bd-ink)',
+          background: 'var(--bd-logo-tile)',
           display: 'grid', placeItems: 'center',
           boxShadow: '0 3px 0 var(--bd-coral)',
           flexShrink: 0,
         }}>
-          <span style={{ fontFamily: FONT_DISPLAY, color: 'var(--bd-bg)', fontWeight: 700, fontSize: 20, lineHeight: 1 }}>B</span>
+          <span style={{ fontFamily: FONT_DISPLAY, color: 'var(--bd-ink-on-inverse)', fontWeight: 700, fontSize: 20, lineHeight: 1 }}>B</span>
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 2, minWidth: 0 }}>
           <BdLabel>{t('alias.headerKicker')}</BdLabel>
@@ -1149,11 +1150,11 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
     const { team1, team2 } = computePreviewTeams(players)
     const ready = players.length >= minPlayersRequired
 
-    const TeamCard = ({ side, name, accent, accentDeep, list }: {
+    const TeamCard = ({ side, name, accent, accentText, list }: {
       side: 'left' | 'right'
       name: string
       accent: string
-      accentDeep: string
+      accentText: string
       list: GamePlayer[]
     }) => (
       <div style={{ ...cardBase, flex: 1, padding: 28, position: 'relative', overflow: 'hidden', borderTop: `6px solid ${accent}` }}>
@@ -1165,7 +1166,7 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
         }} />
         <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 18 }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-            <BdLabel style={{ color: accentDeep }}>{t('alias.teamNumbered', { num: side === 'left' ? '01' : '02' })}</BdLabel>
+            <BdLabel style={{ color: accentText }}>{t('alias.teamNumbered', { num: side === 'left' ? '01' : '02' })}</BdLabel>
             <span style={{ fontFamily: FONT_DISPLAY, fontWeight: 700, fontSize: 30 }}>{name}</span>
           </div>
           <span style={{ fontFamily: FONT_MONO, fontSize: 13, fontWeight: 600, color: 'var(--bd-ink-muted)' }}>
@@ -1193,7 +1194,7 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
                 {p.userId === currentUserId && (
                   <span style={{
                     marginLeft: 8, fontSize: 11, fontFamily: FONT_MONO,
-                    color: accentDeep, background: 'var(--bd-surface-raised)',
+                    color: accentText, background: 'var(--bd-surface-raised)',
                     padding: '2px 8px', borderRadius: 999,
                     border: `1px solid ${accent}`, letterSpacing: '0.08em',
                   }}>{t('alias.youBadge')}</span>
@@ -1228,7 +1229,7 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
                 fontSize: 'clamp(36px, 6vw, 56px)', lineHeight: 1.02, margin: 0, letterSpacing: '-0.02em',
               }}>
                 {t('alias.pregameTitle')}<br />
-                <span style={{ color: 'var(--bd-coral-deep)' }}>{t('alias.doNotSayItShort')}</span>
+                <span style={{ color: 'var(--bd-coral-text)' }}>{t('alias.doNotSayItShort')}</span>
               </h1>
               {/* The scoring rule is one key, ±1 included: a locale has to be
                   able to move the numbers inside its own sentence, which a
@@ -1244,7 +1245,7 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
             <div style={{
               ...cardBase, padding: '18px 22px',
               display: 'flex', alignItems: 'center', gap: 18,
-              background: 'var(--bd-ink)', borderColor: 'var(--bd-ink)', color: 'var(--bd-bg)',
+              background: 'var(--bd-inverse)', borderColor: 'var(--bd-inverse)', color: 'var(--bd-ink-on-inverse)',
               boxShadow: '0 6px 0 var(--bd-coral), 0 14px 28px -10px rgba(31,27,22,0.4)',
             }}>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
@@ -1267,18 +1268,18 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
                   side={i === 0 ? 'left' : 'right'}
                   name={playerDisplayName(player) ?? t('game.ui.playerFallback')}
                   accent={['var(--bd-coral)', 'var(--bd-lav)', 'var(--bd-mint)'][i] ?? 'var(--bd-lav)'}
-                  accentDeep={['var(--bd-coral-deep)', '#7A6AE8', 'var(--bd-mint-deep)'][i] ?? '#7A6AE8'}
+                  accentText={TEAM_ACCENTS_TEXT[i] ?? 'var(--bd-lav-text)'}
                   list={[player]}
                 />
               ))}
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-[1fr_auto_1fr] gap-5 items-stretch">
-            <TeamCard side="left" name={t('alias.team1')} accent="var(--bd-coral)" accentDeep="var(--bd-coral-deep)" list={team1} />
+            <TeamCard side="left" name={t('alias.team1')} accent="var(--bd-coral)" accentText="var(--bd-coral-text)" list={team1} />
             <div className="hidden md:flex items-center justify-center">
               <span className="bd-float" style={{ fontFamily: FONT_DISPLAY, fontSize: 36, color: 'var(--bd-ink-muted)', fontStyle: 'italic' }}>{t('game.ui.vs')}</span>
             </div>
-            <TeamCard side="right" name={t('alias.team2')} accent="var(--bd-lav)" accentDeep="#7A6AE8" list={team2} />
+            <TeamCard side="right" name={t('alias.team2')} accent="var(--bd-lav)" accentText="var(--bd-lav-text)" list={team2} />
             </div>
           )}
 
@@ -1349,7 +1350,8 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
 
     const renderTeamCard = (team: (typeof data.teams)[0], i: number) => {
       const accent = TEAM_ACCENTS[i] ?? 'var(--bd-lav)'
-      const accentDeep = TEAM_ACCENTS_DEEP[i] ?? '#7A6AE8'
+      const accentDeep = TEAM_ACCENTS_DEEP[i] ?? 'var(--bd-lav-deep)'
+      const accentText = TEAM_ACCENTS_TEXT[i] ?? 'var(--bd-lav-text)'
       const isMyTeam = myTeamId === team.id
       return (
         <div key={team.id} className="alias-team-card" style={{
@@ -1366,7 +1368,7 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
           }} />
           <div className="alias-team-head" style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 16 }}>
             <div>
-              <BdLabel style={{ color: accentDeep }}>{isSolo ? t('alias.soloBadge') : t('alias.teamNumbered', { num: `0${i + 1}` })}</BdLabel>
+              <BdLabel style={{ color: accentText }}>{isSolo ? t('alias.soloBadge') : t('alias.teamNumbered', { num: `0${i + 1}` })}</BdLabel>
               <div className="alias-team-name" style={{ fontFamily: FONT_DISPLAY, fontWeight: 700, fontSize: 28, marginTop: 4 }}>
                 {team.name}
               </div>
@@ -1402,7 +1404,7 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
                   {isYou && (
                     <span style={{
                       marginLeft: 'auto', fontSize: 10, fontFamily: FONT_MONO,
-                      color: accentDeep, background: 'var(--bd-surface-raised)',
+                      color: accentText, background: 'var(--bd-surface-raised)',
                       padding: '2px 7px', borderRadius: 999, border: `1px solid ${accent}`,
                     }}>{t('alias.youBadge')}</span>
                   )}
@@ -1421,7 +1423,7 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
               disabled={isMoveSubmitting}
               style={{
                 width: '100%',
-                background: accent, color: 'var(--bd-ink)',
+                background: accent, color: 'var(--bd-ink-on-accent)',
                 border: 'none', borderRadius: 12,
                 padding: '12px 16px', fontWeight: 700, fontSize: 15,
                 cursor: 'pointer',
@@ -1441,7 +1443,7 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
               background: 'var(--bd-surface-raised)',
               border: `1.5px solid ${accent}`,
               fontWeight: 600, fontSize: 14,
-              color: accentDeep,
+              color: accentText,
             }}>
               <Icon name="check" size={15} /> {t('alias.onThisTeam')}
             </div>
@@ -1578,7 +1580,7 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
   const skipped = data.currentCardResults.filter(r => r.result === 'skipped').length
   const teamIndex = data.currentTeamIndex
   const teamAccent = teamIndex === 0 ? 'var(--bd-coral)' : 'var(--bd-lav)'
-  const teamAccentDeep = teamIndex === 0 ? 'var(--bd-coral-deep)' : '#7A6AE8'
+  const teamAccentText = teamIndex === 0 ? 'var(--bd-coral-text)' : 'var(--bd-lav-text)'
   const describerPlayer = players.find(p => p.userId === describerId)
   const describerDisplayName = playerDisplayName(describerPlayer) ?? t('game.ui.playerFallback')
 
@@ -1614,7 +1616,7 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
       name: team.name,
       score: team.score,
       accent: TEAM_ACCENTS[index] ?? 'var(--bd-lav)',
-      accentDeep: TEAM_ACCENTS_DEEP[index] ?? '#7A6AE8',
+      accentDeep: TEAM_ACCENTS_DEEP[index] ?? 'var(--bd-lav-deep)',
       isMine: index === myTeamIndex,
     }
   }
@@ -1649,7 +1651,7 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
         background: 'rgba(255,107,91,0.10)', border: '1.5px solid rgba(255,107,91,0.35)',
         borderRadius: 999,
       }}>
-        <BdLabel style={{ color: teamAccentDeep }}>{t('alias.youAreDescribing')}</BdLabel>
+        <BdLabel style={{ color: teamAccentText }}>{t('alias.youAreDescribing')}</BdLabel>
         <span style={{ fontFamily: FONT_MONO, fontSize: 12, color: 'var(--bd-ink-soft)' }}>
           {t('alias.cardNum', { num: data.currentCardIndex + 1 })}
         </span>
@@ -1702,7 +1704,7 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
             </span>
           </div>
           {danger && (
-            <span style={{ fontFamily: FONT_MONO, fontSize: 12, color: 'var(--bd-coral-deep)', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+            <span style={{ fontFamily: FONT_MONO, fontSize: 12, color: 'var(--bd-coral-text)', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
               {t('alias.timesRunningOut')}
             </span>
           )}
@@ -1920,7 +1922,7 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
             <ScorePill kind="skipped" count={skipped} />
           </div>
           {danger && (
-            <span style={{ fontFamily: FONT_MONO, fontSize: 12, color: 'var(--bd-coral-deep)', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+            <span style={{ fontFamily: FONT_MONO, fontSize: 12, color: 'var(--bd-coral-text)', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
               <Icon name="bolt" size={12} /> {t('alias.finalSeconds')}
             </span>
           )}
@@ -2075,7 +2077,7 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
                       <span style={{ fontFamily: FONT_DISPLAY, fontWeight: 700, fontSize: 20, color: 'var(--bd-ink)', textDecoration: ok ? 'none' : 'line-through', textDecorationColor: 'rgba(31,27,22,0.4)' }}>
                         {w.word}
                       </span>
-                      <span style={{ fontFamily: FONT_MONO, fontSize: 13, fontWeight: 700, color: ok ? 'var(--bd-mint-deep)' : 'var(--bd-sun-deep)' }}>
+                      <span style={{ fontFamily: FONT_MONO, fontSize: 13, fontWeight: 700, color: ok ? 'var(--bd-mint-text)' : 'var(--bd-sun-deep)' }}>
                         {ok ? '+1' : '−1'}
                       </span>
                     </div>
@@ -2088,9 +2090,9 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
             <section style={{ display: 'flex', flexDirection: 'column', gap: 18, alignSelf: 'start' }}>
               <div style={{
                 ...cardBase, padding: 24,
-                background: positive ? 'var(--bd-ink)' : 'var(--bd-card-warm)',
-                borderColor: positive ? 'var(--bd-ink)' : 'var(--bd-line)',
-                color: positive ? 'var(--bd-bg)' : 'var(--bd-ink)',
+                background: positive ? 'var(--bd-inverse)' : 'var(--bd-card-warm)',
+                borderColor: positive ? 'var(--bd-inverse)' : 'var(--bd-line)',
+                color: positive ? 'var(--bd-ink-on-inverse)' : 'var(--bd-ink)',
                 boxShadow: positive ? '0 6px 0 var(--bd-mint), 0 14px 28px -10px rgba(31,27,22,0.3)' : '0 6px 0 var(--bd-sun), 0 14px 28px -10px rgba(31,27,22,0.18)',
                 display: 'flex', alignItems: 'center', gap: 18,
               }}>
@@ -2234,7 +2236,7 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
                    name is the display line and the verb is the italic line under
                    it. Subject then verb is the order in all four locales, and
                    the <br /> is layout, not grammar. */
-                <><span style={{ color: 'var(--bd-coral-deep)' }}>{winner?.name}</span><br /><span style={{ fontStyle: 'italic', fontWeight: 400 }}>{t('alias.winsWord')}</span></>
+                <><span style={{ color: 'var(--bd-coral-text)' }}>{winner?.name}</span><br /><span style={{ fontStyle: 'italic', fontWeight: 400 }}>{t('alias.winsWord')}</span></>
               )}
             </h1>
             <p style={{ fontSize: 16, color: 'var(--bd-ink-soft)', textAlign: 'center', maxWidth: 460, margin: 0 }}>
@@ -2266,7 +2268,7 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
             )}
           </div>
 
-          <div style={{ ...cardBase, width: '100%', padding: 28, background: 'var(--bd-ink)', borderColor: 'var(--bd-ink)', color: 'var(--bd-bg)', boxShadow: '0 8px 0 var(--bd-coral), 0 18px 36px -12px rgba(31,27,22,0.5)' }}>
+          <div style={{ ...cardBase, width: '100%', padding: 28, background: 'var(--bd-inverse)', borderColor: 'var(--bd-inverse)', color: 'var(--bd-ink-on-inverse)', boxShadow: '0 8px 0 var(--bd-coral), 0 18px 36px -12px rgba(31,27,22,0.5)' }}>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr auto 1fr', gap: 24, alignItems: 'center' }}>
               {sorted.map((team, i) => {
                 const isWinner = !isTie && team.id === data.winnerId
@@ -2281,7 +2283,7 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
                           : (isTie ? t('alias.teamLabel') : t('alias.runnerUpLabel'))}
                       </BdLabel>
                       <div style={{ fontFamily: FONT_DISPLAY, fontWeight: 700, fontSize: 30, color: accent, lineHeight: 1.1, marginBottom: 4 }}>{team.name}</div>
-                      <div style={{ fontFamily: FONT_DISPLAY, fontWeight: 700, fontSize: 72, lineHeight: 1, fontVariantNumeric: 'tabular-nums', color: 'var(--bd-bg)' }}>{team.score}</div>
+                      <div style={{ fontFamily: FONT_DISPLAY, fontWeight: 700, fontSize: 72, lineHeight: 1, fontVariantNumeric: 'tabular-nums', color: 'var(--bd-ink-on-inverse)' }}>{team.score}</div>
                     </div>
                     {i === 0 && <span style={{ fontFamily: FONT_DISPLAY, fontSize: 28, fontStyle: 'italic', color: 'rgba(251,246,238,0.5)' }}>{t('game.ui.vs')}</span>}
                   </React.Fragment>

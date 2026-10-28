@@ -2,8 +2,8 @@
  * The design tokens the dev theme panel can move, and the maths it moves them
  * with (`/dev/theme`).
  *
- * Boardly's whole visual language is 22 colour custom properties in `:root`,
- * nine of which `html.dark` redefines. There are no radius, shadow or spacing
+ * Boardly's whole visual language is two dozen colour custom properties in
+ * `:root`, the inks, surfaces and accent text colours of which `html.dark` redefines. There are no radius, shadow or spacing
  * tokens — those are written into the rules — so the panel is a colour tool,
  * and the useful control is HSL rather than a hex field: hue and saturation
  * are what you move to make a palette feel like a different product, and a hex
@@ -40,21 +40,26 @@ export interface ThemeToken {
  */
 export const THEME_TOKENS: readonly ThemeToken[] = [
   { name: 'bd-coral', group: 'accent', note: 'Primary accent: buttons, the brand mark, tic-tac-toe', light: '#FF6B5B', dark: null },
-  { name: 'bd-coral-deep', group: 'accent', note: 'Coral text and icons on a light fill', light: '#E04B3B', dark: null },
+  { name: 'bd-coral-deep', group: 'accent', note: 'The border and hard shadow of a coral fill. Does not flip', light: '#E04B3B', dark: null },
+  { name: 'bd-coral-text', group: 'accent', note: 'Coral text and icons', light: '#E04B3B', dark: '#FF8273' },
   { name: 'bd-mint', group: 'accent', note: 'Success, memory, the ready state', light: '#4FC9A6', dark: null },
-  { name: 'bd-mint-deep', group: 'accent', note: 'Mint text and icons on a light fill', light: '#2FA787', dark: null },
+  { name: 'bd-mint-deep', group: 'accent', note: 'The border, shadow and dot of a mint fill. Does not flip', light: '#2FA787', dark: null },
+  { name: 'bd-mint-text', group: 'accent', note: 'Mint text and icons', light: '#2FA787', dark: '#45BF9C' },
   { name: 'bd-sun', group: 'accent', note: 'Yahtzee, highlights, the win badge', light: '#FFC44D', dark: null },
   { name: 'bd-sun-deep', group: 'accent', note: 'Sun text and icons on a light fill', light: '#E5A82E', dark: null },
   { name: 'bd-lav', group: 'accent', note: 'Spy, rock paper scissors, planned games', light: '#9B8CFF', dark: null },
   { name: 'bd-lav-mid', group: 'accent', note: 'Lavender between the base and the deep', light: '#8B7DFF', dark: null },
-  { name: 'bd-lav-deep', group: 'accent', note: 'Lavender text and icons on a light fill', light: '#7867E8', dark: null },
+  { name: 'bd-lav-deep', group: 'accent', note: 'Focus rings, a checked box, the border and shadow of a lavender fill. Does not flip', light: '#7867E8', dark: null },
+  { name: 'bd-lav-text', group: 'accent', note: 'Lavender text and icons', light: '#7867E8', dark: '#A99BFF' },
+  { name: 'bd-sun-text', group: 'accent', note: 'Sun-coloured text on a sun tint (--bd-sun-deep is a border shade)', light: '#8A5F00', dark: '#FFC44D' },
   { name: 'bd-sky', group: 'accent', note: 'Connect four, links, the info state', light: '#6BC1F0', dark: null },
   { name: 'bd-premium', group: 'accent', note: 'The crown and every premium marker', light: '#F59E0B', dark: null },
 
   { name: 'bd-ink', group: 'ink', note: 'Body text, borders, the hard shadow', light: '#1F1B16', dark: '#F0E8DB' },
   { name: 'bd-ink-soft', group: 'ink', note: 'Secondary text', light: '#4A3F33', dark: '#B5A494' },
-  { name: 'bd-ink-muted', group: 'ink', note: 'Hints, placeholders, disabled', light: '#8A7A66', dark: '#7A6E62' },
+  { name: 'bd-ink-muted', group: 'ink', note: 'Hints, placeholders, captions: 4.5:1 on page, card and input', light: '#736451', dark: '#9C8E7E' },
   { name: 'bd-ink-on-accent', group: 'ink', note: 'Anything drawn on a coloured fill. Does NOT flip — that is the point', light: '#1F1B16', dark: null },
+  { name: 'bd-ink-on-inverse', group: 'ink', note: 'Text on the inverse slab', light: '#FBF6EE', dark: '#F0E8DB' },
 
   { name: 'bd-bg', group: 'surface', note: 'Page background', light: '#FBF6EE', dark: '#1E1B17' },
   { name: 'bd-bg2', group: 'surface', note: 'Recessed surfaces: chips, wells', light: '#F2E9D8', dark: '#2B2720' },
@@ -62,6 +67,7 @@ export const THEME_TOKENS: readonly ThemeToken[] = [
   { name: 'bd-card', group: 'surface', note: 'Plain card plate: move history, chat, side panels', light: '#ffffff', dark: '#242018' },
   { name: 'bd-input-bg', group: 'surface', note: 'Input and field background', light: '#ffffff', dark: '#2B2720' },
   { name: 'bd-line', group: 'surface', note: 'Hairline borders and dividers', light: '#E8DDC8', dark: '#3A3530' },
+  { name: 'bd-inverse', group: 'surface', note: 'The dark slab: marquee, CTA band, finished-game banner. Stays dark in dark', light: '#1F1B16', dark: '#35302A' },
 ]
 
 export const GROUP_LABELS: Record<TokenGroup, string> = {

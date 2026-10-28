@@ -67,7 +67,7 @@ function ResetPasswordForm() {
   const kicker = 'Boardly'
   const linkButtonStyle = {
     background: 'none', border: 'none', padding: 0, cursor: 'pointer',
-    color: 'var(--bd-coral-deep)', fontWeight: 600, textDecoration: 'underline', fontSize: 14,
+    color: 'var(--bd-coral-text)', fontWeight: 600, textDecoration: 'underline', fontSize: 14,
   } as const
 
   if (!token) {
@@ -115,7 +115,7 @@ function ResetPasswordForm() {
         />
 
         {error && (
-          <p role="alert" style={{ margin: 0, padding: '10px 14px', borderRadius: 12, fontSize: 14, color: 'var(--bd-coral-deep)', background: 'rgba(255,107,91,0.10)', border: '1.5px solid rgba(255,107,91,0.35)' }}>
+          <p role="alert" style={{ margin: 0, padding: '10px 14px', borderRadius: 12, fontSize: 14, color: 'var(--bd-coral-text)', background: 'rgba(255,107,91,0.10)', border: '1.5px solid rgba(255,107,91,0.35)' }}>
             {error}
           </p>
         )}

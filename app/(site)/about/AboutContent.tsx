@@ -5,7 +5,7 @@ import Footer from '@/components/Footer'
 import { useTranslation } from '@/lib/i18n-helpers'
 import { GITHUB_REPO_URL, SUPPORT_EMAIL } from './about-json-ld'
 
-const linkStyle = { color: 'var(--bd-coral-deep)', textDecoration: 'underline', textUnderlineOffset: 3 } as const
+const linkStyle = { color: 'var(--bd-coral-text)', textDecoration: 'underline', textUnderlineOffset: 3 } as const
 
 export default function AboutContent() {
   const { t } = useTranslation()

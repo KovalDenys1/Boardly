@@ -838,7 +838,7 @@ export default function SpectatorLobbyPage() {
             <p className="mt-1 text-sm font-medium text-bd-ink-muted">
               {t('game.ui.code')} <span className="font-mono font-bold text-bd-ink">{data.lobby.code}</span>
               {data.activeGame?.status && (
-                <span className="ml-2 inline-flex items-center rounded-full bg-bd-mint/20 px-2 py-0.5 text-xs font-semibold text-bd-mint-deep">
+                <span className="ml-2 inline-flex items-center rounded-full bg-bd-mint/20 px-2 py-0.5 text-xs font-semibold text-bd-mint-text">
                   {data.activeGame.status}
                 </span>
               )}
@@ -870,7 +870,7 @@ export default function SpectatorLobbyPage() {
         </div>
 
         {error && (
-          <p className="mb-4 rounded-2xl border border-bd-coral/30 bg-bd-coral/10 px-4 py-3 text-sm font-medium text-bd-coral-deep">
+          <p className="mb-4 rounded-2xl border border-bd-coral/30 bg-bd-coral/10 px-4 py-3 text-sm font-medium text-bd-coral-text">
             {error}
           </p>
         )}

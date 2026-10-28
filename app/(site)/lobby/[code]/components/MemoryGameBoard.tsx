@@ -585,7 +585,7 @@ export default function MemoryGameBoard({
               <span style={{ color: 'var(--bd-ink-soft)', fontSize: 11, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>
                 {displayNameByUserId.get(m.playerId) || t('games.memory.game.unknownPlayer')}
               </span>
-              <span style={{ fontSize: 12, fontWeight: 700, flexShrink: 0, color: m.isMatch ? 'var(--bd-mint-deep)' : 'var(--bd-coral)' }}>
+              <span style={{ fontSize: 12, fontWeight: 700, flexShrink: 0, color: m.isMatch ? 'var(--bd-mint-text)' : 'var(--bd-coral)' }}>
                 {m.isMatch ? '✓' : '✗'}
               </span>
             </div>

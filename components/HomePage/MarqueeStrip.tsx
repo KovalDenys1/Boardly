@@ -55,9 +55,9 @@ function MarqueeItem({
       }}
     >
       {'game' in spec
-        ? <GameIcon gameId={spec.game} accentColor={color} size={26} variant="bare" />
+        ? <GameIcon gameId={spec.game} accentColor={color} detailColor="var(--bd-inverse)" size={26} variant="bare" />
         : <Icon name={spec.icon} size={26} />}
-      <span style={{ color: index % 3 === 0 ? color : 'var(--bd-bg)' }}>{txt}</span>
+      <span style={{ color: index % 3 === 0 ? color : 'var(--bd-ink-on-inverse)' }}>{txt}</span>
     </span>
   )
 }
@@ -103,10 +103,10 @@ export default function MarqueeStrip({ variant = 'section' }: MarqueeStripProps)
       style={{
         margin: isHero ? 0 : '24px 0',
         padding: isHero ? '20px 0' : '20px 0',
-        background: 'var(--bd-ink)',
-        color: 'var(--bd-bg)',
-        borderTop: '3px solid var(--bd-ink)',
-        borderBottom: '3px solid var(--bd-ink)',
+        background: 'var(--bd-inverse)',
+        color: 'var(--bd-ink-on-inverse)',
+        borderTop: '3px solid var(--bd-inverse)',
+        borderBottom: '3px solid var(--bd-inverse)',
         overflow: 'hidden',
         position: 'relative',
         boxShadow: isHero ? '0 16px 0 rgba(31,27,22,0.08)' : 'none',

@@ -207,7 +207,7 @@ export default function PlayerProfileCard({ userId, onClose, reportContext }: Pl
               ) : (
                 <div
                   className="w-14 h-14 rounded-full flex items-center justify-center font-bold text-xl shrink-0"
-                  style={{ background: 'var(--bd-ink)', color: 'var(--bd-sun)' }}
+                  style={{ background: 'var(--bd-logo-tile)', color: 'var(--bd-sun)' }}
                 >
                   {initials}
                 </div>
@@ -308,7 +308,7 @@ export default function PlayerProfileCard({ userId, onClose, reportContext }: Pl
                   <button
                     onClick={handleAddFriend}
                     disabled={friendState === 'loading'}
-                    className="w-full py-2 px-4 text-white rounded-xl text-sm font-semibold transition-opacity disabled:opacity-60 hover:opacity-80"
+                    className="w-full py-2 px-4 text-bd-bg rounded-xl text-sm font-semibold transition-opacity disabled:opacity-60 hover:opacity-80"
                     style={{ background: 'var(--bd-ink)', boxShadow: '0 3px 0 var(--bd-coral)' }}
                   >
                     {friendState === 'loading' ? t('profile.sending') : `+ ${t('profile.friends.addFriend')}`}

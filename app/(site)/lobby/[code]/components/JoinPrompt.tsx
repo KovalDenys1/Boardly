@@ -105,7 +105,7 @@ export default function JoinPrompt({
             <span
               className={`bd-chip ${
                 lobby.isPrivate
-                  ? 'border-bd-coral/50 bg-bd-coral/15 text-bd-coral-deep'
+                  ? 'border-bd-coral/50 bg-bd-coral/15 text-bd-coral-text'
                   : 'bd-chip-mint'
               }`}
             >
@@ -174,7 +174,7 @@ export default function JoinPrompt({
         )}
 
         {error && (
-          <div className="mb-6 animate-shake rounded-xl border border-bd-coral/35 bg-bd-coral/10 px-4 py-3 text-bd-coral-deep">
+          <div className="mb-6 animate-shake rounded-xl border border-bd-coral/35 bg-bd-coral/10 px-4 py-3 text-bd-coral-text">
             <div className="flex items-center gap-2">
               <Icon name="warning" size={18} />
               <p className="font-semibold text-sm">{error}</p>
@@ -183,7 +183,7 @@ export default function JoinPrompt({
               <button
                 type="button"
                 onClick={onWatchAsSpectator}
-                className="mt-3 w-full rounded-xl border-2 border-bd-coral-deep bg-(--bd-card-warm) px-4 py-2 text-sm font-bold text-bd-coral-deep transition-colors hover:bg-bd-coral/10"
+                className="mt-3 w-full rounded-xl border-2 border-bd-coral-deep bg-(--bd-card-warm) px-4 py-2 text-sm font-bold text-bd-coral-text transition-colors hover:bg-bd-coral/10"
               >
                 <Icon name="eye" size={14} /> {t('lobby.joinSection.watchInstead')} →
               </button>
@@ -193,7 +193,7 @@ export default function JoinPrompt({
                 type="button"
                 onClick={onCreateOwnLobby}
                 disabled={primaryActionDisabled}
-                className="mt-3 w-full rounded-xl border-2 border-bd-coral-deep bg-(--bd-card-warm) px-4 py-2 text-sm font-bold text-bd-coral-deep transition-colors hover:bg-bd-coral/10 disabled:cursor-not-allowed disabled:opacity-60"
+                className="mt-3 w-full rounded-xl border-2 border-bd-coral-deep bg-(--bd-card-warm) px-4 py-2 text-sm font-bold text-bd-coral-text transition-colors hover:bg-bd-coral/10 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 <Icon name="plus" size={14} /> {t('lobby.joinSection.createOwnLobby')} →
               </button>

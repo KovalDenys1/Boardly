@@ -91,7 +91,7 @@ export default function LanguageSwitcher({ anchor }: LanguageSwitcherProps) {
         className={`${headerControl()} gap-1.5 pl-1.5 pr-2 text-left`}
         aria-label={t('header.language')}
       >
-        <span className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-bd-bg2 text-bd-lav-deep dark:text-bd-lav">
+        <span className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-bd-bg2 text-bd-lav-text dark:text-bd-lav">
           <GlobeIcon />
         </span>
 
@@ -130,7 +130,7 @@ export default function LanguageSwitcher({ anchor }: LanguageSwitcherProps) {
                     onClick={() => handleLocaleChange(option.code)}
                     className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left transition-colors ${
                       isSelected
-                        ? 'bg-bd-lav/15 text-bd-lav-deep dark:bg-bd-lav/15 dark:text-bd-lav'
+                        ? 'bg-bd-lav/15 text-bd-lav-text dark:bg-bd-lav/15 dark:text-bd-lav'
                         : focus
                           ? 'bg-bd-card-warm text-bd-ink'
                           : 'text-bd-ink-soft'

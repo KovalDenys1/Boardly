@@ -277,7 +277,7 @@ export function NotificationsMenu() {
       >
         <BellIcon />
         {unreadCount > 0 && (
-          <span className="absolute -right-1.5 -top-1.5 inline-flex min-w-5 items-center justify-center rounded-full border-2 border-(--bd-bg) bg-(--bd-coral) px-1.5 py-0.5 text-[10px] font-black text-white shadow-sm">
+          <span className="absolute -right-1.5 -top-1.5 inline-flex min-w-5 items-center justify-center rounded-full border-2 border-(--bd-bg) bg-(--bd-coral) px-1.5 py-0.5 text-[10px] font-black text-(--bd-ink-on-accent) shadow-sm">
             {unreadCount > 9 ? '9+' : unreadCount}
           </span>
         )}

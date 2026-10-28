@@ -68,7 +68,7 @@ export default function SuspendedPage() {
         {submitted ? (
           <div className="text-center">
             <div
-              className="mx-auto mb-5 grid h-16 w-16 place-items-center rounded-2xl border-2 border-bd-mint-deep bg-bd-mint/15 text-bd-mint-deep"
+              className="mx-auto mb-5 grid h-16 w-16 place-items-center rounded-2xl border-2 border-bd-mint-deep bg-bd-mint/15 text-bd-mint-text"
               style={{ boxShadow: '3px 3px 0 var(--bd-ink)' }}
             >
               <Icon name="check" size={32} weight="bold" />
@@ -93,7 +93,7 @@ export default function SuspendedPage() {
           <>
             <div className="mb-6 text-center">
               <div
-                className="mx-auto mb-5 grid h-16 w-16 place-items-center rounded-2xl border-2 border-bd-coral-deep bg-bd-coral/15 text-bd-coral-deep"
+                className="mx-auto mb-5 grid h-16 w-16 place-items-center rounded-2xl border-2 border-bd-coral-deep bg-bd-coral/15 text-bd-coral-text"
                 style={{ boxShadow: '3px 3px 0 var(--bd-ink)' }}
               >
                 <Icon name="lock" size={32} />
@@ -116,7 +116,7 @@ export default function SuspendedPage() {
                 border: '1px solid rgba(255,100,80,0.25)',
               }}
             >
-              <p className="text-sm font-semibold text-bd-coral-deep">
+              <p className="text-sm font-semibold text-bd-coral-text">
                 {t('suspended.reason')}
               </p>
               {banReason && (
@@ -181,7 +181,7 @@ export default function SuspendedPage() {
                 </div>
 
                 {error && (
-                  <p className="text-xs text-bd-coral-deep">{error}</p>
+                  <p className="text-xs text-bd-coral-text">{error}</p>
                 )}
 
                 <button

@@ -5,7 +5,8 @@ import nextConfig from '@/next.config.js'
 import robots from '@/app/robots'
 import sitemap from '@/app/sitemap'
 import { deriveSignupSource } from '@/lib/signup-source'
-import { SOCIAL_SHORT_LINKS, socialShortLinkRedirects } from '@/lib/social-short-links'
+import { getCatalogGames } from '@/lib/game-catalog'
+import { SOCIAL_SHORT_LINKS, SOCIAL_SHORT_LINK_GAME_SLUGS, socialShortLinkRedirects } from '@/lib/social-short-links'
 
 type Redirect = { source: string; destination: string; permanent?: boolean; has?: unknown }
 
@@ -55,6 +56,7 @@ describe('social short links (#1096)', () => {
     for (const campaign of ['ai', 'ai_skit', 'launch-2026', 'a'.repeat(32)]) {
       const hit = await resolve(`/tt/${campaign}`)
       expect(hit!.status).toBe(307)
+      expect(hit!.url.pathname).toBe('/')
       expect(hit!.url.searchParams.get('utm_source')).toBe('tiktok.com')
       expect(hit!.url.searchParams.get('utm_campaign')).toBe(campaign)
     }
@@ -111,6 +113,66 @@ describe('social short links (#1096)', () => {
     for (const { path: p } of SOCIAL_SHORT_LINKS) {
       expect(urls.some((u) => u === p || u.startsWith(`${p}/`))).toBe(false)
     }
+  })
+
+  describe('a campaign that starts with a game slug lands on the game (#1540)', () => {
+    it.each(Object.entries(expected))('%s/checkers-trap goes to /games/checkers as %s', async (short, source) => {
+      const hit = await resolve(`${short}/checkers-trap`)
+      expect(hit!.status).toBe(307)
+      expect(hit!.url.pathname).toBe('/games/checkers')
+      expect(Object.fromEntries(hit!.url.searchParams)).toEqual({
+        utm_source: source,
+        utm_medium: 'social',
+        utm_campaign: 'checkers-trap',
+      })
+    })
+
+    it('takes the bare slug', async () => {
+      const hit = await resolve('/tt/connect-four')
+      expect(hit!.url.pathname).toBe('/games/connect-four')
+      expect(hit!.url.searchParams.get('utm_campaign')).toBe('connect-four')
+    })
+
+    it('takes the slug with a suffix', async () => {
+      for (const [short, game] of [
+        ['/tt/connect-four-trap', 'connect-four'],
+        ['/pin/checkers-solved', 'checkers'],
+        ['/ig/rock-paper-scissors_rematch', 'rock-paper-scissors'],
+        ['/yt/spy-' + 'a'.repeat(28), 'spy'],
+      ]) {
+        const hit = await resolve(short)
+        expect(hit!.url.pathname).toBe(`/games/${game}`)
+        expect(hit!.url.searchParams.get('utm_campaign')).toBe(short.split('/')[2])
+      }
+    })
+
+    it('leaves any other campaign on the home page', async () => {
+      for (const [short, campaign] of [
+        ['/tt/profile', 'profile'],
+        ['/tt', 'profile'],
+        ['/tt/ai_skit', 'ai_skit'],
+        ['/tt/spyglass', 'spyglass'],
+        ['/tt/checkers2', 'checkers2'],
+        ['/tt/four-in-a-row', 'four-in-a-row'],
+        ['/tt/connect-four-' + 'a'.repeat(20), 'profile'],
+      ]) {
+        const hit = await resolve(short)
+        expect(hit!.url.pathname).toBe('/')
+        expect(hit!.url.searchParams.get('utm_campaign')).toBe(campaign)
+      }
+    })
+
+    it('knows exactly the catalog games that have a /games/<slug> page', () => {
+      const fromCatalog = getCatalogGames()
+        .map((game) => game.route?.match(/^\/games\/([^/]+)\//)?.[1])
+        .filter((slug): slug is string => Boolean(slug))
+      const games = path.join(process.cwd(), 'app', '(site)', 'games')
+      const fromPages = readdirSync(games, { withFileTypes: true })
+        .filter((d) => d.isDirectory() && readdirSync(path.join(games, d.name)).includes('page.tsx'))
+        .map((d) => d.name)
+      expect([...SOCIAL_SHORT_LINK_GAME_SLUGS].sort()).toEqual([...new Set(fromCatalog)].sort())
+      expect([...SOCIAL_SHORT_LINK_GAME_SLUGS].sort()).toEqual(fromPages.sort())
+    })
   })
 
   it('emits only temporary redirects', () => {
