@@ -1,5 +1,5 @@
 # Stripe 23 and API version endive
-Status: approved | Class: personal | Repo: ~/Projects/boardly | Worktree: /Users/denyskoval/Projects/.worktrees/boardly-1322 | Branch: feature/1322-stripe-23 | Base: origin/develop | Created: 2026-10-29 | Updated: 2026-10-29
+Status: in-audit | Class: personal | Repo: ~/Projects/boardly | Worktree: /Users/denyskoval/Projects/.worktrees/boardly-1322 | Branch: feature/1322-stripe-23 | Base: origin/develop | Created: 2026-10-29 | Updated: 2026-10-29
 
 ## Purpose
 Premium keeps taking, cancelling and renewing subscriptions without a hitch while Boardly moves to the current Stripe library (stripe-node 23) and API version `2026-09-30.endive`, so dependency updates stop being held back and the payment code runs on a supported version.
@@ -73,7 +73,7 @@ Verification cost: back end only, no viewport matrix (`N/A – no Boardly UI cha
 Story checks above, then the repo's gates: `npm run ci:quick` exit 0, the full `npm test` once. Live UI: none.
 
 ## Assumptions
-- `2026-09-30.endive` is the version stripe-node 23.0.x pins (verify in `node_modules/stripe` after install).
+- `2026-09-30.endive` is the version stripe-node 23.0.x pins (verify in `node_modules/stripe` after install). Verified 2026-10-29: 23.0.1, `node_modules/stripe/cjs/apiVersion.js` exports `ApiVersion = '2026-09-30.endive'`.
 - The production webhook endpoint is on dahlia today (the lead checks before release).
 
 ## Open questions
@@ -82,6 +82,12 @@ None.
 ## Decisions
 - 2026-10-29 – Agent decision: move library, client and webhook endpoint to endive in one release, with the production endpoint switched by creating a new endive endpoint and rotating `STRIPE_WEBHOOK_SECRET` at release (old endpoint disabled, not deleted, for a week). Reason: Stripe sets an endpoint's API version only at creation, and events rendered at dahlia must not reach code typed for endive. Revert: re-enable the old endpoint, restore the old secret in Vercel, redeploy the previous release.
 - 2026-10-29 – Agent decision: verify against the test-mode sandbox with the `.env.local` key, not a new CLI login. Reason: the CLI login expired and a sign-in is the owner's; the key works (customers list answered 29.10). Revert: n/a.
+- 2026-10-29 – Agent decision: `lib/stripe.ts` sends `Stripe.API_VERSION` behind `satisfies \`${string}.endive\``, not a hard-coded date. Reason: stripe-node 23 types `apiVersion` as its one pinned literal, so a hard-coded date fails the typecheck of every dependabot minor that pins a newer endive version and would hold updates back again (US-4); Stripe ships only additive changes within endive, and a new major fails the typecheck until the webhook endpoint has moved (checked: a `2027-03-31.fig` literal gives TS1360). Revert: put `apiVersion: '2026-09-30.endive'` back.
+- 2026-10-29 – Agent decision: the two async events are replayed with `stripe trigger --raw` fixtures – a subscription-mode Checkout Session on a test user's own customer, paid by SEPA test IBANs – not the CLI's stock fixtures. Reason: the stock async fixtures create payment-mode sessions on new customers, which the route ignores by design, so they would prove only the "not ours" branch. Their setup requests run at dahlia because they send `payment_method_types`, which endive removed; the events themselves are rendered at endive by `stripe listen --latest`. Revert: n/a.
+- 2026-10-29 – Agent decision: the test users' addresses are Resend's test sink (`delivered+…@resend.dev`). Reason: the paid path sends the purchase confirmation and, without a Resend key, answers 500 by design; the sink accepts mail and delivers it to nobody. Revert: n/a.
+
+## Deviations
+- 2026-10-29 – US-1 Verify, "a test-mode checkout completed with 4242 (Playwright headless)": the hosted Managed Payments page was filled with 4242 in headless Chrome, and "Pay and subscribe" raised an hCaptcha challenge (`api.hcaptcha.com/getcaptcha`, `audit-evidence/hosted-checkout-after-pay.png`); the session stayed `open`/`unpaid`. Not routed around. The page's own confirm call refuses Managed Payments sessions for this account's keys (`checkout_connect_mismatched_key`). So the route's endive session with Managed Payments was verified live up to the Checkout URL, and the paid completion turning the user Premium was replayed as a subscription Checkout Session with the same customer, price and consent metadata, paid with `tok_visa`, without Managed Payments. The Playwright MCP browser was held by another session ("Browser is already in use"), so the worktree's Playwright library drove the installed Chrome, headless, with `--use-mock-keychain`. Revert: n/a.
 
 ## Rounds
 | Round | Stage | Result | Week % | Time |

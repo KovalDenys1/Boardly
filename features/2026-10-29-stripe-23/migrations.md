@@ -16,3 +16,5 @@
 5. After a clean week – delete the old endpoint.
 
 Rollback: re-enable the old endpoint, restore the previous secret, redeploy the previous release.
+
+Later bumps: a stripe-node minor that pins a newer endive version needs no endpoint change. A new major fails the typecheck in `lib/stripe.ts` until this order has been repeated for it.
