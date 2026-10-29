@@ -5,6 +5,17 @@ import { signupSourceHeaders } from '@/lib/signup-source-client'
  * Use this instead of native fetch for all API calls
  */
 
+const GUEST_TOKEN_KEY = 'boardly_guest_token'
+
+/** Whether this browser holds a guest token, i.e. whether fetchWithGuest will send one. */
+export function hasStoredGuestToken(): boolean {
+    return typeof window !== 'undefined' && Boolean(readLocal(GUEST_TOKEN_KEY))
+}
+
+export function storedGuestName(): string | null {
+    return typeof window === 'undefined' ? null : readLocal('boardly_guest_name')
+}
+
 /**
  * Get guest headers from localStorage
  * Returns empty object if not in guest mode
@@ -14,7 +25,7 @@ export function getGuestHeaders(): HeadersInit {
         return {}
     }
 
-    const guestToken = readLocal('boardly_guest_token')
+    const guestToken = readLocal(GUEST_TOKEN_KEY)
 
     if (guestToken) {
         return {
