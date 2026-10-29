@@ -216,6 +216,7 @@ const es: TranslationWithPlurals = {
       spectatorsUpgrade: 'Hazte Premium para permitir espectadores',
       spectatorsToggle: 'Activar o desactivar espectadores',
       friendsSelected: '{{value}} seleccionados',
+      friendsToInvite: 'Amigos a invitar: {{value}}',
       inviteCodeNotice: 'El código de invitación se genera al crear la sala',
       changeGame: 'Cambiar juego',
       chooseGame: 'Elige un juego',

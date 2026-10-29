@@ -211,6 +211,7 @@ const no = {
       spectatorsUpgrade: 'Oppgrader for å slippe inn tilskuere',
       spectatorsToggle: 'Slå tilskuere av eller på',
       friendsSelected: '{{value}} valgt',
+      friendsToInvite: 'Venner som inviteres: {{value}}',
       inviteCodeNotice: 'Invitasjonskoden lages når du oppretter lobbyen',
       changeGame: 'Bytt spill',
       chooseGame: 'Velg et spill',

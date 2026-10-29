@@ -211,6 +211,7 @@ const en = {
       spectatorsUpgrade: 'Upgrade to allow spectators',
       spectatorsToggle: 'Toggle spectators',
       friendsSelected: '{{value}} selected',
+      friendsToInvite: 'Friends to invite: {{value}}',
       inviteCodeNotice: 'Invite code generated on create',
       changeGame: 'Change game',
       chooseGame: 'Choose a game',

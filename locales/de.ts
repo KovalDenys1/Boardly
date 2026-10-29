@@ -214,6 +214,7 @@ const de: TranslationWithPlurals = {
       spectatorsUpgrade: 'Upgrade, um Zuschauer zuzulassen',
       spectatorsToggle: 'Zuschauer an/aus',
       friendsSelected: '{{value}} ausgewählt',
+      friendsToInvite: 'Freunde einladen: {{value}}',
       inviteCodeNotice: 'Der Einladungscode entsteht beim Erstellen',
       changeGame: 'Spiel wechseln',
       chooseGame: 'Spiel auswählen',

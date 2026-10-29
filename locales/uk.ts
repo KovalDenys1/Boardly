@@ -246,6 +246,7 @@ const uk: TranslationWithPlurals = {
       spectatorsUpgrade: 'Оформіть Premium, щоб впускати глядачів',
       spectatorsToggle: 'Увімкнути або вимкнути глядачів',
       friendsSelected: 'Обрано: {{value}}',
+      friendsToInvite: 'Запросити друзів: {{value}}',
       inviteCodeNotice: 'Код запрошення з’явиться після створення лобі',
       changeGame: 'Змінити гру',
       chooseGame: 'Виберіть гру',

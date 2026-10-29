@@ -237,6 +237,7 @@ const ru = {
       spectatorsUpgrade: 'Оформите Premium, чтобы пускать зрителей',
       spectatorsToggle: 'Включить или выключить зрителей',
       friendsSelected: 'Выбрано: {{value}}',
+      friendsToInvite: 'Пригласить друзей: {{value}}',
       inviteCodeNotice: 'Код приглашения появится после создания лобби',
       changeGame: 'Сменить игру',
       chooseGame: 'Выберите игру',
