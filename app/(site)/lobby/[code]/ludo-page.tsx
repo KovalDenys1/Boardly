@@ -930,6 +930,7 @@ export default function LudoLobbyPage({ code, isSpectator = false, onGameReset }
                     kicker={winnerId === currentUserId ? t('games.ludo.game.youWon') : undefined}
                     accentColor="var(--bd-sun)"
                     accentShadowColor="rgba(0,0,0,0.25)"
+                    standings={state.players.map((p) => ({ id: p.id, name: getDisplayName(p.id), score: gameEngine.tokensHome(p.id), isViewer: p.id === currentUserId }))}
                     onInspect={() => setOverlayInspecting(true)}
                     isHost={isHost}
                     isLoading={isRematchSubmitting}

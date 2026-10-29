@@ -1,7 +1,7 @@
 /**
  * @jest-environment jsdom
  */
-import { act, render } from '@testing-library/react'
+import { act, fireEvent, render, screen } from '@testing-library/react'
 import { renderToStaticMarkup } from 'react-dom/server'
 import MemoryGameBoard from '@/app/(site)/lobby/[code]/components/MemoryGameBoard'
 import { MemoryGame, type MemoryGameData } from '@/lib/games/memory-game'
@@ -156,7 +156,7 @@ describe('MemoryGameBoard result overlay (#1052)', () => {
   })
 
   it.each(Object.keys(LAYOUT_TREES) as Layout[])(
-    'mounts one result overlay, in the tree %s can see, and no other',
+    'draws one result dialog at %s, however many trees are mounted',
     async (layout) => {
       setViewport(layout)
       const { container } = renderFinishedBoard()
@@ -168,23 +168,15 @@ describe('MemoryGameBoard result overlay (#1052)', () => {
       // passes because someone deleted two layouts.
       expect(container.querySelectorAll('.memory-grid').length).toBe(3)
 
-      const overlays = container.querySelectorAll('[data-testid="game-result-overlay"]')
-      expect(overlays.length).toBe(1)
-      expect(container.querySelectorAll('[data-testid="after-game-actions"]').length).toBe(1)
+      // The dialog is portaled over the whole screen (#1578), so the tree that
+      // mounted it no longer decides whether anyone sees it; one must draw.
+      expect(document.querySelectorAll('[data-testid="game-result-overlay"]').length).toBe(1)
+      expect(screen.getAllByRole('dialog', { hidden: true })).toHaveLength(1)
 
-      // Counting is not enough: one overlay in the wrong tree is a player at
-      // this viewport with no result screen at all. Pin which tree it is in,
-      // and that it is in neither of the two the stylesheet has hidden.
-      const overlay = overlays[0]
-      for (const [candidate, { selector, viewport }] of Object.entries(LAYOUT_TREES)) {
-        const inThisTree = overlay.closest(selector) !== null
-        expect({ layout, candidate, viewport, inThisTree }).toEqual({
-          layout,
-          candidate,
-          viewport,
-          inThisTree: candidate === layout,
-        })
-      }
+      // The after-game block, and the beacons its nudges send, waits behind More.
+      expect(document.querySelectorAll('[data-testid="after-game-actions"]').length).toBe(0)
+      fireEvent.click(screen.getByText('game.ui.resultMore'))
+      expect(document.querySelectorAll('[data-testid="after-game-actions"]').length).toBe(1)
     }
   )
 

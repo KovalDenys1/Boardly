@@ -94,6 +94,12 @@ describe('AfterGameActions (#982)', () => {
     expect(screen.queryByTestId('push-nudge')).toBeNull()
   })
 
+  it('leaves the push ask out of the result dialog\'s More list, which shows it on its main view', () => {
+    render(<AfterGameActions gameType="alias" isRegistered variant="menu" />)
+    expect(screen.getByText('game.ui.discordAfterGame')).toBeTruthy()
+    expect(screen.queryByTestId('push-nudge')).toBeNull()
+  })
+
   it('gives a spectator (neither guest nor registered) share and Discord only', () => {
     render(<AfterGameActions gameType="guess_the_spy" inviteCode="AB12" />)
     expect(screen.getByText('game.ui.playAgainWithFriends')).toBeTruthy()

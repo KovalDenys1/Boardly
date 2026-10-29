@@ -461,6 +461,12 @@ export default function MemoryGameBoard({
   const winnerId = gameData.winnerId
   const winnerName = (winnerId && displayNameByUserId.get(winnerId)) || t('games.memory.game.unknownPlayer')
   const isDraw = isFinished && !winnerId
+  const resultStandings = (parsedState.players ?? []).map((p) => ({
+    id: p.id,
+    name: displayNameByUserId.get(p.id) || p.name || 'Player',
+    score: scoreByPlayerId[p.id] ?? 0,
+    isViewer: p.id === currentUserId,
+  }))
   const isMyWin = isFinished && !!winnerId && !!currentUserId && winnerId === currentUserId
   const viewerResult = viewerOutcome({ isFinished, isDraw, isSpectator, isSeated: !!currentUserId && (parsedState.players ?? []).some((p) => p.id === currentUserId), isViewerWinner: winnerId ? isMyWin : null, isViewerAtTop: hasTopScore(scoreByPlayerId, (parsedState.players ?? []).map((p) => p.id), currentUserId) })
   const symbolSizeClass = memorySymbolSizeClass(gridColumns)
@@ -546,6 +552,7 @@ export default function MemoryGameBoard({
           isDraw={isDraw}
           accentColor="var(--bd-mint)"
           accentShadowColor="var(--bd-mint-deep)"
+          standings={resultStandings}
           onInspect={() => setOverlayInspecting(true)}
           isHost={!!canStartGame}
           isLoading={isRestarting}
@@ -839,6 +846,7 @@ export default function MemoryGameBoard({
                   isDraw={isDraw}
                   accentColor="var(--bd-mint)"
                   accentShadowColor="var(--bd-mint-deep)"
+                  standings={resultStandings}
                   onInspect={() => setOverlayInspecting(true)}
                   isHost={!!canStartGame}
                   isLoading={isRestarting}

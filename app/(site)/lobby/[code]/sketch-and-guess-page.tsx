@@ -1267,14 +1267,10 @@ export default function SketchAndGuessLobbyPage({ code, isSpectator = false, onG
                 <GameResultOverlay
                     isSpectator={isSpectator}
                     title={finishedMessage}
-                    kicker={t('lobby.game.gameOver')}
                     accentColor={SKETCH_ACCENT}
                     accentShadowColor={SKETCH_ACCENT_DEEP}
-                    icon={
-                        <div style={{ width: 56, height: 56, borderRadius: '50%', background: iWon ? SKETCH_ACCENT_DEEP : SKETCH_ACCENT, display: 'grid', placeItems: 'center', boxShadow: 'inset 0 0 0 3px rgba(255,255,255,0.15)' }}>
-                            <Icon name={iWon ? 'trophy' : 'palette'} size={28} tone="on-accent" />
-                        </div>
-                    }
+                    icon={<Icon name={iWon ? 'trophy' : 'palette'} size={34} />}
+                    standings={players.map((p) => ({ id: p.id, name: nameOf(p.id), score: scores[p.id] || 0, isViewer: p.id === currentUserId }))}
                     onInspect={() => setOverlayInspecting(true)}
                     isHost={isCreator}
                     isLoading={isReturningToWaiting}

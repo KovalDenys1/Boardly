@@ -13,9 +13,10 @@ export interface YahtzeeResultsHold {
  *
  * `LobbyPageClient` has two places that can render `YahtzeeResults`: a held
  * full-screen block, and the in-game shell's own finished branch. Whichever is
- * chosen, the after-game block inside reports `push_prompt_shown` and
- * `signup_prompt shown` on mount - so the page switching from one to the other
- * mid-finish is two mounts and two pairs of beacons for one finished game.
+ * chosen mounts the result dialog - so the page switching from one to the other
+ * mid-finish is a second mount for one finished game: the reveal wait and the
+ * entrance play again, and a signed-in player's push ask reports
+ * `push_prompt_shown` again.
  *
  * So the condition is derived in render: "this game has not been released yet" is
  * true from the first render, before any effect has run, and the held branch is

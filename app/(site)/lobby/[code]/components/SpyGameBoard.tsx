@@ -1242,19 +1242,12 @@ export default function SpyGameBoard({
         <GameResultOverlay
           canAskRematch={false}
           title={finishedMessage}
-          kicker={t('lobby.game.gameOver')}
           isDraw={gameResult.isDraw}
           accentColor="var(--bd-lav)"
           accentShadowColor="var(--bd-lav-deep)"
           // A draw takes the kit's own handshake; a decided game gets the
           // trophy for the winner and the eye for everyone else.
-          icon={
-            gameResult.isDraw ? undefined : (
-              <div style={{ width: 56, height: 56, borderRadius: '50%', background: iWon ? 'var(--bd-mint-deep)' : 'var(--bd-coral)', display: 'grid', placeItems: 'center', boxShadow: 'inset 0 0 0 3px rgba(255,255,255,0.15)' }}>
-                <Icon name={iWon ? 'trophy' : 'eye'} size={28} tone="on-accent" />
-              </div>
-            )
-          }
+          icon={gameResult.isDraw ? undefined : <Icon name={iWon ? 'trophy' : 'eye'} size={34} />}
           onInspect={() => setOverlayInspecting(true)}
           isHost={isCreator}
           isLoading={isRequestingRematch || isActionLoading || isRestarting}

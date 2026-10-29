@@ -1483,14 +1483,10 @@ export default function LiarsPartyPage({ code, isSpectator = false, onGameReset 
         <GameResultOverlay
           isSpectator={isSpectator}
           title={finishedMessage}
-          kicker={t('lobby.game.gameOver')}
           accentColor={LIARS_PARTY_ACCENT}
           accentShadowColor={LIARS_PARTY_ACCENT_DEEP}
-          icon={
-            <div className="liars-overlay-icon" style={{ background: iWon ? LIARS_PARTY_ACCENT_DEEP : LIARS_PARTY_ACCENT }}>
-              <Icon name={iWon ? 'trophy' : 'mask'} size={28} tone="on-accent" />
-            </div>
-          }
+          icon={<Icon name={iWon ? 'trophy' : 'mask'} size={34} />}
+          standings={data ? data.ranking.map((pid) => ({ id: pid, name: nameOf(pid), score: data.scores[pid] ?? 0, isViewer: pid === currentUserId })) : undefined}
           onInspect={() => setOverlayInspecting(true)}
           isHost={isHost}
           isLoading={isStarting}

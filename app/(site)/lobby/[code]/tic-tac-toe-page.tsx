@@ -1034,16 +1034,11 @@ export default function TicTacToeLobbyPage({ code, isSpectator = false, onGameRe
                     title={isDraw ? t('games.tictactoe.game.itsADraw') : t('games.tictactoe.game.playerWins', { player: winnerName })}
                     kicker={isMatchComplete ? t('games.tictactoe.game.seriesComplete') : undefined}
                     isDraw={isDraw}
-                    icon={!isDraw && winnerSymbol ? (
-                        <div style={{
-                            width: 56, height: 56, borderRadius: '50%',
-                            background: winnerSymbol === 'X' ? 'var(--bd-coral)' : 'var(--bd-lav)',
-                            display: 'grid', placeItems: 'center',
-                            boxShadow: 'inset 0 0 0 3px rgba(255,255,255,0.15)',
-                        }}>
-                            <TttMark mark={winnerSymbol as 'X' | 'O'} size={32} />
-                        </div>
-                    ) : undefined}
+                    icon={!isDraw && winnerSymbol ? <TttMark mark={winnerSymbol as 'X' | 'O'} size={34} /> : undefined}
+                    standings={[
+                        { id: 'X', name: xName, score: xWins, isViewer: mySymbol === 'X' },
+                        { id: 'O', name: oName, score: oWins, isViewer: mySymbol === 'O' },
+                    ]}
                     accentColor="var(--bd-coral)"
                     accentShadowColor="var(--bd-coral-deep)"
                     onInspect={() => setOverlayInspecting(true)}
@@ -1052,15 +1047,7 @@ export default function TicTacToeLobbyPage({ code, isSpectator = false, onGameRe
                     onPlayAgain={handlePlayAgain}
                     onReturnToLobby={handleReturnToWaiting}
                     onLeave={() => setShowLeaveConfirmModal(true)}
-                    actionsReplacement={isMatchComplete ? (
-                        <div style={{
-                            padding: '12px 20px', borderRadius: 14, fontWeight: 600, fontSize: 14,
-                            background: 'rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.7)',
-                            border: '1px solid rgba(255,255,255,0.15)', textAlign: 'center', fontFamily: 'inherit',
-                        }}>
-                            {t('games.tictactoe.game.returningToLobby')}
-                        </div>
-                    ) : undefined}
+                    actionsReplacement={isMatchComplete ? t('games.tictactoe.game.returningToLobby') : undefined}
                     isGuest={isGuest}
                     inviteCode={code}
                     gameType="tic_tac_toe"

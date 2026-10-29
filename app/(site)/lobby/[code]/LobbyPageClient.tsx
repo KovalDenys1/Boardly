@@ -1999,9 +1999,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
             currentUserId={getCurrentUserId() || null}
             canStartGame={!!canStartGame}
             canRequestRematch={!!isInGame}
-            isRequestRematchPending={isRequestingRematch}
             onPlayAgain={handleStartGame}
-            onRequestRematch={handleRequestRematch}
             onBackToLobby={() => router.push(getGameLobbiesRoute(lobby.gameType) ?? '/games')}
             onReturnToLobbyRoom={yahtzeeResults.release}
             onReturnToWaiting={canStartGame ? handleReturnToWaiting : undefined}
@@ -2182,9 +2180,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
               currentUserId={getCurrentUserId() || null}
               canStartGame={!!canStartGame}
               canRequestRematch={!!isInGame}
-              isRequestRematchPending={isRequestingRematch}
               onPlayAgain={handleStartGame}
-              onRequestRematch={handleRequestRematch}
               onBackToLobby={() => router.push(getGameLobbiesRoute(lobby.gameType) ?? '/games')}
               onReturnToWaiting={canStartGame ? handleReturnToWaiting : undefined}
               isGuest={isGuest}
