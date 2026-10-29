@@ -77,7 +77,7 @@ export default function LanguageSwitcher({ anchor }: LanguageSwitcherProps) {
     }
 
     const stored = setStoredAppearanceLocale(getSafeLocalStorage(), nextLanguage) as Locale
-    // A /ru or /uk page is in its URL's language, so another language is another URL.
+    // A /ru, /uk or /no page is in its URL's language, so another language is another URL.
     if (pathLocale(pathname)) {
       window.location.assign(localeSwitchHref(pathname, stored))
       return

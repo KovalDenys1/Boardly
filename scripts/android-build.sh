@@ -85,5 +85,13 @@ BOARDLY_UPLOAD_PASSWORD="$PASSWORD" "$APKSIGNER" sign --ks "$KEYSTORE" --ks-key-
 
 for artifact in "$SIGNED_BUNDLE" "$SIGNED_APK"; do
   [ -s "$artifact" ] || fail "build finished but $(basename "$artifact") was not produced"
-  echo "$artifact"
 done
+
+# An app signed with a key assetlinks.json does not list opens with a URL bar.
+APK_DIGEST="$("$APKSIGNER" verify --print-certs "$SIGNED_APK" | sed -n 's/^Signer #1 certificate SHA-256 digest: //p')"
+[ -n "$APK_DIGEST" ] || fail "apksigner could not read the certificate of $(basename "$SIGNED_APK")"
+"$REPO_ROOT/node_modules/.bin/tsx" "$REPO_ROOT/scripts/android-assetlinks.ts" "$APK_DIGEST" ||
+  fail "fix public/.well-known/assetlinks.json or sign with the upload key (docs/ANDROID.md, Asset links)"
+
+echo "$SIGNED_BUNDLE"
+echo "$SIGNED_APK"

@@ -8,11 +8,13 @@
 
 import { renderToString } from 'react-dom/server'
 import FaqSection from '@/components/HomePage/FaqSection'
+import NoPageLocale from '@/components/i18n/NoPageLocale'
 import RuPageLocale from '@/components/i18n/RuPageLocale'
 import UkPageLocale from '@/components/i18n/UkPageLocale'
 import { buildFaqFacts } from '@/lib/faq-facts'
 import { buildPromoVideoJsonLd, promoVideoFor } from '@/lib/promo-video'
 import en from '@/locales/en'
+import no from '@/locales/no'
 import ru from '@/locales/ru'
 import uk from '@/locales/uk'
 
@@ -47,6 +49,15 @@ describe('home FAQ schema language (#1394)', () => {
     expect(faqSchema(html).mainEntity[1].name).toBe(uk.faq.q1.question)
   })
 
+  it('is Norwegian on /no', () => {
+    const html = renderToString(
+      <NoPageLocale>
+        <FaqSection facts={facts} />
+      </NoPageLocale>
+    )
+    expect(faqSchema(html).mainEntity[0].name).toBe(no.faq.q0.question)
+  })
+
   it('stays English on an unprefixed page', () => {
     expect(faqSchema(renderToString(<FaqSection facts={facts} />)).mainEntity[0].name).toBe(en.faq.q0.question)
   })
@@ -60,6 +71,15 @@ describe('home VideoObject language (#1394)', () => {
       inLanguage: 'ru',
       contentUrl: promoVideoFor('ru').src,
       url: 'https://boardly.online/ru',
+    })
+  })
+
+  it('names the Norwegian cut at the /no URL, in Bokmål', () => {
+    const video = buildPromoVideoJsonLd('no', { name: no.home.promoVideo.title, description: no.home.promoVideo.label })
+    expect(video).toMatchObject({
+      inLanguage: 'nb',
+      contentUrl: promoVideoFor('no').src,
+      url: 'https://boardly.online/no',
     })
   })
 
