@@ -1,6 +1,7 @@
 import { act, fireEvent, render, screen, within } from '@testing-library/react'
 import YahtzeeScoreTable, { type ScoreTablePlayer } from '@/components/yahtzee/YahtzeeScoreTable'
 import { playCue } from '@/lib/sound-engine'
+import { getGameMetadata } from '@/lib/game-catalog'
 
 jest.mock('@/lib/i18n-helpers', () => ({
   useTranslation: () => ({
@@ -176,6 +177,60 @@ describe('YahtzeeScoreTable', () => {
     const { container } = renderTable({ players: [{ ...me, scorecard: missed }], canScore: false })
     expect(cells(container, 'bonus')[0]).toHaveTextContent(/^0$/)
     expect(cells(container, 'sum')[0].querySelector('.yz-cell__bar--missed')).not.toBeNull()
+  })
+
+  describe('every player count (#1582)', () => {
+    const seats = (count: number): ScoreTablePlayer[] =>
+      Array.from({ length: count }, (_, i) => ({ id: `p${i}`, name: `Player ${i}`, isBot: i > 0, scorecard: { chance: 10 + i } }))
+    const lobbyMaximum = getGameMetadata('yahtzee')!.maxPlayers
+    const counts = Array.from(new Set([2, 4, lobbyMaximum]))
+
+    it.each(counts)('gives each of %i players one column, header to total, in classic mode', (count) => {
+      const { container } = renderTable({ players: seats(count), viewerId: 'p0', currentPlayerId: 'p0', mode: 'classic' })
+      expect(container.querySelectorAll('[role="columnheader"]')).toHaveLength(count + 1)
+      expect(container.querySelectorAll('[role="rowheader"]')).toHaveLength(18)
+      expect(cells(container, 'ones')).toHaveLength(count)
+      expect(cells(container, 'chance')).toHaveLength(count)
+      expect(screen.getAllByTestId('yahtzee-total')).toHaveLength(count)
+    })
+
+    it('scrolls the current player into view past either edge, clear of the fixed category column', () => {
+      const realRect = HTMLElement.prototype.getBoundingClientRect
+      const scrollTo = jest.fn()
+      let shift = 0
+      HTMLElement.prototype.getBoundingClientRect = function rect(this: HTMLElement) {
+        const box = (left: number, width: number) =>
+          ({ left, right: left + width, width, top: 0, bottom: 30, height: 30, x: left, y: 0, toJSON: () => ({}) }) as DOMRect
+        if (this.getAttribute('role') === 'table') return box(0, 300)
+        if (this.getAttribute('role') === 'columnheader') {
+          const index = Array.prototype.indexOf.call(this.parentElement!.children, this)
+          return index === 0 ? box(0, 112) : box(112 + 80 * (index - 1) - shift, 80)
+        }
+        return realRect.call(this)
+      }
+      ;(HTMLElement.prototype as unknown as { scrollTo: unknown }).scrollTo = scrollTo
+      try {
+        const { container, rerenderWith } = renderTable({ players: seats(4), viewerId: 'p0', currentPlayerId: 'p0' })
+        expect(scrollTo).not.toHaveBeenCalled()
+
+        rerenderWith({ currentPlayerId: 'p3', canScore: false })
+        expect(scrollTo).toHaveBeenCalledTimes(1)
+        expect(scrollTo).toHaveBeenLastCalledWith(expect.objectContaining({ left: 132 }))
+
+        shift = 132
+        const table = container.querySelector('[role="table"]') as HTMLElement
+        Object.defineProperty(table, 'scrollLeft', { configurable: true, value: 132 })
+        rerenderWith({ currentPlayerId: 'p2', canScore: false })
+        expect(scrollTo).toHaveBeenCalledTimes(1)
+
+        rerenderWith({ currentPlayerId: 'p0', canScore: true })
+        expect(scrollTo).toHaveBeenCalledTimes(2)
+        expect(scrollTo).toHaveBeenLastCalledWith(expect.objectContaining({ left: 0 }))
+      } finally {
+        HTMLElement.prototype.getBoundingClientRect = realRect
+        delete (HTMLElement.prototype as unknown as { scrollTo?: unknown }).scrollTo
+      }
+    })
   })
 
   it('greys the column of a player who left', () => {

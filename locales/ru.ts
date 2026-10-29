@@ -3346,7 +3346,6 @@ const ru = {
       yahtzee: 'Ятзи',
       chance: 'Шанс',
       bonus: 'Бонус',
-      upperTotal: 'Верхняя сумма',
       lowerTotal: 'Нижняя сумма',
       grandTotal: 'Общая сумма',
       upperSection: 'Верхняя секция',
