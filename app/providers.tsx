@@ -35,7 +35,7 @@ export default function Providers({
   pathLocale,
 }: {
   children: React.ReactNode
-  /** Set on /ru and /uk pages, whose language is the URL's and not the visitor's stored choice (#1394). */
+  /** Set on /ru, /uk and /no pages, whose language is the URL's and not the visitor's stored choice (#1394). */
   pathLocale?: PrefixedLocale
 }) {
   useEffect(() => {
@@ -63,7 +63,7 @@ export default function Providers({
    * English rules, the browser offers to translate a page already in the reader's
    * language, and hyphenation and font selection follow the wrong locale.
    *
-   * A /ru or /uk page gets its `lang` from the server and keeps it (#1394).
+   * A /ru, /uk or /no page gets its `lang` from the server and keeps it (#1394).
    */
   useEffect(() => {
     if (pathLocale) return

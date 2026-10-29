@@ -3,6 +3,7 @@
 
 import type { Locale } from '@/locales/meta'
 import { BOARDLY_URL, ORGANIZATION_ID } from './organization-json-ld'
+import { HREFLANG, type SeoLocale } from './seo-locales'
 
 /** The store's public host. `proxy.ts` allows exactly this origin in `media-src`. */
 export const PROMO_VIDEO_ORIGIN = 'https://6mvdwjscvqidkqft.public.blob.vercel-storage.com'
@@ -33,9 +34,9 @@ export function promoVideoFor(language: string | undefined): PromoVideo {
   return PROMO_VIDEOS[base] ?? PROMO_VIDEOS.en
 }
 
-/** The cut the prerendered page plays: English at /, Russian or Ukrainian at /ru and /uk, named in that language. */
+/** The cut the prerendered page plays: English at /, the page's language at /ru, /uk and /no, named in that language. */
 export function buildPromoVideoJsonLd(
-  locale: 'en' | 'ru' | 'uk' = 'en',
+  locale: SeoLocale = 'en',
   text: { name: string; description: string } = {
     name: 'Boardly – game night with friends, one link away',
     description:
@@ -52,7 +53,7 @@ export function buildPromoVideoJsonLd(
     contentUrl: video.src,
     uploadDate: '2026-10-18',
     duration: 'PT1M',
-    inLanguage: locale,
+    inLanguage: HREFLANG[locale],
     publisher: { '@id': ORGANIZATION_ID },
     url: locale === 'en' ? `${BOARDLY_URL}/` : `${BOARDLY_URL}/${locale}`,
   }
