@@ -2,6 +2,9 @@ import { GuideChecklist, GuideSection, GuideSteps, GuideTipList } from '../compo
 import { GuideParagraph } from '../components/GuideRich'
 import { defineGuide, type GuideBodyProps } from '../components/guide-definition'
 import en, { type MemoryGuideBody } from './copy/en'
+import no from './copy/no'
+import ru from './copy/ru'
+import uk from './copy/uk'
 
 function MemoryGuide({ body, locale }: GuideBodyProps<MemoryGuideBody>) {
   return (
@@ -46,5 +49,5 @@ export default defineGuide({
   accentColor: 'var(--bd-mint)',
   ctaHref: '/games/memory/lobbies',
   Body: MemoryGuide,
-  copy: { en },
+  copy: { en, ru, uk, no },
 })

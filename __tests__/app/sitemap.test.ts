@@ -1,5 +1,6 @@
 import { readFileSync } from 'node:fs'
 import path from 'node:path'
+import { guidesIndexMetadata } from '@/app/(site)/guides/components/GuidesIndex'
 import sitemap from '@/app/sitemap'
 import { getCatalogGames } from '@/lib/game-catalog'
 import { getGameCanonical } from '@/lib/game-seo'
@@ -19,7 +20,8 @@ describe('sitemap (#922)', () => {
   const guidePaths = new Set(ALL_GUIDES.map((g) => `/guides/${g.slug}`))
 
   it('takes every non-guide lastModified from lib/route-dates.ts', () => {
-    const nonGuides = entries.filter((e) => !guidePaths.has(pathOf(e.url)))
+    // /ru/guides/<slug> is a guide too, dated by its translation (#1583).
+    const nonGuides = entries.filter((e) => !guidePaths.has(unlocalizedPath(pathOf(e.url))))
     expect(nonGuides.length).toBeGreaterThan(0)
     for (const entry of nonGuides) {
       // /ru/games/alias is the same page as /games/alias in another language, and dated with it (#1394).
@@ -89,6 +91,12 @@ describe('sitemap (#922)', () => {
       if (guideSlug) {
         expect(source).toContain(`buildGuideMetadata('${guideSlug}')`)
         expect(getGuideCanonical(guideSlug)).toBe(entry.url)
+        continue
+      }
+      // The guides index is drawn in four languages by one component, which builds each canonical.
+      if (route === '/guides') {
+        expect(source).toContain("guidesIndexMetadata('en')")
+        expect(guidesIndexMetadata('en').alternates?.canonical).toBe(entry.url)
         continue
       }
       const expected = route === '/' ? "canonical: '/'" : `canonical: '${BASE}${route}'`

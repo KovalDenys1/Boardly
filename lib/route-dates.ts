@@ -1,3 +1,4 @@
+import { latestGuideTranslation } from '@/lib/guide-cards'
 import { ALL_GUIDES } from '@/lib/guides-catalog'
 
 /**
@@ -63,6 +64,6 @@ export function getRouteUpdated(path: DatedRoute): string {
       .map(([, date]) => date)
     return latest([own, ...children])
   }
-  if (path === '/guides') return latest([own, ...ALL_GUIDES.map((guide) => guide.updated)])
+  if (path === '/guides') return latest([own, ...ALL_GUIDES.map((guide) => guide.updated), latestGuideTranslation()])
   return own
 }

@@ -1,6 +1,6 @@
 import type { ComponentType, ReactNode } from 'react'
 import type { GuideIcon, LocalizedGuideSeo } from '@/lib/guides-catalog'
-import type { SeoLocale } from '@/lib/seo-locales'
+import type { PrefixedLocale, SeoLocale } from '@/lib/seo-locales'
 import type { GuideFaqItem } from './GuideLayout'
 
 /**
@@ -29,13 +29,16 @@ export interface GuideBodyProps<Body> {
   locale: SeoLocale
 }
 
+/** The English copy, which the catalog dresses with its `<head>`, and one translation per prefixed language. */
+export type GuideCopies<Body> = { en: GuideCopy<Body> } & Record<PrefixedLocale, LocalizedGuideCopy<Body>>
+
 interface GuideDefinition<Body> {
   slug: string
   icon: GuideIcon
   accentColor: string
   ctaHref: string
   Body: ComponentType<GuideBodyProps<Body>>
-  copy: { en: GuideCopy<Body> }
+  copy: GuideCopies<Body>
 }
 
 /** One guide, its body already bound to its copy, so a registry can hold guides of different shapes. */
@@ -44,13 +47,13 @@ export interface RegisteredGuide {
   icon: GuideIcon
   accentColor: string
   ctaHref: string
-  copy: { en: GuideCopy<unknown> }
+  copy: GuideCopies<unknown>
   renderBody: (locale: SeoLocale) => ReactNode
 }
 
 export function defineGuide<Body>({ Body, ...guide }: GuideDefinition<Body>): RegisteredGuide {
   return {
     ...guide,
-    renderBody: (locale) => <Body body={guide.copy[locale as 'en'].body} locale={locale} />,
+    renderBody: (locale) => <Body body={guide.copy[locale].body} locale={locale} />,
   }
 }

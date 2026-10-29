@@ -2,6 +2,9 @@ import { GuideChecklist, GuideSection } from '../components/GuideLayout'
 import { GuideGameCards } from '../components/GuideGameCards'
 import { defineGuide, type GuideBodyProps } from '../components/guide-definition'
 import en, { type GameNightGuideBody } from './copy/en'
+import no from './copy/no'
+import ru from './copy/ru'
+import uk from './copy/uk'
 
 const GAMES = [
   { gameId: 'spy', accent: 'var(--bd-lav)', href: '/games/spy' },
@@ -56,5 +59,5 @@ export default defineGuide({
   accentColor: 'var(--bd-lav)',
   ctaHref: '/games',
   Body: GameNightGuide,
-  copy: { en },
+  copy: { en, ru, uk, no },
 })

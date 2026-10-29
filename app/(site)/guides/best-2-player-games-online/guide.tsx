@@ -4,6 +4,9 @@ import { localizeHref } from '@/lib/seo-locales'
 import { GuideChecklist, GuideSection } from '../components/GuideLayout'
 import { defineGuide, type GuideBodyProps } from '../components/guide-definition'
 import en, { type Best2PlayerGuideBody } from './copy/en'
+import no from './copy/no'
+import ru from './copy/ru'
+import uk from './copy/uk'
 
 const GAMES = [
   { gameId: 'tic-tac-toe', accent: 'var(--bd-coral)', href: '/games/tic-tac-toe', guideHref: '/guides/how-to-play-tic-tac-toe-online' },
@@ -102,5 +105,5 @@ export default defineGuide({
   accentColor: 'var(--bd-lav)',
   ctaHref: '/games',
   Body: Best2PlayerGuide,
-  copy: { en },
+  copy: { en, ru, uk, no },
 })

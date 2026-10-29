@@ -2,6 +2,9 @@ import { GuideChecklist, GuideSection, GuideSteps, GuideTipList } from '../compo
 import { GuideParagraph } from '../components/GuideRich'
 import { defineGuide, type GuideBodyProps } from '../components/guide-definition'
 import en, { type SpyGuideBody } from './copy/en'
+import no from './copy/no'
+import ru from './copy/ru'
+import uk from './copy/uk'
 
 function SpyGuide({ body, locale }: GuideBodyProps<SpyGuideBody>) {
   const { setup } = body
@@ -38,5 +41,5 @@ export default defineGuide({
   accentColor: 'var(--bd-lav)',
   ctaHref: '/games/spy/lobbies',
   Body: SpyGuide,
-  copy: { en },
+  copy: { en, ru, uk, no },
 })

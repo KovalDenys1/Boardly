@@ -4,6 +4,9 @@ import { GuideModes } from '../components/GuideModes'
 import { GuideParagraph } from '../components/GuideRich'
 import { defineGuide, type GuideBodyProps } from '../components/guide-definition'
 import en, { type ConnectFourGuideBody } from './copy/en'
+import no from './copy/no'
+import ru from './copy/ru'
+import uk from './copy/uk'
 
 const DIRECTION_ROTATIONS = [0, 90, 45, 135]
 
@@ -54,5 +57,5 @@ export default defineGuide({
   accentColor: 'var(--bd-sun)',
   ctaHref: '/games/connect-four/lobbies',
   Body: ConnectFourGuide,
-  copy: { en },
+  copy: { en, ru, uk, no },
 })

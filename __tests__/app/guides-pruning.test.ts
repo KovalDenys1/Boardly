@@ -114,9 +114,9 @@ describe('guide content bar (#923)', () => {
   it('draws the question as an h2 and shows when the guide was last updated', () => {
     const layout = read('app/(site)/guides/components/GuideLayout.tsx')
     expect(layout).toMatch(/<h2[\s\S]*?\{question\}/)
-    expect(layout).toContain('Last updated')
-    // the date is the catalog's, so a content change moves the page and the
-    // sitemap together instead of drifting apart
-    expect(layout).toContain('getGuideBySlug(slug).updated')
+    expect(read('app/(site)/guides/components/guide-ui.tsx')).toContain('Last updated')
+    // the date is the catalog's (a translation's own card on /ru, /uk and /no), so a content
+    // change moves the page and the sitemap together instead of drifting apart
+    expect(layout).toContain('getGuideCard(slug, locale)')
   })
 })

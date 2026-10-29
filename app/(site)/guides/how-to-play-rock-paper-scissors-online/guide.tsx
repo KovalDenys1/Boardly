@@ -2,6 +2,9 @@ import { GuideChecklist, GuideSection, GuideSteps, GuideTipList } from '../compo
 import { GuideModes } from '../components/GuideModes'
 import { defineGuide, type GuideBodyProps } from '../components/guide-definition'
 import en, { type RockPaperScissorsGuideBody } from './copy/en'
+import no from './copy/no'
+import ru from './copy/ru'
+import uk from './copy/uk'
 
 function RockPaperScissorsGuide({ body, locale }: GuideBodyProps<RockPaperScissorsGuideBody>) {
   return (
@@ -60,5 +63,5 @@ export default defineGuide({
   accentColor: 'var(--bd-lav)',
   ctaHref: '/games/rock-paper-scissors/lobbies',
   Body: RockPaperScissorsGuide,
-  copy: { en },
+  copy: { en, ru, uk, no },
 })

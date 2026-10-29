@@ -2,6 +2,9 @@ import { GuideChecklist, GuideSection, GuideSteps, GuideTipList } from '../compo
 import { GuideModes } from '../components/GuideModes'
 import { defineGuide, type GuideBodyProps } from '../components/guide-definition'
 import en, { type TicTacToeGuideBody } from './copy/en'
+import no from './copy/no'
+import ru from './copy/ru'
+import uk from './copy/uk'
 
 function TicTacToeGuide({ body, locale }: GuideBodyProps<TicTacToeGuideBody>) {
   return (
@@ -48,5 +51,5 @@ export default defineGuide({
   accentColor: 'var(--bd-coral)',
   ctaHref: '/games/tic-tac-toe/lobbies',
   Body: TicTacToeGuide,
-  copy: { en },
+  copy: { en, ru, uk, no },
 })

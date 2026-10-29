@@ -2,6 +2,9 @@ import { GuideParagraph } from '../components/GuideRich'
 import { GuideChecklist, GuideSection, GuideTable, GuideTipList } from '../components/GuideLayout'
 import { defineGuide, type GuideBodyProps } from '../components/guide-definition'
 import en, { type YahtzeeGuideBody } from './copy/en'
+import no from './copy/no'
+import ru from './copy/ru'
+import uk from './copy/uk'
 
 function YahtzeeGuide({ body, locale }: GuideBodyProps<YahtzeeGuideBody>) {
   return (
@@ -36,5 +39,5 @@ export default defineGuide({
   accentColor: 'var(--bd-sky)',
   ctaHref: '/games/yahtzee/lobbies',
   Body: YahtzeeGuide,
-  copy: { en },
+  copy: { en, ru, uk, no },
 })
