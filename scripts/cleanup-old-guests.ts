@@ -49,7 +49,8 @@ const DEFAULT_GUEST_CLEANUP_DAYS = RETENTION_DAYS.guestIdle
 const PLAYED_GUEST_CLEANUP_DAYS = RETENTION_DAYS.guestPlayedIdle
 
 /**
- * What counts as "this guest actually played".
+ * The games a played seat can be in. Being seated is not enough: the guest must also
+ * have made a move there (#1541, findSeatedGuestsWithoutAMove).
  *
  * Not just `finished`. A game only reaches `playing` once it has started, and
  * the usual way a real match ends is `abandoned`, not `finished`:
@@ -68,6 +69,9 @@ const PLAYED_GUEST_CLEANUP_DAYS = RETENTION_DAYS.guestPlayedIdle
  * so every game played before that date has it null and would read as unplayed.
  */
 const PLAYED_GAME_STATUSES = ['playing', 'finished', 'abandoned'] as const
+
+/** The replay row game/create writes for the creator; every other row with their id is a move they made. */
+const GAME_START_ACTION = 'game:start'
 
 function resolveCleanupGuestDays(rawDays: number | undefined): number {
   if (!Number.isFinite(rawDays) || (rawDays as number) <= 0) {
@@ -96,7 +100,11 @@ function resolvePlayedCleanupDays(days: number): number {
  * the count that gets logged can never describe a different set of rows from
  * the one that is actually removed.
  */
-function buildGuestCleanupWhere(cutoff: Date, playedCutoff: Date): Prisma.UsersWhereInput {
+function buildGuestCleanupWhere(
+  cutoff: Date,
+  playedCutoff: Date,
+  seatedWithoutAMove: string[] = [],
+): Prisma.UsersWhereInput {
   const playedAGame = { game: { status: { in: [...PLAYED_GAME_STATUSES] } } }
 
   return {
@@ -106,6 +114,11 @@ function buildGuestCleanupWhere(cutoff: Date, playedCutoff: Date): Prisma.UsersW
       {
         lastActiveAt: { lt: cutoff },
         players: { none: playedAGame },
+      },
+      // Seated in a started game without ever moving, as a clip link's auto-started bot game leaves them.
+      {
+        id: { in: seatedWithoutAMove },
+        lastActiveAt: { lt: cutoff },
       },
       // Played, but idle long enough that their identity token is nearly dead too.
       // The relation filter is what stops this branch quietly becoming a blanket
@@ -117,6 +130,28 @@ function buildGuestCleanupWhere(cutoff: Date, playedCutoff: Date): Prisma.UsersW
       },
     ],
   }
+}
+
+/** A move is a replay snapshot with their id (game/[gameId]/state writes one per move); the schema has no other per-player record. */
+async function findSeatedGuestsWithoutAMove(cutoff: Date, playedCutoff: Date): Promise<string[]> {
+  const seats = await prisma.players.findMany({
+    where: {
+      game: { status: { in: [...PLAYED_GAME_STATUSES] } },
+      user: { isGuest: true, lastActiveAt: { lt: cutoff, gte: playedCutoff } },
+    },
+    select: { userId: true },
+    distinct: ['userId'],
+  })
+  const seated = seats.map((seat) => seat.userId)
+  if (seated.length === 0) return []
+
+  const moves = await prisma.gameStateSnapshots.findMany({
+    where: { playerId: { in: seated }, actionType: { not: GAME_START_ACTION } },
+    select: { playerId: true },
+    distinct: ['playerId'],
+  })
+  const moved = new Set(moves.map((move) => move.playerId))
+  return seated.filter((id) => !moved.has(id))
 }
 
 async function cleanupOldGuests(opts: CleanupOptions = {}) {
@@ -141,7 +176,7 @@ async function cleanupOldGuests(opts: CleanupOptions = {}) {
     console.log(`📅 Cutoff date: ${cutoff.toISOString()} (never played, inactive for > ${days} days)`)
     console.log(`📅 Cutoff date: ${playedCutoff.toISOString()} (played a game, inactive for > ${playedDays} days)`)
 
-    const where = buildGuestCleanupWhere(cutoff, playedCutoff)
+    const where = buildGuestCleanupWhere(cutoff, playedCutoff, await findSeatedGuestsWithoutAMove(cutoff, playedCutoff))
 
     // Find old guest users (we use lastActiveAt which is non-nullable)
     const oldGuests = await prisma.users.findMany({

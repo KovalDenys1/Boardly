@@ -7,7 +7,7 @@ import { useTranslation, type TranslationKeys } from '@/lib/i18n-helpers'
 import { Icon, type IconName } from '@/components/icons'
 import { useGuest } from '@/contexts/GuestContext'
 import { useOnboarding } from '@/contexts/OnboardingContext'
-import { fetchWithGuest, hasStoredGuestToken } from '@/lib/fetch-with-guest'
+import { fetchWithGuest, hasStoredGuestToken, storedGuestName } from '@/lib/fetch-with-guest'
 import { showToast } from '@/lib/i18n-toast'
 import { getGameMetadata, hasBotSupport } from '@/lib/game-catalog'
 import { toAnalyticsGameType } from '@/lib/analytics-game-types'
@@ -20,7 +20,7 @@ function takePlayBotFlag(): boolean {
   const url = new URL(window.location.href)
   if (url.searchParams.get('play') !== 'bot') return false
   url.searchParams.delete('play')
-  window.history.replaceState(window.history.state, '', `${url.pathname}${url.search}${url.hash}`)
+  window.history.replaceState(null, '', `${url.pathname}${url.search}${url.hash}`)
   return true
 }
 
@@ -221,8 +221,10 @@ export default function PlayVsBotButton({ gameType, className = '' }: PlayVsBotB
     } else {
       // Written before the guest exists, or the welcome sheet opens over this page until the lobby loads.
       void completeOnboarding()
-      // GuestContext sets isGuest only after its own effect reads storage; setGuestMode would rename that guest.
-      if (!isGuest && !hasStoredGuestToken()) {
+      if (hasStoredGuestToken()) {
+        // The session token lasts 12 h; this is GuestProvider's startup refresh, under the stored name so nothing is renamed.
+        await setGuestMode(storedGuestName() || generatedGuestName()).catch(() => undefined)
+      } else if (!isGuest) {
         try {
           await setGuestMode(generatedGuestName())
         } catch {

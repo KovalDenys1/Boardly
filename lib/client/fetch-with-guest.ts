@@ -12,6 +12,10 @@ export function hasStoredGuestToken(): boolean {
     return typeof window !== 'undefined' && Boolean(readLocal(GUEST_TOKEN_KEY))
 }
 
+export function storedGuestName(): string | null {
+    return typeof window === 'undefined' ? null : readLocal('boardly_guest_name')
+}
+
 /**
  * Get guest headers from localStorage
  * Returns empty object if not in guest mode

@@ -329,20 +329,65 @@ describe('PlayVsBotButton – a clip visitor arrives with ?play=bot (#1541)', ()
     expect(window.history.length).toBe(entries)
   })
 
-  it('reuses the guest the visitor already has', async () => {
-    guestState = { isGuest: true }
+  it('hands Next a null history state, so its router re-reads the address without play=bot', async () => {
+    window.history.replaceState({ __NA: true, __PRIVATE_NEXTJS_INTERNALS_TREE: {} }, '', CLIP_URL)
+    const replaceState = jest.spyOn(window.history, 'replaceState')
     render(<PlayVsBotButton gameType="connect_four" />)
 
     await waitFor(() => expect(pushMock).toHaveBeenCalledWith('/lobby/C4BOT'))
-    expect(setGuestModeMock).not.toHaveBeenCalled()
+    expect(replaceState).toHaveBeenCalledWith(
+      null,
+      '',
+      '/games/connect-four?utm_source=tiktok.com&utm_medium=social&utm_campaign=connect-four-trap',
+    )
+    replaceState.mockRestore()
+  })
+
+  it('reuses the guest the visitor already has, under their own name', async () => {
+    guestState = { isGuest: true }
+    window.localStorage.setItem('boardly_guest_token', 'stored-token')
+    window.localStorage.setItem('boardly_guest_name', 'Ola')
+    render(<PlayVsBotButton gameType="connect_four" />)
+
+    await waitFor(() => expect(pushMock).toHaveBeenCalledWith('/lobby/C4BOT'))
+    expect(setGuestModeMock.mock.calls).toEqual([['Ola']])
   })
 
   it('reuses a stored guest even before the guest context has read it', async () => {
     window.localStorage.setItem('boardly_guest_token', 'stored-token')
+    window.localStorage.setItem('boardly_guest_name', 'Ola')
     render(<PlayVsBotButton gameType="connect_four" />)
 
     await waitFor(() => expect(pushMock).toHaveBeenCalledWith('/lobby/C4BOT'))
-    expect(setGuestModeMock).not.toHaveBeenCalled()
+    expect(setGuestModeMock.mock.calls).toEqual([['Ola']])
+  })
+
+  it('refreshes a returning guest whose 12-hour token has expired, then starts the game', async () => {
+    window.localStorage.setItem('boardly_guest_token', 'expired-token')
+    window.localStorage.setItem('boardly_guest_name', 'Ola')
+    setGuestModeMock.mockImplementation(async () => {
+      window.localStorage.setItem('boardly_guest_token', 'fresh-token')
+    })
+    ;(fetchWithGuest as jest.Mock).mockImplementation(async (url: string) => {
+      if (window.localStorage.getItem('boardly_guest_token') !== 'fresh-token') return fail(401, { error: 'Unauthorized' })
+      if (url === '/api/quick-play') return quickPlayAnswer
+      if (url === '/api/game/create') return gameCreateAnswer
+      return ok({ success: true })
+    })
+    render(<PlayVsBotButton gameType="connect_four" />)
+
+    await waitFor(() => expect(pushMock).toHaveBeenCalledWith('/lobby/C4BOT'))
+    expect(setGuestModeMock.mock.calls).toEqual([['Ola']])
+    expect(calledUrls()).toEqual(['/api/quick-play', '/api/game/create'])
+  })
+
+  it('still starts with the stored token when that refresh fails', async () => {
+    window.localStorage.setItem('boardly_guest_token', 'stored-token')
+    window.localStorage.setItem('boardly_guest_name', 'Ola')
+    setGuestModeMock.mockRejectedValue(Object.assign(new Error('Too many requests'), { statusCode: 429 }))
+    render(<PlayVsBotButton gameType="connect_four" />)
+
+    await waitFor(() => expect(pushMock).toHaveBeenCalledWith('/lobby/C4BOT'))
   })
 
   it('plays a signed-in visitor as themselves', async () => {
