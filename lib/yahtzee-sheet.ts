@@ -8,48 +8,43 @@ import {
 } from '@/lib/yahtzee'
 import { UPPER_CATEGORIES } from '@/lib/yahtzee-tiles'
 
-export type SheetRowKind = 'category' | 'sum' | 'bonus' | 'upperTotal'
+export type SheetRowKind = 'category' | 'sum' | 'bonus'
 
 export interface SheetRow {
   key: string
   kind: SheetRowKind
   category: YahtzeeCategory | null
   section: 'upper' | 'lower'
-  /** Grid row in the single-column layout (1 is the header), or null when the row is not shown there. */
-  stackRow: number | null
-  /** Grid row when the two sections sit side by side and share rows 2-10. */
-  splitRow: number
+  /** Grid row in the table (1 is the header). */
+  gridRow: number
 }
 
 export interface SheetLayout {
   rows: SheetRow[]
-  /** Rows between the header and the total in the single-column layout. */
-  stackBodyRows: number
-  canSplit: boolean
+  /** Rows between the header and the total. */
+  bodyRows: number
 }
 
 export function sheetLayout(mode: YahtzeeMode): SheetLayout {
   const categories = getActiveCategories(mode)
   const rows: SheetRow[] = []
-  let stack = 2
+  let gridRow = 2
 
   if (mode !== 'short') {
-    UPPER_CATEGORIES.forEach((category, index) => {
-      rows.push({ key: category, kind: 'category', category, section: 'upper', stackRow: stack++, splitRow: index + 2 })
+    UPPER_CATEGORIES.forEach((category) => {
+      rows.push({ key: category, kind: 'category', category, section: 'upper', gridRow: gridRow++ })
     })
-    rows.push({ key: 'sum', kind: 'sum', category: null, section: 'upper', stackRow: stack++, splitRow: 8 })
-    rows.push({ key: 'bonus', kind: 'bonus', category: null, section: 'upper', stackRow: stack++, splitRow: 9 })
-    // The stacked total row already carries it; side by side it gives the upper section its ninth row.
-    rows.push({ key: 'upperTotal', kind: 'upperTotal', category: null, section: 'upper', stackRow: null, splitRow: 10 })
+    rows.push({ key: 'sum', kind: 'sum', category: null, section: 'upper', gridRow: gridRow++ })
+    rows.push({ key: 'bonus', kind: 'bonus', category: null, section: 'upper', gridRow: gridRow++ })
   }
 
   categories
     .filter((category) => !UPPER_CATEGORIES.includes(category))
-    .forEach((category, index) => {
-      rows.push({ key: category, kind: 'category', category, section: 'lower', stackRow: stack++, splitRow: index + 2 })
+    .forEach((category) => {
+      rows.push({ key: category, kind: 'category', category, section: 'lower', gridRow: gridRow++ })
     })
 
-  return { rows, stackBodyRows: stack - 2, canSplit: mode !== 'short' }
+  return { rows, bodyRows: gridRow - 2 }
 }
 
 export function orderSheetPlayers<T extends { id: string }>(players: readonly T[], viewerId: string | null | undefined): T[] {

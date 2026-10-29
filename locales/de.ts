@@ -3283,7 +3283,6 @@ const de: TranslationWithPlurals = {
       yahtzee: 'Yahtzee',
       chance: 'Chance',
       bonus: 'Bonus',
-      upperTotal: 'Summe oben',
       lowerTotal: 'Summe unten',
       grandTotal: 'Endsumme',
       upperSection: 'Oberer Teil',

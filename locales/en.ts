@@ -3274,7 +3274,6 @@ const en = {
       yahtzee: 'Yahtzee',
       chance: 'Chance',
       bonus: 'Bonus',
-      upperTotal: 'Upper total',
       lowerTotal: 'Lower total',
       grandTotal: 'Grand total',
       upperSection: 'Upper section',

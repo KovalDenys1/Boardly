@@ -3140,38 +3140,35 @@ input[type="range"].slider-thumb::-moz-range-track {
 .yz-sheet {
   --yz-cat-min: 7rem;
   --yz-col-min: 3rem;
-  --yz-row-min: 28px;
-  --yz-split-gap: 14px;
+  --yz-row-min: 20px;
+  /* How far the rows sit above the 20px floor (4rem is the header and total row), capped at 8px; type grows with it. */
+  --yz-grow: clamp(0px, calc((100cqh - 4rem) / var(--yz-body-rows) - 20px), 8px);
   height: 100%;
   box-sizing: border-box;
-  overflow-y: auto;
+  overflow: auto;
   overscroll-behavior: contain;
   display: grid;
-  grid-template-columns:
-    [a-start] minmax(var(--yz-cat-min), 1.5fr) [a-cat-end]
-    repeat(var(--yz-players), minmax(var(--yz-col-min), 1fr)) [a-end];
-  grid-template-rows: auto repeat(var(--yz-stack-rows), minmax(var(--yz-row-min), 1fr)) minmax(var(--yz-row-min), auto);
+  grid-template-columns: minmax(var(--yz-cat-min), 1.5fr) repeat(var(--yz-players), minmax(var(--yz-col-min), 1fr));
+  grid-template-rows: auto repeat(var(--yz-body-rows), 1fr) auto;
   border-radius: 16px;
   border: 1.5px solid var(--bd-line);
   background: var(--bd-card);
   font-variant-numeric: tabular-nums;
 }
-/* A finger needs taller rows than a pointer; a short window scrolls the pad, never the page. */
+/* The rows share the pad's height down to the floor and only then scroll inside it; a finger's floor is the 24px target minimum. */
 @media (pointer: coarse) {
-  .yz-sheet { --yz-row-min: 38px; }
+  .yz-sheet { --yz-row-min: 24px; }
 }
 .yz-sheet[aria-busy='true'] .yz-ghost { opacity: 0.6; }
 
 .yz-sheet__row {
   display: grid;
   grid-template-columns: subgrid;
-  grid-column: a-start / a-end;
+  grid-column: 1 / -1;
   grid-row: var(--yz-row);
 }
 .yz-sheet__row--head { grid-row: 1; position: sticky; top: 0; z-index: 2; }
 .yz-sheet__row--total { position: sticky; bottom: 0; z-index: 2; }
-.yz-sheet__row--head-b,
-.yz-sheet__row--upperTotal { display: none; }
 
 .yz-sheet__rh,
 .yz-sheet__corner,
@@ -3179,9 +3176,19 @@ input[type="range"].slider-thumb::-moz-range-track {
 .yz-cell {
   position: relative;
   min-width: 0;
+  min-height: var(--yz-row-min);
   display: flex;
   align-items: center;
   border-bottom: 1px solid var(--bd-line);
+}
+/* The category column stays put while the player columns scroll under it; the shadow is its edge once they do. */
+.yz-sheet__rh,
+.yz-sheet__corner {
+  position: sticky;
+  inset-inline-start: 0;
+  z-index: 1;
+  background-color: var(--bd-card);
+  box-shadow: 1px 0 0 var(--bd-line);
 }
 .yz-sheet__ph,
 .yz-cell {
@@ -3194,7 +3201,6 @@ input[type="range"].slider-thumb::-moz-range-track {
 
 .yz-sheet__corner,
 .yz-sheet__ph {
-  min-height: 34px;
   background-color: var(--bd-card-warm);
   border-bottom: 2px solid var(--bd-ink);
 }
@@ -3209,8 +3215,6 @@ input[type="range"].slider-thumb::-moz-range-track {
   text-align: center;
 }
 .yz-sheet__ph-marks { display: flex; align-items: center; justify-content: center; gap: 4px; height: 12px; color: var(--bd-lav-text); }
-/* Three or four players: the marks go above the name, which gets the column's whole width. */
-.yz-sheet:is([data-players='3'], [data-players='4']) .yz-sheet__ph { flex-direction: column; }
 .yz-sheet__ph.is-current { background-color: color-mix(in srgb, var(--bd-sun) 26%, var(--bd-card-warm)); }
 .yz-sheet__ph-name { max-width: 100%; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow-wrap: break-word; hyphens: auto; }
 .yz-sheet__ph.is-departed .yz-sheet__ph-name { color: var(--bd-ink-soft); text-decoration: line-through; }
@@ -3231,13 +3235,13 @@ input[type="range"].slider-thumb::-moz-range-track {
   display: flex;
   align-items: center;
   gap: 7px;
-  padding: 3px 6px 3px 12px;
+  padding: calc(2px + var(--yz-grow) / 8) 6px calc(2px + var(--yz-grow) / 8) 12px;
   box-sizing: border-box;
   border: 0;
   background: none;
   color: var(--bd-ink);
   font: inherit;
-  font-size: 13px;
+  font-size: calc(12px + var(--yz-grow) / 8);
   font-weight: 700;
   line-height: 1.15;
   text-align: start;
@@ -3268,9 +3272,9 @@ input[type="range"].slider-thumb::-moz-range-track {
 @media (hover: hover) {
   .yz-sheet__cat:not(.yz-sheet__cat--static):hover .yz-sheet__cat-info { color: var(--bd-ink); }
 }
-.yz-sheet__cat--total { width: auto; padding-inline-end: 14px; font-family: var(--bd-font-display); font-size: 15px; font-weight: 800; }
+.yz-sheet__cat--total { width: auto; padding-inline-end: 14px; font-family: var(--bd-font-display); font-size: calc(14px + var(--yz-grow) / 8); font-weight: 800; }
 .yz-mini-die {
-  width: 16px; height: 16px; flex-shrink: 0;
+  width: calc(14px + var(--yz-grow) / 4); height: calc(14px + var(--yz-grow) / 4); flex-shrink: 0;
   display: grid; grid-template: repeat(3, 1fr) / repeat(3, 1fr);
   padding: 2px; box-sizing: border-box;
   border: 1.5px solid var(--bd-ink); border-radius: 4px;
@@ -3281,17 +3285,15 @@ input[type="range"].slider-thumb::-moz-range-track {
 
 .yz-cell { overflow: hidden; }
 .yz-cell__num {
-  font-family: var(--bd-font-display); font-weight: 700; font-size: 17px; line-height: 1; color: var(--bd-ink);
+  font-family: var(--bd-font-display); font-weight: 700; font-size: calc(14px + var(--yz-grow) * 0.375); line-height: 1; color: var(--bd-ink);
 }
-.yz-cell__dash { color: var(--bd-ink-muted); font-size: 15px; line-height: 1; }
+.yz-cell__dash { color: var(--bd-ink-muted); font-size: calc(13px + var(--yz-grow) / 4); line-height: 1; }
 .yz-sheet__row--sum > *,
-.yz-sheet__row--bonus > *,
-.yz-sheet__row--upperTotal > * { background-color: var(--bd-card-warm); }
+.yz-sheet__row--bonus > * { background-color: var(--bd-card-warm); }
 .yz-sheet__row--sum .yz-cell.is-current,
-.yz-sheet__row--bonus .yz-cell.is-current,
-.yz-sheet__row--upperTotal .yz-cell.is-current { background-color: color-mix(in srgb, var(--bd-sun) 18%, var(--bd-card-warm)); }
+.yz-sheet__row--bonus .yz-cell.is-current { background-color: color-mix(in srgb, var(--bd-sun) 18%, var(--bd-card-warm)); }
 .yz-sheet__row--bonus > * { border-bottom: 2px solid var(--bd-line); }
-.yz-cell--summary .yz-cell__num { font-size: 15px; color: var(--bd-ink-soft); }
+.yz-cell--summary .yz-cell__num { font-size: calc(13px + var(--yz-grow) / 4); color: var(--bd-ink-soft); }
 .yz-cell--summary .yz-cell__num--bonus { color: var(--bd-ink); font-weight: 800; }
 .yz-cell__bar {
   position: absolute; inset-inline: 10px; bottom: 4px;
@@ -3314,9 +3316,10 @@ input[type="range"].slider-thumb::-moz-range-track {
   border-bottom: 0;
 }
 .yz-sheet__row--total > .yz-cell.is-current { background-color: color-mix(in srgb, var(--bd-sun) 26%, var(--bd-card-warm)); }
-.yz-cell__total { font-family: var(--bd-font-display); font-weight: 800; font-size: 20px; line-height: 1; color: var(--bd-ink); }
+.yz-cell__total { font-family: var(--bd-font-display); font-weight: 800; font-size: calc(17px + var(--yz-grow) * 0.375); line-height: 1; color: var(--bd-ink); }
 
-.yz-cell--action { padding: 3px; }
+/* The score button takes the row's height and never adds to it. */
+.yz-cell--action { padding: calc(2px + var(--yz-grow) / 8); contain: size; }
 .yz-ghost {
   width: min(100%, 6.5rem);
   height: min(100%, 2.75rem);
@@ -3337,7 +3340,7 @@ input[type="range"].slider-thumb::-moz-range-track {
   transition-timing-function: ease-out;
   -webkit-tap-highlight-color: transparent;
 }
-.yz-ghost__value { font-family: var(--bd-font-display); font-weight: 700; font-size: 17px; line-height: 1; }
+.yz-ghost__value { font-family: var(--bd-font-display); font-weight: 700; font-size: calc(13px + var(--yz-grow) / 2); line-height: 1; }
 .yz-ghost--zero { background: transparent; border-color: color-mix(in srgb, var(--bd-input-border) 55%, transparent); color: var(--bd-ink-muted); }
 .yz-ghost--burn { border-color: var(--bd-ink-soft); }
 .yz-ghost--best {
@@ -3397,52 +3400,6 @@ input[type="range"].slider-thumb::-moz-range-track {
   pointer-events: none;
 }
 
-/* Side by side on shared rows, fifteen boxes take the height of nine. */
-@container yzsheet (min-width: 470px) {
-  .yz-sheet--classic:is([data-players='1'], [data-players='2']) {
-    grid-template-columns:
-      [a-start] minmax(var(--yz-cat-min), 1.4fr) [a-cat-end] repeat(var(--yz-players), minmax(var(--yz-col-min), 1fr)) [a-end]
-      var(--yz-split-gap)
-      [b-start] minmax(var(--yz-cat-min), 1.4fr) [b-cat-end] repeat(var(--yz-players), minmax(var(--yz-col-min), 1fr)) [b-end];
-    grid-template-rows: auto repeat(9, minmax(var(--yz-row-min), 1fr)) minmax(var(--yz-row-min), auto);
-  }
-  .yz-sheet--classic:is([data-players='1'], [data-players='2']) .yz-sheet__row--upper { grid-row: var(--yz-split-row); }
-  .yz-sheet--classic:is([data-players='1'], [data-players='2']) .yz-sheet__row--lower { grid-column: b-start / b-end; grid-row: var(--yz-split-row); }
-  .yz-sheet--classic:is([data-players='1'], [data-players='2']) .yz-sheet__row--head-b { display: grid; grid-column: b-start / b-end; }
-  .yz-sheet--classic:is([data-players='1'], [data-players='2']) .yz-sheet__row--upperTotal { display: grid; }
-  .yz-sheet--classic:is([data-players='1'], [data-players='2']) .yz-sheet__row--total { grid-column: a-start / b-end; grid-row: 11; }
-  .yz-sheet--classic:is([data-players='1'], [data-players='2']) .yz-sheet__row--total > .yz-sheet__rh { grid-column: a-start / b-cat-end; justify-content: flex-end; }
-}
-@container yzsheet (min-width: 580px) {
-  .yz-sheet--classic[data-players='3'] {
-    grid-template-columns:
-      [a-start] minmax(var(--yz-cat-min), 1.4fr) [a-cat-end] repeat(var(--yz-players), minmax(var(--yz-col-min), 1fr)) [a-end]
-      var(--yz-split-gap)
-      [b-start] minmax(var(--yz-cat-min), 1.4fr) [b-cat-end] repeat(var(--yz-players), minmax(var(--yz-col-min), 1fr)) [b-end];
-    grid-template-rows: auto repeat(9, minmax(var(--yz-row-min), 1fr)) minmax(var(--yz-row-min), auto);
-  }
-  .yz-sheet--classic[data-players='3'] .yz-sheet__row--upper { grid-row: var(--yz-split-row); }
-  .yz-sheet--classic[data-players='3'] .yz-sheet__row--lower { grid-column: b-start / b-end; grid-row: var(--yz-split-row); }
-  .yz-sheet--classic[data-players='3'] .yz-sheet__row--head-b { display: grid; grid-column: b-start / b-end; }
-  .yz-sheet--classic[data-players='3'] .yz-sheet__row--upperTotal { display: grid; }
-  .yz-sheet--classic[data-players='3'] .yz-sheet__row--total { grid-column: a-start / b-end; grid-row: 11; }
-  .yz-sheet--classic[data-players='3'] .yz-sheet__row--total > .yz-sheet__rh { grid-column: a-start / b-cat-end; justify-content: flex-end; }
-}
-@container yzsheet (min-width: 680px) {
-  .yz-sheet--classic[data-players='4'] {
-    grid-template-columns:
-      [a-start] minmax(var(--yz-cat-min), 1.4fr) [a-cat-end] repeat(var(--yz-players), minmax(var(--yz-col-min), 1fr)) [a-end]
-      var(--yz-split-gap)
-      [b-start] minmax(var(--yz-cat-min), 1.4fr) [b-cat-end] repeat(var(--yz-players), minmax(var(--yz-col-min), 1fr)) [b-end];
-    grid-template-rows: auto repeat(9, minmax(var(--yz-row-min), 1fr)) minmax(var(--yz-row-min), auto);
-  }
-  .yz-sheet--classic[data-players='4'] .yz-sheet__row--upper { grid-row: var(--yz-split-row); }
-  .yz-sheet--classic[data-players='4'] .yz-sheet__row--lower { grid-column: b-start / b-end; grid-row: var(--yz-split-row); }
-  .yz-sheet--classic[data-players='4'] .yz-sheet__row--head-b { display: grid; grid-column: b-start / b-end; }
-  .yz-sheet--classic[data-players='4'] .yz-sheet__row--upperTotal { display: grid; }
-  .yz-sheet--classic[data-players='4'] .yz-sheet__row--total { grid-column: a-start / b-end; grid-row: 11; }
-  .yz-sheet--classic[data-players='4'] .yz-sheet__row--total > .yz-sheet__rh { grid-column: a-start / b-cat-end; justify-content: flex-end; }
-}
 /* A narrow pad (320, four players) gives the names the width and drops the info glyph. */
 @container yzsheet (max-width: 359px) {
   .yz-sheet { --yz-cat-min: 5.75rem; --yz-col-min: 2.6rem; }

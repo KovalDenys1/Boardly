@@ -3,6 +3,7 @@
 import React from 'react'
 import { useTranslation } from '@/lib/i18n-helpers'
 import { playCue } from '@/lib/sound-engine'
+import { prefersReducedMotion } from '@/lib/motion'
 import { Icon } from '@/components/icons'
 import ScorePop from '@/components/game-chrome/ScorePop'
 import type { YahtzeeCategory, YahtzeeMode, YahtzeeScorecard } from '@/lib/yahtzee'
@@ -177,6 +178,22 @@ export default function YahtzeeScoreTable({
     })
   }, [currentPlayerId, rollsLeft])
 
+  const sheetRef = React.useRef<HTMLDivElement>(null)
+  React.useEffect(() => {
+    const sheet = sheetRef.current
+    const corner = sheet?.querySelector('.yz-sheet__corner')
+    const column = Array.from(sheet?.querySelectorAll<HTMLElement>('[data-player]') ?? []).find(
+      (header) => header.dataset.player === currentPlayerId,
+    )
+    if (!sheet || !corner || !column) return
+    const fixedEdge = corner.getBoundingClientRect().right
+    const viewEdge = sheet.getBoundingClientRect().right
+    const box = column.getBoundingClientRect()
+    const shift = box.left < fixedEdge ? box.left - fixedEdge : box.right > viewEdge ? box.right - viewEdge : 0
+    if (Math.abs(shift) < 1) return
+    sheet.scrollTo({ left: sheet.scrollLeft + shift, behavior: prefersReducedMotion() ? 'auto' : 'smooth' })
+  }, [currentPlayerId, ordered.length])
+
   const categoryName = (category: YahtzeeCategory) => t(`yahtzee.categories.${category}`)
 
   const score = (tile: ScoreTile) => {
@@ -256,17 +273,10 @@ export default function YahtzeeScoreTable({
         label: t('yahtzee.ui.bonusProgress', { current: upper.total }),
       }
     }
-    if (row.kind === 'bonus') {
-      return {
-        content: upper.bonusEarned
-          ? <span className="yz-cell__num yz-cell__num--bonus">{UPPER_BONUS_POINTS}</span>
-          : upper.complete ? <span className="yz-cell__num yz-cell__num--missed">0</span> : open,
-        classes: ['yz-cell--summary'],
-        label: undefined,
-      }
-    }
     return {
-      content: <span className="yz-cell__num">{upper.total + (upper.bonusEarned ? UPPER_BONUS_POINTS : 0)}</span>,
+      content: upper.bonusEarned
+        ? <span className="yz-cell__num yz-cell__num--bonus">{UPPER_BONUS_POINTS}</span>
+        : upper.complete ? <span className="yz-cell__num yz-cell__num--missed">0</span> : open,
       classes: ['yz-cell--summary'],
       label: undefined,
     }
@@ -293,18 +303,14 @@ export default function YahtzeeScoreTable({
     return (
       <span className="yz-sheet__cat yz-sheet__cat--static">
         <span className="yz-sheet__cat-text">
-          <span className="yz-sheet__cat-name">{row.kind === 'sum' ? t('yahtzee.ui.subtotal') : t('yahtzee.categories.upperTotal')}</span>
+          <span className="yz-sheet__cat-name">{t('yahtzee.ui.subtotal')}</span>
         </span>
       </span>
     )
   }
 
-  const headerRow = (block: 'a' | 'b') => (
-    <div
-      role="row"
-      className={`yz-sheet__row yz-sheet__row--head yz-sheet__row--head-${block}`}
-      aria-hidden={block === 'b' || undefined}
-    >
+  const headerRow = (
+    <div role="row" className="yz-sheet__row yz-sheet__row--head">
       <div role="columnheader" className="yz-sheet__corner">
         <span className="sr-only">{t('yahtzee.ui.scorecardTitle')}</span>
       </div>
@@ -318,6 +324,7 @@ export default function YahtzeeScoreTable({
             role="columnheader"
             className={`yz-sheet__ph${isCurrent ? ' is-current' : ''}${departed ? ' is-departed' : ''}`}
             title={player.name}
+            data-player={player.id}
           >
             <span className="yz-sheet__ph-marks" aria-hidden>
               <span className="yz-sheet__ph-dot" />
@@ -335,22 +342,22 @@ export default function YahtzeeScoreTable({
   return (
     <div className="yz-sheet-wrap">
       <div
+        ref={sheetRef}
         role="table"
         aria-label={t('yahtzee.ui.scorecardTitle')}
         aria-busy={isScoring}
         className={`yz-sheet yz-sheet--${mode}`}
         data-players={ordered.length}
         data-testid="yahtzee-score-table"
-        style={{ '--yz-players': ordered.length, '--yz-stack-rows': layout.stackBodyRows } as React.CSSProperties}
+        style={{ '--yz-players': ordered.length, '--yz-body-rows': layout.bodyRows } as React.CSSProperties}
       >
-        {headerRow('a')}
-        {layout.canSplit && headerRow('b')}
+        {headerRow}
         {layout.rows.map((row) => (
           <div
             key={row.key}
             role="row"
             className={`yz-sheet__row yz-sheet__row--${row.kind} yz-sheet__row--${row.section}${armed && armed === row.category ? ' is-armed' : ''}`}
-            style={{ '--yz-row': row.stackRow ?? 'auto', '--yz-split-row': row.splitRow } as React.CSSProperties}
+            style={{ '--yz-row': row.gridRow } as React.CSSProperties}
             data-row={row.key}
           >
             <div role="rowheader" className="yz-sheet__rh">{rowHeader(row)}</div>
@@ -368,7 +375,7 @@ export default function YahtzeeScoreTable({
             })}
           </div>
         ))}
-        <div role="row" className="yz-sheet__row yz-sheet__row--total" style={{ '--yz-row': layout.stackBodyRows + 2 } as React.CSSProperties}>
+        <div role="row" className="yz-sheet__row yz-sheet__row--total" style={{ '--yz-row': layout.bodyRows + 2 } as React.CSSProperties}>
           <div role="rowheader" className="yz-sheet__rh">
             <span className="yz-sheet__cat yz-sheet__cat--static yz-sheet__cat--total">{t('yahtzee.ui.total')}</span>
           </div>

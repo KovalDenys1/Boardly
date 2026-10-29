@@ -3350,7 +3350,6 @@ const uk: TranslationWithPlurals = {
       yahtzee: 'Ятці',
       chance: 'Шанс',
       bonus: 'Бонус',
-      upperTotal: 'Верхня сума',
       lowerTotal: 'Нижня сума',
       grandTotal: 'Загальна сума',
       upperSection: 'Верхня секція',
