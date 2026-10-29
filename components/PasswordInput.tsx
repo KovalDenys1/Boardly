@@ -142,7 +142,7 @@ export default function PasswordInput({
 
           <div className="h-2 rounded-full overflow-hidden shadow-inner" style={{ background: 'var(--bd-line)' }}>
             <div
-              className="h-full transition-all duration-500 ease-out"
+              className="h-full transition-[width,background-color] duration-500 ease-out"
               style={{ width: `${strength.percentage}%`, background: strength.color }}
             />
           </div>
@@ -173,7 +173,7 @@ export default function PasswordInput({
       )}
 
       {error && (
-        <p className="mt-1 text-sm" style={{ color: 'var(--bd-coral)' }}>{error}</p>
+        <p className="mt-1 text-sm" style={{ color: 'var(--bd-coral-text)' }}>{error}</p>
       )}
     </div>
   )

@@ -98,7 +98,7 @@ export function ConnectionStatus({
           <div className="shrink-0">
             <svg
               className="h-5 w-5"
-              style={{ color: 'var(--bd-coral)' }}
+              style={{ color: 'var(--bd-coral-text)' }}
               xmlns="http://www.w3.org/2000/svg"
               viewBox="0 0 20 20"
               fill="currentColor"

@@ -213,7 +213,7 @@ export default function LobbySettingsPanel({
       {rows.map((row) => {
         const isActive = activeSettingEditor === row.key
         const chipClass = (selected: boolean, locked = false) =>
-          `flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg border px-2.5 py-1 text-xs font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed ${
+          `flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg border px-2.5 py-1 text-xs font-semibold transition disabled:opacity-50 disabled:cursor-not-allowed ${
             selected
               ? 'border-bd-ink bg-bd-ink text-bd-bg'
               : locked

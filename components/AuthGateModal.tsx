@@ -49,12 +49,12 @@ export function AuthGateModal({ dest, onClose, onGuestReady, onDismiss }: AuthGa
 
   return (
     <div
-      className="fixed inset-0 z-60 flex items-center justify-center p-4"
+      className="fixed inset-0 z-60 flex items-start justify-center overflow-y-auto overscroll-contain p-4"
       style={{ background: 'rgba(31,27,22,0.55)', backdropFilter: 'blur(4px)' }}
       onClick={(e) => { if (e.target === e.currentTarget) { onClose(); onDismiss?.() } }}
     >
       <div
-        className="w-full max-w-sm"
+        className="my-auto w-full max-w-sm"
         style={{
           background: 'var(--bd-bg)',
           border: '2px solid var(--bd-ink)',
@@ -69,7 +69,7 @@ export function AuthGateModal({ dest, onClose, onGuestReady, onDismiss }: AuthGa
             width: 56, height: 56, margin: '0 auto 14px',
             borderRadius: 16, background: 'var(--bd-sun)',
             border: '2px solid var(--bd-ink)', boxShadow: '3px 3px 0 var(--bd-ink)',
-            display: 'grid', placeItems: 'center', fontSize: 28,
+            display: 'grid', placeItems: 'center', fontSize: 28, color: 'var(--bd-ink-on-accent)',
           }}><Icon name="gamepad" size={30} /></div>
           <h2 style={{
             fontFamily: 'var(--bd-font-display)', fontWeight: 800, fontSize: 22,

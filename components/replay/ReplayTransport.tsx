@@ -57,7 +57,7 @@ export default function ReplayTransport({ index, count, playing, speed, caption,
           step={1}
           value={index}
           onChange={(event) => onSeek(Number(event.target.value))}
-          className="h-2 min-w-0 flex-1 cursor-pointer accent-(--bd-ink)"
+          className="h-2 min-w-0 flex-1 cursor-pointer accent-bd-ink"
           aria-label={t('profile.gameReplay.timeline')}
           aria-valuetext={caption}
         />

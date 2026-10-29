@@ -43,16 +43,19 @@ export default function ConfirmModal({
   const variantStyles = {
     danger: {
       buttonBg: 'var(--bd-coral)',
+      buttonText: 'text-bd-ink-on-accent',
       buttonHoverBg: '#e85a4b',
       icon: <Icon name="warning" size={26} />
     },
     warning: {
       buttonBg: 'var(--bd-sun)',
+      buttonText: 'text-bd-ink-on-accent',
       buttonHoverBg: '#e6b040',
       icon: <Icon name="bolt" size={26} />
     },
     info: {
       buttonBg: 'var(--bd-ink)',
+      buttonText: 'text-bd-bg',
       buttonHoverBg: '#352F26',
       icon: <Icon name="info" size={26} />
     }
@@ -88,7 +91,7 @@ export default function ConfirmModal({
         <div className="flex gap-3 justify-center">
           <button
             onClick={onClose}
-            className="px-6 py-2.5 rounded-xl font-medium transition-all"
+            className="px-6 py-2.5 rounded-xl font-medium transition"
             style={{
               background: 'var(--bd-bg2)',
               color: 'var(--bd-ink)',
@@ -99,7 +102,7 @@ export default function ConfirmModal({
           </button>
           <button
             onClick={handleConfirm}
-            className="px-6 py-2.5 rounded-xl font-medium transition-all text-white"
+            className={`px-6 py-2.5 rounded-xl font-medium transition ${style.buttonText}`}
             style={{ background: style.buttonBg }}
             autoFocus
           >

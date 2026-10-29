@@ -103,7 +103,7 @@ export function NavDrawer({
                   image={userImage}
                   userName={userName}
                   userEmail={userEmail}
-                  className="bg-bd-lav text-(--bd-ink-on-accent)"
+                  className="bg-bd-lav text-bd-ink-on-accent"
                   textClassName="font-bold"
                   style={{ width: 44, height: 44, fontSize: 18, flexShrink: 0 }}
                 />
@@ -127,7 +127,7 @@ export function NavDrawer({
           </div>
         )}
 
-        <nav className="flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto px-4 py-3">
+        <nav className="flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto overscroll-contain px-4 py-3">
           {visibleNavItems({ isAuthenticated }).map((item) => {
             const active = isNavItemActive(item, pathname)
             return (

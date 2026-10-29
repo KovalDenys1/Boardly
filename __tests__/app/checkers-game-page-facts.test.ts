@@ -273,7 +273,7 @@ describe('the checkers FAQ (#1241)', () => {
 
   it('offers no other rule set, as the FAQ says', () => {
     const config = getCatalogGames().find((game) => game.gameType === 'checkers')!.lobbyCreateConfig!
-    expect(Object.keys(config).sort()).toEqual(['allowedPlayers', 'defaultMaxPlayers', 'gradient', 'turnTimer'])
+    expect(Object.keys(config).sort()).toEqual(['allowedPlayers', 'defaultMaxPlayers', 'turnTimer'])
     expect(ck.detail.faq.whichRules.a).toMatch(/Russian, Brazilian and international rules are not offered/)
   })
 })

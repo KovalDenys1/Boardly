@@ -59,7 +59,6 @@ type GameInfo = {
   descriptionKey: string
   svgId: string
   accentColor: string
-  gradient: string
   allowedPlayers: number[]
   defaultMaxPlayers: number
   settings: GameSettings
@@ -76,7 +75,6 @@ function buildGameInfoFromCatalog(): Record<string, GameInfo> {
           descriptionKey: g.descriptionKey,
           svgId: g.id,
           accentColor: getGameMetadata(g.gameType)?.accentColor ?? 'var(--bd-coral)',
-          gradient: g.lobbyCreateConfig.gradient,
           allowedPlayers: g.lobbyCreateConfig.allowedPlayers,
           defaultMaxPlayers: g.lobbyCreateConfig.defaultMaxPlayers,
           settings: {
@@ -704,7 +702,7 @@ function CreateLobbyPage() {
                     opacity: loading ? 0.7 : 1,
                     background: currentTheme.accent,
                     color: 'var(--bd-ink-on-accent)',
-                    boxShadow: `0 4px 0 0 color-mix(in srgb, ${currentTheme.accent} 60%, #1F1B16)`,
+                    boxShadow: `0 4px 0 0 color-mix(in srgb, ${currentTheme.accent} 60%, var(--bd-ink-on-accent))`,
                   }}
                 >
                   {loading ? (
@@ -909,7 +907,7 @@ function CreateLobbyPage() {
                 <div className="space-y-2">
                   <div className="flex items-center gap-2">
                     <FieldLabel icon="palette">{t('lobby.create.themeTitle')}</FieldLabel>
-                    {!isPremiumUser && <span className="text-[11px] font-bold text-amber-500"><Icon name="crown" size={11} /> {t('premium.breadcrumb')}</span>}
+                    {!isPremiumUser && <span className="text-[11px] font-bold text-bd-sun-text"><Icon name="crown" size={11} /> {t('premium.breadcrumb')}</span>}
                   </div>
                   <div className="flex flex-wrap gap-2">
                     {LOBBY_THEME_IDS.map((themeId) => {
@@ -970,7 +968,7 @@ function CreateLobbyPage() {
                   <div>
                     <div className="flex items-center gap-2">
                       <p className="font-semibold text-bd-ink">{t('game.ui.spectatorsLabel')}</p>
-                      {!isPremiumUser && <span className="text-[11px] font-bold text-amber-500"><Icon name="crown" size={11} /> {t('premium.breadcrumb')}</span>}
+                      {!isPremiumUser && <span className="text-[11px] font-bold text-bd-sun-text"><Icon name="crown" size={11} /> {t('premium.breadcrumb')}</span>}
                     </div>
                     <p className="text-[13px] text-bd-ink-muted">
                       {isPremiumUser ? t('lobby.create.spectatorsAllow') : t('lobby.create.spectatorsUpgrade')}

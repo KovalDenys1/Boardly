@@ -75,7 +75,7 @@ function GuideCard({ slug, title, description, icon, readTime, accent }: {
   return (
     <Link
       href={`/guides/${slug}`}
-      className="bd-card group flex flex-col gap-4 p-5 transition-all hover:-translate-y-0.5"
+      className="bd-card group flex flex-col gap-4 p-5 transition hover:-translate-y-0.5"
     >
       <div className="flex items-start gap-4">
         <div
@@ -93,7 +93,7 @@ function GuideCard({ slug, title, description, icon, readTime, accent }: {
         </div>
         <div className="min-w-0 flex-1">
           <h2
-            className="mb-1 text-[15px] font-bold leading-snug group-hover:text-bd-coral"
+            className="mb-1 text-[15px] font-bold leading-snug group-hover:text-bd-coral-text"
             style={{ color: 'var(--bd-ink)', fontFamily: 'var(--bd-font-display)' }}
           >
             {title}
@@ -155,7 +155,7 @@ export default function GuidesPage() {
                     className="grid h-10 w-10 place-items-center rounded-xl border-2 shadow-[2px_2px_0_var(--bd-ink)]"
                     style={{ borderColor: 'var(--bd-ink)', background: 'var(--bd-sun)' }}
                   >
-                    <GameIcon gameId={gameId} accentColor="var(--bd-ink)" detailColor="var(--bd-sun)" size={24} variant="bare" />
+                    <GameIcon gameId={gameId} accentColor="var(--bd-ink-on-accent)" detailColor="var(--bd-sun)" size={24} variant="bare" />
                   </span>
                 ))}
               </div>

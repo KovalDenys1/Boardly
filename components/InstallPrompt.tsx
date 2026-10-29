@@ -6,6 +6,17 @@ import { readLocal, removeLocal, writeLocal } from '@/lib/safe-storage'
 import { useIsPlayApp } from '@/hooks/useIsPlayApp'
 
 const DISMISS_KEY = 'boardly:pwa-install-dismissed:v1'
+const FIRST_VISIT_KEY = 'boardly:first-visit:v1'
+const RETURN_AFTER_MS = 12 * 60 * 60 * 1000
+
+function isReturningVisitor(): boolean {
+  const first = Number(readLocal(FIRST_VISIT_KEY))
+  if (!first) {
+    writeLocal(FIRST_VISIT_KEY, String(Date.now()))
+    return false
+  }
+  return Date.now() - first >= RETURN_AFTER_MS
+}
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>
@@ -30,9 +41,11 @@ export default function InstallPrompt() {
   const [dismissed, setDismissed] = useState(false)
   const [isInstalled, setIsInstalled] = useState(false)
   const [isPrompting, setIsPrompting] = useState(false)
+  const [returning, setReturning] = useState(false)
 
   useEffect(() => {
     setDismissed(readLocal(DISMISS_KEY) === '1')
+    setReturning(isReturningVisitor())
     setIsInstalled(isStandaloneDisplayMode())
 
     const onBeforeInstallPrompt = (event: Event) => {
@@ -62,8 +75,8 @@ export default function InstallPrompt() {
   }, [])
 
   const visible = useMemo(() => {
-    return Boolean(!dismissed && !isInstalled && deferredPrompt)
-  }, [deferredPrompt, dismissed, isInstalled])
+    return Boolean(returning && !dismissed && !isInstalled && deferredPrompt)
+  }, [deferredPrompt, dismissed, isInstalled, returning])
 
   const handleInstall = async () => {
     if (!deferredPrompt) return
@@ -88,7 +101,7 @@ export default function InstallPrompt() {
   if (inPlayApp || !visible) return null
 
   return (
-    <div className="fixed inset-x-3 bottom-[max(0.75rem,calc(0.75rem+env(safe-area-inset-bottom)))] z-70 sm:inset-x-auto sm:right-4 sm:bottom-[max(1rem,calc(1rem+env(safe-area-inset-bottom)))] sm:max-w-sm">
+    <div className="fixed inset-x-3 bottom-[max(0.75rem,calc(0.75rem+env(safe-area-inset-bottom)))] z-45 sm:inset-x-auto sm:right-4 sm:bottom-[max(1rem,calc(1rem+env(safe-area-inset-bottom)))] sm:max-w-sm">
       <div
         className="rounded-2xl p-4 shadow-2xl"
         style={{

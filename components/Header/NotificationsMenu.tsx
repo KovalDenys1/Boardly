@@ -277,7 +277,7 @@ export function NotificationsMenu() {
       >
         <BellIcon />
         {unreadCount > 0 && (
-          <span className="absolute -right-1.5 -top-1.5 inline-flex min-w-5 items-center justify-center rounded-full border-2 border-(--bd-bg) bg-(--bd-coral) px-1.5 py-0.5 text-[10px] font-black text-(--bd-ink-on-accent) shadow-sm">
+          <span className="absolute -right-1.5 -top-1.5 inline-flex min-w-5 items-center justify-center rounded-full border-2 border-bd-bg bg-bd-coral px-1.5 py-0.5 text-[10px] font-black text-bd-ink-on-accent shadow-sm">
             {unreadCount > 9 ? '9+' : unreadCount}
           </span>
         )}
@@ -292,12 +292,12 @@ export function NotificationsMenu() {
             aria-label={t('common.close')}
           />
 
-          <div className="fixed left-3 right-3 top-19 z-50 overflow-hidden rounded-3xl border border-(--bd-line) bg-(--bd-card-warm) shadow-[0_22px_60px_rgba(31,27,22,0.22)] md:absolute md:left-auto md:right-0 md:top-full md:mt-4 md:w-90">
-            <div className="flex items-start justify-between gap-3 border-b border-(--bd-line) bg-(--bd-bg) px-4 py-4">
+          <div className="fixed left-3 right-3 top-19 z-50 overflow-hidden rounded-3xl border border-bd-line bg-bd-card-warm shadow-[0_22px_60px_rgba(31,27,22,0.22)] md:absolute md:left-auto md:right-0 md:top-full md:mt-4 md:w-90">
+            <div className="flex items-start justify-between gap-3 border-b border-bd-line bg-bd-bg px-4 py-4">
               <div>
                 <p className="bd-kicker">{t('header.notifications')}</p>
                 {unreadCount > 0 && (
-                  <p className="mt-1 text-sm font-bold text-(--bd-ink)">{badgeLabel}</p>
+                  <p className="mt-1 text-sm font-bold text-bd-ink">{badgeLabel}</p>
                 )}
               </div>
               <div className="flex shrink-0 items-center gap-2">
@@ -305,7 +305,7 @@ export function NotificationsMenu() {
                   <button
                     type="button"
                     onClick={handleMarkAllRead}
-                    className="rounded-full border border-(--bd-line) bg-(--bd-bg) px-3 py-1.5 text-xs font-bold text-(--bd-ink-soft) transition-colors hover:bg-(--bd-card-warm) hover:text-(--bd-ink)"
+                    className="rounded-full border border-bd-line bg-bd-bg px-3 py-1.5 text-xs font-bold text-bd-ink-soft transition-colors hover:bg-bd-card-warm hover:text-bd-ink"
                   >
                     {t('header.markAllRead')}
                   </button>
@@ -314,7 +314,7 @@ export function NotificationsMenu() {
                   <button
                     type="button"
                     onClick={handleClearAll}
-                    className="rounded-full border border-(--bd-line) bg-(--bd-bg) px-3 py-1.5 text-xs font-bold text-(--bd-ink-soft) transition-colors hover:bg-(--bd-card-warm) hover:text-(--bd-coral)"
+                    className="rounded-full border border-bd-line bg-bd-bg px-3 py-1.5 text-xs font-bold text-bd-ink-soft transition-colors hover:bg-bd-card-warm hover:text-bd-coral-text"
                   >
                     {t('header.clearAll')}
                   </button>
@@ -322,30 +322,30 @@ export function NotificationsMenu() {
               </div>
             </div>
 
-            <div className="max-h-128 overflow-y-auto bg-(--bd-bg) px-2 py-2 overscroll-contain">
+            <div className="max-h-128 overflow-y-auto bg-bd-bg px-2 py-2 overscroll-contain">
               {loading && notifications.length === 0 ? (
-                <div className="px-4 py-8 text-center text-sm font-semibold text-(--bd-ink-muted)">
+                <div className="px-4 py-8 text-center text-sm font-semibold text-bd-ink-muted">
                   {t('common.loading')}
                 </div>
               ) : error ? (
                 <div className="px-4 py-8 text-center">
-                  <p className="text-sm font-semibold text-(--bd-coral)">
+                  <p className="text-sm font-semibold text-bd-coral-text">
                     {t('header.notificationsError')}
                   </p>
                   <button
                     type="button"
                     onClick={() => void fetchList()}
-                    className="mt-3 text-xs font-bold text-(--bd-ink-muted) underline hover:text-(--bd-ink)"
+                    className="mt-3 text-xs font-bold text-bd-ink-muted underline hover:text-bd-ink"
                   >
                     {t('common.retry')}
                   </button>
                 </div>
               ) : notificationEntries.length === 0 ? (
                 <div className="px-4 py-8 text-center">
-                  <div className="mx-auto mb-3 grid h-12 w-12 place-items-center rounded-2xl border border-(--bd-line) bg-(--bd-card-warm) text-(--bd-ink-muted)">
+                  <div className="mx-auto mb-3 grid h-12 w-12 place-items-center rounded-2xl border border-bd-line bg-bd-card-warm text-bd-ink-muted">
                     <BellIcon />
                   </div>
-                  <p className="text-sm font-semibold text-(--bd-ink-muted)">
+                  <p className="text-sm font-semibold text-bd-ink-muted">
                     {t('header.notificationsEmpty')}
                   </p>
                 </div>
@@ -356,9 +356,9 @@ export function NotificationsMenu() {
                     return (
                       <div
                         key={item.id}
-                        className={`group relative rounded-2xl border transition-all hover:-translate-y-px hover:shadow-[0_4px_14px_rgba(31,27,22,0.08)] ${
+                        className={`group relative rounded-2xl border transition hover:-translate-y-px hover:shadow-[0_4px_14px_rgba(31,27,22,0.08)] ${
                           item.readAt
-                            ? 'border-(--bd-line) bg-(--bd-card-warm)'
+                            ? 'border-bd-line bg-bd-card-warm'
                             : toneClass
                         }`}
                       >
@@ -375,20 +375,20 @@ export function NotificationsMenu() {
                         >
                           <div className="flex items-start justify-between gap-3">
                             <div className="min-w-0">
-                              <p className="text-sm font-black leading-snug text-(--bd-ink)">
+                              <p className="text-sm font-black leading-snug text-bd-ink">
                                 {item.title}
                               </p>
                               {item.subtitle && (
-                                <p className="mt-1 truncate text-xs font-semibold text-(--bd-ink-muted)">
+                                <p className="mt-1 truncate text-xs font-semibold text-bd-ink-muted">
                                   {item.subtitle}
                                 </p>
                               )}
                             </div>
                             {!item.readAt && (
-                              <span className="mt-1 h-2.5 w-2.5 shrink-0 rounded-full bg-(--bd-coral)" />
+                              <span className="mt-1 h-2.5 w-2.5 shrink-0 rounded-full bg-bd-coral" />
                             )}
                           </div>
-                          <p className="mt-2 text-xs font-semibold text-(--bd-ink-muted)">
+                          <p className="mt-2 text-xs font-semibold text-bd-ink-muted">
                             {item.timestamp}
                           </p>
                         </button>
@@ -399,7 +399,7 @@ export function NotificationsMenu() {
                             void dismissNotification(item.id)
                           }}
                           aria-label={t('header.dismissNotification')}
-                          className="absolute right-2 top-2 flex h-6 w-6 items-center justify-center rounded-full bg-(--bd-bg) text-(--bd-ink-muted) opacity-0 transition-opacity hover:text-(--bd-ink) group-hover:opacity-100"
+                          className="absolute right-2 top-2 flex h-6 w-6 items-center justify-center rounded-full bg-bd-bg text-bd-ink-muted opacity-0 transition-opacity hover:text-bd-ink group-hover:opacity-100"
                         >
                           <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />

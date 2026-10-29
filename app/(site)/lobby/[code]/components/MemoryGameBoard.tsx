@@ -449,7 +449,7 @@ export default function MemoryGameBoard({
   if (!gameData || cards.length === 0) {
     return (
       <div className="flex h-full items-center justify-center p-6">
-        <div className="rounded-2xl border border-(--bd-line) bg-(--bd-bg2) px-8 py-10 text-center">
+        <div className="rounded-2xl border border-bd-line bg-bd-bg2 px-8 py-10 text-center">
           <LoadingSpinner size="md" />
           <p className="mt-4 text-sm text-bd-ink-muted">{t('common.loading')}</p>
         </div>
@@ -682,7 +682,7 @@ export default function MemoryGameBoard({
                   </div>
                 )}
                 <div style={{ minWidth: 0, flex: 1 }}>
-                  <div style={{ fontWeight: 700, fontSize: 13, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: isPremium ? 'var(--bd-premium)' : undefined }}>
+                  <div style={{ fontWeight: 700, fontSize: 13, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: isPremium ? 'var(--bd-sun-text)' : undefined }}>
                     {name}{isPremium ? ' 👑' : ''}{isWinnerCard ? ' 🏆' : ''}
                   </div>
                   <ScorePop value={score} style={{ fontSize: 11, color: 'var(--bd-ink-muted)', width: 'fit-content' }}>{t('games.memory.game.pairsLabel', { count: score })}</ScorePop>

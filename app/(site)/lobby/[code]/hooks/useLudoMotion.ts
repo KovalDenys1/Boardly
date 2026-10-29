@@ -5,6 +5,7 @@ import type { LudoGameData } from '@/lib/games/ludo-game'
 import { lastCueAtMs, startCueRun, type CueRun, type ScheduledCue } from '@/lib/board-sounds'
 import { ludoCueSchedule } from '@/lib/ludo-sounds'
 import { LudoMotionPlan, LudoMotionTiming, deriveLudoMotion, timeLudoMotion } from '@/lib/games/ludo-motion'
+import { prefersReducedMotion } from '@/lib/motion'
 
 export interface ActiveLudoMotion {
     plan: LudoMotionPlan
@@ -17,11 +18,6 @@ export interface ActiveLudoMotion {
 export interface LudoCueEnd {
     data: LudoGameData | undefined
     inMs: number
-}
-
-function prefersReducedMotion(): boolean {
-    if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return false
-    return window.matchMedia('(prefers-reduced-motion: reduce)').matches
 }
 
 /**

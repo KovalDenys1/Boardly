@@ -238,7 +238,7 @@ export default function GameDetailPage({
             <ol className="mt-5 space-y-4">
               {steps.map(({ title: stepTitle, desc }, index) => (
                 <li key={stepTitle} className="grid grid-cols-[2.25rem_minmax(0,1fr)] gap-3">
-                  <span className="grid h-9 w-9 place-items-center rounded-full border-2 border-bd-ink bg-bd-sun font-display text-sm font-black text-(--bd-ink-on-accent) shadow-[2px_2px_0_var(--bd-ink)]">
+                  <span className="grid h-9 w-9 place-items-center rounded-full border-2 border-bd-ink bg-bd-sun font-display text-sm font-black text-bd-ink-on-accent shadow-[2px_2px_0_var(--bd-ink)]">
                     {index + 1}
                   </span>
                   <span>

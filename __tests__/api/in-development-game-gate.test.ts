@@ -440,7 +440,6 @@ describe('#1054 ENABLE_IN_DEVELOPMENT_GAMES', () => {
     }
 
     const LOBBY_CREATE_CONFIG = {
-      gradient: 'from-gray-500 to-gray-700',
       allowedPlayers: [2, 3, 4],
       defaultMaxPlayers: 4,
     }

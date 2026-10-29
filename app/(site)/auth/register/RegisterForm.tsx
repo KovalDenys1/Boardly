@@ -76,9 +76,9 @@ export default function RegisterForm() {
     3
   )
   const passwordStrengthLevels = [
-    { label: t('auth.password.weak', 'Weak'), color: 'bg-bd-coral', textColor: 'text-bd-coral' },
-    { label: t('auth.password.fair', 'Fair'), color: 'bg-bd-sun', textColor: 'text-[#D97706]' },
-    { label: t('auth.password.good', 'Good'), color: 'bg-[#1F1B16]', textColor: 'text-[#1F1B16]' },
+    { label: t('auth.password.weak', 'Weak'), color: 'bg-bd-coral', textColor: 'text-bd-coral-text' },
+    { label: t('auth.password.fair', 'Fair'), color: 'bg-bd-sun', textColor: 'text-bd-sun-text' },
+    { label: t('auth.password.good', 'Good'), color: 'bg-bd-ink', textColor: 'text-bd-ink' },
     { label: t('auth.password.strong', 'Strong'), color: 'bg-green-500', textColor: 'text-green-600' },
   ] as const
   const passwordStrength = passwordStrengthLevels[passwordScore]
@@ -284,7 +284,7 @@ export default function RegisterForm() {
           <p style={{ color: 'var(--bd-ink-soft)', fontSize: 16, marginBottom: 28 }}>
             {t('auth.register.catchphrase')}{' '}
             {t('auth.register.haveAccount')}{' '}
-            <Link href={buildAuthUrl('login', returnUrl)} style={{ color: 'var(--bd-coral)', fontWeight: 600, textDecoration: 'underline' }}>
+            <Link href={buildAuthUrl('login', returnUrl)} style={{ color: 'var(--bd-coral-text)', fontWeight: 600, textDecoration: 'underline' }}>
               {t('auth.login.submit')}
             </Link>
           </p>

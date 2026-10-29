@@ -125,7 +125,7 @@ export default function BestGamesToPlayOnZoomGuide() {
                 </p>
                 <Link
                   href={href}
-                  className="inline-flex items-center rounded-xl px-4 py-2 text-xs font-semibold transition-colors hover:text-bd-coral"
+                  className="inline-flex items-center rounded-xl px-4 py-2 text-xs font-semibold transition-colors hover:text-bd-coral-text"
                   style={{ background: 'var(--bd-card-warm)', border: '1px solid var(--bd-line)', color: 'var(--bd-ink)' }}
                 >
                   Play {name} →

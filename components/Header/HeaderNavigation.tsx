@@ -16,7 +16,7 @@ export function HeaderNavigation({ isAuthenticated }: HeaderNavigationProps) {
   const localize = useLocalizedHref()
 
   const navBtn = (active: boolean) =>
-    `rounded-xl font-medium transition-all duration-150 ${
+    `rounded-xl font-medium transition duration-150 ${
       active
         ? 'bg-bd-ink text-bd-bg'
         : 'text-bd-ink-soft hover:bg-bd-bg2 hover:text-bd-ink'

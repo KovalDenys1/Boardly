@@ -333,7 +333,7 @@ export default function GuideLayout({
             {gamePath && gameName && (
               <p className="mt-3 text-sm" style={{ color: 'var(--bd-ink-soft)' }}>
                 Rules, modes and player counts:{' '}
-                <Link href={gamePath} className="font-semibold underline transition-colors hover:text-bd-coral" style={{ color: 'var(--bd-ink)' }}>
+                <Link href={gamePath} className="font-semibold underline transition-colors hover:text-bd-coral-text" style={{ color: 'var(--bd-ink)' }}>
                   {gameName} game page
                 </Link>
               </p>
@@ -375,7 +375,7 @@ export default function GuideLayout({
           {gamePath && gameName && (
             <p className="mt-4 text-xs" style={{ color: 'var(--bd-ink-muted)' }}>
               Or read about{' '}
-              <Link href={gamePath} className="underline transition-colors hover:text-bd-coral">
+              <Link href={gamePath} className="underline transition-colors hover:text-bd-coral-text">
                 {gameName} on Boardly
               </Link>{' '}
               first.
@@ -399,7 +399,7 @@ export default function GuideLayout({
               <Link
                 key={href}
                 href={href}
-                className="text-sm transition-colors hover:text-bd-coral"
+                className="text-sm transition-colors hover:text-bd-coral-text"
                 style={{ color: 'var(--bd-ink-soft)' }}
               >
                 → {label}

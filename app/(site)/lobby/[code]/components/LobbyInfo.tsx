@@ -101,7 +101,7 @@ export default function LobbyInfo({
             <button
               onClick={onLeave}
               aria-label={t('game.ui.leave')}
-              className="inline-flex shrink-0 items-center justify-center gap-1 rounded-xl border-[1.5px] border-bd-coral/45 bg-bd-coral/15 px-2.5 py-2 text-xs font-semibold text-bd-coral-text transition-all hover:border-bd-coral hover:bg-bd-coral hover:text-(--bd-ink-on-accent) active:scale-95 sm:px-3 sm:text-sm"
+              className="inline-flex shrink-0 items-center justify-center gap-1 rounded-xl border-[1.5px] border-bd-coral/45 bg-bd-coral/15 px-2.5 py-2 text-xs font-semibold text-bd-coral-text transition hover:border-bd-coral hover:bg-bd-coral hover:text-bd-ink-on-accent active:scale-95 sm:px-3 sm:text-sm"
             >
               <LeaveIcon />
               <span className="hidden sm:inline">{t('game.ui.leave')}</span>
@@ -133,7 +133,7 @@ export default function LobbyInfo({
             <button
               onClick={() => handleCopyInvite('lobby_code_chip')}
               title={t('game.ui.copyInvite')}
-              className="bd-chip border-2 border-bd-ink bg-bd-ink font-mono text-[11px] text-bd-bg transition-opacity hover:opacity-75 focus-visible:outline-solid focus-visible:outline-2 focus-visible:-outline-offset-4 focus-visible:outline-bd-ink cursor-pointer"
+              className="bd-chip border-2 border-bd-ink bg-bd-ink font-mono text-[11px] text-bd-bg transition-opacity hover:opacity-75 focus-visible:outline-solid focus-visible:outline-2 focus-visible:-outline-offset-4 focus-visible:outline-bd-lav-deep cursor-pointer"
             >
               {lobby.code}
             </button>

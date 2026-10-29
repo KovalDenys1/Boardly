@@ -126,12 +126,12 @@ export default function WaitingRoom({
             )}
 
             <div className="flex-1 min-w-0 flex flex-wrap items-center gap-1.5">
-              <span className={`truncate text-sm font-bold ${isPremium ? 'text-bd-premium' : 'text-bd-ink'}`}>{playerName}</span>
+              <span className={`truncate text-sm font-bold ${isPremium ? 'text-bd-sun-text' : 'text-bd-ink'}`}>{playerName}</span>
               {isPremium && (
                 <Icon name="crown" size={12} tone="premium" label="Premium" className="shrink-0" />
               )}
               {isCurrentUser && !isBot && (
-                <span className="rounded-full bg-bd-mint px-1.5 py-0.5 text-[10px] font-bold text-(--bd-ink-on-accent)">
+                <span className="rounded-full bg-bd-mint px-1.5 py-0.5 text-[10px] font-bold text-bd-ink-on-accent">
                   {t('game.ui.you')}
                 </span>
               )}
@@ -141,7 +141,7 @@ export default function WaitingRoom({
                 </span>
               )}
               {isBot && (
-                <span className="rounded-full bg-bd-lav px-1.5 py-0.5 text-[10px] font-bold text-(--bd-ink-on-accent)">
+                <span className="rounded-full bg-bd-lav px-1.5 py-0.5 text-[10px] font-bold text-bd-ink-on-accent">
                   {t('game.ui.botBadge')}
                 </span>
               )}
@@ -156,7 +156,7 @@ export default function WaitingRoom({
             {isBot && canManageBots && onKickBot && (
               <button
                 onClick={() => onKickBot(p.id)}
-                className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-xs font-bold text-bd-ink-muted transition-all hover:bg-bd-coral/15 hover:text-bd-coral-text"
+                className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-xs font-bold text-bd-ink-muted transition hover:bg-bd-coral/15 hover:text-bd-coral-text"
                 title={t('game.ui.removeBot')}
               >
                 <Icon name="close" size={14} />
@@ -166,7 +166,7 @@ export default function WaitingRoom({
             {!isBot && !isCurrentUser && canKickPlayers && onKickPlayer && (
               <button
                 onClick={(e) => { e.stopPropagation(); onKickPlayer(p.id) }}
-                className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-xs font-bold text-bd-ink-muted transition-all hover:bg-bd-coral/15 hover:text-bd-coral-text"
+                className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-xs font-bold text-bd-ink-muted transition hover:bg-bd-coral/15 hover:text-bd-coral-text"
                 title={t('game.ui.kickPlayer')}
               >
                 <Icon name="close" size={14} />
@@ -197,7 +197,7 @@ export default function WaitingRoom({
             >
               <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-dashed text-sm font-bold ${
                 isPulse
-                  ? 'animate-pulse border-bd-sun/60 bg-bd-sun/10 text-bd-sun-deep'
+                  ? 'animate-pulse border-bd-sun/60 bg-bd-sun/10 text-bd-sun-text'
                   : 'border-bd-line bg-bd-bg2 text-bd-ink-muted'
               }`}>
                 {playerCount + i + 1}

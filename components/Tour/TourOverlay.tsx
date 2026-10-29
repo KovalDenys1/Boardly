@@ -172,7 +172,7 @@ function TourNav({
         <button
           type="button"
           onClick={onNext}
-          className="rounded-xl border-2 px-4 py-1.5 text-sm font-bold text-white"
+          className="rounded-xl border-2 px-4 py-1.5 text-sm font-bold text-bd-ink-on-accent"
           style={{ borderColor: 'var(--bd-ink)', background: 'var(--bd-coral)', boxShadow: '2px 2px 0 var(--bd-ink)' }}
         >
           {nextLabel}
@@ -366,7 +366,7 @@ export function TourOverlay() {
       )}
       {showSpotlight && targetRect && (
         <div
-          className="pointer-events-none fixed z-105 rounded-2xl transition-all duration-200"
+          className="pointer-events-none fixed z-105 rounded-2xl transition-[top,left,width,height] duration-200"
           style={{
             top: targetRect.top - SPOTLIGHT_PADDING,
             left: targetRect.left - SPOTLIGHT_PADDING,
@@ -415,8 +415,8 @@ export function TourOverlay() {
                       boxShadow: '3px 3px 0 var(--bd-ink)',
                     }}
                   >
-                    <GameIcon gameId={meta.svgId} accentColor="var(--bd-ink)" size={26} />
-                    <span className="text-xs font-bold" style={{ color: 'var(--bd-ink)' }}>
+                    <GameIcon gameId={meta.svgId} accentColor={quickStartGame === type ? 'var(--bd-ink-on-accent)' : 'var(--bd-ink)'} size={26} />
+                    <span className="text-xs font-bold" style={{ color: quickStartGame === type ? 'var(--bd-ink-on-accent)' : 'var(--bd-ink)' }}>
                       {meta.name}
                     </span>
                   </button>
@@ -426,7 +426,7 @@ export function TourOverlay() {
                 type="button"
                 onClick={handleQuickStart}
                 disabled={!quickStartGame || quickStartLoading}
-                className="mb-2 w-full rounded-xl border-2 py-3 text-sm font-bold text-white"
+                className="mb-2 w-full rounded-xl border-2 py-3 text-sm font-bold text-bd-ink-on-accent"
                 style={{
                   borderColor: 'var(--bd-ink)',
                   background: 'var(--bd-coral)',

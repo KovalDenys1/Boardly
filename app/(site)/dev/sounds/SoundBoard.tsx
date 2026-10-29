@@ -176,7 +176,7 @@ export default function SoundBoard() {
                 step={0.01}
                 value={settings.volume}
                 onChange={(event) => setSoundVolume(parseFloat(event.target.value))}
-                className="h-2 w-40 max-w-full cursor-pointer accent-(--bd-ink)"
+                className="h-2 w-40 max-w-full cursor-pointer accent-bd-ink"
               />
               <span className="w-10 text-right font-black">{volumePercent}%</span>
             </label>

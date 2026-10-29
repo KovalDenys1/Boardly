@@ -67,7 +67,7 @@ export default function GuidesSection() {
               </span>
               <span className="min-w-0 flex-1">
                 <span
-                  className="block text-sm font-bold leading-snug group-hover:text-bd-coral"
+                  className="block text-sm font-bold leading-snug group-hover:text-bd-coral-text"
                   style={{ color: 'var(--bd-ink)', fontFamily: 'var(--bd-font-display)' }}
                 >
                   {guide.title}

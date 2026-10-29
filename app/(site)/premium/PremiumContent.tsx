@@ -213,7 +213,7 @@ export default function PremiumContent({ pricing }: { pricing: PremiumPricing })
             setConsented(event.target.checked)
             if (event.target.checked && failure === 'consent') setFailure('none')
           }}
-          className="mt-0.5 h-5 w-5 shrink-0 cursor-pointer rounded-sm focus-visible:outline-solid! focus-visible:outline-2! focus-visible:-outline-offset-2! focus-visible:outline-bd-coral!"
+          className="mt-0.5 h-5 w-5 shrink-0 cursor-pointer rounded-sm focus-visible:outline-solid! focus-visible:outline-2! focus-visible:-outline-offset-2! focus-visible:outline-bd-lav-deep!"
           style={{ accentColor: 'var(--bd-coral)' }}
         />
         <label htmlFor={id} className="cursor-pointer text-sm leading-relaxed" style={{ color: 'var(--bd-ink)' }}>
@@ -431,7 +431,7 @@ export default function PremiumContent({ pricing }: { pricing: PremiumPricing })
                   }`}
                   style={{ background: 'var(--bd-bg2)', border: '1px solid var(--bd-line)' }}
                 >
-                  <span className="mt-0.5 shrink-0" style={{ color: 'var(--bd-sun-deep)' }}>
+                  <span className="mt-0.5 shrink-0" style={{ color: 'var(--bd-sun-text)' }}>
                     <Icon name={icon} size={20} />
                   </span>
                   <span className="min-w-0">

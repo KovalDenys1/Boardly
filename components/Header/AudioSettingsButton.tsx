@@ -20,7 +20,7 @@ function useIsIPhone(): boolean {
 function SilentSwitchHint({ className = '' }: { className?: string }) {
   const { t } = useTranslation()
   if (!useIsIPhone()) return null
-  return <p className={`text-xs text-(--bd-ink-muted) ${className}`}>{t('header.silentSwitchHint')}</p>
+  return <p className={`text-xs text-bd-ink-muted ${className}`}>{t('header.silentSwitchHint')}</p>
 }
 
 function VolumeIcon({ muted }: { muted: boolean }) {
@@ -111,15 +111,15 @@ export function AudioSettingsButton() {
       </button>
 
       {open && (
-        <div className="absolute right-0 top-12 z-50 w-64 rounded-2xl border border-(--bd-line) bg-(--bd-card-warm) p-4 text-(--bd-ink) shadow-[0_18px_45px_rgba(31,27,22,0.18)]">
+        <div className="absolute right-0 top-12 z-50 w-64 rounded-2xl border border-bd-line bg-bd-card-warm p-4 text-bd-ink shadow-[0_18px_45px_rgba(31,27,22,0.18)]">
           <div className="mb-4 flex items-start justify-between gap-3">
             <div>
               <p className="bd-kicker">{t('header.audioSettings')}</p>
-              <p className="mt-1 text-sm font-semibold text-(--bd-ink-muted)">
+              <p className="mt-1 text-sm font-semibold text-bd-ink-muted">
                 {muted ? t('header.unmute') : `${t('header.volume')} ${volumePercent}%`}
               </p>
             </div>
-            <div className="grid h-10 w-10 place-items-center rounded-xl border border-(--bd-line) bg-(--bd-card-warm) text-(--bd-ink)">
+            <div className="grid h-10 w-10 place-items-center rounded-xl border border-bd-line bg-bd-card-warm text-bd-ink">
               <VolumeIcon muted={muted} />
             </div>
           </div>
@@ -127,7 +127,7 @@ export function AudioSettingsButton() {
           <button
             type="button"
             onClick={toggleMute}
-            className="mb-4 flex w-full items-center justify-between rounded-xl border border-(--bd-line) bg-(--bd-card-warm) px-3 py-2.5 text-sm font-bold text-(--bd-ink) transition-colors hover:bg-(--bd-bg2)"
+            className="mb-4 flex w-full items-center justify-between rounded-xl border border-bd-line bg-bd-card-warm px-3 py-2.5 text-sm font-bold text-bd-ink transition-colors hover:bg-bd-bg2"
           >
             <span>{muted ? t('header.unmute') : t('header.mute')}</span>
             <VolumeIcon muted={muted} />
@@ -135,8 +135,8 @@ export function AudioSettingsButton() {
 
           <div>
             <div className="mb-1.5 flex items-center justify-between">
-              <label className="text-xs font-semibold text-(--bd-ink-muted)">{t('header.volume')}</label>
-              <span className="text-xs font-black text-(--bd-ink)">{volumePercent}%</span>
+              <label className="text-xs font-semibold text-bd-ink-muted">{t('header.volume')}</label>
+              <span className="text-xs font-black text-bd-ink">{volumePercent}%</span>
             </div>
             <input
               type="range"
@@ -145,7 +145,7 @@ export function AudioSettingsButton() {
               step={0.01}
               value={volume}
               onChange={(e) => changeVolume(parseFloat(e.target.value))}
-              className="h-2 w-full cursor-pointer accent-(--bd-ink)"
+              className="h-2 w-full cursor-pointer accent-bd-ink"
               aria-label={t('header.volume')}
             />
           </div>
@@ -198,7 +198,7 @@ export function AudioSettingsPanel({ title, subtitle, className = '' }: AudioSet
           <p className="mb-1 block text-sm font-semibold text-bd-ink">{title}</p>
           {subtitle && <p className="text-sm text-bd-ink-soft">{subtitle}</p>}
         </div>
-        <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl border border-(--bd-line) bg-(--bd-card-warm) text-(--bd-ink)">
+        <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl border border-bd-line bg-bd-card-warm text-bd-ink">
           <VolumeIcon muted={muted} />
         </div>
       </div>
@@ -207,7 +207,7 @@ export function AudioSettingsPanel({ title, subtitle, className = '' }: AudioSet
         type="button"
         onClick={toggleMute}
         aria-pressed={muted}
-        className="mb-3 flex w-full items-center justify-between rounded-xl border border-(--bd-line) bg-(--bd-card-warm) px-3 py-2.5 text-sm font-bold text-(--bd-ink) transition-colors hover:bg-(--bd-bg2) focus:outline-hidden focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-bd-lav-deep"
+        className="mb-3 flex w-full items-center justify-between rounded-xl border border-bd-line bg-bd-card-warm px-3 py-2.5 text-sm font-bold text-bd-ink transition-colors hover:bg-bd-bg2 focus:outline-hidden focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-bd-lav-deep"
       >
         <span>{muted ? t('header.unmute') : t('header.mute')}</span>
         <VolumeIcon muted={muted} />
@@ -215,8 +215,8 @@ export function AudioSettingsPanel({ title, subtitle, className = '' }: AudioSet
 
       <div className="px-1">
         <div className="mb-1.5 flex items-center justify-between">
-          <label htmlFor="audio-settings-volume" className="text-xs font-semibold text-(--bd-ink-muted)">{t('header.volume')}</label>
-          <span className="text-xs font-black text-(--bd-ink)">{volumePercent}%</span>
+          <label htmlFor="audio-settings-volume" className="text-xs font-semibold text-bd-ink-muted">{t('header.volume')}</label>
+          <span className="text-xs font-black text-bd-ink">{volumePercent}%</span>
         </div>
         <input
           id="audio-settings-volume"
@@ -226,7 +226,7 @@ export function AudioSettingsPanel({ title, subtitle, className = '' }: AudioSet
           step={0.01}
           value={volume}
           onChange={(e) => changeVolume(parseFloat(e.target.value))}
-          className="h-2 w-full cursor-pointer accent-(--bd-ink)"
+          className="h-2 w-full cursor-pointer accent-bd-ink"
           aria-label={t('header.volume')}
         />
       </div>

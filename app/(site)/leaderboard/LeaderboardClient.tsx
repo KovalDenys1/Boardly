@@ -39,15 +39,15 @@ const winRateColor = (winRate: number) => {
 
 function LeaderboardRow({ entry, isLast, t }: { entry: LeaderboardEntry; isLast: boolean; t: (key: TranslationKeys) => string }) {
   const isTop3 = entry.rank <= 3
-  const rowClass = `grid gap-3 px-4 py-4 transition-colors md:grid-cols-[4rem_minmax(0,1fr)_6rem_6rem_6rem_6rem] md:items-center md:px-5 ${
+  const rowClass = `grid tabular-nums gap-3 px-4 py-4 transition-colors md:grid-cols-[4rem_minmax(0,1fr)_6rem_6rem_6rem_6rem] md:items-center md:px-5 ${
     entry.publicProfileId ? 'hover:bg-bd-card-warm' : ''
-  } ${!isLast ? 'border-b border-bd-line' : ''} ${isTop3 ? 'bg-(--bd-card-warm)' : 'bg-(--bd-bg)'}`
+  } ${!isLast ? 'border-b border-bd-line' : ''} ${isTop3 ? 'bg-bd-card-warm' : 'bg-bd-bg'}`
 
   const content = (
     <>
       <div className="flex items-center gap-3 md:block">
         <span
-          className={`inline-grid h-11 w-11 place-items-center rounded-2xl border-2 border-bd-ink text-sm font-extrabold shadow-[2px_2px_0_#1F1B16] ${entry.rank <= 3 ? 'text-bd-ink-on-accent' : 'text-bd-ink'}`}
+          className={`inline-grid h-11 w-11 place-items-center rounded-2xl border-2 border-bd-ink text-sm font-extrabold shadow-[2px_2px_0_var(--bd-ink)] ${entry.rank <= 3 ? 'text-bd-ink-on-accent' : 'text-bd-ink'}`}
           style={{ background: rankAccent(entry.rank), fontFamily: 'var(--bd-font-display)' }}
         >
           {entry.rank}
@@ -59,16 +59,16 @@ function LeaderboardRow({ entry, isLast, t }: { entry: LeaderboardEntry; isLast:
           <img
             src={entry.avatarUrl}
             alt={entry.username}
-            className="h-9 w-9 shrink-0 rounded-xl border-2 border-bd-ink object-cover shadow-[1px_1px_0_#1F1B16]"
+            className="h-9 w-9 shrink-0 rounded-xl border-2 border-bd-ink object-cover shadow-[1px_1px_0_var(--bd-ink)]"
           />
         ) : (
-          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border-2 border-bd-ink bg-bd-bg2 text-sm font-extrabold text-bd-ink-muted shadow-[1px_1px_0_#1F1B16]">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border-2 border-bd-ink bg-bd-bg2 text-sm font-extrabold text-bd-ink-muted shadow-[1px_1px_0_var(--bd-ink)]">
             {entry.username.charAt(0).toUpperCase()}
           </div>
         )}
         <div className="min-w-0">
           <div className="flex items-center gap-1.5">
-            <span className={`block truncate text-base font-bold ${entry.isPremium ? 'text-amber-500' : 'text-bd-ink'}`}>{entry.username}</span>
+            <span className={`block truncate text-base font-bold ${entry.isPremium ? 'text-bd-sun-text' : 'text-bd-ink'}`}>{entry.username}</span>
             {entry.isPremium && <Icon name="crown" size={14} tone="premium" label="Premium" className="shrink-0" />}
           </div>
           {entry.publicProfileId && (
@@ -142,7 +142,7 @@ function LeaderboardPageContent({ initial }: { initial: LeaderboardPage | null }
                   style={{ fontFamily: 'var(--bd-font-display)' }}
                 >
                   {t('leaderboard.title', 'Leaderboard')}
-                  <span className="block text-bd-coral">
+                  <span className="block text-bd-coral-text">
                     {selectedFilter.value ? selectedFilter.label : t('leaderboard.allGames', 'All Games')}
                   </span>
                 </h1>
@@ -178,8 +178,8 @@ function LeaderboardPageContent({ initial }: { initial: LeaderboardPage | null }
                   <button
                     key={p}
                     onClick={() => setPeriod(p)}
-                    className={`bd-chip px-4 py-2 text-sm transition-all ${
-                      period === p ? 'border-bd-ink bg-bd-ink text-bd-bg' : 'hover:border-bd-ink hover:bg-(--bd-card-warm)'
+                    className={`bd-chip px-4 py-2 text-sm transition ${
+                      period === p ? 'border-bd-ink bg-bd-ink text-bd-bg' : 'hover:border-bd-ink hover:bg-bd-card-warm'
                     }`}
                   >
                     {p === 'all' ? t('leaderboard.allTime', 'All Time') : t('leaderboard.last30days', 'Last 30 Days')}
@@ -194,7 +194,7 @@ function LeaderboardPageContent({ initial }: { initial: LeaderboardPage | null }
                     aria-haspopup="listbox"
                     aria-expanded={gameMenuOpen}
                     onClick={() => setGameMenuOpen((open) => !open)}
-                    className={`flex w-full min-w-64 items-center justify-between gap-4 rounded-2xl border-2 bg-(--bd-card-warm) px-4 py-3 text-left shadow-[0_4px_0_var(--bd-line)] transition-all sm:w-auto ${
+                    className={`flex w-full min-w-64 items-center justify-between gap-4 rounded-2xl border-2 bg-bd-card-warm px-4 py-3 text-left shadow-[0_4px_0_var(--bd-line)] transition sm:w-auto ${
                       gameMenuOpen
                         ? 'border-bd-ink shadow-[0_5px_0_var(--bd-ink)]'
                         : 'border-bd-line hover:border-bd-ink hover:shadow-[0_5px_0_var(--bd-ink)]'
@@ -223,7 +223,7 @@ function LeaderboardPageContent({ initial }: { initial: LeaderboardPage | null }
 
                   {gameMenuOpen && (
                     <div
-                      className="absolute right-0 z-30 mt-3 w-full min-w-72 overflow-hidden rounded-2xl border-2 border-bd-ink bg-(--bd-card-warm) shadow-[0_8px_0_var(--bd-ink),0_18px_36px_-18px_rgba(31,27,22,0.45)] sm:w-80"
+                      className="absolute right-0 z-30 mt-3 w-full min-w-72 overflow-hidden rounded-2xl border-2 border-bd-ink bg-bd-card-warm shadow-[0_8px_0_var(--bd-ink),0_18px_36px_-18px_rgba(31,27,22,0.45)] sm:w-80"
                       role="listbox"
                       aria-label={t('leaderboard.gameFilter')}
                     >
@@ -243,7 +243,7 @@ function LeaderboardPageContent({ initial }: { initial: LeaderboardPage | null }
                               aria-selected={selected}
                               onClick={() => handleGameFilterSelect(f.value)}
                               className={`flex w-full items-center justify-between gap-3 rounded-xl px-3 py-2.5 text-left transition-colors ${
-                                selected ? 'bg-bd-lav text-(--bd-ink-on-accent)' : 'text-bd-ink hover:bg-bd-card-warm'
+                                selected ? 'bg-bd-lav text-bd-ink-on-accent' : 'text-bd-ink hover:bg-bd-card-warm'
                               }`}
                             >
                               <span className="flex min-w-0 items-center gap-3">
@@ -253,7 +253,7 @@ function LeaderboardPageContent({ initial }: { initial: LeaderboardPage | null }
                                 <span className="truncate text-sm font-bold">{label}</span>
                               </span>
                               {selected && (
-                                <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-(--bd-bg) text-bd-lav-text">
+                                <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-bd-bg text-bd-lav-text">
                                   <Icon name="check" size={14} weight="bold" />
                                 </span>
                               )}
@@ -277,7 +277,7 @@ function LeaderboardPageContent({ initial }: { initial: LeaderboardPage | null }
               </div>
               <div className="bd-card p-4">
                 <p className="bd-kicker">{t('leaderboard.wins', 'Wins')}</p>
-                <p className="mt-2 truncate text-2xl font-extrabold text-bd-coral" style={{ fontFamily: 'var(--bd-font-display)' }}>
+                <p className="mt-2 truncate text-2xl font-extrabold text-bd-coral-text" style={{ fontFamily: 'var(--bd-font-display)' }}>
                   {visibleWins}
                 </p>
               </div>

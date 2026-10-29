@@ -1,6 +1,13 @@
 @import 'tailwindcss' source(none);
 @source '../app/**/*.{js,ts,jsx,tsx,mdx}';
 @source '../components/**/*.{js,ts,jsx,tsx,mdx}';
+@source '../lib/**/*.{ts,tsx}';
+@source '../hooks/**/*.{ts,tsx}';
+@source '../contexts/**/*.{ts,tsx}';
+/* Word lists are prose: every noun in them would become a utility. */
+@source not '../lib/games/*-words.ts';
+@source not '../lib/sketch-custom-words.ts';
+@source not '../lib/game-catalog.ts';
 
 @custom-variant dark (&:is(.dark *));
 /* Touch browsers report hover: none; v4 would stop applying hover: styles on tap there. */
@@ -24,8 +31,27 @@
   --color-bd-mint-text: var(--bd-mint-text);
   --color-bd-lav-text: var(--bd-lav-text);
   --color-bd-sun-text: var(--bd-sun-text);
+  --color-bd-sky-text: var(--bd-sky-text);
   --color-bd-inverse: var(--bd-inverse);
   --color-bd-ink-on-inverse: var(--bd-ink-on-inverse);
+  --color-bd-btn-ink: var(--bd-btn-ink);
+  --color-bd-surface-raised: var(--bd-surface-raised);
+  --color-bd-coral: var(--bd-coral);
+  --color-bd-mint: var(--bd-mint);
+  --color-bd-sun: var(--bd-sun);
+  --color-bd-sun-deep: var(--bd-sun-deep);
+  --color-bd-lav: var(--bd-lav);
+  --color-bd-lav-mid: var(--bd-lav-mid);
+  --color-bd-logo-tile: var(--bd-logo-tile);
+  --color-bd-sky: var(--bd-sky);
+  --color-bd-card: var(--bd-card);
+  --color-bd-input-bg: var(--bd-input-bg);
+  --color-bd-input-border: var(--bd-input-border);
+  --color-bd-premium: var(--bd-premium);
+  --default-ring-color: var(--bd-lav-deep);
+  --shadow-bd-ink-4: 0 4px 0 var(--bd-ink);
+  --shadow-bd-ink-5: 0 5px 0 var(--bd-ink);
+  --shadow-bd-coral-4: 0 4px 0 var(--bd-coral-deep);
   --font-display: var(--bd-font-display), Georgia, serif;
 }
 
@@ -38,20 +64,9 @@
   /* The single mobile/desktop switch point (docs/RESPONSIVE.md), DESKTOP_MIN_WIDTH_PX in lib/responsive-tokens. */
   --breakpoint-desk: 1024px;
 
-  --color-primary: #3b82f6;
-  --color-secondary: #8b5cf6;
-  --color-bd-coral: #FF6B5B;
-  --color-bd-mint: #4FC9A6;
-  --color-bd-sun: #FFC44D;
-  --color-bd-sun-deep: #E5A82E;
-  --color-bd-lav: #9B8CFF;
-  --color-bd-lav-mid: #8B7DFF;
-  --color-bd-sky: #6BC1F0;
   --color-bd-danger-border: #F0B3AC;
   --color-bd-danger-bg: #FFF2EF;
   --color-bd-danger-text: #A6554A;
-
-  --default-ring-color: rgb(59 130 246 / 0.5);
 
   --text-xs--line-height: 1rem;
   --text-sm--line-height: 1.25rem;
@@ -65,9 +80,6 @@
   --shadow-bd-soft: 0 4px 14px rgba(31,27,22,0.07);
   --shadow-bd-card: 0 6px 0 0 rgba(31,27,22,0.08), 0 14px 28px -10px rgba(31,27,22,0.18);
   --shadow-bd-pop: 0 8px 0 0 rgba(31,27,22,0.85);
-  --shadow-bd-ink-4: 0 4px 0 #1F1B16;
-  --shadow-bd-ink-5: 0 5px 0 #1F1B16;
-  --shadow-bd-coral-4: 0 4px 0 #E04B3B;
 
   --radius-bd-sm: 10px;
   --radius-bd-md: 16px;
@@ -182,12 +194,12 @@
   ::before,
   ::backdrop,
   ::file-selector-button {
-    border-color: var(--color-gray-200, currentColor);
+    border-color: var(--bd-line);
   }
 
   input::placeholder,
   textarea::placeholder {
-    color: var(--color-gray-400);
+    color: var(--bd-ink-muted);
   }
 
   button:not(:disabled),
@@ -243,11 +255,13 @@
   /* A slab that stays dark in dark, where --bd-ink turns cream; text on it is --bd-ink-on-inverse. */
   --bd-inverse: #1F1B16;
   --bd-ink-on-inverse: #FBF6EE;
-  /* Accent-coloured text. The -deep shades are the border and shadow of a fill and do not flip. */
-  --bd-coral-text: #E04B3B;
-  --bd-mint-text: #2FA787;
-  --bd-lav-text: #7867E8;
-  --bd-sun-text: #8A5F00;
+  /* Accent-coloured text, 4.5:1 on every surface and on its own 10-20 % tint. The -deep shades are
+     the border and shadow of a fill and do not flip. */
+  --bd-coral-text: #B71F14;
+  --bd-mint-text: #076F57;
+  --bd-lav-text: #5E49C7;
+  --bd-sun-text: #875D01;
+  --bd-sky-text: #04658C;
   --bd-btn-ink: var(--bd-ink);
   --bd-line: #E8DDC8;
   /* A plate raised above whatever is behind it - a player pill on a team card,
@@ -297,12 +311,13 @@ html.dark {
   --bd-ink:       #F0E8DB;
   --bd-ink-soft:  #B5A494;
   --bd-ink-muted: #9C8E7E;
-  --bd-coral-text: #FF8273;
-  --bd-mint-text: #45BF9C;
-  --bd-lav-text:  #A99BFF;
+  --bd-coral-text: #FF8475;
+  --bd-mint-text: #4AC3A0;
+  --bd-lav-text:  #AA9DFF;
   --bd-inverse:   #35302A;
   --bd-ink-on-inverse: #F0E8DB;
   --bd-sun-text:  #FFC44D;
+  --bd-sky-text:  #77CDFD;
   --bd-line:      #3A3530;
   --bd-card-warm: #242018;
   --bd-card:      #242018;
@@ -1054,19 +1069,19 @@ html.dark {
 }
 
 :root {
-  --primary-500: 59, 130, 246;
-  --primary-600: 37, 99, 235;
-  --primary-700: 29, 78, 216;
-  --secondary-500: 139, 92, 246;
-  --secondary-600: 124, 58, 237;
-  --success-500: 34, 197, 94;
-  --error-500: 239, 68, 68;
   --mobile-tabs-offset: 5.75rem;
   color-scheme: light;
 }
 
 html.dark {
   color-scheme: dark;
+}
+
+/* lib/theme.ts sets this for one frame, so a theme switch does not fade each surface on its own timer. */
+.bd-theme-switching *,
+.bd-theme-switching *::before,
+.bd-theme-switching *::after {
+  transition: none !important;
 }
 
 @supports (padding-bottom: env(safe-area-inset-bottom)) {
@@ -1208,7 +1223,7 @@ input:focus, select:focus, textarea:focus {
 }
 
 .dice {
-  @apply w-16 h-16 border-2 rounded-lg flex items-center justify-center text-2xl font-bold cursor-pointer transition-all;
+  @apply w-16 h-16 border-2 rounded-lg flex items-center justify-center text-2xl font-bold cursor-pointer transition;
   background: var(--bd-input-bg);
   border-color: var(--bd-ink);
   color: var(--bd-ink);
@@ -1224,7 +1239,7 @@ input:focus, select:focus, textarea:focus {
 }
 
 .btn {
-  @apply px-4 py-2 rounded-lg font-semibold transition-all duration-200 transform active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100 focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-bd-lav-deep focus-visible:outline-hidden;
+  @apply px-4 py-2 rounded-lg font-semibold transition duration-200 transform active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100 focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-bd-lav-deep focus-visible:outline-hidden;
 }
 
 .btn-primary {
@@ -1250,14 +1265,14 @@ input:focus, select:focus, textarea:focus {
 }
 
 .card {
-  @apply rounded-lg shadow-lg p-4 sm:p-6 transition-all duration-200 hover:shadow-xl;
+  @apply rounded-lg shadow-lg p-4 sm:p-6 transition duration-200 hover:shadow-xl;
   background: var(--bd-card-warm);
   border: 1.5px solid var(--bd-line);
   color: var(--bd-ink);
 }
 
 .input {
-  @apply w-full px-4 py-3 rounded-lg focus:ring-2 focus:ring-inset focus:ring-bd-lav-deep focus:border-transparent transition-all;
+  @apply w-full px-4 py-3 rounded-lg focus:ring-2 focus:ring-inset focus:ring-bd-lav-deep focus:border-transparent transition;
   border: 1px solid var(--bd-input-border);
   background: var(--bd-input-bg);
   color: var(--bd-ink);
@@ -1269,7 +1284,7 @@ input:focus, select:focus, textarea:focus {
 }
 
 .oauth-btn {
-  @apply w-full px-4 py-3 rounded-lg font-semibold transition-all flex items-center justify-center gap-2 border-2;
+  @apply w-full px-4 py-3 rounded-lg font-semibold transition flex items-center justify-center gap-2 border-2;
 }
 
 .oauth-btn-google {
@@ -1455,14 +1470,19 @@ input:focus, select:focus, textarea:focus {
 
 /* Custom Range Slider Styles */
 input[type="range"].slider-thumb {
+  appearance: none;
   height: 8px;
+  border-radius: 4px;
+  accent-color: var(--bd-ink);
 }
 
 input[type="range"].slider-thumb::-webkit-slider-thumb {
   appearance: none;
+  box-sizing: border-box;
   width: 20px;
   height: 20px;
-  background: white;
+  background: var(--bd-card);
+  border: 2px solid var(--bd-ink);
   border-radius: 50%;
   cursor: pointer;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
@@ -1480,10 +1500,11 @@ input[type="range"].slider-thumb::-webkit-slider-thumb:active {
 }
 
 input[type="range"].slider-thumb::-moz-range-thumb {
+  box-sizing: border-box;
   width: 20px;
   height: 20px;
-  background: white;
-  border: none;
+  background: var(--bd-card);
+  border: 2px solid var(--bd-ink);
   border-radius: 50%;
   cursor: pointer;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
@@ -1633,7 +1654,7 @@ input[type="range"].slider-thumb::-moz-range-track {
   background: var(--bd-card-warm);
   border-radius: 24px;
   border: 1.5px solid var(--bd-line);
-  box-shadow: 0 6px 0 0 rgba(31,27,22,0.08), 0 14px 28px -10px rgba(31,27,22,0.18);
+  box-shadow: var(--shadow-bd-card);
 }
 
 /* Dot-grid background texture */
@@ -2140,6 +2161,7 @@ input[type="range"].slider-thumb::-moz-range-track {
 /* Score-change pop (components/game-chrome/ScorePop, #1111). Transform only,
    so the scoreboard never relays. */
 .score-pop {
+  font-variant-numeric: tabular-nums;
   animation: score-pop var(--bd-dur-slow) var(--bd-ease-spring) both;
 }
 @keyframes score-pop {
@@ -2328,6 +2350,7 @@ input[type="range"].slider-thumb::-moz-range-track {
    side column until the numbers moved. */
 .game-scoreboard-header {
   position: relative;
+  font-variant-numeric: tabular-nums;
   display: grid;
   /* Every column is minmax(0, …): with a bare `auto` the centre could not
      shrink, so as the header narrowed the two 1fr cells collapsed toward zero
@@ -2370,6 +2393,7 @@ input[type="range"].slider-thumb::-moz-range-track {
 
 .game-player-card {
   position: relative;
+  font-variant-numeric: tabular-nums;
   isolation: isolate;
   display: flex;
   align-items: center;
@@ -2848,7 +2872,7 @@ input[type="range"].slider-thumb::-moz-range-track {
   background:
     repeating-linear-gradient(45deg, rgba(255,255,255,0.14) 0 10px, transparent 10px 20px),
     var(--bd-lav);
-  color: #fff;
+  color: var(--bd-ink-on-accent);
   transform: rotateY(180deg) translateZ(1px);
   -webkit-backface-visibility: hidden;
   backface-visibility: hidden;
@@ -4592,7 +4616,7 @@ html.dark .liars-seat { background: var(--bd-bg2); }
 .rps-tile__emoji { font-size: var(--rps-emoji-md); line-height: 1; transition: transform 0.18s ease; }
 .rps-tile:not(:disabled):hover .rps-tile__emoji { transform: scale(1.12) rotate(-6deg); }
 .rps-tile__label { font-size: 13px; font-weight: 700; }
-.rps-tile__beats { font-size: 10px; color: var(--bd-ink-muted); }
+.rps-tile__beats { font-size: 10px; color: var(--bd-ink-muted); max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .rps-tile--selected {
   background: color-mix(in srgb, var(--tile-accent) 14%, var(--bd-bg));
   border-color: var(--tile-accent);
@@ -4672,6 +4696,10 @@ html.dark .liars-seat { background: var(--bd-bg2); }
   .rps-stage__vs { display: none; }
   .rps-stage__score { display: none; }
   .rps-stage__result { width: 100%; margin-top: 0; }
+}
+/* The longest hint needs a 91px tile: shown from a 345px card (390 px phones), hidden below. */
+@container (max-width: 344px) {
+  .rps-tile__beats { display: none; }
 }
 /* Rounds timeline in the side column. */
 .rps-round-row {
