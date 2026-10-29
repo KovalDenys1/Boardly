@@ -1,0 +1,147 @@
+# Replay log – #1322, 2026-10-29, test-mode sandbox "Boardly sandbox"
+# stripe CLI 1.40.9: stripe listen --latest --format JSON --forward-to localhost:3015/api/stripe/webhook
+# dev server: next dev --webpack -p 3015 on this branch (stripe-node 23.0.1), DATABASE_URL = boardly-dev (inmvbxfflqeblynpktay)
+# EVT = event as received (created, type, api_version, id, fields the webhook reads); FWD = the webhook's HTTP answer
+#
+# Sequence
+#  1. POST /api/stripe/checkout as test user A -> 200, cs_test_b1y5J2Wn... mode=subscription managed_payments.enabled=true (customer.created below)
+#     Hosted page completion with 4242 in headless Chrome stopped at an hCaptcha challenge (see plan.md report)
+#  2. stripe trigger checkout.session.completed --api-version 2026-09-30.endive --raw <subscription session, A's customer, STRIPE_PREMIUM_PRICE_ID, consent metadata, tok_visa>
+#     -> A: premiumUntil 2026-11-29T13:41:59Z (= items.data[0].current_period_end 1795959719), consent row, confirmation sent
+#  3. POST /api/stripe/cancel as A -> 200; Stripe cancel_at_period_end=True; row premiumCancelAtPeriod=True
+#  4. POST /api/stripe/reactivate as A -> 200; Stripe cancel_at_period_end=False; row premiumCancelAtPeriod=False
+#  5. DELETE /v1/subscriptions/<A's sub> -> customer.subscription.deleted; row premiumUntil=null stripeSubscriptionId=null
+#  6. stripe trigger checkout.session.async_payment_succeeded --api-version 2026-04-22.dahlia --raw <subscription session, B's customer, SEPA AT611904300234573201>
+#     -> B: completed unpaid (consent, no confirmation), then async_payment_succeeded -> confirmation sent, premiumUntil 2026-11-29T13:43:06Z
+#  7. stripe trigger checkout.session.async_payment_failed --api-version 2026-04-22.dahlia --raw <subscription session, C's customer, SEPA AT861904300235473202>
+#     -> C: consent row, confirmationSentAt null, premiumUntil null after customer.subscription.updated status=past_due
+#     (the dahlia version is only for the trigger's own setup requests, which still send payment_method_types; every event below is rendered at endive)
+#  8. POST /api/stripe/checkout as C with STRIPE_PREMIUM_PRICE_ID=price_does_not_exist_1322 -> 502 {"error":"Checkout is temporarily unavailable. Please try again in a few minutes."}
+#     logged: StripeInvalidRequestError resource_missing line_items[0][price]
+#  9. Cleanup: the three test customers deleted (subscription.deleted events below), test users and their 61 ledger rows deleted from boardly-dev
+#
+EVT 1793280704 customer.created 2026-09-30.endive evt_1UVtQjBnx46srCzJhpYYQ5fW
+FWD 200 evt_1UVtQjBnx46srCzJhpYYQ5fW
+EVT 1793281320 charge.succeeded 2026-09-30.endive evt_3UVtadBnx46srCzJ1GOB991g
+EVT 1793281321 invoice.finalized 2026-09-30.endive evt_1UVtafBnx46srCzJk0DzxAZR
+EVT 1793281321 checkout.session.completed 2026-09-30.endive evt_1UVtafBnx46srCzJDN6FzfFa mode=subscription payment_status=paid sub=yes
+EVT 1793281321 invoice.paid 2026-09-30.endive evt_1UVtafBnx46srCzJoji1lPtj
+FWD 200 evt_3UVtadBnx46srCzJ1GOB991g
+FWD 200 evt_1UVtafBnx46srCzJoji1lPtj
+EVT 1793281320 payment_method.attached 2026-09-30.endive evt_1UVtafBnx46srCzJjSc2TFky
+FWD 200 evt_1UVtafBnx46srCzJjSc2TFky
+FWD 200 evt_1UVtafBnx46srCzJk0DzxAZR
+EVT 1793281321 customer.subscription.created 2026-09-30.endive evt_1UVtagBnx46srCzJC24HQcc6 status=active cape=False cpe=1795959719 meta.userId=True
+EVT 1793281319 customer.updated 2026-09-30.endive evt_1UVtafBnx46srCzJcPkeMRJG
+FWD 200 evt_1UVtafBnx46srCzJcPkeMRJG
+EVT 1793281320 payment_intent.succeeded 2026-09-30.endive evt_3UVtadBnx46srCzJ18Ke1VoK
+FWD 200 evt_3UVtadBnx46srCzJ18Ke1VoK
+EVT 1793281319 payment_intent.created 2026-09-30.endive evt_3UVtadBnx46srCzJ1CAputHt
+FWD 200 evt_1UVtagBnx46srCzJC24HQcc6
+EVT 1793281321 invoice.created 2026-09-30.endive evt_1UVtagBnx46srCzJnXvxHjbp
+FWD 200 evt_1UVtagBnx46srCzJnXvxHjbp
+FWD 200 evt_3UVtadBnx46srCzJ1CAputHt
+EVT 1793281321 invoice.payment_succeeded 2026-09-30.endive evt_1UVtagBnx46srCzJaDb8p0w4
+FWD 200 evt_1UVtagBnx46srCzJaDb8p0w4
+FWD 200 evt_1UVtafBnx46srCzJDN6FzfFa
+EVT 1793281344 customer.subscription.updated 2026-09-30.endive evt_1UVtb2Bnx46srCzJYGWQ4DTB status=active cape=True cpe=1795959719 meta.userId=True
+FWD 200 evt_1UVtb2Bnx46srCzJYGWQ4DTB
+EVT 1793281350 customer.subscription.updated 2026-09-30.endive evt_1UVtb8Bnx46srCzJg8f0NxLy status=active cape=False cpe=1795959719 meta.userId=True
+FWD 200 evt_1UVtb8Bnx46srCzJg8f0NxLy
+EVT 1793281361 customer.subscription.deleted 2026-09-30.endive evt_1UVtbJBnx46srCzJSNAvJr2f status=canceled cape=False cpe=1795959719 meta.userId=True
+FWD 200 evt_1UVtbJBnx46srCzJSNAvJr2f
+EVT 1793281373 customer.created 2026-09-30.endive evt_1UVtbVBnx46srCzJfUdgeBYz
+FWD 200 evt_1UVtbVBnx46srCzJfUdgeBYz
+EVT 1793281374 invoice_payment.paid 2026-09-30.endive evt_1UVtbWBnx46srCzJWfynskTC
+FWD 200 evt_1UVtbWBnx46srCzJWfynskTC
+EVT 1793281376 customer.created 2026-09-30.endive evt_1UVtbYBnx46srCzJQf4hJimA
+FWD 200 evt_1UVtbYBnx46srCzJQf4hJimA
+EVT 1793281388 invoice.created 2026-09-30.endive evt_1UVtbkBnx46srCzJw9AzBxHg
+EVT 1793281388 invoice.finalized 2026-09-30.endive evt_1UVtbkBnx46srCzJprdHKtwt
+EVT 1793281387 payment_method.attached 2026-09-30.endive evt_1UVtbkBnx46srCzJInLGXULk
+EVT 1793281386 customer.updated 2026-09-30.endive evt_1UVtblBnx46srCzJ45GNtQkF
+FWD 200 evt_1UVtbkBnx46srCzJw9AzBxHg
+FWD 200 evt_1UVtblBnx46srCzJ45GNtQkF
+FWD 200 evt_1UVtbkBnx46srCzJprdHKtwt
+FWD 200 evt_1UVtbkBnx46srCzJInLGXULk
+EVT 1793281388 checkout.session.completed 2026-09-30.endive evt_1UVtblBnx46srCzJvb6kJkki mode=subscription payment_status=unpaid sub=yes
+EVT 1793281387 payment_intent.processing 2026-09-30.endive evt_3UVtbjBnx46srCzJ1YzPfg4S
+EVT 1793281388 customer.subscription.created 2026-09-30.endive evt_1UVtblBnx46srCzJMKu1gbR3 status=active cape=False cpe=1795959786 meta.userId=True
+FWD 200 evt_3UVtbjBnx46srCzJ1YzPfg4S
+EVT 1793281387 charge.pending 2026-09-30.endive evt_3UVtbjBnx46srCzJ1WFUfyFK
+EVT 1793281387 payment_intent.created 2026-09-30.endive evt_3UVtbjBnx46srCzJ1QgJfPU2
+FWD 200 evt_3UVtbjBnx46srCzJ1WFUfyFK
+FWD 200 evt_1UVtblBnx46srCzJvb6kJkki
+FWD 200 evt_1UVtblBnx46srCzJMKu1gbR3
+FWD 200 evt_3UVtbjBnx46srCzJ1QgJfPU2
+EVT 1793281392 invoice.created 2026-09-30.endive evt_1UVtbpBnx46srCzJkjFFILxI
+EVT 1793281392 invoice.finalized 2026-09-30.endive evt_1UVtbpBnx46srCzJL5XEWPvL
+FWD 200 evt_1UVtbpBnx46srCzJkjFFILxI
+EVT 1793281391 payment_method.attached 2026-09-30.endive evt_1UVtbpBnx46srCzJkGNXStcZ
+FWD 200 evt_1UVtbpBnx46srCzJL5XEWPvL
+FWD 200 evt_1UVtbpBnx46srCzJkGNXStcZ
+EVT 1793281393 checkout.session.completed 2026-09-30.endive evt_1UVtbpBnx46srCzJdDmXVUdu mode=subscription payment_status=unpaid sub=yes
+EVT 1793281390 customer.updated 2026-09-30.endive evt_1UVtbpBnx46srCzJ1NrGANEt
+FWD 200 evt_1UVtbpBnx46srCzJ1NrGANEt
+EVT 1793281392 customer.subscription.created 2026-09-30.endive evt_1UVtbpBnx46srCzJgQ9S41PH status=active cape=False cpe=1795959790 meta.userId=True
+EVT 1793281391 payment_intent.processing 2026-09-30.endive evt_3UVtbnBnx46srCzJ1TusTdIs
+FWD 200 evt_3UVtbnBnx46srCzJ1TusTdIs
+FWD 200 evt_1UVtbpBnx46srCzJdDmXVUdu
+FWD 200 evt_1UVtbpBnx46srCzJgQ9S41PH
+EVT 1793281391 payment_intent.created 2026-09-30.endive evt_3UVtbnBnx46srCzJ1Cn2WoDD
+EVT 1793281391 charge.pending 2026-09-30.endive evt_3UVtbnBnx46srCzJ1Ah2fQR3
+FWD 200 evt_3UVtbnBnx46srCzJ1Cn2WoDD
+FWD 200 evt_3UVtbnBnx46srCzJ1Ah2fQR3
+EVT 1793281396 charge.updated 2026-09-30.endive evt_3UVtbjBnx46srCzJ1HLowuH7
+FWD 200 evt_3UVtbjBnx46srCzJ1HLowuH7
+EVT 1793281397 invoice.updated 2026-09-30.endive evt_1UVtbtBnx46srCzJ0qyaJkVi
+FWD 200 evt_1UVtbtBnx46srCzJ0qyaJkVi
+EVT 1793281402 payment_intent.succeeded 2026-09-30.endive evt_3UVtbjBnx46srCzJ1CpQIkOO
+FWD 200 evt_3UVtbjBnx46srCzJ1CpQIkOO
+EVT 1793281402 charge.succeeded 2026-09-30.endive evt_3UVtbjBnx46srCzJ1mjWe7L3
+FWD 200 evt_3UVtbjBnx46srCzJ1mjWe7L3
+EVT 1793281403 invoice.updated 2026-09-30.endive evt_1UVtbzBnx46srCzJybXNIWON
+FWD 200 evt_1UVtbzBnx46srCzJybXNIWON
+EVT 1793281403 invoice.paid 2026-09-30.endive evt_1UVtbzBnx46srCzJzpClyc1W
+FWD 200 evt_1UVtbzBnx46srCzJzpClyc1W
+EVT 1793281404 invoice.payment_succeeded 2026-09-30.endive evt_1UVtc0Bnx46srCzJsKcJPfq4
+FWD 200 evt_1UVtc0Bnx46srCzJsKcJPfq4
+EVT 1793281404 checkout.session.async_payment_succeeded 2026-09-30.endive evt_1UVtc0Bnx46srCzJnJbGoFS8 mode=subscription payment_status=paid sub=yes
+FWD 200 evt_1UVtc0Bnx46srCzJnJbGoFS8
+EVT 1793281405 charge.updated 2026-09-30.endive evt_3UVtbnBnx46srCzJ1flPqgoQ
+FWD 200 evt_3UVtbnBnx46srCzJ1flPqgoQ
+EVT 1793281406 invoice.updated 2026-09-30.endive evt_1UVtc2Bnx46srCzJnh4kuHNN
+FWD 200 evt_1UVtc2Bnx46srCzJnh4kuHNN
+EVT 1793281408 payment_intent.payment_failed 2026-09-30.endive evt_3UVtbnBnx46srCzJ1JGbglhP
+FWD 200 evt_3UVtbnBnx46srCzJ1JGbglhP
+EVT 1793281408 charge.failed 2026-09-30.endive evt_3UVtbnBnx46srCzJ1ypfP81c
+FWD 200 evt_3UVtbnBnx46srCzJ1ypfP81c
+EVT 1793281408 invoice.payment_failed 2026-09-30.endive evt_1UVtc4Bnx46srCzJMHYGtNmF
+FWD 200 evt_1UVtc4Bnx46srCzJMHYGtNmF
+EVT 1793281409 customer.subscription.updated 2026-09-30.endive evt_1UVtc5Bnx46srCzJ8wWKQBkK status=past_due cape=False cpe=1795959790 meta.userId=True
+FWD 200 evt_1UVtc5Bnx46srCzJ8wWKQBkK
+EVT 1793281409 customer.updated 2026-09-30.endive evt_1UVtc5Bnx46srCzJ0cbMiebf
+FWD 200 evt_1UVtc5Bnx46srCzJ0cbMiebf
+EVT 1793281409 checkout.session.async_payment_failed 2026-09-30.endive evt_1UVtc5Bnx46srCzJOLDDmaMU mode=subscription payment_status=unpaid sub=yes
+FWD 200 evt_1UVtc5Bnx46srCzJOLDDmaMU
+EVT 1793281454 invoice_payment.paid 2026-09-30.endive evt_1UVtcoBnx46srCzJKQRDiHML
+FWD 200 evt_1UVtcoBnx46srCzJKQRDiHML
+EVT 1793281456 invoice_payment.paid 2026-09-30.endive evt_1UVtcqBnx46srCzJptbyA9Nt
+FWD 200 evt_1UVtcqBnx46srCzJptbyA9Nt
+EVT 1793281567 customer.deleted 2026-09-30.endive evt_1UVtedBnx46srCzJzcUEnFY0
+FWD 200 evt_1UVtedBnx46srCzJzcUEnFY0
+EVT 1793281568 mandate.updated 2026-09-30.endive evt_1UVteeBnx46srCzJCgOUVyg3
+FWD 200 evt_1UVteeBnx46srCzJCgOUVyg3
+EVT 1793281568 customer.deleted 2026-09-30.endive evt_1UVteeBnx46srCzJD0KMO3tX
+FWD 200 evt_1UVteeBnx46srCzJD0KMO3tX
+EVT 1793281568 customer.subscription.deleted 2026-09-30.endive evt_1UVtefBnx46srCzJTmLnb6Z3 status=canceled cape=False cpe=1795959786 meta.userId=True
+FWD 200 evt_1UVtefBnx46srCzJTmLnb6Z3
+EVT 1793281569 customer.deleted 2026-09-30.endive evt_1UVtefBnx46srCzJ19wIWAyg
+FWD 200 evt_1UVtefBnx46srCzJ19wIWAyg
+EVT 1793281569 mandate.updated 2026-09-30.endive evt_1UVtefBnx46srCzJSD11hjU7
+FWD 200 evt_1UVtefBnx46srCzJSD11hjU7
+EVT 1793281569 customer.subscription.deleted 2026-09-30.endive evt_1UVtefBnx46srCzJ0s8PqH2u status=canceled cape=False cpe=1795959790 meta.userId=True
+FWD 200 evt_1UVtefBnx46srCzJ0s8PqH2u
+#
+# FWD totals: 61 200
+# api_version totals: 61 2026-09-30.endive

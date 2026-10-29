@@ -13,7 +13,7 @@ This document is the dependency maintenance plan for Boardly. It is intentionall
 | `prisma` + `@prisma/client` | `^7.4.2` | aligned | Uses `prisma.config.ts`, explicit generator output, and `@prisma/adapter-pg` |
 | `@prisma/adapter-pg` | `^7.4.2` | aligned | Runtime TLS behavior is documented in `docs/OPERATIONS.md` |
 | `@supabase/supabase-js` | `^2.105.4` | aligned | Carries realtime; bumps need a two-client broadcast smoke test |
-| `stripe` | `^22.1.1` | aligned | Pinned API version `2026-04-22.dahlia` in `lib/stripe.ts` moves separately from the SDK |
+| `stripe` | `^23.0.1` | aligned | `lib/stripe.ts` sends the API version the SDK pins (endive); a new API major fails the typecheck there until the webhook endpoint has moved to it (`features/2026-10-29-stripe-23/migrations.md`) |
 | `@sentry/nextjs` | `^10.42.0` | aligned | Verify release monitoring after bumps |
 | `resend` | `^6.9.3` | aligned | Keep email behavior smoke-tested when touched |
 | `tailwindcss` | `3.4.14` | major follow-up | Tailwind 4 needs a dedicated styling/tooling migration |
