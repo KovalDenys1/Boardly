@@ -90,6 +90,12 @@ describe('PlayerProfileCard report action (#1172)', () => {
     expect(options.map((input) => (input as HTMLInputElement).value)).toEqual(['drawing', 'username'])
   })
 
+  it('names its dialog after the player', async () => {
+    mockCard(cardResponse({ userId: 'u2' }))
+    render(<PlayerProfileCard userId="u2" onClose={jest.fn()} />)
+    expect(await screen.findByRole('dialog', { name: 'Bob' })).toBeTruthy()
+  })
+
   it('offers no Report on your own card', async () => {
     mockCard(cardResponse({ userId: 'viewer_1', relation: 'self' }))
     render(<PlayerProfileCard userId="viewer_1" onClose={jest.fn()} />)

@@ -9,6 +9,7 @@ import { sendPushNotification } from '@/lib/push-send'
 import { requireSessionUser } from '@/lib/session-user'
 
 const limiter = rateLimit(rateLimitPresets.friendRequest)
+const readLimiter = rateLimit(rateLimitPresets.api)
 const log = apiLogger('/api/friends/request')
 
 // The receiver is selected with its visibility so the answer can respect it (#1226).
@@ -232,7 +233,7 @@ export async function POST(req: NextRequest) {
 // GET /api/friends/request - Get pending friend requests
 export async function GET(req: NextRequest) {
   try {
-    const rateLimitResult = await limiter(req)
+    const rateLimitResult = await readLimiter(req)
     if (rateLimitResult) {
       return rateLimitResult
     }

@@ -133,6 +133,12 @@ function FieldLabel({ icon, htmlFor, children }: { icon: IconName; htmlFor?: str
 
 const CREATE_SOUND_CUES: readonly CueId[] = ['ui.confirm', 'ui.error']
 
+/** The friends page links here with `?invite=<friend's user id>`; the invite route checks the friendship. */
+function readInvitedFriend(value: string | null): string[] {
+  const id = value?.trim()
+  return id && /^[A-Za-z0-9_-]{1,64}$/.test(id) ? [id] : []
+}
+
 function CreateLobbyPage() {
   const { t } = useTranslation()
   useSoundConsumer(CREATE_SOUND_CUES)
@@ -185,7 +191,7 @@ function CreateLobbyPage() {
   const [termsRequired, setTermsRequired] = useState(false)
   const [showPlayerWarning, setShowPlayerWarning] = useState(false)
   const [showFriendsModal, setShowFriendsModal] = useState(false)
-  const [selectedFriendIds, setSelectedFriendIds] = useState<string[]>([])
+  const [selectedFriendIds, setSelectedFriendIds] = useState<string[]>(() => readInvitedFriend(searchParams.get('invite')))
   const [selectedTheme, setSelectedTheme] = useState<LobbyTheme>('default')
   const [view, setView] = useState<View>('summary')
 
@@ -384,6 +390,8 @@ function CreateLobbyPage() {
             body: JSON.stringify({ friendIds: selectedFriendIds }),
           })
           const inviteResult = await inviteResponse.json().catch(() => null)
+          const skipped = Array.isArray(inviteResult?.skippedFriendIds) ? inviteResult.skippedFriendIds.length : 0
+          if (!inviteResponse.ok || skipped > 0) showToast.error('lobby.create.inviteNotSent')
           if (!inviteResponse.ok) {
             clientLogger.warn('Lobby created but party invite request failed', {
               lobbyCode, status: inviteResponse.status, error: inviteResult,
@@ -392,10 +400,11 @@ function CreateLobbyPage() {
             clientLogger.log('Party invite flow completed during lobby creation', {
               lobbyCode,
               invitedCount: typeof inviteResult?.invitedCount === 'number' ? inviteResult.invitedCount : selectedFriendIds.length,
-              skippedCount: Array.isArray(inviteResult?.skippedFriendIds) ? inviteResult.skippedFriendIds.length : 0,
+              skippedCount: skipped,
             })
           }
         } catch (inviteError) {
+          showToast.error('lobby.create.inviteNotSent')
           clientLogger.warn('Lobby created but party invite request threw an error', { lobbyCode, error: inviteError })
         }
       }
@@ -604,7 +613,11 @@ function CreateLobbyPage() {
                   <span className="text-bd-ink-soft"><Icon name="gear" size={18} /></span>
                   <span className="min-w-0 flex-1">
                     <span className="block font-semibold text-bd-ink">{t('lobby.create.settingsTitle')}</span>
-                    <span className="block truncate text-[13px] text-bd-ink-muted">{t('lobby.create.settingsRowHint')}</span>
+                    <span className="block truncate text-[13px] text-bd-ink-muted">
+                      {selectedFriendIds.length > 0
+                        ? t('lobby.create.friendsToInvite', { value: selectedFriendIds.length })
+                        : t('lobby.create.settingsRowHint')}
+                    </span>
                   </span>
                   <span className="text-bd-ink-muted"><Icon name="arrow-right" size={16} /></span>
                 </button>

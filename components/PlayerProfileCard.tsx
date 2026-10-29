@@ -162,7 +162,12 @@ export default function PlayerProfileCard({ userId, onClose, reportContext }: Pl
   const isOpen = !!userId
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} maxWidth="sm">
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      maxWidth="sm"
+      aria-label={data?.username ?? t('game.ui.playerFallback')}
+    >
       <div className="p-5 stack-y-4 relative">
         <button
           onClick={onClose}

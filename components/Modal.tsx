@@ -13,20 +13,29 @@ const FOCUSABLE_SELECTOR = [
   '[tabindex]:not([tabindex="-1"])',
 ].join(',')
 
-interface ModalProps {
+/** Exactly one source for the dialog's accessible name; screen readers announce an unnamed one as just "dialog". */
+type ModalName =
+  | { title: string; 'aria-labelledby'?: never; 'aria-label'?: never }
+  | { title?: never; 'aria-labelledby': string; 'aria-label'?: never }
+  | { title?: never; 'aria-labelledby'?: never; 'aria-label': string }
+
+export type ModalProps = ModalName & {
   isOpen: boolean
   onClose: () => void
-  title?: string
   children: React.ReactNode
   maxWidth?: 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '3xl' | '4xl' | 'full'
   mobileFullscreen?: boolean
   bodyPadding?: 'default' | 'none'
+  'aria-describedby'?: string
 }
 
 export default function Modal({
   isOpen,
   onClose,
   title,
+  'aria-labelledby': labelledBy,
+  'aria-label': label,
+  'aria-describedby': describedBy,
   children,
   maxWidth = 'lg',
   mobileFullscreen = false,
@@ -146,7 +155,9 @@ export default function Modal({
         ref={dialogRef}
         role="dialog"
         aria-modal="true"
-        {...(title ? { 'aria-labelledby': titleId } : {})}
+        aria-labelledby={title ? titleId : labelledBy}
+        aria-label={title ? undefined : label}
+        aria-describedby={describedBy}
         tabIndex={-1}
         className={`relative z-10 flex w-full flex-col shadow-2xl animate-scale-in ${
           mobileFullscreen
