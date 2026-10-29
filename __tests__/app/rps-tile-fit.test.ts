@@ -11,11 +11,21 @@ describe('RPS choice tiles', () => {
     expect(rule?.[1]).toMatch(/white-space:\s*nowrap/)
   })
 
-  it('drop the hint line in any card whose tiles fall under 90px', () => {
+  it('drop the hint line where the tiles are too small for it', () => {
     const widths = [...css.matchAll(/@container \(max-width: (\d+)px\)\s*\{((?:[^{}]*\{[^}]*\})*)[^{}]*\}/g)]
       .filter((m) => /\.rps-tile__beats\s*\{\s*display:\s*none/.test(m[2]))
       .map((m) => Number(m[1]))
     expect(widths.length).toBeGreaterThan(0)
-    expect((Math.max(...widths) - 72) / 3).toBeGreaterThanOrEqual(90)
+    expect((Math.max(...widths) - 72) / 3).toBeGreaterThanOrEqual(87)
+  })
+
+  // The longest hint ("schlägt Schere", "beats Scissors") needs 71px inside a tile's 8px padding and 2px border.
+  it('keep the hint wherever it fits: a 390 px phone (350 px card) shows it, a 375 px phone (335 px card) does not', () => {
+    const widths = [...css.matchAll(/@container \(max-width: (\d+)px\)\s*\{((?:[^{}]*\{[^}]*\})*)[^{}]*\}/g)]
+      .filter((m) => /\.rps-tile__beats\s*\{\s*display:\s*none/.test(m[2]))
+      .map((m) => Number(m[1]))
+    expect(Math.max(...widths)).toBeGreaterThanOrEqual(335)
+    expect(Math.max(...widths)).toBeLessThan(350)
+    expect((Math.max(...widths) + 1 - 72) / 3 - 20).toBeGreaterThanOrEqual(71)
   })
 })

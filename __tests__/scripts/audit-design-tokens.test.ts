@@ -126,6 +126,10 @@ describe('preflight defaults and sources', () => {
     expect(base).toMatch(/textarea::placeholder \{\s*color: var\(--bd-ink-muted\);/)
   })
 
+  it('leaves the game catalog out of the scan, whose colour strings nothing renders', () => {
+    expect(globalsCss).toContain("@source not '../lib/game-catalog.ts';")
+  })
+
   it.each(['lib', 'hooks', 'contexts'])('Tailwind scans %s/, where class maps live too', (dir) => {
     expect(globalsCss).toContain(`@source '../${dir}/**/*.{ts,tsx}';`)
   })

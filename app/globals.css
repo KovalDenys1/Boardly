@@ -7,6 +7,7 @@
 /* Word lists are prose: every noun in them would become a utility. */
 @source not '../lib/games/*-words.ts';
 @source not '../lib/sketch-custom-words.ts';
+@source not '../lib/game-catalog.ts';
 
 @custom-variant dark (&:is(.dark *));
 /* Touch browsers report hover: none; v4 would stop applying hover: styles on tap there. */
@@ -4696,8 +4697,8 @@ html.dark .liars-seat { background: var(--bd-bg2); }
   .rps-stage__score { display: none; }
   .rps-stage__result { width: 100%; margin-top: 0; }
 }
-/* Tiles under ~96px (320 px phones) have no room for the hint line under the emoji and label. */
-@container (max-width: 360px) {
+/* The longest hint needs a 91px tile: shown from a 345px card (390 px phones), hidden below. */
+@container (max-width: 344px) {
   .rps-tile__beats { display: none; }
 }
 /* Rounds timeline in the side column. */
