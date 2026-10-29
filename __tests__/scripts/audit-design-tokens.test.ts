@@ -1,6 +1,6 @@
 import { existsSync, readdirSync, readFileSync, statSync } from 'fs'
 import path from 'path'
-import { accentTextLines, colourUtilities, focusColourLines, varShorthandLines } from '../../scripts/design-token-rules'
+import { accentTextLines, colourUtilities, focusColourLines, tokenHexShadowLines, tokenHexValues, varShorthandLines } from '../../scripts/design-token-rules'
 
 const globalsCss = readFileSync(path.join(__dirname, '..', '..', 'app', 'globals.css'), 'utf8')
 
@@ -75,6 +75,28 @@ describe('colour tokens as utilities', () => {
   })
 })
 
+describe('shadows', () => {
+  const tokenHex = tokenHexValues(globalsCss)
+
+  it('keeps the shadow tokens off hex, and one that names a --bd-* colour in @theme inline so a lobby theme reaches it', () => {
+    const inline = /@theme inline \{([^]*?)\n\}/.exec(globalsCss)![1]
+    const all = [...globalsCss.matchAll(/--shadow-bd-[a-z0-9-]+:\s*([^;]+);/g)]
+    expect(all.length).toBeGreaterThan(0)
+    expect(all.filter((m) => /#[0-9A-Fa-f]{3,8}\b/.test(m[1]) || (m[1].includes('var(--bd-') && !inline.includes(m[0]))).map((m) => m[0])).toEqual([])
+  })
+
+  it.each([
+    ['an arbitrary class', '<span className="shadow-[2px_2px_0_#1F1B16]">'],
+    ['an inline style', "style={{ boxShadow: '4px 4px 0 #1F1B16' }}"],
+  ])('flags a token colour hard-coded in %s', (_label, line) => {
+    expect(tokenHexShadowLines(line, tokenHex)).toEqual([1])
+  })
+
+  it('leaves a variable and an off-palette colour alone', () => {
+    expect(tokenHexShadowLines('<span className="shadow-[2px_2px_0_var(--bd-ink)]" style={{ boxShadow: \'0 0 12px #FF3FA4\' }}>', tokenHex)).toEqual([])
+  })
+})
+
 function scan(rule: (src: string) => number[]): string[] {
   const root = path.join(__dirname, '..', '..')
   const found: string[] = []
@@ -96,6 +118,11 @@ describe('the app and components', () => {
 
   it('draw every focus ring in lav-deep', () => {
     expect(scan(focusColourLines)).toEqual([])
+  })
+
+  it('draw shadows in a token colour through its variable', () => {
+    const tokenHex = tokenHexValues(globalsCss)
+    expect(scan((src) => tokenHexShadowLines(src, tokenHex)).filter((at) => !at.startsWith('app/root-document.tsx'))).toEqual([])
   })
 
   it('spell a colour with a utility as that utility', () => {

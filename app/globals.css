@@ -41,6 +41,9 @@
   --color-bd-input-bg: var(--bd-input-bg);
   --color-bd-input-border: var(--bd-input-border);
   --color-bd-premium: var(--bd-premium);
+  --shadow-bd-ink-4: 0 4px 0 var(--bd-ink);
+  --shadow-bd-ink-5: 0 5px 0 var(--bd-ink);
+  --shadow-bd-coral-4: 0 4px 0 var(--bd-coral-deep);
   --font-display: var(--bd-font-display), Georgia, serif;
 }
 
@@ -73,9 +76,6 @@
   --shadow-bd-soft: 0 4px 14px rgba(31,27,22,0.07);
   --shadow-bd-card: 0 6px 0 0 rgba(31,27,22,0.08), 0 14px 28px -10px rgba(31,27,22,0.18);
   --shadow-bd-pop: 0 8px 0 0 rgba(31,27,22,0.85);
-  --shadow-bd-ink-4: 0 4px 0 #1F1B16;
-  --shadow-bd-ink-5: 0 5px 0 #1F1B16;
-  --shadow-bd-coral-4: 0 4px 0 #E04B3B;
 
   --radius-bd-sm: 10px;
   --radius-bd-md: 16px;
@@ -1644,7 +1644,7 @@ input[type="range"].slider-thumb::-moz-range-track {
   background: var(--bd-card-warm);
   border-radius: 24px;
   border: 1.5px solid var(--bd-line);
-  box-shadow: 0 6px 0 0 rgba(31,27,22,0.08), 0 14px 28px -10px rgba(31,27,22,0.18);
+  box-shadow: var(--shadow-bd-card);
 }
 
 /* Dot-grid background texture */

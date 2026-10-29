@@ -72,3 +72,26 @@ export function varShorthandLines(src: string, utilities: Set<string>): number[]
   })
   return hits
 }
+
+/** The light hex values of the --bd-* colour tokens in the design-system :root, upper-cased. */
+export function tokenHexValues(globalsCss: string): Set<string> {
+  const start = globalsCss.indexOf(':root {\n  --bd-bg:')
+  const root = globalsCss.slice(start, globalsCss.indexOf('\n}', start))
+  return new Set([...root.matchAll(/--bd-[a-z0-9-]+:\s*(#[0-9A-Fa-f]{6})\s*;/g)].map((m) => m[1].toUpperCase()))
+}
+
+const SHADOW_VALUE = /shadow-\[([^\]]+)\]|boxShadow:\s*[`'"]([^`'"]+)[`'"]/g
+
+/** 1-based lines whose shadow hard-codes a token's hex, which then does not follow dark mode or a lobby theme (#1457 S13). */
+export function tokenHexShadowLines(src: string, tokenHex: Set<string>): number[] {
+  const hits: number[] = []
+  src.split('\n').forEach((line, i) => {
+    for (const m of line.matchAll(SHADOW_VALUE)) {
+      if ((m[1] ?? m[2]).match(/#[0-9A-Fa-f]{6}\b/g)?.some((hex) => tokenHex.has(hex.toUpperCase()))) {
+        hits.push(i + 1)
+        return
+      }
+    }
+  })
+  return hits
+}

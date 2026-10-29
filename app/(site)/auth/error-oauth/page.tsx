@@ -84,7 +84,7 @@ function OAuthErrorContent() {
     return (
       <div className="page-shell-full flex items-center justify-center overflow-y-auto p-4" style={authBg}>
         <div className="bd-card w-full max-w-md p-8 text-center">
-          <div className="mx-auto mb-5 grid h-16 w-16 place-items-center rounded-2xl border-2 border-bd-ink bg-bd-lav shadow-[3px_3px_0_#1F1B16]">
+          <div className="mx-auto mb-5 grid h-16 w-16 place-items-center rounded-2xl border-2 border-bd-ink bg-bd-lav shadow-[3px_3px_0_var(--bd-ink)]">
             <Icon name="link" size={32} tone="on-accent" />
           </div>
           <h1
@@ -136,7 +136,7 @@ function OAuthErrorContent() {
     <div className="page-shell-full flex items-center justify-center overflow-y-auto p-4" style={authBg}>
       <div className="bd-card w-full max-w-md p-8">
         <div className="mb-6 text-center">
-          <div className="mx-auto mb-4 grid h-16 w-16 place-items-center rounded-2xl border-2 border-bd-coral-deep bg-bd-coral/15 shadow-[3px_3px_0_#1F1B16]">
+          <div className="mx-auto mb-4 grid h-16 w-16 place-items-center rounded-2xl border-2 border-bd-coral-deep bg-bd-coral/15 shadow-[3px_3px_0_var(--bd-ink)]">
             <Icon name="warning" size={32} tone="coral" />
           </div>
           <h1

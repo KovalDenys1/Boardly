@@ -1810,7 +1810,7 @@ export default function ProfilePage() {
   const settingsScopeBadgeClassName =
     'inline-flex w-fit rounded-full bg-bd-bg2 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-bd-ink-soft'
   const actionPrimaryButtonClassName =
-    'inline-flex items-center justify-center gap-2 rounded-2xl border-2 border-bd-lav-deep bg-bd-lav px-5 py-3 text-sm font-bold text-bd-ink-on-accent shadow-[0_4px_0_#7867E8] transition-all hover:-translate-y-0.5 hover:bg-bd-lav-mid hover:shadow-[0_6px_0_#7867E8] disabled:cursor-not-allowed disabled:opacity-60'
+    'inline-flex items-center justify-center gap-2 rounded-2xl border-2 border-bd-lav-deep bg-bd-lav px-5 py-3 text-sm font-bold text-bd-ink-on-accent shadow-[0_4px_0_var(--bd-lav-deep)] transition-all hover:-translate-y-0.5 hover:bg-bd-lav-mid hover:shadow-[0_6px_0_var(--bd-lav-deep)] disabled:cursor-not-allowed disabled:opacity-60'
   const actionSecondaryButtonClassName =
     'inline-flex items-center justify-center gap-2 rounded-2xl border-[1.5px] border-bd-line bg-bd-card-warm px-5 py-3 text-sm font-semibold text-bd-ink shadow-[0_3px_0_var(--bd-line)] transition-all hover:-translate-y-0.5 hover:bg-bd-bg2'
   const actionDangerButtonClassName =
@@ -1885,7 +1885,7 @@ export default function ProfilePage() {
                           className="h-28 w-28 border-[3px] border-[#1F1B16] bg-bd-lav text-bd-ink-on-accent outline-solid outline-4 outline-white outline-offset-[-7px] sm:h-32 sm:w-32"
                           textClassName="font-display text-5xl font-bold"
                         />
-                        <div className="absolute -bottom-2 -right-4 rotate-[8deg] rounded-full border-2 border-bd-ink bg-bd-mint px-3 py-1 font-display text-xs font-bold text-bd-ink-on-accent shadow-[2px_2px_0_#1F1B16]">
+                        <div className="absolute -bottom-2 -right-4 rotate-[8deg] rounded-full border-2 border-bd-ink bg-bd-mint px-3 py-1 font-display text-xs font-bold text-bd-ink-on-accent shadow-[2px_2px_0_var(--bd-ink)]">
                           {t('profile.levelShort')} {Math.max(
                             1,
                             Math.floor(
@@ -1975,7 +1975,7 @@ export default function ProfilePage() {
                             type="button"
                             onClick={openPublicProfilePreview}
                             disabled={isPublicProfilePreviewTransitioning}
-                            className="group inline-flex items-center justify-center gap-2 rounded-2xl border-2 border-bd-lav-deep bg-bd-lav px-4 py-3 text-sm font-bold text-bd-ink-on-accent shadow-[0_4px_0_#7867E8] transition-all hover:-translate-y-0.5 hover:bg-bd-lav-mid hover:shadow-[0_6px_0_#7867E8] disabled:cursor-not-allowed disabled:opacity-70 dark:border-bd-lav-mid dark:bg-bd-lav dark:text-bd-ink-on-accent"
+                            className="group inline-flex items-center justify-center gap-2 rounded-2xl border-2 border-bd-lav-deep bg-bd-lav px-4 py-3 text-sm font-bold text-bd-ink-on-accent shadow-[0_4px_0_var(--bd-lav-deep)] transition-all hover:-translate-y-0.5 hover:bg-bd-lav-mid hover:shadow-[0_6px_0_var(--bd-lav-deep)] disabled:cursor-not-allowed disabled:opacity-70 dark:border-bd-lav-mid dark:bg-bd-lav dark:text-bd-ink-on-accent"
                           >
                             <span>{t('profile.publicProfile.viewOwn')}</span>
                             <span aria-hidden className="transition-transform group-hover:translate-x-0.5">
@@ -2072,7 +2072,7 @@ export default function ProfilePage() {
             >
               <div
                 aria-hidden="true"
-                className={`pointer-events-none absolute left-0 bottom-1.5 top-1.5 rounded-xl bg-bd-lav shadow-[0_3px_0_#7867E8] ${animateTabIndicator ? 'transition-[transform,width,opacity] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]' : ''}`}
+                className={`pointer-events-none absolute left-0 bottom-1.5 top-1.5 rounded-xl bg-bd-lav shadow-[0_3px_0_var(--bd-lav-deep)] ${animateTabIndicator ? 'transition-[transform,width,opacity] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]' : ''}`}
                 style={{
                   width: activeTabIndicatorStyle.width
                     ? `${activeTabIndicatorStyle.width}px`
@@ -3062,7 +3062,7 @@ export default function ProfilePage() {
                       type="button"
                       disabled={customizeSaving}
                       onClick={() => void handleSaveCustomization({ bio: profileBio })}
-                      className="inline-flex items-center gap-1.5 rounded-xl border-2 border-bd-lav-deep bg-bd-lav px-3 py-1.5 text-xs font-bold text-bd-ink-on-accent shadow-[0_3px_0_#7867E8] transition-all hover:-translate-y-px hover:bg-bd-lav-mid hover:shadow-[0_4px_0_#7867E8] disabled:cursor-not-allowed disabled:opacity-50"
+                      className="inline-flex items-center gap-1.5 rounded-xl border-2 border-bd-lav-deep bg-bd-lav px-3 py-1.5 text-xs font-bold text-bd-ink-on-accent shadow-[0_3px_0_var(--bd-lav-deep)] transition-all hover:-translate-y-px hover:bg-bd-lav-mid hover:shadow-[0_4px_0_var(--bd-lav-deep)] disabled:cursor-not-allowed disabled:opacity-50"
                     >
                       {customizeSaving ? (
                         <>

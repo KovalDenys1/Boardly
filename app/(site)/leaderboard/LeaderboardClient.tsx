@@ -47,7 +47,7 @@ function LeaderboardRow({ entry, isLast, t }: { entry: LeaderboardEntry; isLast:
     <>
       <div className="flex items-center gap-3 md:block">
         <span
-          className={`inline-grid h-11 w-11 place-items-center rounded-2xl border-2 border-bd-ink text-sm font-extrabold shadow-[2px_2px_0_#1F1B16] ${entry.rank <= 3 ? 'text-bd-ink-on-accent' : 'text-bd-ink'}`}
+          className={`inline-grid h-11 w-11 place-items-center rounded-2xl border-2 border-bd-ink text-sm font-extrabold shadow-[2px_2px_0_var(--bd-ink)] ${entry.rank <= 3 ? 'text-bd-ink-on-accent' : 'text-bd-ink'}`}
           style={{ background: rankAccent(entry.rank), fontFamily: 'var(--bd-font-display)' }}
         >
           {entry.rank}
@@ -59,10 +59,10 @@ function LeaderboardRow({ entry, isLast, t }: { entry: LeaderboardEntry; isLast:
           <img
             src={entry.avatarUrl}
             alt={entry.username}
-            className="h-9 w-9 shrink-0 rounded-xl border-2 border-bd-ink object-cover shadow-[1px_1px_0_#1F1B16]"
+            className="h-9 w-9 shrink-0 rounded-xl border-2 border-bd-ink object-cover shadow-[1px_1px_0_var(--bd-ink)]"
           />
         ) : (
-          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border-2 border-bd-ink bg-bd-bg2 text-sm font-extrabold text-bd-ink-muted shadow-[1px_1px_0_#1F1B16]">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border-2 border-bd-ink bg-bd-bg2 text-sm font-extrabold text-bd-ink-muted shadow-[1px_1px_0_var(--bd-ink)]">
             {entry.username.charAt(0).toUpperCase()}
           </div>
         )}

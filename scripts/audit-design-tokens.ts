@@ -1,6 +1,6 @@
 import { existsSync, readdirSync, readFileSync, statSync, writeFileSync } from 'fs'
 import path from 'path'
-import { LEGACY_CLASS, accentTextLines, colourUtilities, focusColourLines, varShorthandLines } from './design-token-rules'
+import { LEGACY_CLASS, accentTextLines, colourUtilities, focusColourLines, tokenHexShadowLines, tokenHexValues, varShorthandLines } from './design-token-rules'
 
 /**
  * Design-token audit – the pre-Boardly palette must not come back (#1254).
@@ -18,7 +18,8 @@ import { LEGACY_CLASS, accentTextLines, colourUtilities, focusColourLines, varSh
  * It also fails on an accent fill or shade used as a text colour (#1457), with no baseline: text
  * takes --bd-<accent>-text. An `accent-text-allow` comment on the line or the one above exempts it.
  * And on a focus ring or outline in any colour but --bd-lav-deep, the one focus colour, and on a
- * colour spelled `-(--bd-x)` or `-[var(--bd-x)]` where the `bd-x` utility exists.
+ * colour spelled `-(--bd-x)` or `-[var(--bd-x)]` where the `bd-x` utility exists, and on a shadow
+ * that hard-codes a token's hex (app/root-document.tsx's critical CSS excepted).
  */
 
 const repoRoot = process.cwd()
@@ -44,7 +45,10 @@ const counts: Record<string, number> = {}
 const accentText: string[] = []
 const focusColour: string[] = []
 const varShorthand: string[] = []
-const utilities = colourUtilities(readFileSync(path.join(repoRoot, 'app', 'globals.css'), 'utf8'))
+const globalsCss = readFileSync(path.join(repoRoot, 'app', 'globals.css'), 'utf8')
+const utilities = colourUtilities(globalsCss)
+const tokenHex = tokenHexValues(globalsCss)
+const hexShadow: string[] = []
 for (const file of files) {
   const src = readFileSync(file, 'utf8')
   const rel = path.relative(repoRoot, file).split(path.sep).join('/')
@@ -54,6 +58,7 @@ for (const file of files) {
   for (const line of accentTextLines(src)) accentText.push(`${rel}:${line}`)
   for (const line of focusColourLines(src)) focusColour.push(`${rel}:${line}`)
   for (const line of varShorthandLines(src, utilities)) varShorthand.push(`${rel}:${line}`)
+  if (rel !== 'app/root-document.tsx') for (const line of tokenHexShadowLines(src, tokenHex)) hexShadow.push(`${rel}:${line}`)
 }
 
 if (updateBaseline) {
@@ -80,6 +85,7 @@ for (const [file, allowed] of Object.entries(baseline)) {
 for (const at of accentText) problems.push(`${at}: an accent fill or shade as text – use --bd-<accent>-text (DESIGN.md)`)
 for (const at of focusColour) problems.push(`${at}: a focus ring in another colour – use bd-lav-deep (DESIGN.md)`)
 for (const at of varShorthand) problems.push(`${at}: a colour spelled through its variable – use the bd-* utility`)
+for (const at of hexShadow) problems.push(`${at}: a shadow with a token's hex – use var(--bd-*) so it follows dark mode`)
 
 if (problems.length > 0) {
   console.error('design-tokens audit FAILED:\n  ' + problems.join('\n  '))

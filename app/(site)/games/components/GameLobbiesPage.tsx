@@ -253,7 +253,7 @@ export default function GameLobbiesPage({
               aria-disabled={!canCreateLobby}
               className={`bd-card group relative overflow-hidden p-6 text-left transition-all sm:p-8 ${
                 canCreateLobby
-                  ? 'hover:-translate-y-0.5 hover:shadow-[0_8px_0_#1F1B16,0_16px_36px_-12px_rgba(31,27,22,0.35)]'
+                  ? 'hover:-translate-y-0.5 hover:shadow-[0_8px_0_var(--bd-ink),0_16px_36px_-12px_rgba(31,27,22,0.35)]'
                   : 'cursor-not-allowed opacity-75'
               }`}
               onClick={() => {

@@ -704,7 +704,7 @@ function CreateLobbyPage() {
                     opacity: loading ? 0.7 : 1,
                     background: currentTheme.accent,
                     color: 'var(--bd-ink-on-accent)',
-                    boxShadow: `0 4px 0 0 color-mix(in srgb, ${currentTheme.accent} 60%, #1F1B16)`,
+                    boxShadow: `0 4px 0 0 color-mix(in srgb, ${currentTheme.accent} 60%, var(--bd-ink-on-accent))`,
                   }}
                 >
                   {loading ? (
