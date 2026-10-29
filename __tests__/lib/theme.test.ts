@@ -48,4 +48,34 @@ describe('theme helpers', () => {
     expect(documentElement.classList.contains('dark')).toBe(true)
     expect(documentElement.style.colorScheme).toBe('dark')
   })
+
+  describe('switching the theme', () => {
+    const noDark = () => ({ matches: false }) as MediaQueryList
+    beforeEach(() => jest.useFakeTimers())
+    afterEach(() => jest.useRealTimers())
+
+    it('holds every transition while the colours swap, then lets them run again', () => {
+      const documentElement = document.createElement('html')
+
+      applyThemeMode('dark', { documentElement, matchMedia: noDark })
+      expect(documentElement.classList.contains('dark')).toBe(true)
+      expect(documentElement.classList.contains('bd-theme-switching')).toBe(true)
+
+      jest.runAllTimers()
+      expect(documentElement.classList.contains('bd-theme-switching')).toBe(false)
+    })
+
+    it('leaves transitions alone when the theme does not change', () => {
+      const documentElement = document.createElement('html')
+      documentElement.classList.add('dark')
+
+      applyThemeMode('dark', { documentElement, matchMedia: noDark })
+      expect(documentElement.classList.contains('bd-theme-switching')).toBe(false)
+    })
+
+    it('globals.css stops transitions on everything under the switching class', () => {
+      const css = require('fs').readFileSync(require('path').join(__dirname, '..', '..', 'app', 'globals.css'), 'utf8') as string
+      expect(css).toMatch(/\.bd-theme-switching \*,\s*\.bd-theme-switching \*::before,\s*\.bd-theme-switching \*::after \{\s*transition: none !important;/)
+    })
+  })
 })

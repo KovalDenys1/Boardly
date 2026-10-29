@@ -1076,6 +1076,13 @@ html.dark {
   color-scheme: dark;
 }
 
+/* lib/theme.ts sets this for one frame, so a theme switch does not fade each surface on its own timer. */
+.bd-theme-switching *,
+.bd-theme-switching *::before,
+.bd-theme-switching *::after {
+  transition: none !important;
+}
+
 @supports (padding-bottom: env(safe-area-inset-bottom)) {
   :root {
     --mobile-tabs-offset: calc(5.75rem + env(safe-area-inset-bottom));
