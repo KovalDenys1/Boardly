@@ -2147,6 +2147,7 @@ input[type="range"].slider-thumb::-moz-range-track {
 /* Score-change pop (components/game-chrome/ScorePop, #1111). Transform only,
    so the scoreboard never relays. */
 .score-pop {
+  font-variant-numeric: tabular-nums;
   animation: score-pop var(--bd-dur-slow) var(--bd-ease-spring) both;
 }
 @keyframes score-pop {
@@ -2335,6 +2336,7 @@ input[type="range"].slider-thumb::-moz-range-track {
    side column until the numbers moved. */
 .game-scoreboard-header {
   position: relative;
+  font-variant-numeric: tabular-nums;
   display: grid;
   /* Every column is minmax(0, …): with a bare `auto` the centre could not
      shrink, so as the header narrowed the two 1fr cells collapsed toward zero
@@ -2377,6 +2379,7 @@ input[type="range"].slider-thumb::-moz-range-track {
 
 .game-player-card {
   position: relative;
+  font-variant-numeric: tabular-nums;
   isolation: isolate;
   display: flex;
   align-items: center;

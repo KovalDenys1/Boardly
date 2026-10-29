@@ -39,7 +39,7 @@ const winRateColor = (winRate: number) => {
 
 function LeaderboardRow({ entry, isLast, t }: { entry: LeaderboardEntry; isLast: boolean; t: (key: TranslationKeys) => string }) {
   const isTop3 = entry.rank <= 3
-  const rowClass = `grid gap-3 px-4 py-4 transition-colors md:grid-cols-[4rem_minmax(0,1fr)_6rem_6rem_6rem_6rem] md:items-center md:px-5 ${
+  const rowClass = `grid tabular-nums gap-3 px-4 py-4 transition-colors md:grid-cols-[4rem_minmax(0,1fr)_6rem_6rem_6rem_6rem] md:items-center md:px-5 ${
     entry.publicProfileId ? 'hover:bg-bd-card-warm' : ''
   } ${!isLast ? 'border-b border-bd-line' : ''} ${isTop3 ? 'bg-bd-card-warm' : 'bg-bd-bg'}`
 
