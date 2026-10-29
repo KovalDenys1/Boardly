@@ -85,11 +85,13 @@ describe('the /ru, /uk and /no set (#1394, #928)', () => {
     expect(existsSync(path.join(appDir, 'layout.tsx'))).toBe(false)
   })
 
-  it('has /, /games and /games/<game> under each prefix and nothing else, so /ru/guides/... is a 404', () => {
+  it('has /, /games, /games/<game>, /guides and /guides/<slug> under each prefix and nothing else', () => {
     for (const locale of LOCALES) {
       expect(pageFilesUnder(path.join(appDir, locale)).sort()).toEqual([
         'games/[game]/page.tsx',
         'games/page.tsx',
+        'guides/[slug]/page.tsx',
+        'guides/page.tsx',
         'page.tsx',
       ])
       expect(trees[locale].game.dynamicParams).toBe(false)
@@ -270,7 +272,14 @@ describe('sitemap alternates (#1394)', () => {
   type Entry = { url: string; alternates?: { languages?: Record<string, string> } }
   const entries: Entry[] = sitemap()
   const byUrl = new Map(entries.map((entry) => [entry.url, entry]))
-  const localizedPaths = ['/', '/games', ...gameSlugs.map((slug) => `/games/${slug}`)]
+  const guideSlugs = (require('@/lib/guides-catalog').ALL_GUIDES as { slug: string }[]).map((guide) => guide.slug)
+  const localizedPaths = [
+    '/',
+    '/games',
+    ...gameSlugs.map((slug) => `/games/${slug}`),
+    '/guides',
+    ...guideSlugs.map((slug) => `/guides/${slug}`),
+  ]
 
   it('lists all four URLs of every localized page, each with the full hreflang set', () => {
     for (const pathname of localizedPaths) {

@@ -24,7 +24,7 @@ describe('buttons on an accent fill', () => {
   })
 
   it('the guides hero draws its game glyphs on the sun tiles in ink-on-accent, which stays dark in dark mode', () => {
-    const src = fs.readFileSync(path.join(__dirname, '..', '..', 'app', '(site)', 'guides', 'page.tsx'), 'utf8')
+    const src = fs.readFileSync(path.join(__dirname, '..', '..', 'app', '(site)', 'guides', 'components', 'GuidesIndex.tsx'), 'utf8')
     expect(src).toMatch(/<GameIcon gameId=\{gameId\} accentColor="var\(--bd-ink-on-accent\)" detailColor="var\(--bd-sun\)"/)
   })
 })

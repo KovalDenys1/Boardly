@@ -143,7 +143,7 @@ describe('a prefixed page keeps its own language (#1394)', () => {
         <Links />
       </RuPageLocale>
     )
-    expect(screen.getByTestId('links').textContent).toBe('/ru /ru/games /ru/games/alias /games/alias/lobbies /guides')
+    expect(screen.getByTestId('links').textContent).toBe('/ru /ru/games /ru/games/alias /games/alias/lobbies /ru/guides')
   })
 
   it('links within the set stay Norwegian on a /no page', () => {
@@ -152,7 +152,7 @@ describe('a prefixed page keeps its own language (#1394)', () => {
         <Links />
       </NoPageLocale>
     )
-    expect(screen.getByTestId('links').textContent).toBe('/no /no/games /no/games/alias /games/alias/lobbies /guides')
+    expect(screen.getByTestId('links').textContent).toBe('/no /no/games /no/games/alias /games/alias/lobbies /no/guides')
   })
 
   it('leaves links alone on an unprefixed page', () => {

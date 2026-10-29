@@ -362,7 +362,7 @@ export default function GameDetailPage({
             </p>
             <div className="flex shrink-0 flex-wrap gap-2">
               {guides.map((guide) => (
-                <Link key={guide.slug} href={`/guides/${guide.slug}`} className="bd-btn bd-btn-soft text-sm">
+                <Link key={guide.slug} href={localize(`/guides/${guide.slug}`)} className="bd-btn bd-btn-soft text-sm">
                   {t('games.readGuide')}
                 </Link>
               ))}

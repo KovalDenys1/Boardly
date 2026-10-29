@@ -23,7 +23,16 @@ const guideSlugs = readdirSync(path.join(root, 'app', '(site)', 'guides'))
   .filter((entry) => entry !== 'components')
   .filter((entry) => statSync(path.join(root, 'app', '(site)', 'guides', entry)).isDirectory())
 
-const readGuide = (slug: string) => readFileSync(path.join(root, 'app', '(site)', 'guides', slug, 'page.tsx'), 'utf8')
+const guidesDir = path.join(root, 'app', '(site)', 'guides')
+
+/** Every source file under app/(site)/guides, the shared components included. */
+function guideSources(dir = guidesDir): { file: string; source: string }[] {
+  return readdirSync(dir).flatMap((entry) => {
+    const absolute = path.join(dir, entry)
+    if (statSync(absolute).isDirectory()) return guideSources(absolute)
+    return /\.tsx?$/.test(entry) ? [{ file: path.relative(root, absolute), source: readFileSync(absolute, 'utf8') }] : []
+  })
+}
 
 interface FaqNode {
   '@type': string
@@ -87,9 +96,10 @@ describe('guide FAQPage schema (#964)', () => {
     expect(missing).toEqual([])
   })
 
-  it.each(guideSlugs)('%s ships a FAQPage exactly when it shows an FAQ', (slug) => {
-    const { faqNode } = renderGuide(slug)
-    expect(Boolean(faqNode)).toBe(readGuide(slug).includes('<GuideFaqList'))
+  it.each(guideSlugs)('%s ships a FAQPage and shows the FAQ it describes', (slug) => {
+    const { faqNode, renderedQuestions } = renderGuide(slug)
+    expect(faqNode).toBeDefined()
+    expect(renderedQuestions.length).toBeGreaterThan(0)
   })
 
   it.each(guideSlugs)('%s schema carries exactly the questions the page renders', (slug) => {
@@ -116,22 +126,21 @@ describe('guide FAQPage schema (#964)', () => {
     expect(faqNode.mainEntity.length).toBeGreaterThanOrEqual(2)
   })
 
-  it.each(guideSlugs)('%s builds the schema from the array it renders, not a second copy', (slug) => {
-    const source = readGuide(slug)
-    if (!source.includes('<GuideFaqList')) return
+  it('builds every guide\'s schema from the array it renders, not a second copy', () => {
+    // One array per language, rendered and fed to the schema in one place. These are source
+    // greps, so they are written whitespace-tolerant on purpose: a Prettier pass that wraps the
+    // JSX or the call across lines changes nothing that matters.
+    const page = readFileSync(path.join(guidesDir, 'components', 'GuidePage.tsx'), 'utf8')
+    expect(page).toMatch(/<GuideFaqList\s+items=\{copy\.faq\}\s*\/>/)
+    expect(page).toMatch(/buildGuideFaqJsonLd\(\s*copy\.faq\s*,?\s*\)/)
 
-    // One array, named, used twice. These are source greps, so they are written
-    // whitespace-tolerant on purpose: a Prettier pass that wraps the JSX or the
-    // call across lines changes nothing that matters, and a check that fails on
-    // it is a check somebody eventually deletes.
-    expect(source).toMatch(/<GuideFaqList\s+items=\{faq\}\s*\/>/)
-    expect(source).toMatch(/const\s+faqJsonLd\s*=\s*buildGuideFaqJsonLd\(\s*faq\s*,?\s*\)/)
-    // An inline `items={[…]}` literal is what let the two drift apart on this
-    // page in the first place.
-    expect(source).not.toMatch(/<GuideFaqList\s+items=\{\s*\[/)
-    // Any quote style: the old single-quoted literal could not see a node a
-    // formatter had rewritten with double quotes.
-    expect(source).not.toMatch(/['"`]@type['"`]\s*:\s*['"`]FAQPage['"`]/)
+    // Only the builder may spell the node out. Any quote style: the old single-quoted literal
+    // could not see a node a formatter had rewritten with double quotes.
+    const handWritten = guideSources()
+      .filter(({ file }) => !file.endsWith(path.join('components', 'GuideLayout.tsx')))
+      .filter(({ source }) => /['"`]@type['"`]\s*:\s*['"`]FAQPage['"`]/.test(source))
+      .map(({ file }) => file)
+    expect(handWritten).toEqual([])
   })
 })
 

@@ -1,5 +1,6 @@
 import { MetadataRoute } from 'next'
 
+import { getGuideCard } from '@/lib/guide-cards'
 import { ALL_GUIDES } from '@/lib/guides-catalog'
 import { getRouteUpdated, type DatedRoute } from '@/lib/route-dates'
 import { HREFLANG, SEO_LOCALES, isLocalizedPage, languageAlternates } from '@/lib/seo-locales'
@@ -30,6 +31,18 @@ function withLanguageVersions(entry: MetadataRoute.Sitemap[number]): MetadataRou
   return SEO_LOCALES.map((locale) => ({ ...entry, url: languages[HREFLANG[locale]], alternates: { languages } }))
 }
 
+// A guide's translations are written and updated on their own dates, so each version carries its own.
+function guideVersions(slug: string): MetadataRoute.Sitemap {
+  const languages = languageAlternates(`/guides/${slug}`)
+  return SEO_LOCALES.map((locale) => ({
+    url: languages[HREFLANG[locale]],
+    lastModified: new Date(getGuideCard(slug, locale).updated),
+    changeFrequency: 'monthly' as const,
+    priority: 0.8,
+    alternates: { languages },
+  }))
+}
+
 export default function sitemap(): MetadataRoute.Sitemap {
   const pages: MetadataRoute.Sitemap = [
     // Core pages
@@ -55,19 +68,11 @@ export default function sitemap(): MetadataRoute.Sitemap {
     // Guides index
     page('/guides', { changeFrequency: 'weekly', priority: 0.85 }),
 
-    // Guides – driven by lib/guides-catalog.ts so the sitemap, the guides
-    // index and the on-page guide links can never disagree; lastModified is
-    // the guide's own `updated`
-    ...ALL_GUIDES.map((guide) => ({
-      url: `${BASE}/guides/${guide.slug}`,
-      lastModified: new Date(guide.updated),
-      changeFrequency: 'monthly' as const,
-      priority: 0.8,
-    })),
-
     // /privacy and /terms are noindex (#1227): they carry the owner's name and home address,
     // which the law requires on the site but not in search results. /withdrawal and /rules
     // are noindex too (#1498): a legal form and a copy of two sections of /terms.
   ]
-  return pages.flatMap(withLanguageVersions)
+  // Guides – driven by lib/guides-catalog.ts so the sitemap, the guides
+  // index and the on-page guide links can never disagree
+  return [...pages.flatMap(withLanguageVersions), ...ALL_GUIDES.flatMap((guide) => guideVersions(guide.slug))]
 }

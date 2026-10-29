@@ -1,5 +1,6 @@
 import { readFileSync } from 'node:fs'
 import path from 'node:path'
+import { guidesIndexMetadata } from '@/app/(site)/guides/components/GuidesIndex'
 import sitemap from '@/app/sitemap'
 import { getCatalogGames } from '@/lib/game-catalog'
 import { getGameCanonical } from '@/lib/game-seo'
@@ -19,7 +20,8 @@ describe('sitemap (#922)', () => {
   const guidePaths = new Set(ALL_GUIDES.map((g) => `/guides/${g.slug}`))
 
   it('takes every non-guide lastModified from lib/route-dates.ts', () => {
-    const nonGuides = entries.filter((e) => !guidePaths.has(pathOf(e.url)))
+    // /ru/guides/<slug> is a guide too, dated by its translation (#1583).
+    const nonGuides = entries.filter((e) => !guidePaths.has(unlocalizedPath(pathOf(e.url))))
     expect(nonGuides.length).toBeGreaterThan(0)
     for (const entry of nonGuides) {
       // /ru/games/alias is the same page as /games/alias in another language, and dated with it (#1394).
@@ -91,18 +93,29 @@ describe('sitemap (#922)', () => {
         expect(getGuideCanonical(guideSlug)).toBe(entry.url)
         continue
       }
+      // The guides index is drawn in four languages by one component, which builds each canonical.
+      if (route === '/guides') {
+        expect(source).toContain("guidesIndexMetadata('en')")
+        expect(guidesIndexMetadata('en').alternates?.canonical).toBe(entry.url)
+        continue
+      }
       const expected = route === '/' ? "canonical: '/'" : `canonical: '${BASE}${route}'`
       expect(source).toContain(expected)
     }
   })
 
   it('derives every guide Article node from the catalog, dates included', () => {
+    // Every guide page renders GuidePage, which builds both nodes from the slug (#1583).
+    const guidePage = read('app/(site)/guides/components/GuidePage.tsx')
+    expect(guidePage).toMatch(/buildGuideArticleJsonLd\(guide\.slug\b/)
+    expect(guidePage).toMatch(/buildGuideBreadcrumbJsonLd\(guide\.slug\b/)
     for (const guide of ALL_GUIDES) {
       const source = read(`app/(site)/guides/${guide.slug}/page.tsx`)
-      expect(source).toContain(`buildGuideArticleJsonLd('${guide.slug}')`)
-      expect(source).toContain(`buildGuideBreadcrumbJsonLd('${guide.slug}')`)
-      // no hand-typed date of either kind survives in a guide page
-      expect(source).not.toMatch(/date(Modified|Published):\s*['"]/)
+      expect(source).toMatch(/<GuidePage guide=\{guide\}/)
+      // no hand-typed date of either kind survives in a guide's page, body or copy
+      for (const file of ['page.tsx', 'guide.tsx', 'copy/en.ts']) {
+        expect(read(`app/(site)/guides/${guide.slug}/${file}`)).not.toMatch(/date(Modified|Published):\s*['"]/)
+      }
 
       const article = buildGuideArticleJsonLd(guide.slug)
       expect(article.dateModified).toBe(guide.updated)

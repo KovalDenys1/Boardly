@@ -92,12 +92,15 @@ describe('server translator (#1394)', () => {
 })
 
 describe('which pages have localized URLs (#1394)', () => {
-  it('is /, /games and a game page, nothing below or beside them', () => {
+  it('is /, /games, a game page, /guides and a guide, nothing below or beside them', () => {
     expect(isLocalizedPage('/')).toBe(true)
     expect(isLocalizedPage('/games')).toBe(true)
     expect(isLocalizedPage('/games/alias')).toBe(true)
     expect(isLocalizedPage('/games/alias/lobbies')).toBe(false)
-    expect(isLocalizedPage('/guides')).toBe(false)
+    // #1583
+    expect(isLocalizedPage('/guides')).toBe(true)
+    expect(isLocalizedPage('/guides/how-to-play-yahtzee-online')).toBe(true)
+    expect(isLocalizedPage('/guides/how-to-play-yahtzee-online/more')).toBe(false)
     expect(isLocalizedPage('/lobby/ABCD')).toBe(false)
   })
 })
@@ -108,11 +111,13 @@ describe('links on a localized page (#1394)', () => {
     expect(localizeHref('/games/yahtzee#strategy', 'uk')).toBe('/uk/games/yahtzee#strategy')
     expect(localizeHref('/?ref=nav', 'ru')).toBe('/ru?ref=nav')
     expect(localizeHref('/games/yahtzee', 'no')).toBe('/no/games/yahtzee')
+    expect(localizeHref('/guides', 'uk')).toBe('/uk/guides')
+    expect(localizeHref('/guides/how-to-play-yahtzee-online', 'ru')).toBe('/ru/guides/how-to-play-yahtzee-online')
   })
 
   it('leave every other page on its English URL', () => {
     expect(localizeHref('/games/yahtzee/lobbies', 'ru')).toBe('/games/yahtzee/lobbies')
-    expect(localizeHref('/guides/how-to-play-yahtzee', 'ru')).toBe('/guides/how-to-play-yahtzee')
+    expect(localizeHref('/premium', 'ru')).toBe('/premium')
     expect(localizeHref('/games', 'en')).toBe('/games')
   })
 })
@@ -124,6 +129,7 @@ describe('switching language on a prefixed page (#1394)', () => {
     expect(localeSwitchHref('/uk', 'ru')).toBe('/ru')
     expect(localeSwitchHref('/uk', 'no')).toBe('/no')
     expect(localeSwitchHref('/no/games/yahtzee', 'en')).toBe('/games/yahtzee')
+    expect(localeSwitchHref('/ru/guides/how-to-play-alias-online', 'no')).toBe('/no/guides/how-to-play-alias-online')
   })
 
   it('takes a locale without its own URL to the English URL, where the stored choice applies', () => {

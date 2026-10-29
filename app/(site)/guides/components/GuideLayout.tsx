@@ -5,9 +5,12 @@ import GameIcon from '@/components/GameIcon'
 import { Icon } from '@/components/icons'
 import type { IconName } from '@/components/icons/names'
 import { getCatalogEntryById } from '@/lib/game-catalog'
-import { englishText } from '@/lib/game-seo'
+import { getGuideCard } from '@/lib/guide-cards'
 import { getGuideBySlug, getGuideGamePath, type GuideIcon } from '@/lib/guides-catalog'
 import { GUIDES_AD_SLOT } from '@/lib/ad-slots'
+import { localizeHref, localizedPath, type SeoLocale } from '@/lib/seo-locales'
+import { serverTranslator } from '@/lib/server-i18n'
+import { GUIDE_UI } from './guide-ui'
 
 interface RelatedGuide {
   href: string
@@ -19,6 +22,9 @@ interface GuideLayoutProps {
   icon: GuideIcon
   /** The guide's catalog slug – the "Last updated" date is read from it, never hand-typed (#923). */
   slug: string
+  locale: SeoLocale
+  /** The last crumb, from the same `seo` block the BreadcrumbList node reads, so the two cannot drift. */
+  breadcrumbLabel: string
   title: string
   subtitle: string
   /**
@@ -260,16 +266,17 @@ export function GuideFaqList({ items }: { items: GuideFaqItem[] }) {
   )
 }
 
-const UPDATED_FORMAT = new Intl.DateTimeFormat('en-GB', {
-  day: 'numeric',
-  month: 'long',
-  year: 'numeric',
-  timeZone: 'UTC',
-})
+function formatUpdated(date: string, dateLocale: string): string {
+  return new Intl.DateTimeFormat(dateLocale, { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' }).format(
+    new Date(`${date}T00:00:00Z`),
+  )
+}
 
 export default function GuideLayout({
   icon,
   slug,
+  locale,
+  breadcrumbLabel,
   title,
   subtitle,
   question,
@@ -280,26 +287,26 @@ export default function GuideLayout({
   children,
 }: GuideLayoutProps) {
   const guide = getGuideBySlug(slug)
-  const updated = getGuideBySlug(slug).updated
+  const { updated } = getGuideCard(slug, locale)
+  const ui = GUIDE_UI[locale]
+  const t = serverTranslator(locale)
   // The game this guide teaches, linked from the hero and again under the CTA.
   // Until this, seven of twelve guides sent every link to `/lobbies`, which is
   // noindex and canonicals to the game page, so the page that ranks got none of
   // the guide's link equity.
-  // The visible crumb and the BreadcrumbList node now read the same catalog
-  // field, so the two cannot drift – they were a prop and a literal before.
-  const breadcrumbLabel = guide.seo.breadcrumbLabel
-  const gamePath = getGuideGamePath(guide)
-  const gameName = guide.game ? englishText(getCatalogEntryById(guide.game)!.nameKey) : null
+  const englishGamePath = getGuideGamePath(guide)
+  const gamePath = englishGamePath && localizeHref(englishGamePath, locale)
+  const gameName = guide.game ? t(getCatalogEntryById(guide.game)!.nameKey) : null
 
   return (
     <div className="bd-page bd-screen flex-1 overflow-y-auto">
       <div className="mx-auto max-w-3xl px-4 pb-20 pt-10 sm:px-6 lg:px-8">
 
         {/* Breadcrumb */}
-        <nav className="mb-8 flex flex-wrap items-center gap-2 text-sm" style={{ color: 'var(--bd-ink-muted)' }} aria-label="Breadcrumb">
-          <Link href="/" className="transition-colors hover:text-bd-ink">Home</Link>
+        <nav className="mb-8 flex flex-wrap items-center gap-2 text-sm" style={{ color: 'var(--bd-ink-muted)' }} aria-label={t('breadcrumbs.label')}>
+          <Link href={localizedPath('/', locale)} className="transition-colors hover:text-bd-ink">{t('breadcrumbs.home')}</Link>
           <span>/</span>
-          <Link href="/guides" className="transition-colors hover:text-bd-ink">Guides</Link>
+          <Link href={localizedPath('/guides', locale)} className="transition-colors hover:text-bd-ink">{t('header.guides')}</Link>
           <span>/</span>
           <span style={{ color: 'var(--bd-ink)' }}>{breadcrumbLabel}</span>
         </nav>
@@ -315,7 +322,7 @@ export default function GuideLayout({
             style={{ background: `linear-gradient(90deg, ${accentColor}, transparent)` }}
           />
           <div className="relative">
-            <span className="bd-kicker mb-3 block">Guides</span>
+            <span className="bd-kicker mb-3 block">{t('header.guides')}</span>
             <div className="mb-3">
               {'game' in icon ? (
                 <GameIcon gameId={icon.game} accentColor={accentColor} size={48} variant="bare" />
@@ -332,14 +339,15 @@ export default function GuideLayout({
             <p className="text-sm" style={{ color: 'var(--bd-ink-muted)' }}>{subtitle}</p>
             {gamePath && gameName && (
               <p className="mt-3 text-sm" style={{ color: 'var(--bd-ink-soft)' }}>
-                Rules, modes and player counts:{' '}
-                <Link href={gamePath} className="font-semibold underline transition-colors hover:text-bd-coral-text" style={{ color: 'var(--bd-ink)' }}>
-                  {gameName} game page
-                </Link>
+                {ui.rulesLink(
+                  <Link href={gamePath} className="font-semibold underline transition-colors hover:text-bd-coral-text" style={{ color: 'var(--bd-ink)' }}>
+                    {ui.gamePage(gameName)}
+                  </Link>,
+                )}
               </p>
             )}
             <p className="mt-3 text-xs" style={{ color: 'var(--bd-ink-muted)' }}>
-              Last updated <time dateTime={updated}>{UPDATED_FORMAT.format(new Date(`${updated}T00:00:00Z`))}</time>
+              {ui.lastUpdated(<time dateTime={updated}>{formatUpdated(updated, ui.dateLocale)}</time>)}
             </p>
           </div>
         </div>
@@ -374,11 +382,11 @@ export default function GuideLayout({
           </Link>
           {gamePath && gameName && (
             <p className="mt-4 text-xs" style={{ color: 'var(--bd-ink-muted)' }}>
-              Or read about{' '}
-              <Link href={gamePath} className="underline transition-colors hover:text-bd-coral-text">
-                {gameName} on Boardly
-              </Link>{' '}
-              first.
+              {ui.readFirst(
+                <Link href={gamePath} className="underline transition-colors hover:text-bd-coral-text">
+                  {ui.aboutGame(gameName)}
+                </Link>,
+              )}
             </p>
           )}
         </div>
@@ -392,7 +400,7 @@ export default function GuideLayout({
             className="mb-4 text-xs font-semibold uppercase tracking-widest"
             style={{ color: 'var(--bd-ink-muted)' }}
           >
-            More guides
+            {ui.moreGuides}
           </h3>
           <div className="flex flex-col gap-2">
             {related.map(({ href, label }) => (

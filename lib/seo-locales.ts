@@ -55,9 +55,9 @@ export function localeForHreflang(code: string): string {
   return SEO_LOCALES.find((locale) => HREFLANG[locale] === code) ?? code
 }
 
-/** The pages served at /ru/..., /uk/... and /no/... as well: `/`, `/games` and each game's page. */
+/** The pages served at /ru/..., /uk/... and /no/... as well: `/`, `/games`, each game's page, `/guides` and each guide. */
 export function isLocalizedPage(path: string): boolean {
-  return path === '/' || path === '/games' || /^\/games\/[^/]+$/.test(path)
+  return path === '/' || /^\/(games|guides)(\/[^/]+)?$/.test(path)
 }
 
 /** An unprefixed href as the page in `locale` links it: localized when the target has a localized URL. */
