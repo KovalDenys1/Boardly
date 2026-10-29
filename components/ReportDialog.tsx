@@ -230,8 +230,9 @@ export interface ReportDialogProps extends Omit<ReportFormProps, 'onDone' | 'onB
 }
 
 export default function ReportDialog({ isOpen, onClose, targets, quote }: ReportDialogProps) {
+  const { t } = useTranslation()
   return (
-    <Modal isOpen={isOpen} onClose={onClose} maxWidth="sm">
+    <Modal isOpen={isOpen} onClose={onClose} maxWidth="sm" aria-label={t('report.title')}>
       <div className="p-5">
         {/* Mounted only while open, so the next report starts from a fresh form. */}
         {isOpen && targets.length > 0 && (

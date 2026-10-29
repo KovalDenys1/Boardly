@@ -1,6 +1,6 @@
 'use client'
 
-import React from 'react'
+import React, { useId } from 'react'
 import { Icon } from '@/components/icons'
 import { useTranslation } from '@/lib/i18n-helpers'
 import Modal from './Modal'
@@ -9,7 +9,7 @@ interface ConfirmModalProps {
   isOpen: boolean
   onClose: () => void
   onConfirm: () => void
-  title?: string
+  title: string
   message: string
   confirmText?: string
   cancelText?: string
@@ -29,6 +29,8 @@ export default function ConfirmModal({
   icon
 }: ConfirmModalProps) {
   const { t } = useTranslation()
+  const titleId = useId()
+  const messageId = useId()
   // Resolved here, not defaulted in the signature: a default parameter value is
   // not JSX, so `confirmText = 'Confirm'` rendered English buttons to every
   // non-English viewer who did not pass the props (#889).
@@ -65,7 +67,7 @@ export default function ConfirmModal({
   const displayIcon = icon || style.icon
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} maxWidth="sm">
+    <Modal isOpen={isOpen} onClose={onClose} maxWidth="sm" aria-labelledby={titleId} aria-describedby={messageId}>
       <div className="text-center py-4">
         {displayIcon && (
           <div className="mb-4 flex justify-center">
@@ -78,13 +80,11 @@ export default function ConfirmModal({
           </div>
         )}
 
-        {title && (
-          <h3 className="text-xl font-bold mb-3" style={{ color: 'var(--bd-ink)' }}>
-            {title}
-          </h3>
-        )}
+        <h3 id={titleId} className="text-xl font-bold mb-3" style={{ color: 'var(--bd-ink)' }}>
+          {title}
+        </h3>
 
-        <p className="mb-6 px-2" style={{ color: 'var(--bd-ink-soft)' }}>
+        <p id={messageId} className="mb-6 px-2" style={{ color: 'var(--bd-ink-soft)' }}>
           {message}
         </p>
 
