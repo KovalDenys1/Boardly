@@ -137,6 +137,7 @@ describe('performPlayerLeave game-state writes', () => {
     ;(prisma.games.updateMany as jest.Mock).mockResolvedValue({ count: 0 })
     ;(prisma.games.findUnique as jest.Mock).mockResolvedValue({
       state: memoryState(1),
+      status: 'playing',
       currentTurn: 13,
       updatedAt: new Date('2026-09-17T10:00:01.000Z'),
     })
@@ -172,6 +173,7 @@ describe('performPlayerLeave game-state writes', () => {
       .mockResolvedValueOnce({ count: 1 })
     ;(prisma.games.findUnique as jest.Mock).mockResolvedValue({
       state: { ...memoryState(1), tappedWords: 3 },
+      status: 'playing',
       currentTurn: 13,
       updatedAt: new Date('2026-09-17T10:00:01.000Z'),
     })

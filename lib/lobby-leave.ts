@@ -43,6 +43,8 @@ export type LobbyWithGamesForLeave = Prisma.LobbiesGetPayload<{
   omit: { realtimeSecret: true; kickedUserIds: true }
 }>
 
+type LeaveRowRevision = { state: Prisma.JsonValue; status: string; currentTurn: number; updatedAt: Date }
+
 type LeaveStateWriteResult<TState> =
   | { status: 'unchanged' }
   | { status: 'committed'; state: TState }
@@ -60,14 +62,14 @@ type LeaveStateWriteResult<TState> =
  */
 async function commitLeaveStateChange<TState>(
   gameId: string,
-  snapshot: { state: Prisma.JsonValue; currentTurn: number; updatedAt: Date },
+  snapshot: LeaveRowRevision,
   applyLeave: (state: Prisma.JsonValue) => TState | null,
-  extraData: (nextState: TState) => LockedGameStateUpdate = () => ({})
+  extraData: (nextState: TState, rowStatus: string) => LockedGameStateUpdate = () => ({})
 ): Promise<LeaveStateWriteResult<TState>> {
-  let row: { state: Prisma.JsonValue; currentTurn: number; updatedAt: Date } | null = snapshot
+  let row: LeaveRowRevision | null = snapshot
 
   for (let attempt = 0; attempt < 2; attempt += 1) {
-    if (!row) return { status: 'unchanged' }
+    if (!row || row.status !== 'playing') return { status: 'unchanged' }
 
     const nextState = applyLeave(row.state)
     if (nextState === null) return { status: 'unchanged' }
@@ -75,14 +77,14 @@ async function commitLeaveStateChange<TState>(
     const committed = await commitGameState({
       gameId,
       revision: { currentTurn: row.currentTurn, updatedAt: row.updatedAt },
-      data: { state: toPersistedGameStateInput(nextState), ...extraData(nextState) },
+      data: { state: toPersistedGameStateInput(nextState), ...extraData(nextState, row.status) },
     })
 
     if (committed) return { status: 'committed', state: nextState }
 
     row = await prisma.games.findUnique({
       where: { id: gameId },
-      select: { state: true, currentTurn: true, updatedAt: true },
+      select: { state: true, status: true, currentTurn: true, updatedAt: true },
     })
   }
 
@@ -507,6 +509,7 @@ export async function performPlayerLeave(
   // to avoid state corruption. Timer will handle stuck turns for those games.
   const gameRowSnapshot = {
     state: activeGame.state,
+    status: activeGame.status,
     currentTurn: activeGame.currentTurn,
     updatedAt: activeGame.updatedAt,
   }
@@ -628,9 +631,9 @@ export async function performPlayerLeave(
         const onTimeoutApplied = (record: GameTimeoutRecord) => { lapsedClock = record }
         if (!engine.handlePlayerLeave(userId, { turnTimerSeconds: lobby.turnTimer, onTimeoutApplied })) return null
         return engine.getState()
-      }, (nextState) => {
+      }, (nextState, rowStatus) => {
         terminalUpdate = buildPartyGameTerminalUpdate({
-          previousStatus: activeGame.status,
+          previousStatus: rowStatus,
           state: nextState,
           startedAt: activeGame.startedAt ?? null,
           dbPlayers: activeGame.players,
@@ -653,7 +656,7 @@ export async function performPlayerLeave(
               },
             })
           ))
-          await checkAchievementsOnStatusChange(activeGame.status, result.state.status, activeGame.players, log)
+          await checkAchievementsOnStatusChange('playing', result.state.status, activeGame.players, log)
         }
         const appliedClock = lapsedClock as GameTimeoutRecord | null
         if (appliedClock) {

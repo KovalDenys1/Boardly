@@ -137,6 +137,22 @@ describe('a Guess the Spy leave after the vote clock ran out', () => {
     expect(data.state.data.scores).toEqual(expected.data.scores)
     expect(data.endedAt).toBeInstanceOf(Date)
   })
+
+  it('leaves a game another writer finished during the leave as that writer wrote it', async () => {
+    const { state, expected } = lapsedVote(3)
+    ;(prisma.games.updateMany as jest.Mock).mockResolvedValueOnce({ count: 0 })
+    ;(prisma.games.findUnique as jest.Mock).mockResolvedValue({
+      state: JSON.parse(JSON.stringify(expected)),
+      status: 'finished',
+      currentTurn: 0,
+      updatedAt: new Date('2026-10-29T10:00:05.000Z'),
+    })
+
+    await performPlayerLeave(lobbyWith('guess_the_spy', IDS, state) as any, 'ABCD12', 'third', mockLog)
+
+    expect(prisma.games.updateMany).toHaveBeenCalledTimes(1)
+    expect(prisma.players.update.mock.calls.filter(([args]) => 'finalScore' in args.data)).toEqual([])
+  })
 })
 
 describe('an Alias describer who leaves after the turn timer ran out', () => {
