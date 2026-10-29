@@ -142,6 +142,16 @@ describe('lobby themes', () => {
     }
     expect(below(pairs)).toEqual([])
   })
+
+  it.each(LOBBY_THEME_IDS.filter((id) => id !== 'default'))('%s keeps captions at 4.5:1 and field edges at 3:1', (id) => {
+    const theme = LOBBY_THEMES[id]
+    const style = getThemePageStyle(id) as Record<string, string>
+    expect(below([['muted on bg', style['--bd-ink-muted'], theme.bg], ['muted on bg2', style['--bd-ink-muted'], theme.bg2]])).toEqual([])
+    expect(style['--bd-input-border']).toMatch(/^#[0-9A-F]{6}$/i)
+    for (const surface of [style['--bd-input-bg'], theme.bg, theme.bg2]) {
+      expect(ratio(style['--bd-input-border'], surface)).toBeGreaterThanOrEqual(3)
+    }
+  })
 })
 
 describe('accent fills in globals.css', () => {
