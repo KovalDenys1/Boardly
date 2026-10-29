@@ -1798,7 +1798,7 @@ input[type="range"].slider-thumb::-moz-range-track {
   flex: 1;
   display: grid;
   grid-template-columns: minmax(0, 1fr) 320px;
-  /* Row 1: scoreboard | room card, stretched to one height. Row 2: the columns. */
+  /* Row 1: the one header, across both columns (#1577). Row 2: the columns. */
   grid-template-rows: auto minmax(0, 1fr);
   gap: 12px 16px;
   height: 100%;
@@ -1807,6 +1807,7 @@ input[type="range"].slider-thumb::-moz-range-track {
   width: 100%;
 }
 .ttt-grid > .ttt-card { display: flex; flex-direction: column; justify-content: center; }
+.ttt-grid > :has(.game-header) { grid-column: 1 / -1; }
 .ttt-center-col {
   display: flex;
   flex-direction: column;
@@ -1826,71 +1827,6 @@ input[type="range"].slider-thumb::-moz-range-track {
   height: 100%;
   min-height: 0;
 }
-/* The room card: to the right of the scoreboard on desktop (same grid row,
-   same height), beside it in one row on phones as two icon buttons. */
-.game-room-card {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 12px 14px;
-  border-radius: 18px;
-  border: 1.5px solid var(--bd-line);
-  background: var(--bd-bg);
-  box-shadow: 0 4px 14px rgba(31,27,22,0.07);
-  min-width: 0;
-}
-.game-room-card__emoji { font-size: 28px; line-height: 1; flex-shrink: 0; }
-.game-room-card__text { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1 1 auto; }
-.game-room-card__title {
-  font-family: var(--bd-font-display);
-  font-weight: 700;
-  font-size: 15px;
-  color: var(--bd-ink);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.game-room-card__meta { display: inline-flex; align-items: center; gap: 8px; min-width: 0; }
-.game-room-card__code { font-family: ui-monospace, monospace; font-size: 12px; font-weight: 700; color: var(--bd-ink-soft); letter-spacing: 0.04em; }
-.game-room-card__copy {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 3px 8px;
-  border-radius: 999px;
-  border: 1px solid var(--bd-line);
-  background: var(--bd-card-warm);
-  color: var(--bd-ink-soft);
-  font-size: 11px;
-  font-weight: 600;
-  font-family: inherit;
-  cursor: pointer;
-  white-space: nowrap;
-  transition: background 0.15s, color 0.15s, border-color 0.15s, transform 0.15s;
-}
-.game-room-card__copy:hover { background: var(--bd-ink); color: var(--bd-bg); border-color: var(--bd-ink); }
-.game-room-card__copy:active { transform: translateY(1px); }
-.game-room-card__chip {
-  display: inline-flex;
-  align-items: center;
-  padding: 3px 8px;
-  border-radius: 999px;
-  border: 1px dashed var(--bd-line);
-  /* bd-ink-muted was 3.86:1 here — AA large-text only (DESIGN.md
-     "Contrast"), and this chip text is normal-size (#1171 axe pass). */
-  color: var(--bd-ink-soft);
-  font-size: 11px;
-  font-weight: 600;
-  white-space: nowrap;
-}
-.game-room-card--compact {
-  padding: 0;
-  border: none;
-  background: transparent;
-  box-shadow: none;
-  gap: 6px;
-}
-.game-room-card--compact .game-room-card__copy { min-height: 40px; padding: 8px 10px; border-radius: 14px; border-width: 1.5px; font-size: 16px; }
 .ttt-top-row {
   display: flex;
   align-items: stretch;
@@ -1898,19 +1834,6 @@ input[type="range"].slider-thumb::-moz-range-track {
   flex-shrink: 0;
 }
 .ttt-top-row > :first-child { flex: 1 1 auto; min-width: 0; }
-.ttt-top-row > .game-room-card { align-self: center; flex-shrink: 0; }
-/* Phone portrait: Leave runs the full height of the scoreboard card beside it –
-   same top and bottom, same 18px radius as .ttt-card, icon centred – instead of
-   a 40px chip floating halfway down a ~100px card (Denys, real iPhone, v1.37.0).
-   Keyed to the row's own width, not the viewport, and only where the scoreboard
-   takes its compact form: wider rows (768 portrait) and the landscape side
-   column keep the chip as it was. Liar's Party tunes its own phone header
-   (.liars-header-card), so it is left out. */
-.ttt-mobile-layout > .ttt-top-row:not(:has(.liars-header-card)) { container: game-top-row / inline-size; }
-@container game-top-row (max-width: 559px) {
-  .ttt-top-row > .game-room-card--compact { align-self: stretch; align-items: stretch; }
-  .ttt-top-row > .game-room-card--compact > :is(.game-leave-button, .game-room-card__copy) { border-radius: 18px; }
-}
 
 /* Cards */
 .ttt-card {
@@ -2334,6 +2257,279 @@ input[type="range"].slider-thumb::-moz-range-track {
    neither cell stacks there (#1180). */
 :is(.sketch-header-card, .spy-header-card, .alias-header-card, .liars-header-card) .game-scoreboard-cell { container-type: normal; }
 
+/* The one in-game header (#1577): game and room, players, actions. Narrow, the
+   game and the actions share the first row and the players take the second;
+   from 760px of header they all share one row. The header's own width decides,
+   not the viewport: the same header sits in a 300px landscape side column and
+   across a 1280px desktop grid. */
+.game-header {
+  container: game-header / inline-size;
+  min-width: 0;
+}
+.game-header__layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  row-gap: 8px;
+  align-items: center;
+}
+.game-header__bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-width: 0;
+}
+.game-header__title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+.game-header__icon {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 34px;
+  height: 34px;
+  border-radius: 11px;
+  background: var(--bd-bg2);
+  color: var(--bd-ink);
+}
+.game-header__text {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  min-width: 0;
+}
+.game-header__name {
+  min-width: 0;
+  font-family: var(--bd-font-display);
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.2;
+  color: var(--bd-ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.game-header__code {
+  flex-shrink: 0;
+  font-family: ui-monospace, monospace;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--bd-ink-soft);
+}
+.game-header__actions {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+.game-header__actions-inline {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.game-header__actions-menu { display: none; }
+.game-header :is(.game-header__invite, .game-header__more) {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0 12px;
+  border-radius: 14px;
+  border: 1.5px solid var(--bd-line);
+  background: var(--bd-card-warm);
+  color: var(--bd-ink-soft);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  white-space: nowrap;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: background-color var(--bd-dur-fast) ease-out, color var(--bd-dur-fast) ease-out,
+    border-color var(--bd-dur-fast) ease-out, transform var(--bd-dur-fast) ease-out;
+}
+@media (hover: hover) {
+  .game-header :is(.game-header__invite, .game-header__more):hover {
+    border-color: var(--bd-ink);
+    background: var(--bd-ink);
+    color: var(--bd-bg);
+  }
+}
+.game-header :is(.game-header__invite, .game-header__more):active { transform: scale(0.96); }
+.game-header :is(.game-header__invite, .game-header__more, .game-leave-button):focus-visible {
+  outline: 3px solid var(--bd-lav-deep);
+  outline-offset: -3px;
+}
+.game-header__more[aria-expanded="true"] {
+  border-color: var(--bd-ink);
+  background: var(--bd-ink);
+  color: var(--bd-bg);
+}
+/* Under 760px of header the invite and Leave are icon tiles; the label stays in the
+   accessible name. Leave's own phone rule keys on the viewport, this one on the header. */
+@container game-header (max-width: 759px) {
+  .game-header :is(.game-header__invite-label, .game-leave-button__label) {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+  .game-header :is(.game-header__invite, .game-leave-button) { padding: 0; }
+  .game-header .game-leave-button__back-icon { display: inline-flex; }
+}
+/* Phones narrower than 390 and the landscape side column: two actions become one
+   menu. A game screen's header is 316px wide on a 390 phone. */
+@container game-header (max-width: 315px) {
+  .game-header__actions:has(.game-header__actions-menu) .game-header__actions-inline { display: none; }
+  .game-header__actions-menu { display: block; }
+}
+@container game-header (min-width: 760px) {
+  .game-header__layout {
+    grid-template-columns: minmax(0, max-content) minmax(0, 1fr) auto;
+    grid-template-areas: "title seats actions";
+    column-gap: 20px;
+  }
+  .game-header__bar { display: contents; }
+  .game-header__title { grid-area: title; max-width: 220px; }
+  .game-header__text { flex-direction: column; align-items: flex-start; gap: 2px; }
+  .game-header__actions { grid-area: actions; }
+  .game-header__layout > :is(.game-scoreboard-header, .game-scoreboard-players) { grid-area: seats; }
+  .game-header .game-leave-button__label {
+    position: static;
+    width: auto;
+    height: auto;
+    overflow: visible;
+    clip: auto;
+  }
+  .game-header .game-leave-button__back-icon { display: none; }
+}
+/* Phone landscape: the side column shares ~390px of height between the header,
+   the banner and chat, and a second header row left chat 60px under its floor
+   (#902) at 844x390. The header keeps one row – the players and the actions –
+   and the game's name stays for screen readers. */
+@media (max-width: 1023px) and (orientation: landscape) {
+  .game-landscape-side .game-header__layout {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas: "seats actions";
+    column-gap: 8px;
+  }
+  .game-landscape-side .game-header__bar { display: contents; }
+  .game-landscape-side .game-header__title {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+  .game-landscape-side .game-header__actions { grid-area: actions; }
+  .game-landscape-side .game-header__layout > :is(.game-scoreboard-header, .game-scoreboard-players) { grid-area: seats; }
+}
+/* Short portrait phones (the short-portrait variant's 40rem): at 320x568 the second
+   header row took ~52px from the board card. Same one row as landscape, with both
+   actions behind the menu. */
+@media (max-width: 1023px) and (max-height: 40rem) and (orientation: portrait) {
+  .game-header__layout {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas: "seats actions";
+    column-gap: 8px;
+  }
+  .game-header__bar { display: contents; }
+  .game-header__title {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+  .game-header__actions { grid-area: actions; }
+  .game-header__layout > :is(.game-scoreboard-header, .game-scoreboard-players) { grid-area: seats; }
+  .game-header__actions:has(.game-header__actions-menu) .game-header__actions-inline { display: none; }
+  .game-header__actions-menu { display: block; }
+}
+.game-header__menu {
+  position: fixed;
+  inset: auto;
+  margin: 0;
+  z-index: 60;
+  display: flex;
+  flex-direction: column;
+  min-width: 200px;
+  padding: 6px;
+  border-radius: 16px;
+  border: 1.5px solid var(--bd-line);
+  background: var(--bd-card);
+  color: var(--bd-ink);
+  box-shadow: 0 12px 32px -12px rgba(31,27,22,0.35), 0 2px 6px rgba(31,27,22,0.08);
+  overscroll-behavior: contain;
+  transform-origin: top right;
+  animation: game-header-menu-in var(--bd-dur-fast) ease-out both;
+}
+.game-header__menu-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--bd-ink);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+}
+.game-header__menu-item:focus-visible {
+  outline: 3px solid var(--bd-lav-deep);
+  outline-offset: -3px;
+}
+@media (hover: hover) {
+  .game-header__menu-item:hover { background: var(--bd-bg2); }
+}
+.game-header__menu-item--leave { color: var(--bd-coral-text); }
+@keyframes game-header-menu-in {
+  from { opacity: 0; transform: translateY(-4px) scale(0.97); }
+  to { opacity: 1; transform: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .game-header__menu { animation: fade-in-plain var(--bd-dur-fast) ease-out both; }
+}
+/* Every seat on one equal track (#1577): the player whose turn it is keeps their
+   seat and is marked by the active plate, so nothing moves when the turn passes. */
+.game-scoreboard-players {
+  display: grid;
+  grid-template-columns: repeat(var(--game-header-seats, 2), minmax(0, 1fr));
+  gap: 8px;
+  min-width: 0;
+}
+.game-scoreboard-player {
+  min-width: 0;
+  display: flex;
+  container: game-scoreboard-cell / inline-size;
+}
+.game-scoreboard-player > .game-player-card { flex: 1 1 auto; max-width: none; }
+/* Every seat sits on the same quiet plate; the active plate (::before) covers it. */
+.game-header .game-player-card { background: color-mix(in srgb, var(--bd-ink) 5%, transparent); }
+/* The header never grows a line for whose turn it is: the plate marks the seat and
+   the status banner says it, so the header keeps its height as the turn passes. */
+.game-header .game-player-turn {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
 .game-player-card {
   position: relative;
   font-variant-numeric: tabular-nums;
@@ -2462,8 +2658,9 @@ input[type="range"].slider-thumb::-moz-range-track {
    header is ~96px (55px in RPS beside its round block), and the row form needs
    ~76px of padding, avatar and gap before the name starts – so names came out
    as "Kov…", the turn line and the active plate ran over the score. Below
-   150px of cell the card stacks: avatar on top, the name under it with the
-   whole cell width, which reads "Kovalenko" and "Gravity Gra…" at 390.
+   110px of cell the card stacks: avatar on top, the name under it with the
+   whole cell width. With Leave up in the header bar (#1577) a 390 cell is
+   ~125px, which keeps one line on a 32px avatar.
 
    The subline and the turn line go, as they already do in the landscape side
    column (#901): the subline repeats the score and the corner badge, and whose
@@ -2476,12 +2673,23 @@ input[type="range"].slider-thumb::-moz-range-track {
   .game-scoreboard-header--has-compact .game-scoreboard-center { display: none; }
   .game-scoreboard-header--has-compact .game-scoreboard-center--compact { display: block; }
 }
-@container game-scoreboard-cell (max-width: 149px) {
+/* 110-149px: still one line, on a smaller avatar. */
+@container game-scoreboard-cell (min-width: 110px) and (max-width: 149px) {
+  :is(.game-scoreboard-cell--left, .game-scoreboard-right-card, .game-scoreboard-player) > .game-player-card { gap: 8px; padding: 6px 8px; }
+  :is(.game-scoreboard-cell--left, .game-scoreboard-right-card, .game-scoreboard-player) > .game-player-card .game-player-avatar { width: 32px; height: 32px; }
+  :is(.game-scoreboard-cell--left, .game-scoreboard-right-card, .game-scoreboard-player) > .game-player-card .game-player-avatar--initial { font-size: 14px; }
+  :is(.game-scoreboard-cell--left, .game-scoreboard-right-card, .game-scoreboard-player) > .game-player-card .game-player-avatar-wrap > :not(.game-player-avatar) {
+    transform: translate(2px, 2px) scale(0.72);
+    transform-origin: bottom right;
+  }
+  :is(.game-scoreboard-cell--left, .game-scoreboard-right-card, .game-scoreboard-player) > .game-player-card .game-player-name { font-size: 13px; }
+}
+@container game-scoreboard-cell (max-width: 109px) {
   /* Centred on both axes: the avatar-and-name block sits in the middle of the
      plate, so the two cards line up with each other and with the score between
      them. 8px between avatar and name – at 3px the corner badge, which hangs
      off the avatar's bottom edge, touched the name (Denys, real iPhone, v1.37.0). */
-  :is(.game-scoreboard-cell--left, .game-scoreboard-right-card) > .game-player-card {
+  :is(.game-scoreboard-cell--left, .game-scoreboard-right-card, .game-scoreboard-player) > .game-player-card {
     flex-direction: column;
     justify-content: center;
     align-items: center;
@@ -2491,44 +2699,44 @@ input[type="range"].slider-thumb::-moz-range-track {
   /* A photo avatar is an inline <img>, which leaves a descender gap under it
      inside the wrap – extra space under the avatar that the initial avatar
      does not have, so the block sat lower in the plate with a photo. */
-  :is(.game-scoreboard-cell--left, .game-scoreboard-right-card) > .game-player-card .game-player-avatar-wrap { display: flex; }
-  :is(.game-scoreboard-cell--left, .game-scoreboard-right-card) > .game-player-card .game-player-avatar {
+  :is(.game-scoreboard-cell--left, .game-scoreboard-right-card, .game-scoreboard-player) > .game-player-card .game-player-avatar-wrap { display: flex; }
+  :is(.game-scoreboard-cell--left, .game-scoreboard-right-card, .game-scoreboard-player) > .game-player-card .game-player-avatar {
     width: 34px;
     height: 34px;
   }
-  :is(.game-scoreboard-cell--left, .game-scoreboard-right-card) > .game-player-card .game-player-avatar--initial { font-size: 15px; }
+  :is(.game-scoreboard-cell--left, .game-scoreboard-right-card, .game-scoreboard-player) > .game-player-card .game-player-avatar--initial { font-size: 15px; }
   /* The corner badge (C4 disc, Checkers piece, RPS pick, Ludo token, TTT mark)
      is 18-22px of inline style sized for the 42px avatar; on the 34px one it
      covered most of the initial. Scaled from its own anchored corner to ~12px
      and pushed a little further out, so the initial reads and the badge still
      sits on the avatar's edge. A transform, because the games set its size
      inline and an inline width outranks any stylesheet. */
-  :is(.game-scoreboard-cell--left, .game-scoreboard-right-card) > .game-player-card .game-player-avatar-wrap > :not(.game-player-avatar) {
+  :is(.game-scoreboard-cell--left, .game-scoreboard-right-card, .game-scoreboard-player) > .game-player-card .game-player-avatar-wrap > :not(.game-player-avatar) {
     transform: translate(2px, 2px) scale(0.6);
     transform-origin: bottom right;
   }
-  :is(.game-scoreboard-cell--left, .game-scoreboard-right-card) > .game-player-card .game-player-identity {
+  :is(.game-scoreboard-cell--left, .game-scoreboard-right-card, .game-scoreboard-player) > .game-player-card .game-player-identity {
     align-self: stretch;
     min-width: 0;
     text-align: center;
   }
-  :is(.game-scoreboard-cell--left, .game-scoreboard-right-card) > .game-player-card .game-player-name-row { justify-content: center; gap: 3px; }
+  :is(.game-scoreboard-cell--left, .game-scoreboard-right-card, .game-scoreboard-player) > .game-player-card .game-player-name-row { justify-content: center; gap: 3px; }
   /* A tight line box, so the name's leading does not add invisible space
      under the text and push the visible block off centre. */
-  :is(.game-scoreboard-cell--left, .game-scoreboard-right-card) > .game-player-card .game-player-name { font-size: 13px; line-height: 1.25; }
+  :is(.game-scoreboard-cell--left, .game-scoreboard-right-card, .game-scoreboard-player) > .game-player-card .game-player-name { font-size: 13px; line-height: 1.25; }
   /* The WIN pill is taller than the name and, inline, took half the name's
      width: the winner's card grew and sat lower than the other one. Stacked, it
      hangs on the plate's top edge instead, out of the flow, so both cards keep
      the same box and the name keeps its width. */
-  :is(.game-scoreboard-cell--left, .game-scoreboard-right-card) > .game-player-card .game-player-win-badge {
+  :is(.game-scoreboard-cell--left, .game-scoreboard-right-card, .game-scoreboard-player) > .game-player-card .game-player-win-badge {
     position: absolute;
     top: 0;
     left: 50%;
     transform: translate(-50%, -50%);
     z-index: 1;
   }
-  :is(.game-scoreboard-cell--left, .game-scoreboard-right-card) > .game-player-card .game-player-subline { display: none; }
-  :is(.game-scoreboard-cell--left, .game-scoreboard-right-card) > .game-player-card .game-player-turn {
+  :is(.game-scoreboard-cell--left, .game-scoreboard-right-card, .game-scoreboard-player) > .game-player-card .game-player-subline { display: none; }
+  :is(.game-scoreboard-cell--left, .game-scoreboard-right-card, .game-scoreboard-player) > .game-player-card .game-player-turn {
     position: absolute;
     width: 1px;
     height: 1px;
@@ -2540,8 +2748,23 @@ input[type="range"].slider-thumb::-moz-range-track {
 /* A 320px phone leaves ~64px a cell: two pixels of side padding and a point
    of type are another letter or two of the name. */
 @container game-scoreboard-cell (max-width: 79px) {
-  :is(.game-scoreboard-cell--left, .game-scoreboard-right-card) > .game-player-card { padding-inline: 2px; }
-  :is(.game-scoreboard-cell--left, .game-scoreboard-right-card) > .game-player-card .game-player-name { font-size: 12px; }
+  :is(.game-scoreboard-cell--left, .game-scoreboard-right-card, .game-scoreboard-player) > .game-player-card { padding-inline: 2px; }
+  :is(.game-scoreboard-cell--left, .game-scoreboard-right-card, .game-scoreboard-player) > .game-player-card .game-player-name { font-size: 12px; }
+}
+/* Six to eight seats on a phone: the avatar alone, its name kept for screen readers. */
+@container game-scoreboard-cell (max-width: 63px) {
+  .game-scoreboard-player > .game-player-card { gap: 0; padding: 6px 2px; }
+  .game-scoreboard-player > .game-player-card .game-player-avatar { width: 30px; height: 30px; }
+  .game-scoreboard-player > .game-player-card .game-player-avatar--initial { font-size: 13px; }
+  .game-scoreboard-player > .game-player-card .game-player-identity {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    min-width: 0;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
 }
 
 /* Shared in-game chat dock (#736) — wraps components/Chat.tsx (fullScreen)
@@ -3479,15 +3702,12 @@ button.yz-pill:focus-visible { outline: 3px solid var(--bd-lav-deep); outline-of
 .yz-scoreboard-card .game-scoreboard-cell--left > .game-player-card,
 .yz-scoreboard-card .game-scoreboard-right-card > .game-player-card { flex: 1 1 auto; max-width: none; }
 .yz-scoreboard-card .game-scoreboard-center { align-self: center; overflow: visible; padding-inline: 8px; }
-.yz-scoreboard-card .game-player-identity { min-height: 56px; }
 .yz-scoreboard-score {
   font-family: var(--bd-font-display); font-weight: 800; font-size: 28px; line-height: 1;
   color: var(--bd-ink); white-space: nowrap;
 }
 .yz-scoreboard-score__sep { color: var(--bd-ink-muted); margin: 0 6px; }
 .yz-scoreboard-meta { font-size: 11px; font-weight: 700; color: var(--bd-ink-soft); margin-top: 4px; }
-.yz-player-grid { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 8px; }
-.yz-player-grid .game-player-card { max-width: none; height: 100%; box-sizing: border-box; }
 .ttt-center-col > .yz-board-card { flex: 1 1 auto; min-height: 0; }
 .yz-board-card {
   position: relative;
@@ -3741,16 +3961,15 @@ button.yz-pill:focus-visible { outline: 3px solid var(--bd-lav-deep); outline-of
      ran the cards into the score: "Swee… 0 : 0Che…". Here the card stacks,
      a 24px avatar over a name with the cell's full width, so it fits down to
      ~34px of cell and a name keeps ~9 letters. 9px taller than the row form.
-     Leave, where a game puts it in `trailing`, gets its own track, so both
-     player cells stay the same width. The conversation games tune their own
-     header below and are left out. */
+     Leave sits in the header's bar above (#1577), so both player cells are
+     the same width. The conversation games tune their own header below and
+     are left out. */
   .game-landscape-side .game-scoreboard-header:not(:is(.sketch-header-card, .spy-header-card, .liars-header-card) *) {
-    grid-template-columns: minmax(0, 1fr) minmax(0, auto) minmax(0, 1fr) auto;
-    grid-template-areas: "left center right trailing";
+    grid-template-columns: minmax(0, 1fr) minmax(0, auto) minmax(0, 1fr);
+    grid-template-areas: "left center right";
   }
   .game-landscape-side .game-scoreboard-header:not(:is(.sketch-header-card, .spy-header-card, .liars-header-card) *) .game-scoreboard-cell--right { display: contents; }
   .game-landscape-side .game-scoreboard-header:not(:is(.sketch-header-card, .spy-header-card, .liars-header-card) *) .game-scoreboard-right-card { grid-area: right; min-width: 0; }
-  .game-landscape-side .game-scoreboard-header:not(:is(.sketch-header-card, .spy-header-card, .liars-header-card) *) .game-scoreboard-cell--right > :not(.game-scoreboard-right-card) { grid-area: trailing; }
   .game-landscape-side .game-scoreboard-header:not(:is(.sketch-header-card, .spy-header-card, .liars-header-card) *) :is(.game-scoreboard-cell--left, .game-scoreboard-right-card) > .game-player-card {
     flex-direction: column;
     justify-content: center;
@@ -3865,8 +4084,8 @@ button.yz-pill:focus-visible { outline: 3px solid var(--bd-lav-deep); outline-of
 }
 
 
-/* Shared in-game Leave control (layout DoD 2026-09-06): the trailing slot of
-   GameScoreboardHeader on every game. Spectators get the --back variant. */
+/* Shared in-game Leave control (layout DoD 2026-09-06): the header's actions
+   on every game (#1577). Spectators get the --back variant. */
 .game-leave-button {
   display: inline-flex;
   align-items: center;
@@ -3879,8 +4098,8 @@ button.yz-pill:focus-visible { outline: 3px solid var(--bd-lav-deep); outline-of
   border: 1.5px solid rgba(224,75,59,0.35);
   background: rgba(255,107,91,0.12);
   /* Ink text at rest, not bd-coral-deep — 3.31:1 on this tint, below the
-     4.5:1 AA text minimum (#1171 axe pass, appears on every game's shared
-     GameScoreboardHeader trailing slot). The coral border still marks it as
+     4.5:1 AA text minimum (#1171 axe pass, appears in every game's shared
+     header). The coral border still marks it as
      the leave action; the coral *fill* on hover/focus below is the
      brand-button pattern DESIGN.md documents as Denys's call, so that one
      keeps white text. */
@@ -3913,9 +4132,10 @@ button.yz-pill:focus-visible { outline: 3px solid var(--bd-lav-deep); outline-of
   background: var(--bd-ink);
   color: var(--bd-bg);
 }
+.game-leave-button__back-icon { display: none; }
 @media (max-width: 1023px) {
   /* Below the desktop breakpoint: icon only, the label stays in the accessible name. */
-  .game-leave-button--compact.game-leave-button--leave .game-leave-button__label {
+  .game-leave-button--compact .game-leave-button__label {
     position: absolute;
     width: 1px;
     height: 1px;
@@ -3923,7 +4143,8 @@ button.yz-pill:focus-visible { outline: 3px solid var(--bd-lav-deep); outline-of
     clip: rect(0 0 0 0);
     white-space: nowrap;
   }
-  .game-leave-button--compact.game-leave-button--leave { padding: 8px 10px; }
+  .game-leave-button--compact { padding: 8px 10px; }
+  .game-leave-button--compact .game-leave-button__back-icon { display: inline-flex; }
 }
 
 /* ── Liar's Party (#1040 skin, #1041 chrome) ───────────────────────
@@ -3947,15 +4168,6 @@ button.yz-pill:focus-visible { outline: 3px solid var(--bd-lav-deep); outline-of
   overflow: hidden;
   padding: 12px 16px;
   background: linear-gradient(135deg, var(--bd-card-warm) 0%, rgba(155,140,255,0.12) 100%);
-}
-.liars-header-card__mark {
-  position: absolute;
-  right: -14px;
-  top: -18px;
-  opacity: 0.12;
-  transform: rotate(10deg);
-  pointer-events: none;
-  line-height: 1;
 }
 /* The round counter inside GameScoreboardHeader's centre cell. */
 .liars-counter__kicker {
@@ -4126,7 +4338,6 @@ html.dark .liars-seat { background: var(--bd-bg2); }
    right cell shrinks to what it holds. The watermark goes too: at this size it
    sits behind the names rather than behind empty card. */
 @media (max-width: 1023px) {
-  .liars-header-card__mark { display: none; }
   .liars-header-card .game-scoreboard-header--has-compact .game-scoreboard-center { display: none; }
   .liars-header-card .game-scoreboard-header--has-compact .game-scoreboard-center--compact { display: block; }
   .liars-header-card .game-scoreboard-right-card { display: none; }
@@ -4149,8 +4360,8 @@ html.dark .liars-seat { background: var(--bd-bg2); }
   /* The header keeps the shared family's row sizing, and only its padding is
      this game's. Sketch & Guess puts its header card straight in this column,
      where `flex: 0 0 auto` means height and holds off a vertical squeeze; here
-     the card rides in a `.ttt-top-row` beside the compact room card, and that
-     row is already `flex-shrink: 0`, so no squeeze reaches it. In a ROW flex
+     the card rides in a `.ttt-top-row`, and that row is already
+     `flex-shrink: 0`, so no squeeze reaches it. In a ROW flex
      container the same declaration means WIDTH, and it overrode
      `.ttt-top-row > :first-child { flex: 1 1 auto }`: measured live at 844x390
      it sized the header to its content and left 37 to 78px of dead row beside
@@ -5015,12 +5226,7 @@ html.dark .liars-seat { background: var(--bd-bg2); }
 }
 
 .memory-mobile-header {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 10px 14px 8px;
-  background: var(--bd-bg);
-  border-bottom: 1.5px solid var(--bd-line);
+  padding: 6px 12px 0;
   flex-shrink: 0;
 }
 
@@ -5188,10 +5394,9 @@ html.dark .spy-secret-tile {
       strip, a toolbar and a submit button around the canvas, and a guesser an
       input and a button, so the card stacks them and gives the canvas whatever
       height is left.
-   2. The scoreboard row spans the whole first grid row. Every other kit game
-      puts a room card beside it; here the seat count runs to ten, so the roster
-      lives in the scores panel on the right and the header gets the full width
-      rather than a card with two names in it and a hole next to them.
+   2. The header spans the whole first grid row, as in every kit game (#1577).
+      The seat count runs to ten, so the roster lives in the scores panel on
+      the right and the header keeps its two featured seats.
    3. The canvas sizes from its own wrapper, not from the screen: the wrapper is
       a size container, so `100cqh` is the height actually left over after the
       phase's controls, whichever phase is on screen. */
@@ -5547,11 +5752,6 @@ html.dark .spy-secret-tile {
 .sketch-score-row__name { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; color: var(--bd-ink); }
 .sketch-score-row__score { flex-shrink: 0; font-weight: 700; color: var(--bd-ink); font-family: ui-monospace, monospace; }
 
-/* The scoreboard row owns the whole first grid row (see 2 above). */
-.ttt-grid > .sketch-header-card,
-.ttt-grid > .spy-header-card,
-.ttt-grid > .alias-header-card { grid-column: 1 / -1; }
-
 .sketch-chat-note {
   flex-shrink: 0;
   padding: 8px 12px;
@@ -5574,12 +5774,12 @@ html.dark .sketch-score-row { background: var(--bd-bg2); }
   min-height: 0;
 }
 
-/* The scoreboard row spans the full grid width here (there is no room card to
-   sit beside it), and at 1280 that stretched each 1fr cell to ~580px – a
+/* The scoreboard row spans the full grid width here, and at 1280 that
+   stretched each 1fr cell to ~580px – a
    player card is an avatar and two short lines, so it became a wide empty
    plate, which is exactly what the layout DoD calls a card with small content
    floating in it. Cap the cards and let the cells keep the slack: the left card
-   stays left, the right card and Leave stay hard right. */
+   stays left, the right card stays hard right. */
 .sketch-header-card .game-player-card,
 .spy-header-card .game-player-card,
 .alias-header-card .game-player-card { max-width: 340px; }
@@ -5608,12 +5808,10 @@ html.dark .sketch-score-row { background: var(--bd-bg2); }
   }
 }
 
-/* Phone landscape: the side column is min(300px, 42vw) and this header has one
-   more thing in it than the other kit games put there – Leave rides in the
-   scoreboard trailing slot rather than in a room card beside it. Measured at
-   844x390 the round counter printed 13px over the opponent name, in all three
-   phases. Same answer as portrait: the viewer card goes, the drawer stays, and
-   the right cell shrinks to the button. */
+/* Phone landscape: the side column is min(300px, 42vw). Measured at 844x390
+   the round counter printed 13px over the opponent name, in all three phases.
+   Same answer as portrait: the viewer card goes, the drawer stays, and the
+   right cell shrinks to nothing. */
 @media (max-width: 1023px) and (orientation: landscape) {
   .game-landscape-side :is(.sketch-header-card, .spy-header-card, .alias-header-card) .game-scoreboard-right-card { display: none; }
   .game-landscape-side :is(.sketch-header-card, .spy-header-card, .alias-header-card) .game-scoreboard-header {
@@ -5881,25 +6079,6 @@ html.dark .sketch-score-row { background: var(--bd-bg2); }
 }
 .ludo-roll-button:active:not(:disabled) { transform: translateY(3px); box-shadow: 0 1px 0 var(--bd-ink); }
 .ludo-roll-button:disabled { opacity: 0.45; cursor: not-allowed; box-shadow: 0 2px 0 var(--bd-ink); }
-
-/* Three or four players: the kit's player cards two to a row. The turn line
-   is dropped because GameStatusBanner right below says whose turn it is, and
-   the active card is already raised. A narrow grid (phones, 320-390) shrinks
-   the cards the way the landscape side column does (#901), measured on the
-   grid itself so it holds wherever the header renders. */
-.ludo-player-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 6px;
-  container-type: inline-size;
-}
-.ludo-player-grid .game-player-card { max-width: none; }
-.ludo-player-grid .game-player-turn { display: none; }
-@container (max-width: 420px) {
-  .ludo-player-grid .game-player-card { gap: 6px; padding: 4px 6px; }
-  .ludo-player-grid .game-player-avatar { width: 30px; height: 30px; }
-  .ludo-player-grid .game-player-avatar--initial { font-size: 14px; }
-}
 
 /* Per-player roll history above the move log. */
 .ludo-history-card { max-height: 340px; }

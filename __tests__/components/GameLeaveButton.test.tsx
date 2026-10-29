@@ -29,6 +29,13 @@ describe('GameLeaveButton', () => {
     expect(screen.queryByTestId('leave-icon')).toBeNull()
   })
 
+  it('gives the way back an arrow of its own, for when its label is hidden like Leave\'s (#1577)', () => {
+    const { container } = render(<GameLeaveButton label="← Back to lobby" href="/lobby/1234" variant="back" />)
+    const icon = container.querySelector('.game-leave-button__back-icon')
+    expect(icon).not.toBeNull()
+    expect(icon!.closest('[aria-hidden="true"]')).not.toBeNull()
+  })
+
   it('is compact by default and keeps the label in the accessible name', () => {
     render(<GameLeaveButton label="Leave" onClick={() => {}} />)
     const button = screen.getByRole('button', { name: 'Leave' })

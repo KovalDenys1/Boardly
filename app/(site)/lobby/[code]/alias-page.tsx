@@ -31,7 +31,7 @@ import { viewerOutcome } from '@/lib/game-outcome'
 import { useAliasSounds } from './hooks/useAliasSounds'
 import { getThemePageStyle } from '@/lib/lobby-themes'
 import AfterGameActions from '@/components/game-chrome/AfterGameActions'
-import GameScoreboardHeader from '@/components/game-chrome/GameScoreboardHeader'
+import GameScoreboardHeader, { type GameHeaderRoom } from '@/components/game-chrome/GameScoreboardHeader'
 import GamePlayerCard from '@/components/game-chrome/GamePlayerCard'
 import GameLeaveButton from '@/components/game-chrome/GameLeaveButton'
 import GameStatusBanner from '@/components/game-chrome/GameStatusBanner'
@@ -68,6 +68,7 @@ interface Lobby {
   isActive?: boolean
   turnTimer?: number
   theme?: string
+  allowSpectators?: boolean
 }
 
 interface GamePlayer {
@@ -337,8 +338,8 @@ function AliasWordSwap({ word, lastResult, style }: {
  * Alias used to draw its own context bar - a Boardly mark, the lobby code, and
  * Leave as a text link at the bottom of each of the five screens, which is the
  * third place Leave sat in the catalogue. It now composes the shared kit, so
- * Leave is top-right in the trailing slot of GameScoreboardHeader like every
- * other game.
+ * the game, the room and Leave are in GameScoreboardHeader's header like every
+ * other game (#1577).
  *
  * The two scoreboard cards are teams, not players: that is what Alias has two
  * of, and it is what the score belongs to. GamePlayerCard takes them as names
@@ -420,11 +421,12 @@ const AliasGameHeader: React.FC<{
   scores: number[]
   /** Already-translated line above the score (phase name). */
   kicker: string
-  leaveLabel: string
-  backToLobbyLabel: string
+  /** Already-translated game name for the header's title. */
+  title: string
   onLeave?: () => void
   isSpectator?: boolean
-}> = ({ lobbyCode, leftTeam, rightTeam, activeTeamIndex = null, scores, kicker, leaveLabel, backToLobbyLabel, onLeave, isSpectator }) => {
+  allowSpectators?: boolean
+}> = ({ lobbyCode, leftTeam, rightTeam, activeTeamIndex = null, scores, kicker, title, onLeave, isSpectator, allowSpectators }) => {
   const seat = (team: typeof leftTeam, side: 'left' | 'right', isActive: boolean) => (
     <GamePlayerCard
       name={team?.name ?? '–'}
@@ -446,12 +448,11 @@ const AliasGameHeader: React.FC<{
       </React.Fragment>
     ))
     : '–'
+  const room: GameHeaderRoom = { gameId: 'alias', title, code: lobbyCode, isSpectator, allowSpectators, onLeave }
   return (
     <div className="ttt-card alias-header-card" style={{ background: 'linear-gradient(135deg, var(--bd-card-warm) 0%, rgba(255,107,91,0.10) 100%)', overflow: 'hidden', padding: '12px 16px' }}>
-      <div aria-hidden style={{ position: 'absolute', right: -10, top: -14, opacity: 0.12, transform: 'rotate(12deg)', pointerEvents: 'none', lineHeight: 1 }}>
-        <Icon name="chat" size={96} />
-      </div>
       <GameScoreboardHeader
+        room={room}
         leftCard={seat(leftTeam, 'left', activeTeamIndex === 0)}
         center={
           <>
@@ -459,22 +460,12 @@ const AliasGameHeader: React.FC<{
               {kicker}
             </div>
             <ScorePop value={scores.join(':')} style={{ fontFamily: FONT_DISPLAY, fontWeight: 700, fontSize: 28, lineHeight: 1, color: 'var(--bd-ink)' }}>{scoreLine}</ScorePop>
-            <div style={{ fontSize: 9, color: 'var(--bd-ink-muted)', marginTop: 2, textTransform: 'uppercase', letterSpacing: '0.1em', fontFamily: FONT_MONO }}>
-              {lobbyCode}
-            </div>
           </>
         }
         centerCompact={
           <ScorePop value={scores.join(':')} style={{ fontFamily: FONT_DISPLAY, fontWeight: 700, fontSize: 22, lineHeight: 1, color: 'var(--bd-ink)' }}>{scoreLine}</ScorePop>
         }
         rightCard={seat(rightTeam, 'right', activeTeamIndex === 1)}
-        trailing={
-          isSpectator
-            ? <GameLeaveButton label={backToLobbyLabel} href={`/lobby/${lobbyCode}`} variant="back" />
-            : onLeave
-              ? <GameLeaveButton label={leaveLabel} onClick={onLeave} />
-              : undefined
-        }
       />
     </div>
   )
@@ -1634,10 +1625,10 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
       activeTeamIndex={data.phase === 'turn_active' ? teamIndex : null}
       scores={teamScores}
       kicker={kicker}
-      leaveLabel={t('game.ui.leave')}
-      backToLobbyLabel={t('game.ui.backToLobby')}
+      title={t('games.alias.name')}
       onLeave={() => setShowLeaveConfirmModal(true)}
       isSpectator={isSpectator}
+      allowSpectators={!!lobby?.allowSpectators}
     />
   )
 

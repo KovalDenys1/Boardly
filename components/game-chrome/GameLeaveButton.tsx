@@ -2,15 +2,17 @@
 
 import React from 'react'
 import LeaveIcon from '@/components/LeaveIcon'
+import { Icon } from '@/components/icons'
 
 /**
  * The one Leave control every in-game screen shows, in the one place it
- * lives: the `trailing` slot of GameScoreboardHeader, top-right (layout DoD,
- * 2026-09-06). Lifted out of MemoryGameBoard so TTT, Connect Four, RPS and
- * every game after them stop inventing their own.
+ * lives: the header's actions (GameHeaderActions, #1577). Lifted out of
+ * MemoryGameBoard so TTT, Connect Four, RPS and every game after them stop
+ * inventing their own.
  *
- * Spectators get the same slot with `href` (a link back to the lobby) so the
- * corner is never empty for anyone.
+ * Spectators get the same place with `href` (a link back to the lobby) so the
+ * corner is never empty for anyone. Its arrow shows only while the label is
+ * hidden, since the label already starts with one.
  */
 export interface GameLeaveButtonProps {
   /** Already-translated label ("Leave", "← Back to lobby"). */
@@ -28,6 +30,11 @@ export default function GameLeaveButton({ label, onClick, href, compact = true, 
   const content = (
     <>
       {variant === 'leave' && <LeaveIcon />}
+      {variant === 'back' && (
+        <span className="game-leave-button__back-icon" aria-hidden="true">
+          <Icon name="arrow-left" size={16} />
+        </span>
+      )}
       <span className="game-leave-button__label">{label}</span>
     </>
   )
