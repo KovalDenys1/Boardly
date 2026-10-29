@@ -12,7 +12,12 @@ import { OnboardingProvider } from '@/contexts/OnboardingContext'
 import { TourProvider } from '@/contexts/TourContext'
 import DeferredGlobalEffects from '@/components/DeferredGlobalEffects'
 import i18n, { changeLanguageLazy, type Locale } from '@/i18n'
-import { getStoredAppearanceLocale, normalizeAppearanceLocale } from '@/lib/appearance-preferences'
+import {
+  getStoredAppearanceLocale,
+  hasStoredAppearanceLocale,
+  normalizeAppearanceLocale,
+  setStoredAppearanceLocale,
+} from '@/lib/appearance-preferences'
 import { getSafeLocalStorage } from '@/lib/safe-storage'
 import { pruneUnrememberedLastAccount } from '@/lib/last-account'
 import type { PrefixedLocale } from '@/lib/seo-locales'
@@ -39,7 +44,11 @@ export default function Providers({
   pathLocale?: PrefixedLocale
 }) {
   useEffect(() => {
-    if (pathLocale) return
+    if (pathLocale) {
+      const storage = getSafeLocalStorage()
+      if (!hasStoredAppearanceLocale(storage ?? undefined)) setStoredAppearanceLocale(storage, pathLocale)
+      return
+    }
     const nextLanguage = getStoredAppearanceLocale(getSafeLocalStorage() ?? undefined) as Locale
 
     if (i18n.language !== nextLanguage) {
