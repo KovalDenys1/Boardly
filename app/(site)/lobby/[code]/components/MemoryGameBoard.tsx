@@ -682,7 +682,7 @@ export default function MemoryGameBoard({
                   </div>
                 )}
                 <div style={{ minWidth: 0, flex: 1 }}>
-                  <div style={{ fontWeight: 700, fontSize: 13, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: isPremium ? 'var(--bd-premium)' : undefined }}>
+                  <div style={{ fontWeight: 700, fontSize: 13, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: isPremium ? 'var(--bd-sun-text)' : undefined }}>
                     {name}{isPremium ? ' 👑' : ''}{isWinnerCard ? ' 🏆' : ''}
                   </div>
                   <ScorePop value={score} style={{ fontSize: 11, color: 'var(--bd-ink-muted)', width: 'fit-content' }}>{t('games.memory.game.pairsLabel', { count: score })}</ScorePop>

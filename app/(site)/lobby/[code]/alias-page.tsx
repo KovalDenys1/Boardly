@@ -1188,7 +1188,7 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
               background: 'var(--bd-surface-raised)', border: '1.5px solid var(--bd-line)',
             }}>
               <BdAvatar name={playerDisplayName(p)} color={i === 0 ? accent : undefined} />
-              <span style={{ fontWeight: 600, fontSize: 15, color: p.user?.isPremium ? 'var(--bd-premium)' : undefined }}>
+              <span style={{ fontWeight: 600, fontSize: 15, color: p.user?.isPremium ? 'var(--bd-sun-text)' : undefined }}>
                 {playerDisplayName(p) ?? t('game.ui.playerFallback')}
                 {p.user?.isPremium && <Icon name="crown" size={13} tone="premium" label="Premium" style={{ marginLeft: 4 }} />}
                 {p.userId === currentUserId && (
@@ -1397,7 +1397,7 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
                   border: isYou ? `1.5px solid ${accent}` : '1.5px solid var(--bd-line)',
                 }}>
                   <BdAvatar name={name} color={isYou ? accent : undefined} size={32} />
-                  <span style={{ fontWeight: 600, fontSize: 14, color: isPremiumPlayer ? 'var(--bd-premium)' : undefined }}>
+                  <span style={{ fontWeight: 600, fontSize: 14, color: isPremiumPlayer ? 'var(--bd-sun-text)' : undefined }}>
                     {name}
                     {isPremiumPlayer && <Icon name="crown" size={13} tone="premium" label="Premium" style={{ marginLeft: 4 }} />}
                   </span>
@@ -2077,7 +2077,7 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
                       <span style={{ fontFamily: FONT_DISPLAY, fontWeight: 700, fontSize: 20, color: 'var(--bd-ink)', textDecoration: ok ? 'none' : 'line-through', textDecorationColor: 'rgba(31,27,22,0.4)' }}>
                         {w.word}
                       </span>
-                      <span style={{ fontFamily: FONT_MONO, fontSize: 13, fontWeight: 700, color: ok ? 'var(--bd-mint-text)' : 'var(--bd-sun-deep)' }}>
+                      <span style={{ fontFamily: FONT_MONO, fontSize: 13, fontWeight: 700, color: ok ? 'var(--bd-mint-text)' : 'var(--bd-sun-text)' }}>
                         {ok ? '+1' : '−1'}
                       </span>
                     </div>

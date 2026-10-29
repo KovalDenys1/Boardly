@@ -54,7 +54,7 @@ export const THEME_TOKENS: readonly ThemeToken[] = [
   { name: 'bd-sun-text', group: 'accent', note: 'Sun-coloured text on a sun tint (--bd-sun-deep is a border shade)', light: '#875D01', dark: '#FFC44D' },
   { name: 'bd-sky-text', group: 'accent', note: 'Sky text and icons', light: '#04658C', dark: '#77CDFD' },
   { name: 'bd-sky', group: 'accent', note: 'Connect four, links, the info state', light: '#6BC1F0', dark: null },
-  { name: 'bd-premium', group: 'accent', note: 'The crown and every premium marker', light: '#F59E0B', dark: null },
+  { name: 'bd-premium', group: 'accent', note: 'The crown icon and gold fills; premium names are drawn in bd-sun-text', light: '#F59E0B', dark: null },
 
   { name: 'bd-ink', group: 'ink', note: 'Body text, borders, the hard shadow', light: '#1F1B16', dark: '#F0E8DB' },
   { name: 'bd-ink-soft', group: 'ink', note: 'Secondary text', light: '#4A3F33', dark: '#B5A494' },

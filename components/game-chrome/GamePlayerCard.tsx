@@ -118,7 +118,7 @@ export default function GamePlayerCard({
           stacks the card on a phone, the same trap #901 hit with sizing (#1180). */}
       <div className="game-player-identity">
         <div className="game-player-name-row">
-          <span className="game-player-name" style={{ color: isPremium ? 'var(--bd-premium)' : undefined }}>
+          <span className="game-player-name" style={{ color: isPremium ? 'var(--bd-sun-text)' : undefined }}>
             {name}
           </span>
           {isPremium && <Icon name="crown" size={14} tone="premium" label="Premium" />}

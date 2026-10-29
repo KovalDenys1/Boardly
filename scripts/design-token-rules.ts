@@ -19,7 +19,7 @@ const ACCENT_TEXT_CLASS = new RegExp(
   String.raw`(?<![\w-])((?:[a-z0-9-]+:)*)text-(?:bd-${ACCENT}(?:-deep|-mid)?|\(--bd-${ACCENT}(?:-deep|-mid)?\)|\[color:var\(--bd-${ACCENT}(?:-deep|-mid)?\)\]|bd-premium|amber-[456]00)(?![\w-])`,
   'g',
 )
-const ACCENT_TEXT_STYLE = new RegExp(String.raw`\bcolor:\s*['"]var\(--bd-(?:${ACCENT}-deep|premium)\)['"]`)
+const ACCENT_TEXT_STYLE = new RegExp(String.raw`(?<![-\w])color:[^,;}]*?['"\`]var\(--bd-(?:${ACCENT}-deep|premium)\)['"\`]`)
 
 /** 1-based line numbers of accent text in a TSX/TS source, minus lines an `accent-text-allow` comment exempts. */
 export function accentTextLines(src: string): number[] {

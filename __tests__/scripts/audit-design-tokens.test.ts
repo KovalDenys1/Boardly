@@ -13,6 +13,7 @@ describe('accent colour used as text', () => {
     ['the premium fill', "isPremium ? 'text-bd-premium' : 'text-bd-ink'"],
     ['Tailwind amber', "isPremium ? 'text-amber-500' : ''"],
     ['a shade in an inline style', "<span style={{ color: 'var(--bd-sun-deep)' }}>"],
+    ['the premium fill through a ternary', "<span style={{ fontWeight: 600, color: isPremium ? 'var(--bd-premium)' : undefined }}>"],
   ])('flags %s', (_label, line) => {
     expect(accentTextLines(line)).toEqual([1])
   })
