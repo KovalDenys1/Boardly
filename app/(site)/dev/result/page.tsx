@@ -5,8 +5,10 @@ import ResultFixture, { type FixtureGame, type FixtureState } from './ResultFixt
  * Dev-only stage for the end-of-game dialog (GameResultOverlay): every state
  * in every game's accent, at any viewport, light or dark. `?state=` win | loss
  * | draw | standings | waiting | crowd, `?game=` ttt | c4 | memory | yahtzee | ludo,
- * `?theme=dark`, `?view=more`, and `?surface=yahtzee` for Yahtzee's results page under it. The fit check in e2e/result-overlay-fit.spec.ts
- * runs against it. Never shipped: 404 in production.
+ * `?theme=dark`, `?view=more`, `?surface=yahtzee` for Yahtzee's results page under it,
+ * `?floating=1` for the floating layers a game page can carry and `?player=signed-in`
+ * for a registered viewer. The checks in e2e/result-overlay-fit.spec.ts run against it.
+ * Never shipped: 404 in production.
  */
 export const metadata = { robots: { index: false, follow: false } }
 
@@ -29,6 +31,8 @@ export default async function DevResultPage({
       dark={params.theme === 'dark'}
       openMore={params.view === 'more'}
       surface={params.surface === 'yahtzee' ? 'yahtzee' : 'fixture'}
+      floating={params.floating === '1'}
+      signedIn={params.player === 'signed-in'}
     />
   )
 }

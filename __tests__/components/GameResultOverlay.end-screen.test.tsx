@@ -220,15 +220,17 @@ describe('it is a dialog: focus, Escape, one scrim (#1549 rule for this overlay)
     expect(base.onInspect).toHaveBeenCalledTimes(1)
   })
 
-  it('makes the page behind it inert while it is open, and gives it back after', () => {
+  it('is modal by aria-modal, its focus trap and its scrim, and writes nothing onto the page behind it', () => {
+    // React owns the page and may still be hydrating it; an attribute written from outside is a mismatch.
     const page = document.createElement('main')
     page.innerHTML = '<button>Board cell</button>'
     document.body.appendChild(page)
     try {
-      const { unmount } = render(<GameResultOverlay {...base} />)
-      expect(page).toHaveAttribute('inert')
-      unmount()
-      expect(page).not.toHaveAttribute('inert')
+      render(<GameResultOverlay {...base} />)
+      expect(dialog()).toHaveAttribute('aria-modal', 'true')
+      expect(screen.getByTestId('game-result-scrim')).toBeInTheDocument()
+      expect(page.getAttributeNames()).toEqual([])
+      expect(page.querySelector('button')!.getAttributeNames()).toEqual([])
     } finally {
       page.remove()
     }
@@ -290,6 +292,9 @@ describe('the entrance (#1578)', () => {
     calls.forEach((c) => expect(end(c)).toBeLessThan(600))
     // The card moves, not just fades in.
     expect(staged[1]!.keyframes.some((k) => 'transform' in k)).toBe(true)
+    calls.forEach((c) => c.keyframes.forEach((k) => {
+      expect(Object.keys(k).filter((key) => key !== 'offset' && key !== 'easing' && key !== 'opacity' && key !== 'transform')).toEqual([])
+    }))
   })
 
   it('under reduced motion it is one plain fade, with nothing moving', () => {

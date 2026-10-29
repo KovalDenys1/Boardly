@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import GameResultOverlay, { type ResultStanding } from '@/components/game-chrome/GameResultOverlay'
 import YahtzeeResults from '@/components/YahtzeeResults'
+import Chat from '@/components/Chat'
 import { analyzeResults } from '@/lib/yahtzee-results'
 import type { GameOutcome } from '@/components/game-chrome/GameStatusBanner'
 import type { AnalyticsGameType } from '@/lib/analytics'
@@ -57,7 +58,7 @@ function fixture(state: FixtureState): { title: string; outcome?: GameOutcome; i
   }
 }
 
-function YahtzeeSurface({ state }: { state: FixtureState }) {
+function YahtzeeSurface({ state, signedIn }: { state: FixtureState; signedIn: boolean }) {
   const rows = (state === 'standings' || state === 'crowd' ? TABLE : fixture(state).standings ?? VERSUS)
   const results = analyzeResults(
     rows.map((row) => ({ id: row.id, name: row.name, score: Number(row.score) * (state === 'standings' || state === 'crowd' ? 1 : 60) })),
@@ -73,7 +74,8 @@ function YahtzeeSurface({ state }: { state: FixtureState }) {
         onPlayAgain={() => undefined}
         onBackToLobby={() => undefined}
         onReturnToLobbyRoom={() => undefined}
-        isGuest
+        isGuest={!signedIn}
+        isRegistered={signedIn}
         lobbyCode="DEVRSLT"
         gameId="dev-result"
         faceCounts={[11, 9, 12, 10, 8, 10]}
@@ -88,14 +90,21 @@ export default function ResultFixture({
   dark,
   openMore,
   surface,
+  floating,
+  signedIn,
 }: {
   state: FixtureState
   game: FixtureGame
   dark: boolean
   openMore: boolean
   surface: 'fixture' | 'yahtzee'
+  floating: boolean
+  signedIn: boolean
 }) {
   const [inspecting, setInspecting] = useState(false)
+  // As on the lobby page: the portal root exists before anything is portaled into it.
+  const [portalReady, setPortalReady] = useState(false)
+  useEffect(() => setPortalReady(true), [])
   const config = GAMES[game]
   const data = fixture(state)
 
@@ -111,20 +120,42 @@ export default function ResultFixture({
     return () => clearTimeout(timer)
   }, [openMore])
 
-  if (surface === 'yahtzee') return <YahtzeeSurface state={state} />
+  const portalRoot = <div id="bd-lobby-portal" className="contents" />
+  const floatingLayers = floating && (
+    <>
+      {/* LobbyPageClient's desktop chat beside a held Yahtzee result, and spectate/page.tsx's chat button (fixed, z-index 60). */}
+      <Chat messages={[]} onSendMessage={() => undefined} isMinimized={false} onToggleMinimize={() => undefined} />
+      <div
+        data-testid="fixture-floating-chat-ready"
+        style={{ position: 'fixed', top: '50%', left: 16, zIndex: 60, width: 48, height: 48, borderRadius: 999, background: 'var(--bd-ink)' }}
+      />
+    </>
+  )
+
+  if (surface === 'yahtzee') {
+    return (
+      <>
+        {portalRoot}
+        {portalReady && <YahtzeeSurface state={state} signedIn={signedIn} />}
+        {floatingLayers}
+      </>
+    )
+  }
 
   return (
     <div className="page-shell grid place-items-center p-4">
+      {portalRoot}
       <div className="grid aspect-square w-full max-w-[min(32rem,70dvh)] grid-cols-3 gap-2 rounded-bd-lg border border-bd-line bg-bd-card p-3">
         {Array.from({ length: 9 }, (_, i) => (
           <div key={i} className="rounded-bd-sm bg-bd-bg2" />
         ))}
       </div>
+      {floatingLayers}
       {inspecting ? (
         <button type="button" className="fixed bottom-6 rounded-full bg-bd-inverse px-4 py-2 text-sm font-semibold text-bd-ink-on-inverse" onClick={() => setInspecting(false)}>
           Show results
         </button>
-      ) : (
+      ) : portalReady && (
         <GameResultOverlay
           title={data.title}
           kicker={config.kicker}
@@ -138,7 +169,8 @@ export default function ResultFixture({
           onPlayAgain={() => undefined}
           onReturnToLobby={() => undefined}
           onLeave={() => undefined}
-          isGuest
+          isGuest={!signedIn}
+          isRegistered={signedIn}
           canAskRematch={false}
           inviteCode="DEVRSLT"
           gameId="dev-result"

@@ -23,8 +23,10 @@ import type { GameOutcome } from '@/components/game-chrome/GameStatusBanner'
  * actions; everything else waits behind More.
  *
  * It is portaled into the lobby's portal root, so a premium lobby theme still
- * colours it, and makes everything else inert while open (#1549's rule:
- * focus moves in and stays, Escape closes it to View board, one scrim).
+ * colours it, and sits above every floating layer of a game page. It is modal
+ * by aria-modal, a focus trap and a scrim that takes every pointer (#1549's
+ * rule: focus moves in and stays, Escape closes it to View board, one scrim);
+ * it never writes onto the page behind it, which React may still be hydrating.
  *
  * Motion (#1111): adopters mount it in the same render that applies the
  * finishing move, so it waits `revealDelayMs` (invisible, click-through, not
@@ -170,26 +172,6 @@ function focusableIn(root: HTMLElement): HTMLElement[] {
   return Array.from(root.querySelectorAll<HTMLElement>(FOCUSABLE)).filter((el) => !el.closest('[inert]'))
 }
 
-/** Everything outside `el` goes inert, so neither Tab nor a screen reader's cursor can leave the dialog. */
-function makeOthersInert(el: HTMLElement): () => void {
-  const changed: Element[] = []
-  let node: Element = el
-  while (node.parentElement && node !== document.body) {
-    const parent: HTMLElement = node.parentElement
-    for (const sibling of Array.from(parent.children)) {
-      if (sibling === node || sibling.hasAttribute('inert')) continue
-      if (sibling.matches('script, style, next-route-announcer, [aria-hidden="true"], [aria-live], [role="status"], [role="alert"]')) continue
-      // A fixed layer that takes no pointer is where toasts announce themselves; inert would silence them.
-      const style = getComputedStyle(sibling)
-      if (style.position === 'fixed' && style.pointerEvents === 'none') continue
-      sibling.setAttribute('inert', '')
-      changed.push(sibling)
-    }
-    node = parent
-  }
-  return () => changed.forEach((sibling) => sibling.removeAttribute('inert'))
-}
-
 function cssToken(name: string, fallback: string): string {
   try {
     return getComputedStyle(document.documentElement).getPropertyValue(name).trim() || fallback
@@ -220,8 +202,8 @@ function playEntrance(root: HTMLElement, reduced: boolean): Animation[] {
     { opacity: 1, transform: 'none' },
   ], { delay: 40, duration: 380, easing: spring })
   run('result', [
-    { opacity: 0, transform: 'translateY(12px)', filter: 'blur(4px)' },
-    { opacity: 1, transform: 'none', filter: 'blur(0px)' },
+    { opacity: 0, transform: 'translateY(12px)' },
+    { opacity: 1, transform: 'none' },
   ], { delay: 100, duration: 300, easing: easeOut })
   run('emblem', [{ transform: 'scale(0.4)' }, { transform: 'none' }], { delay: 120, duration: 380, easing: spring })
   run('celebration', [
@@ -397,13 +379,6 @@ export default function GameResultOverlay({
     if (!shown || !root || !panel) return
     const previouslyFocused = document.activeElement instanceof HTMLElement ? document.activeElement : null
     panel.focus({ preventScroll: true })
-    let restoreInert: (() => void) | null = null
-    // Inerting server HTML that React has not hydrated yet makes it report an attribute mismatch.
-    const applyInert = () => {
-      restoreInert = makeOthersInert(root)
-    }
-    if (document.readyState === 'complete') applyInert()
-    else window.addEventListener('load', applyInert, { once: true })
 
     const onKeyDown = (event: KeyboardEvent) => {
       const target = event.target as Node | null
@@ -436,8 +411,6 @@ export default function GameResultOverlay({
     document.addEventListener('keydown', onKeyDown)
     return () => {
       document.removeEventListener('keydown', onKeyDown)
-      window.removeEventListener('load', applyInert)
-      restoreInert?.()
       if (previouslyFocused?.isConnected) previouslyFocused.focus({ preventScroll: true })
     }
   }, [shown])
@@ -678,7 +651,7 @@ export default function GameResultOverlay({
       ref={rootRef}
       data-testid="game-result-overlay"
       data-state={shown ? 'shown' : 'pending'}
-      className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      className="fixed inset-0 z-61 flex items-center justify-center p-4"
       // Pending: not seen, not clickable and not modal, so a tap meant for the board cannot hit Play again.
       style={shown ? undefined : { opacity: 0, pointerEvents: 'none' }}
       aria-hidden={shown ? undefined : true}

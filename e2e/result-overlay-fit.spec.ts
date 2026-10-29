@@ -43,3 +43,58 @@ for (const size of SIZES) {
     }
   })
 }
+
+test('opening the result dialog writes nothing React has to hydrate, so the page logs no mismatch', async ({ page }) => {
+  const hydrationErrors: string[] = []
+  page.on('console', (message) => {
+    if (message.type() === 'error' && /hydrat/i.test(message.text())) hydrationErrors.push(message.text().slice(0, 200))
+  })
+  await page.setViewportSize({ width: 390, height: 844 })
+  await page.goto('/dev/result?state=win')
+  await expect(page.getByRole('dialog')).toBeVisible()
+  // The header and the feedback button hydrate late, behind next/dynamic.
+  await page.waitForLoadState('networkidle')
+  await page.waitForTimeout(1500)
+  expect(hydrationErrors).toEqual([])
+  const devIssues = await page.evaluate(() => document.querySelector('nextjs-portal')?.shadowRoot?.textContent?.match(/\d+\s*Issues?/)?.[0] ?? null)
+  expect(devIssues).toBeNull()
+})
+
+test('nothing paints above the result scrim: floating chat, the spectators\' chat, the feedback button', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 800 })
+  await page.goto('/dev/result?state=standings&floating=1')
+  await expect(page.getByRole('dialog')).toBeVisible()
+  await expect(page.getByTestId('fixture-floating-chat-ready')).toBeAttached()
+  await page.waitForFunction(() => {
+    const overlay = document.querySelector('[data-testid="game-result-overlay"]')
+    return !!overlay && document.getAnimations().every((animation) => {
+      const target = (animation.effect as KeyframeEffect | null)?.target
+      return !target || !overlay.contains(target) || animation.playState !== 'running'
+    })
+  })
+
+  const above = await page.evaluate(() => {
+    const overlay = document.querySelector('[data-testid="game-result-overlay"]')!
+    // Hit-testing skips inert nodes, which would hide a layer that paints above.
+    document.querySelectorAll('[inert]').forEach((el) => !overlay.contains(el) && el.removeAttribute('inert'))
+    const layers = [...document.querySelectorAll<HTMLElement>('body *')].filter((el) => {
+      if (overlay.contains(el) || el.closest('nextjs-portal')) return false
+      // react-hot-toast's layer: toasts may stay above.
+      if (el.closest('[data-rht-toaster]') || el.querySelector('[data-rht-toaster]')) return false
+      const style = getComputedStyle(el)
+      const box = el.getBoundingClientRect()
+      return (style.position === 'fixed' || style.position === 'sticky') && style.visibility !== 'hidden' && box.width > 0 && box.height > 0
+    })
+    return layers
+      .map((el) => {
+        const box = el.getBoundingClientRect()
+        const x = Math.min(Math.max(box.left + box.width / 2, 1), innerWidth - 1)
+        const y = Math.min(Math.max(box.top + box.height / 2, 1), innerHeight - 1)
+        const hit = document.elementFromPoint(x, y)
+        return { layer: `${el.tagName.toLowerCase()}.${String(el.className).slice(0, 40)}`, covered: !!hit && overlay.contains(hit) }
+      })
+      .filter((entry) => !entry.covered)
+      .map((entry) => entry.layer)
+  })
+  expect(above).toEqual([])
+})
