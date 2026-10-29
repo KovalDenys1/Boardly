@@ -1,14 +1,16 @@
 'use client'
 
-import { createContext, useCallback, useContext, type ReactNode } from 'react'
+import { useCallback, type ReactNode } from 'react'
 import { I18nextProvider } from 'react-i18next'
 import type { i18n as I18n } from 'i18next'
 
 import i18n from '@/i18n'
 import { createLocaleI18n } from '@/lib/locale-i18n'
+import { PageLocaleContext, usePageLocale } from '@/lib/page-locale-context'
 import { localizeHref, type PrefixedLocale } from '@/lib/seo-locales'
 
-const PageLocaleContext = createContext<PrefixedLocale | null>(null)
+export { usePageLocale }
+
 const instances = new Map<PrefixedLocale, I18n>()
 
 function instanceFor(locale: PrefixedLocale, translation: object): I18n {
@@ -39,11 +41,6 @@ export function PageLocaleProvider({
       <I18nextProvider i18n={instanceFor(locale, translation)}>{children}</I18nextProvider>
     </PageLocaleContext.Provider>
   )
-}
-
-/** The page's URL locale, or null on an unprefixed page. */
-export function usePageLocale(): PrefixedLocale | null {
-  return useContext(PageLocaleContext)
 }
 
 /** Turns an unprefixed href into the one this page should link: /ru/games on /ru, /games elsewhere. */
