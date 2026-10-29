@@ -30,19 +30,13 @@ function FriendsPageContent() {
     <div className="bd-page bd-screen page-shell">
       <div className="min-h-0 flex-1 overflow-y-auto px-4 py-8 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-5xl">
-          {/* Header */}
-          <div className="mb-8 flex flex-wrap items-end justify-between gap-5">
-            <div>
-              <span className="bd-kicker">{t('profile.friends.pageKicker')}</span>
-              <h1
-                className="mt-3 text-[clamp(2.5rem,7vw,4rem)] font-extrabold leading-[0.95] text-bd-ink"
-                style={{ fontFamily: 'var(--bd-font-display)' }}
-              >
-                {t('profile.friends.title')}{' '}
-                <span style={{ color: 'var(--bd-coral)' }}>{t('profile.friends.pageSubtitle')}</span>
-              </h1>
-            </div>
-          </div>
+          <header className="mb-6 desk:mb-8">
+            <span className="bd-kicker">{t('profile.friends.pageKicker')}</span>
+            <h1 className="mt-3 font-display text-[clamp(2.5rem,7vw,4rem)] font-extrabold leading-[0.95] text-bd-ink">
+              {t('profile.friends.title')}{' '}
+              <span className="text-bd-coral-text">{t('profile.friends.pageSubtitle')}</span>
+            </h1>
+          </header>
 
           <Friends />
         </div>

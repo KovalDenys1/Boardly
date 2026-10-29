@@ -5,7 +5,6 @@ function renderLayout(chat: boolean) {
   return render(
     <YahtzeeDesktopLayout
       header={<div data-testid="header" />}
-      room={<div data-testid="room" />}
       status={<div data-testid="status" />}
       board={<div data-testid="board" />}
       events={<div data-testid="events" />}
@@ -15,12 +14,12 @@ function renderLayout(chat: boolean) {
 }
 
 describe('YahtzeeDesktopLayout (#1363)', () => {
-  it('uses the shared game grid: scoreboard and room card on the first row', () => {
+  it('uses the shared game grid with the one header first (#1577)', () => {
     const { getByTestId } = renderLayout(false)
     const grid = getByTestId('header').parentElement!
     expect(grid.classList.contains('ttt-grid')).toBe(true)
     expect(grid.parentElement!.classList.contains('ttt-desktop-layout')).toBe(true)
-    expect(getByTestId('room').parentElement).toBe(grid)
+    expect(grid.firstElementChild).toBe(getByTestId('header'))
   })
 
   it('puts the status banner directly above the board in the centre column', () => {
@@ -37,7 +36,7 @@ describe('YahtzeeDesktopLayout (#1363)', () => {
     expect(right.classList.contains('ttt-right-col')).toBe(true)
     expect(getByTestId('chat').parentElement).toBe(right)
     rerender(
-      <YahtzeeDesktopLayout header={null} room={null} status={null} board={null} events={<div data-testid="events" />} chat={null} />,
+      <YahtzeeDesktopLayout header={null} status={null} board={null} events={<div data-testid="events" />} chat={null} />,
     )
     expect(queryByTestId('chat')).toBeNull()
   })

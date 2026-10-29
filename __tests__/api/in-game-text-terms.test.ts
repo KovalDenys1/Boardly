@@ -40,6 +40,7 @@ jest.mock('@/lib/logger', () => ({
 jest.mock('@/lib/games/spy-game', () => ({
   SpyGame: jest.fn().mockImplementation(() => ({
     loadState: jest.fn(),
+    closeLapsedPhase: jest.fn(() => null),
     makeMove: jest.fn(() => true),
     getState: jest.fn(() => ({ players: [], status: 'playing', data: { phase: 'QUESTIONING' } })),
   })),

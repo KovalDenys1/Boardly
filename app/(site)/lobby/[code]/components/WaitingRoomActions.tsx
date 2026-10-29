@@ -102,7 +102,7 @@ export default function WaitingRoomActions({
 
       {/* Status hint */}
       {!canStartImmediately && (
-        <p className="text-center text-xs text-bd-sun-deep">
+        <p className="text-center text-xs text-bd-sun-text">
           {t('game.ui.needMorePlayers', { count: Math.max(minPlayers - playerCount, 0) })}
         </p>
       )}

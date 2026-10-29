@@ -9,13 +9,12 @@ import { Icon } from '@/components/icons'
 import LeaveIcon from '@/components/LeaveIcon'
 import ConfirmModal from '@/components/ConfirmModal'
 import Chat from '@/components/Chat'
-import GameScoreboardHeader from '@/components/game-chrome/GameScoreboardHeader'
+import GameScoreboardHeader, { type GameHeaderRoom } from '@/components/game-chrome/GameScoreboardHeader'
 import GamePlayerCard from '@/components/game-chrome/GamePlayerCard'
 import GameStatusBanner from '@/components/game-chrome/GameStatusBanner'
 import { viewerOutcome } from '@/lib/game-outcome'
 import ScorePop from '@/components/game-chrome/ScorePop'
 import GameTabs from '@/components/game-chrome/GameTabs'
-import GameLeaveButton from '@/components/game-chrome/GameLeaveButton'
 import GameResultOverlay, { RESULT_REVEAL_DELAY_MS } from '@/components/game-chrome/GameResultOverlay'
 import SketchAndGuessGameBoard, {
     SketchScoreRows,
@@ -92,6 +91,7 @@ interface LobbyData {
     gameType?: string
     game?: SketchAndGuessGame
     theme?: string
+    allowSpectators?: boolean
 }
 
 interface SketchAndGuessLobbyPageProps {
@@ -1186,12 +1186,18 @@ export default function SketchAndGuessLobbyPage({ code, isSpectator = false, onG
         />
     )
 
+    const headerRoom: GameHeaderRoom = {
+        gameId: 'guess-my-drawing',
+        title: t('games.guess_my_drawing.name'),
+        code,
+        isSpectator,
+        allowSpectators: !!lobby?.allowSpectators,
+        onLeave: () => setShowLeaveConfirmModal(true),
+    }
     const headerSection = (
         <div className="ttt-card sketch-header-card" style={{ background: 'linear-gradient(135deg, var(--bd-card-warm) 0%, rgba(93,211,158,0.12) 100%)', overflow: 'hidden', padding: '12px 16px' }}>
-            <div style={{ position: 'absolute', right: -10, top: -14, opacity: 0.12, transform: 'rotate(12deg)', pointerEvents: 'none', lineHeight: 1 }}>
-                <Icon name="palette" size={96} />
-            </div>
             <GameScoreboardHeader
+                room={headerRoom}
                 leftCard={seatCard(drawerId, 'left', !isFinished && phase !== 'reveal', pencilBadge)}
                 center={
                     <>
@@ -1212,11 +1218,6 @@ export default function SketchAndGuessLobbyPage({ code, isSpectator = false, onG
                     </div>
                 }
                 rightCard={seatCard(meSeatId, 'right', !isFinished && phase === 'drawing' && !!meSeatId && !guessedIds.has(meSeatId))}
-                trailing={
-                    isSpectator
-                        ? <GameLeaveButton label={t('game.ui.backToLobby')} href={`/lobby/${code}`} variant="back" />
-                        : <GameLeaveButton label={t('game.ui.leave')} onClick={() => setShowLeaveConfirmModal(true)} />
-                }
             />
         </div>
     )
@@ -1267,14 +1268,10 @@ export default function SketchAndGuessLobbyPage({ code, isSpectator = false, onG
                 <GameResultOverlay
                     isSpectator={isSpectator}
                     title={finishedMessage}
-                    kicker={t('lobby.game.gameOver')}
                     accentColor={SKETCH_ACCENT}
                     accentShadowColor={SKETCH_ACCENT_DEEP}
-                    icon={
-                        <div style={{ width: 56, height: 56, borderRadius: '50%', background: iWon ? SKETCH_ACCENT_DEEP : SKETCH_ACCENT, display: 'grid', placeItems: 'center', boxShadow: 'inset 0 0 0 3px rgba(255,255,255,0.15)' }}>
-                            <Icon name={iWon ? 'trophy' : 'palette'} size={28} tone="on-accent" />
-                        </div>
-                    }
+                    icon={<Icon name={iWon ? 'trophy' : 'palette'} size={34} />}
+                    standings={players.map((p) => ({ id: p.id, name: nameOf(p.id), score: scores[p.id] || 0, isViewer: p.id === currentUserId }))}
                     onInspect={() => setOverlayInspecting(true)}
                     isHost={isCreator}
                     isLoading={isReturningToWaiting}

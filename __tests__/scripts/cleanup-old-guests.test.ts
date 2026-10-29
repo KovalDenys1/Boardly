@@ -29,6 +29,7 @@ interface RelationFilter {
 }
 
 interface CleanupBranch {
+  id?: { in?: unknown }
   lastActiveAt?: { lt?: unknown }
   players?: { none?: RelationFilter; some?: RelationFilter }
 }
@@ -69,8 +70,8 @@ function wouldDelete(where: unknown, guest: GuestFixture): boolean {
 
   return (clause.OR as CleanupBranch[]).some((branch) => {
     const shape = Object.keys(branch).sort().join(',')
-    if (shape !== 'lastActiveAt,players') {
-      throw new Error(`unrecognised cleanup branch: {${shape}} - every branch must carry a players filter`)
+    if (shape !== 'lastActiveAt,players' && shape !== 'id,lastActiveAt') {
+      throw new Error(`unrecognised cleanup branch: {${shape}} - every branch must carry a players filter or an id list`)
     }
 
     const cutoff = branch.lastActiveAt?.lt
@@ -79,6 +80,12 @@ function wouldDelete(where: unknown, guest: GuestFixture): boolean {
     }
     if (guest.lastActiveAt.getTime() >= cutoff.getTime()) {
       return false
+    }
+
+    if (branch.id) {
+      const ids = branch.id.in
+      if (!Array.isArray(ids)) throw new Error(`id branch must list ids, got ${JSON.stringify(branch.id)}`)
+      return ids.includes(guest.id)
     }
 
     const { none, some } = branch.players ?? {}
@@ -108,6 +115,8 @@ jest.mock('@/lib/db', () => ({
       deleteMany: jest.fn(),
       count: jest.fn(),
     },
+    players: { findMany: jest.fn(async () => []) },
+    gameStateSnapshots: { findMany: jest.fn(async () => []) },
     $disconnect: jest.fn(),
   },
 }))
@@ -224,6 +233,22 @@ describe('buildGuestCleanupWhere', () => {
       games: ['finished', 'abandoned', 'finished'],
     })).toBe(false)
   })
+
+  // A clip link starts a bot game before the visitor touches the board (#1541).
+  it('removes a guest seated in a started game they never made a move in once the short window passes', () => {
+    const neverMoved = buildGuestCleanupWhere(shortCutoff, longCutoff, [PLAYED_GUEST_ID])
+
+    expect(wouldDelete(neverMoved, {
+      id: PLAYED_GUEST_ID,
+      lastActiveAt: daysAgo(4),
+      games: ['playing'],
+    })).toBe(true)
+    expect(wouldDelete(neverMoved, {
+      id: PLAYED_GUEST_ID,
+      lastActiveAt: daysAgo(2),
+      games: ['playing'],
+    })).toBe(false)
+  })
 })
 
 describe('cleanupOldGuests script', () => {
@@ -240,6 +265,37 @@ describe('cleanupOldGuests script', () => {
     } else {
       delete process.env.CLEANUP_GUEST_DAYS
     }
+  })
+
+  it('purges at 3 days a guest whose auto-started bot game has no move of theirs (#1541)', async () => {
+    ;(prisma.players.findMany as jest.Mock).mockResolvedValueOnce([{ userId: PLAYED_GUEST_ID }])
+    ;(prisma.gameStateSnapshots.findMany as jest.Mock).mockResolvedValueOnce([])
+    ;(prisma.users.findMany as jest.Mock).mockResolvedValue([])
+
+    await cleanupOldGuests({ disconnect: false })
+
+    expect(prisma.gameStateSnapshots.findMany).toHaveBeenCalledWith(expect.objectContaining({
+      where: { playerId: { in: [PLAYED_GUEST_ID] }, actionType: { not: 'game:start' } },
+    }))
+    expect(wouldDelete(cleanupFilter(), {
+      id: PLAYED_GUEST_ID,
+      lastActiveAt: daysAgo(4),
+      games: ['playing'],
+    })).toBe(true)
+  })
+
+  it('keeps for 90 days a guest who made a move in that game (#1541)', async () => {
+    ;(prisma.players.findMany as jest.Mock).mockResolvedValueOnce([{ userId: PLAYED_GUEST_ID }])
+    ;(prisma.gameStateSnapshots.findMany as jest.Mock).mockResolvedValueOnce([{ playerId: PLAYED_GUEST_ID }])
+    ;(prisma.users.findMany as jest.Mock).mockResolvedValue([])
+
+    await cleanupOldGuests({ disconnect: false })
+
+    expect(wouldDelete(cleanupFilter(), {
+      id: PLAYED_GUEST_ID,
+      lastActiveAt: daysAgo(4),
+      games: ['playing'],
+    })).toBe(false)
   })
 
   it('deletes guests older than configured retention days', async () => {

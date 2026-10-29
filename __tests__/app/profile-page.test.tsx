@@ -73,8 +73,10 @@ jest.mock('@/components/GameHistory', () => {
   return MockGameHistory
 })
 
+let mockFriendsLoaded: (() => void) | undefined
 jest.mock('@/components/Friends', () => {
-  function MockFriends() {
+  function MockFriends({ onLoaded }: { onLoaded?: () => void }) {
+    mockFriendsLoaded = onLoaded
     return <div>mock-friends</div>
   }
 
@@ -134,6 +136,8 @@ describe('ProfilePage', () => {
     window.localStorage.clear()
     window.history.replaceState({}, '', '/profile')
     mockI18n.language = 'en'
+    // jsdom has no scrollIntoView, and a ?tab= link scrolls to the tab list.
+    Element.prototype.scrollIntoView = jest.fn()
 
     mockUseRouter.mockReturnValue({
       replace: mockRouterReplace,
@@ -807,6 +811,61 @@ describe('ProfilePage', () => {
       expect(section.id).toBe('notifications')
       await waitFor(() => expect(scrollIntoView).toHaveBeenCalled())
       expect(scrollIntoView.mock.instances[0]).toBe(section)
+    })
+  })
+
+  it('names every tab itself, since on a phone only its icon shows', async () => {
+    render(<ProfilePage />)
+
+    const tabs = await screen.findAllByRole('tab')
+    expect(tabs.map((tab) => tab.getAttribute('aria-label'))).toEqual([
+      'profile.title',
+      'profile.friends.title',
+      'profile.gameHistory.title',
+      'profile.stats.title',
+      'Premium',
+      'profile.settings.title',
+    ])
+  })
+
+  /** Friend-request notifications link to /profile?tab=friends (#1584). */
+  describe('a link straight to a tab', () => {
+    const scrollIntoView = () => Element.prototype.scrollIntoView as jest.Mock
+
+    it('opens at the tab list once the friends list is on the page, and only once', async () => {
+      window.history.replaceState({}, '', '/profile?tab=friends')
+
+      render(<ProfilePage />)
+
+      expect(await screen.findByText('mock-friends')).toBeTruthy()
+      // Before the list loads the page is too short to bring the tab list to the top.
+      expect(scrollIntoView()).not.toHaveBeenCalled()
+
+      act(() => mockFriendsLoaded?.())
+      expect(scrollIntoView()).toHaveBeenCalledTimes(1)
+      expect(scrollIntoView().mock.instances[0]).toBe(screen.getByRole('tablist'))
+
+      act(() => mockFriendsLoaded?.())
+      expect(scrollIntoView()).toHaveBeenCalledTimes(1)
+    })
+
+    it('does not scroll when the player opens the friends tab from the plain profile link', async () => {
+      render(<ProfilePage />)
+
+      fireEvent.click(await screen.findByRole('tab', { name: 'profile.friends.title' }))
+      expect(await screen.findByText('mock-friends')).toBeTruthy()
+
+      act(() => mockFriendsLoaded?.())
+      expect(scrollIntoView()).not.toHaveBeenCalled()
+    })
+
+    it('draws no frame around the friends tab, whose sections are cards already', async () => {
+      window.history.replaceState({}, '', '/profile?tab=friends')
+
+      render(<ProfilePage />)
+
+      const panel = (await screen.findByText('mock-friends')).closest('[role="tabpanel"]') as HTMLElement
+      expect(panel.parentElement?.className).not.toMatch(/rounded-4xl|shadow-bd-card/)
     })
   })
 })

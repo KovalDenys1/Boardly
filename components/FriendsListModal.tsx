@@ -167,7 +167,7 @@ export default function FriendsListModal({
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
       <div
-        className="rounded-2xl p-6 max-w-md w-full max-h-[80vh] overflow-y-auto"
+        className="rounded-2xl p-6 max-w-md w-full max-h-[80vh] overflow-y-auto overscroll-contain"
         style={{ background: 'var(--bd-card-warm)', border: '1.5px solid var(--bd-line)' }}
       >
         <div className="flex justify-between items-center mb-4">
@@ -255,7 +255,7 @@ export default function FriendsListModal({
                     <button
                       key={friend.id}
                       onClick={() => toggleFriend(friend.id)}
-                      className="w-full flex items-center gap-3 p-3 rounded-xl transition-all"
+                      className="w-full flex items-center gap-3 p-3 rounded-xl transition"
                       style={{
                         border: isSelected ? '2px solid var(--bd-sun)' : '1.5px solid var(--bd-line)',
                         background: isSelected ? '#FFC44D18' : 'var(--bd-bg)',

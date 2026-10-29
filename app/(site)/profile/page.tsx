@@ -201,11 +201,7 @@ const PROFILE_PREVIEW_ENTER_MS = 420
 const PROFILE_TAB_INDICATOR_X_INSET_PX = 2
 
 function getProfilePreviewTransitionTimings() {
-  if (
-    typeof window !== 'undefined' &&
-    typeof window.matchMedia === 'function' &&
-    window.matchMedia('(prefers-reduced-motion: reduce)').matches
-  ) {
+  if (prefersReducedMotion()) {
     return {
       exitMs: 0,
       enterMs: 0,
@@ -606,6 +602,7 @@ export default function ProfilePage() {
     window.history.replaceState({}, '', `${currentUrl.pathname}${currentUrl.search}${currentUrl.hash}`)
   }, [])
 
+  const friendsLinkPendingRef = useRef(false)
   useEffect(() => {
     if (typeof window === 'undefined') return
 
@@ -620,7 +617,15 @@ export default function ProfilePage() {
       setSettingsScrollRequest((request) => request + 1)
     } else if (isTabType(tabFromQuery)) {
       setActiveTab(tabFromQuery)
+      friendsLinkPendingRef.current = tabFromQuery === 'friends'
     }
+  }, [])
+
+  // Friend-request notifications open ?tab=friends: land at the tab list, not the top of the profile.
+  const scrollToTabsFromFriendsLink = useCallback(() => {
+    if (!friendsLinkPendingRef.current || !tabListRef.current) return
+    friendsLinkPendingRef.current = false
+    tabListRef.current.scrollIntoView({ block: 'start' })
   }, [])
 
   // A request stays pending until the section is on the page: a deep link arrives
@@ -1683,7 +1688,7 @@ export default function ProfilePage() {
           <button
             type="button"
             onDoubleClick={() => beginInlineEdit(field)}
-            className={`block w-full rounded-lg bg-transparent p-0 text-left transition-all duration-200 ease-out focus:outline-hidden ${
+            className={`block w-full rounded-lg bg-transparent p-0 text-left transition duration-200 ease-out focus:outline-hidden ${
               isEditing
                 ? 'pointer-events-none absolute inset-0 -translate-y-1 opacity-0'
                 : 'relative translate-y-0 opacity-100'
@@ -1694,7 +1699,7 @@ export default function ProfilePage() {
           </button>
 
           <div
-            className={`flex items-center gap-2 transition-all duration-200 ease-out ${
+            className={`flex items-center gap-2 transition duration-200 ease-out ${
               isEditing
                 ? 'relative translate-y-0 opacity-100'
                 : 'pointer-events-none absolute inset-0 translate-y-1 opacity-0'
@@ -1722,7 +1727,7 @@ export default function ProfilePage() {
               }}
               aria-label={field === 'email' ? 'inline-email-input' : 'inline-username-input'}
               tabIndex={isEditing ? 0 : -1}
-              className={`min-w-0 flex-1 border-0 border-b-2 bg-transparent px-0 pb-1 shadow-none outline-hidden transition-all duration-200 focus:ring-0 ${
+              className={`min-w-0 flex-1 border-0 border-b-2 bg-transparent px-0 pb-1 shadow-none outline-hidden transition duration-200 focus:ring-0 ${
                 editingStatus === 'available'
                   ? 'border-emerald-400'
                   : editingStatus === 'taken' || editingStatus === 'invalid' || editingStatus === 'error'
@@ -1777,7 +1782,7 @@ export default function ProfilePage() {
         )}
 
         <div
-          className={`overflow-hidden transition-all duration-200 ease-out ${
+          className={`overflow-hidden transition-[max-height,margin,opacity] duration-200 ease-out ${
             isEditing ? 'mt-1 max-h-10 opacity-100' : 'max-h-0 opacity-0'
           }`}
         >
@@ -1810,15 +1815,15 @@ export default function ProfilePage() {
   const settingsScopeBadgeClassName =
     'inline-flex w-fit rounded-full bg-bd-bg2 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-bd-ink-soft'
   const actionPrimaryButtonClassName =
-    'inline-flex items-center justify-center gap-2 rounded-2xl border-2 border-bd-lav-deep bg-bd-lav px-5 py-3 text-sm font-bold text-(--bd-ink-on-accent) shadow-[0_4px_0_#7867E8] transition-all hover:-translate-y-0.5 hover:bg-bd-lav-mid hover:shadow-[0_6px_0_#7867E8] disabled:cursor-not-allowed disabled:opacity-60'
+    'inline-flex items-center justify-center gap-2 rounded-2xl border-2 border-bd-lav-deep bg-bd-lav px-5 py-3 text-sm font-bold text-bd-ink-on-accent shadow-[0_4px_0_var(--bd-lav-deep)] transition hover:-translate-y-0.5 hover:bg-bd-lav-mid hover:shadow-[0_6px_0_var(--bd-lav-deep)] disabled:cursor-not-allowed disabled:opacity-60'
   const actionSecondaryButtonClassName =
-    'inline-flex items-center justify-center gap-2 rounded-2xl border-[1.5px] border-bd-line bg-bd-card-warm px-5 py-3 text-sm font-semibold text-bd-ink shadow-[0_3px_0_var(--bd-line)] transition-all hover:-translate-y-0.5 hover:bg-bd-bg2'
+    'inline-flex items-center justify-center gap-2 rounded-2xl border-[1.5px] border-bd-line bg-bd-card-warm px-5 py-3 text-sm font-semibold text-bd-ink shadow-[0_3px_0_var(--bd-line)] transition hover:-translate-y-0.5 hover:bg-bd-bg2'
   const actionDangerButtonClassName =
     'inline-flex items-center justify-center gap-2 rounded-2xl border border-bd-danger-border bg-bd-card-warm px-4 py-2.5 text-sm font-semibold text-bd-coral-text transition-colors hover:bg-bd-danger-bg dark:border-red-500/30 dark:text-red-300 dark:hover:bg-red-500/10'
   const profileSurfaceClassName =
     'rounded-3xl border border-bd-line bg-bd-bg p-5'
   const fieldInputClassName =
-    'w-full rounded-2xl border bg-(--bd-input-bg) px-4 py-3 text-base text-bd-ink shadow-xs outline-hidden desk:text-sm transition-all focus:ring-2 focus:ring-inset focus:ring-bd-lav-deep'
+    'w-full rounded-2xl border bg-bd-input-bg px-4 py-3 text-base text-bd-ink shadow-xs outline-hidden desk:text-sm transition focus:ring-2 focus:ring-inset focus:ring-bd-lav-deep'
   const settingsSyncBadgeClassName =
     'inline-flex w-fit rounded-full bg-bd-lav/15 px-2.5 py-1 text-xs font-semibold text-bd-lav-text dark:text-bd-lav'
 
@@ -1882,10 +1887,10 @@ export default function ProfilePage() {
                           image={profileSummary?.avatarUrl || profileSummary?.image || session?.user?.image || null}
                           userName={currentUsername || displayName}
                           userEmail={currentEmail}
-                          className="h-28 w-28 border-[3px] border-[#1F1B16] bg-bd-lav text-(--bd-ink-on-accent) outline-solid outline-4 outline-white outline-offset-[-7px] sm:h-32 sm:w-32"
+                          className="h-28 w-28 border-[3px] border-[#1F1B16] bg-bd-lav text-bd-ink-on-accent outline-solid outline-4 outline-white outline-offset-[-7px] sm:h-32 sm:w-32"
                           textClassName="font-display text-5xl font-bold"
                         />
-                        <div className="absolute -bottom-2 -right-4 rotate-[8deg] rounded-full border-2 border-bd-ink bg-bd-mint px-3 py-1 font-display text-xs font-bold text-bd-ink-on-accent shadow-[2px_2px_0_#1F1B16]">
+                        <div className="absolute -bottom-2 -right-4 rotate-[8deg] rounded-full border-2 border-bd-ink bg-bd-mint px-3 py-1 font-display text-xs font-bold text-bd-ink-on-accent shadow-[2px_2px_0_var(--bd-ink)]">
                           {t('profile.levelShort')} {Math.max(
                             1,
                             Math.floor(
@@ -1901,7 +1906,7 @@ export default function ProfilePage() {
                       <button
                         type="button"
                         onClick={handleBackNavigation}
-                        className="group inline-flex items-center gap-2 rounded-xl px-3 py-1.5 text-sm font-semibold text-bd-ink-soft transition-all hover:bg-bd-bg2"
+                        className="group inline-flex items-center gap-2 rounded-xl px-3 py-1.5 text-sm font-semibold text-bd-ink-soft transition hover:bg-bd-bg2"
                       >
                         <span aria-hidden className="transition-transform group-hover:-translate-x-0.5">
                           ←
@@ -1955,7 +1960,7 @@ export default function ProfilePage() {
                               type="button"
                               onClick={handleResendVerification}
                               disabled={showResendVerification}
-                              className="inline-flex shrink-0 items-center justify-center rounded-xl bg-amber-500 px-3 py-2 text-xs font-semibold text-bd-ink-on-accent shadow-xs transition-all hover:bg-amber-600 hover:shadow-sm disabled:cursor-not-allowed disabled:opacity-60"
+                              className="inline-flex shrink-0 items-center justify-center rounded-xl bg-amber-500 px-3 py-2 text-xs font-semibold text-bd-ink-on-accent shadow-xs transition hover:bg-amber-600 hover:shadow-sm disabled:cursor-not-allowed disabled:opacity-60"
                             >
                               {showResendVerification
                                 ? t('common.loading')
@@ -1975,7 +1980,7 @@ export default function ProfilePage() {
                             type="button"
                             onClick={openPublicProfilePreview}
                             disabled={isPublicProfilePreviewTransitioning}
-                            className="group inline-flex items-center justify-center gap-2 rounded-2xl border-2 border-bd-lav-deep bg-bd-lav px-4 py-3 text-sm font-bold text-(--bd-ink-on-accent) shadow-[0_4px_0_#7867E8] transition-all hover:-translate-y-0.5 hover:bg-bd-lav-mid hover:shadow-[0_6px_0_#7867E8] disabled:cursor-not-allowed disabled:opacity-70 dark:border-bd-lav-mid dark:bg-bd-lav dark:text-(--bd-ink-on-accent)"
+                            className="group inline-flex items-center justify-center gap-2 rounded-2xl border-2 border-bd-lav-deep bg-bd-lav px-4 py-3 text-sm font-bold text-bd-ink-on-accent shadow-[0_4px_0_var(--bd-lav-deep)] transition hover:-translate-y-0.5 hover:bg-bd-lav-mid hover:shadow-[0_6px_0_var(--bd-lav-deep)] disabled:cursor-not-allowed disabled:opacity-70 dark:border-bd-lav-mid dark:bg-bd-lav dark:text-bd-ink-on-accent"
                           >
                             <span>{t('profile.publicProfile.viewOwn')}</span>
                             <span aria-hidden className="transition-transform group-hover:translate-x-0.5">
@@ -2034,7 +2039,7 @@ export default function ProfilePage() {
                           )}
                         </>
                       )
-                      const baseClass = 'group relative overflow-hidden rounded-3xl border-[1.5px] border-bd-line bg-bd-bg p-5 shadow-bd-soft transition-all hover:-translate-y-0.5'
+                      const baseClass = 'group relative overflow-hidden rounded-3xl border-[1.5px] border-bd-line bg-bd-bg p-5 shadow-bd-soft transition hover:-translate-y-0.5'
                       return card.onClick ? (
                         <button
                           key={card.id}
@@ -2068,11 +2073,11 @@ export default function ProfilePage() {
               ref={setTabList}
               role="tablist"
               aria-label={t('profile.title')}
-              className="relative flex w-full min-w-max gap-1 rounded-2xl border-[1.5px] border-bd-line bg-bd-card-warm p-1.5 shadow-bd-soft"
+              className="relative flex w-full min-w-max scroll-mt-4 gap-1 rounded-2xl border-[1.5px] border-bd-line bg-bd-card-warm p-1.5 shadow-bd-soft"
             >
               <div
                 aria-hidden="true"
-                className={`pointer-events-none absolute left-0 bottom-1.5 top-1.5 rounded-xl bg-bd-lav shadow-[0_3px_0_#7867E8] ${animateTabIndicator ? 'transition-[transform,width,opacity] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]' : ''}`}
+                className={`pointer-events-none absolute left-0 bottom-1.5 top-1.5 rounded-xl bg-bd-lav shadow-[0_3px_0_var(--bd-lav-deep)] ${animateTabIndicator ? 'transition-[transform,width,opacity] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]' : ''}`}
                 style={{
                   width: activeTabIndicatorStyle.width
                     ? `${activeTabIndicatorStyle.width}px`
@@ -2086,13 +2091,14 @@ export default function ProfilePage() {
                   key={tab.id}
                   ref={setTabButton(tab.id)}
                   role="tab"
+                  aria-label={tab.label}
                   aria-selected={activeTab === tab.id}
                   aria-controls={`profile-tab-panel-${tab.id}`}
                   id={`profile-tab-${tab.id}`}
                   onClick={() => handleTabChange(tab.id)}
                   className={`relative z-10 flex flex-1 items-center justify-center gap-1.5 rounded-xl px-3 py-2.5 text-sm font-semibold transition-colors duration-300 sm:px-4 ${
                     activeTab === tab.id
-                      ? `text-(--bd-ink-on-accent) ${activeTabIndicatorStyle.opacity ? '' : 'bg-bd-lav'}`
+                      ? `text-bd-ink-on-accent ${activeTabIndicatorStyle.opacity ? '' : 'bg-bd-lav'}`
                       : 'text-bd-ink-soft hover:bg-bd-bg2 hover:text-bd-ink'
                   }`}
                 >
@@ -2103,8 +2109,14 @@ export default function ProfilePage() {
             </nav>
           </div>
 
-          {/* ── Tab Content ── */}
-          <div className="mt-6 rounded-4xl border-[1.5px] border-bd-line bg-bd-card-warm p-5 shadow-bd-card sm:p-8">
+          {/* ── Tab Content ── The friends tab's sections are cards already; a frame would nest them. */}
+          <div
+            className={
+              activeTab === 'friends'
+                ? 'mt-6'
+                : 'mt-6 rounded-4xl border-[1.5px] border-bd-line bg-bd-card-warm p-5 shadow-bd-card sm:p-8'
+            }
+          >
 
           {activeTab === 'profile' && (
             <div role="tabpanel" id="profile-tab-panel-profile" aria-labelledby="profile-tab-profile">
@@ -2114,7 +2126,7 @@ export default function ProfilePage() {
                 <div className="mb-6 overflow-hidden rounded-2xl border border-amber-200/60 bg-linear-to-r/srgb from-amber-50 to-orange-50 dark:border-amber-500/20 dark:from-amber-500/10 dark:to-orange-500/5">
                   <div className="border-l-4 border-amber-400 p-4 sm:p-5">
                     <div className="flex items-start gap-3">
-                      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-amber-100 text-amber-600 dark:bg-amber-500/20 dark:text-amber-400">
+                      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-amber-100 text-bd-sun-text dark:bg-amber-500/20">
                         <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" /></svg>
                       </div>
                       <div className="flex-1 min-w-0">
@@ -2128,7 +2140,7 @@ export default function ProfilePage() {
                           type="button"
                           onClick={handleResendVerification}
                           disabled={showResendVerification}
-                          className="mt-3 inline-flex items-center gap-1.5 rounded-xl bg-amber-500 px-4 py-2 text-xs font-semibold text-bd-ink-on-accent shadow-xs transition-all hover:bg-amber-600 hover:shadow-sm disabled:opacity-50 sm:text-sm"
+                          className="mt-3 inline-flex items-center gap-1.5 rounded-xl bg-amber-500 px-4 py-2 text-xs font-semibold text-bd-ink-on-accent shadow-xs transition hover:bg-amber-600 hover:shadow-sm disabled:opacity-50 sm:text-sm"
                         >
                           {showResendVerification ? t('profile.sending') : t('profile.verificationBanner.resend')}
                         </button>
@@ -2189,7 +2201,7 @@ export default function ProfilePage() {
                             ? 'border-emerald-400 dark:border-emerald-500'
                             : emailStatus === 'taken' || emailStatus === 'invalid' || emailStatus === 'error'
                               ? 'border-red-400 dark:border-red-500'
-                              : 'border-(--bd-input-border) focus:border-bd-lav-deep'
+                              : 'border-bd-input-border focus:border-bd-lav-deep'
                         }`}
                         autoComplete="email"
                       />
@@ -2223,7 +2235,7 @@ export default function ProfilePage() {
                           value={currentPassword}
                           onChange={(event) => setCurrentPassword(event.target.value)}
                           id="profile-current-password-input"
-                          className={`${fieldInputClassName} border-(--bd-input-border) focus:border-bd-lav-deep`}
+                          className={`${fieldInputClassName} border-bd-input-border focus:border-bd-lav-deep`}
                           autoComplete="current-password"
                         />
                         <p className="mt-1.5 text-xs text-bd-ink-soft">
@@ -2417,7 +2429,7 @@ export default function ProfilePage() {
                           type="button"
                           onClick={handleRequestAccountDeletion}
                           disabled={deleteLoading}
-                          className="inline-flex items-center justify-center gap-2 rounded-2xl bg-bd-coral px-4 py-2.5 text-sm font-semibold text-(--bd-ink-on-accent) transition-colors hover:bg-bd-coral-deep disabled:opacity-50"
+                          className="inline-flex items-center justify-center gap-2 rounded-2xl bg-bd-coral px-4 py-2.5 text-sm font-semibold text-bd-ink-on-accent transition hover:-translate-y-px disabled:opacity-50 disabled:hover:translate-y-0"
                         >
                           {deleteLoading ? (
                             <>
@@ -2444,7 +2456,7 @@ export default function ProfilePage() {
           {/* Friends Tab */}
           {activeTab === 'friends' && (
             <div role="tabpanel" id="profile-tab-panel-friends" aria-labelledby="profile-tab-friends">
-              <Friends />
+              <Friends onLoaded={scrollToTabsFromFriendsLink} />
             </div>
           )}
 
@@ -2794,7 +2806,7 @@ export default function ProfilePage() {
                               }
                               disabled={accountPreferencesSaving || !accountPreferencesLoaded}
                               aria-pressed={accountPreferencesLoaded && accountPreferences.profileVisibility === option.value}
-                              className={`rounded-2xl border px-4 py-3 text-left transition-all disabled:cursor-not-allowed ${
+                              className={`rounded-2xl border px-4 py-3 text-left transition disabled:cursor-not-allowed ${
                                 accountPreferencesLoaded && accountPreferences.profileVisibility === option.value
                                   ? 'border-bd-lav-deep bg-bd-lav/15 text-bd-lav-text shadow-xs dark:border-bd-lav dark:bg-bd-lav/15 dark:text-bd-lav'
                                   : 'border-bd-line bg-bd-card-warm text-bd-ink-soft hover:bg-bd-bg2'
@@ -2979,7 +2991,7 @@ export default function ProfilePage() {
                 </div>
 
                 {/* Premium features */}
-                <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-amber-600 dark:text-amber-400">{t('profile.premiumTab.premiumExclusive')}</p>
+                <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-bd-sun-text">{t('profile.premiumTab.premiumExclusive')}</p>
                 <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                   {PREMIUM_FEATURES.map(({ icon, labelKey, descKey }) => (
                     <div
@@ -2995,7 +3007,7 @@ export default function ProfilePage() {
                         <p className="text-sm font-semibold text-bd-ink">{t(labelKey)}</p>
                         <p className="text-xs text-bd-ink-soft">{t(descKey)}</p>
                       </div>
-                      <span className={`ml-auto shrink-0 text-sm ${hasUploadPack ? 'text-amber-500' : 'text-bd-ink-soft'}`}>
+                      <span className={`ml-auto shrink-0 text-sm ${hasUploadPack ? 'text-bd-sun-text' : 'text-bd-ink-soft'}`}>
                         {hasUploadPack ? <Icon name="check" size={15} /> : '—'}
                       </span>
                     </div>
@@ -3011,7 +3023,7 @@ export default function ProfilePage() {
                           type="button"
                           onClick={() => void handleCheckout()}
                           disabled={premiumActionLoading}
-                          className="inline-flex items-center gap-2 rounded-xl bg-amber-500 px-5 py-2.5 text-sm font-bold text-bd-ink-on-accent shadow-[0_3px_0_#d97706] transition-all hover:-translate-y-px hover:bg-amber-600 hover:shadow-[0_4px_0_#d97706] active:scale-95 disabled:cursor-not-allowed disabled:opacity-60"
+                          className="inline-flex items-center gap-2 rounded-xl bg-amber-500 px-5 py-2.5 text-sm font-bold text-bd-ink-on-accent shadow-[0_3px_0_#d97706] transition hover:-translate-y-px hover:bg-amber-600 hover:shadow-[0_4px_0_#d97706] active:scale-95 disabled:cursor-not-allowed disabled:opacity-60"
                         >
                           {premiumActionLoading ? (
                             <>
@@ -3052,17 +3064,17 @@ export default function ProfilePage() {
                     onChange={(e) => setProfileBio(e.target.value.slice(0, 160))}
                     placeholder={t('profile.customization.bioPlaceholder')}
                     rows={3}
-                    className="w-full rounded-xl border border-(--bd-input-border) bg-(--bd-input-bg) px-3 py-2.5 text-base text-bd-ink placeholder:text-bd-ink-muted focus:border-bd-ink desk:text-sm focus:outline-hidden"
+                    className="w-full rounded-xl border border-bd-input-border bg-bd-input-bg px-3 py-2.5 text-base text-bd-ink placeholder:text-bd-ink-muted focus:border-bd-ink desk:text-sm focus:outline-hidden"
                   />
                   <div className="mt-1 flex items-center justify-between">
-                    <span className={`text-xs font-medium transition-colors ${profileBio.length >= 140 ? 'text-amber-500' : 'text-bd-ink-muted'}`}>
+                    <span className={`text-xs font-medium transition-colors ${profileBio.length >= 140 ? 'text-bd-sun-text' : 'text-bd-ink-muted'}`}>
                       {profileBio.length}/160
                     </span>
                     <button
                       type="button"
                       disabled={customizeSaving}
                       onClick={() => void handleSaveCustomization({ bio: profileBio })}
-                      className="inline-flex items-center gap-1.5 rounded-xl border-2 border-bd-lav-deep bg-bd-lav px-3 py-1.5 text-xs font-bold text-(--bd-ink-on-accent) shadow-[0_3px_0_#7867E8] transition-all hover:-translate-y-px hover:bg-bd-lav-mid hover:shadow-[0_4px_0_#7867E8] disabled:cursor-not-allowed disabled:opacity-50"
+                      className="inline-flex items-center gap-1.5 rounded-xl border-2 border-bd-lav-deep bg-bd-lav px-3 py-1.5 text-xs font-bold text-bd-ink-on-accent shadow-[0_3px_0_var(--bd-lav-deep)] transition hover:-translate-y-px hover:bg-bd-lav-mid hover:shadow-[0_4px_0_var(--bd-lav-deep)] disabled:cursor-not-allowed disabled:opacity-50"
                     >
                       {customizeSaving ? (
                         <>
@@ -3200,7 +3212,7 @@ export default function ProfilePage() {
                           <span style={{ color: text, fontWeight: 700, fontSize: 13, textShadow: '0 1px 3px rgba(0,0,0,0.3)' }}>{t(nameKey)}</span>
                           <span style={{ color: text, fontSize: 10, opacity: 0.75, textShadow: '0 1px 2px rgba(0,0,0,0.25)' }}>{t(descKey)}</span>
                           {active && (
-                            <span className="absolute right-1.5 top-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-white text-(--bd-ink-on-accent) shadow-xs"><Icon name="check" size={10} /></span>
+                            <span className="absolute right-1.5 top-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-white text-bd-ink-on-accent shadow-xs"><Icon name="check" size={10} /></span>
                           )}
                         </button>
                       )

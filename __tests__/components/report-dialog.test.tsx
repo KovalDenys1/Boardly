@@ -154,6 +154,11 @@ describe('ReportDialog (#1172)', () => {
     expect(screen.queryByText('report.title')).toBeNull()
   })
 
+  it('names its dialog by what it is for', async () => {
+    render(<ReportDialog isOpen onClose={jest.fn()} targets={[chatTarget]} />)
+    expect(await screen.findByRole('dialog', { name: 'report.title' })).toBeTruthy()
+  })
+
   it('closes from Cancel', async () => {
     const onClose = jest.fn()
     render(<ReportDialog isOpen onClose={onClose} targets={[chatTarget]} />)

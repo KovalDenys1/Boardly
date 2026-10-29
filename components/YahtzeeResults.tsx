@@ -1,10 +1,11 @@
 'use client'
 
-import { PlayerResults, leadersOf } from '@/lib/yahtzee-results'
+import { useEffect, useRef, useState } from 'react'
+import { PlayerResults, leadersOf, yahtzeeViewerOutcome } from '@/lib/yahtzee-results'
 import { useTranslation } from '@/lib/i18n-helpers'
 import { Icon } from '@/components/icons'
 import { YahtzeeMode, getActiveCategories } from '@/lib/yahtzee'
-import AfterGameActions from '@/components/game-chrome/AfterGameActions'
+import GameResultOverlay from '@/components/game-chrome/GameResultOverlay'
 
 interface YahtzeeResultsProps {
   results: PlayerResults[]
@@ -12,15 +13,14 @@ interface YahtzeeResultsProps {
   mode?: YahtzeeMode
   currentUserId: string | null
   canStartGame: boolean
+  /** A seated player who is not the host may ask the host for a rematch. */
   canRequestRematch?: boolean
-  isRequestRematchPending?: boolean
   onPlayAgain: () => void
-  onRequestRematch?: () => void
   onBackToLobby: () => void
   onReturnToLobbyRoom?: () => void
   onReturnToWaiting?: () => void
   isGuest?: boolean
-  /** Lobby code for the after-game share button (#982). Omit it and only the Discord line shows. */
+  /** Lobby code for the rematch ask and the after-game share button (#982). */
   lobbyCode?: string
   /** `status === 'authenticated' && !isGuest`, decided by the caller (#982). */
   isRegistered?: boolean
@@ -55,9 +55,7 @@ export default function YahtzeeResults({
   currentUserId,
   canStartGame,
   canRequestRematch = false,
-  isRequestRematchPending = false,
   onPlayAgain,
-  onRequestRematch,
   onBackToLobby,
   onReturnToLobbyRoom,
   onReturnToWaiting,
@@ -69,6 +67,11 @@ export default function YahtzeeResults({
   faceCounts = null,
 }: YahtzeeResultsProps) {
   const { t } = useTranslation()
+  const [inspecting, setInspecting] = useState(false)
+  const showResultsRef = useRef<HTMLButtonElement>(null)
+  useEffect(() => {
+    if (inspecting) showResultsRef.current?.focus({ preventScroll: true })
+  }, [inspecting])
   const totalRounds = getActiveCategories(mode).length
   // Short mode has no upper section, so an "Upper 0" box is noise (#1187).
   const hasUpperSection = mode !== 'short'
@@ -85,6 +88,8 @@ export default function YahtzeeResults({
   const winnerScoreBase = Math.max(1, winner.totalScore)
   const diceRolled = faceCounts ? faceCounts.reduce((sum, n) => sum + n, 0) : 0
   const mostCommonFace = faceCounts ? Math.max(1, ...faceCounts) : 1
+  const isSpectator = !results.some((player) => player.playerId === currentUserId)
+  const outcome = yahtzeeViewerOutcome(results, currentUserId, { isSpectator, isSeated: !isSpectator })
 
   return (
     <div
@@ -139,66 +144,6 @@ export default function YahtzeeResults({
             </div>
           </div>
 
-          <div
-            className="border-b px-4 py-3 sm:px-6 sm:py-4"
-            style={{
-              borderColor: 'var(--bd-line)',
-              background: 'var(--bd-bg2)',
-            }}
-          >
-            <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-              <div className={canStartGame ? 'hidden sm:block' : ''}>
-                <div className="hidden sm:block">
-                  <div className="bd-kicker">{t('yahtzee.results.nextStep')}</div>
-                  <p className="mt-1 text-sm font-medium text-bd-ink">
-                    {t('yahtzee.results.nextStepHint')}
-                  </p>
-                </div>
-                {!canStartGame && (
-                  <p className="text-xs text-bd-ink-muted sm:mt-1">
-                    {t('yahtzee.results.hostCanStartNextRound')}
-                  </p>
-                )}
-              </div>
-
-              <div className="flex flex-col gap-2 sm:flex-row sm:gap-3">
-                <button
-                  onClick={onPlayAgain}
-                  disabled={!canStartGame}
-                  className="bd-btn bd-btn-primary flex items-center justify-center gap-2 disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  <Icon name="refresh" size={18} />
-                  <span>{t('yahtzee.results.playAgain')}</span>
-                </button>
-                {onReturnToWaiting && canStartGame && (
-                  <button
-                    onClick={onReturnToWaiting}
-                    className="bd-btn bd-btn-soft flex items-center justify-center gap-2"
-                  >
-                    <span>{t('game.ui.returnToLobby')}</span>
-                  </button>
-                )}
-                {onRequestRematch && canRequestRematch && (
-                  <button
-                    onClick={onRequestRematch}
-                    disabled={isRequestRematchPending}
-                    className="bd-btn bd-btn-soft flex items-center justify-center gap-2 disabled:cursor-not-allowed disabled:opacity-60"
-                  >
-                    <Icon name="megaphone" size={18} />
-                    <span>{isRequestRematchPending ? t('common.loading') : t('yahtzee.results.requestRematch')}</span>
-                  </button>
-                )}
-                <button
-                  onClick={onBackToLobby}
-                  className="bd-btn bd-btn-coral flex items-center justify-center gap-2"
-                >
-                  <Icon name="arrow-left" size={18} />
-                  <span>{t('yahtzee.results.backToLobbies')}</span>
-                </button>
-              </div>
-            </div>
-          </div>
-
           <div className="grid grid-cols-1 gap-4 px-4 py-4 sm:px-6 sm:py-6 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1.3fr)]">
             <div className="flex min-w-0 flex-col gap-4">
             <section
@@ -210,7 +155,7 @@ export default function YahtzeeResults({
                   'linear-gradient(180deg, rgba(255,196,77,0.16) 0%, var(--bd-bg) 100%)',
               }}
             >
-              <div className="flex items-center gap-2 text-(--bd-coral-text)">
+              <div className="flex items-center gap-2 text-bd-coral-text">
                 <Icon name={isTie ? 'handshake' : 'crown'} size={20} />
                 <span className="bd-kicker">{isTie ? t('yahtzee.results.tieLabel') : t('yahtzee.results.winnerLabel')}</span>
               </div>
@@ -236,7 +181,7 @@ export default function YahtzeeResults({
                   <div className="mt-1 text-2xl font-bold text-bd-ink">
                     {winner.upperSectionScore}
                     {winner.bonusAchieved && (
-                      <span className="ml-1 text-sm font-semibold text-(--bd-mint-text)">+{winner.bonusPoints}</span>
+                      <span className="ml-1 text-sm font-semibold text-bd-mint-text">+{winner.bonusPoints}</span>
                     )}
                   </div>
                 </div>
@@ -301,23 +246,12 @@ export default function YahtzeeResults({
             </div>
 
             <section className="min-w-0">
-              <div className="mb-3 flex items-center justify-between gap-3">
-                <h3
-                  className="text-2xl font-extrabold text-bd-ink"
-                  style={{ fontFamily: 'var(--bd-font-display)' }}
-                >
-                  {t('yahtzee.results.finalStandings')}
-                </h3>
-                {onReturnToLobbyRoom && (
-                  <button
-                    type="button"
-                    onClick={onReturnToLobbyRoom}
-                    className="bd-btn bd-btn-soft rounded-xl! px-3! py-2! text-xs!"
-                  >
-                    {t('game.ui.returnToLobby')}
-                  </button>
-                )}
-              </div>
+              <h3
+                className="mb-3 text-2xl font-extrabold text-bd-ink"
+                style={{ fontFamily: 'var(--bd-font-display)' }}
+              >
+                {t('yahtzee.results.finalStandings')}
+              </h3>
 
               <div className="space-y-3">
             {results.map((player) => {
@@ -327,8 +261,8 @@ export default function YahtzeeResults({
               return (
                 <div
                   key={player.playerId}
-                  className={`rounded-[22px] border p-3 transition-all sm:p-4 ${getPlacementCardClass(player.rank)} ${
-                    isCurrentUser ? 'ring-2 ring-inset ring-(--bd-sky)' : ''
+                  className={`rounded-[22px] border p-3 transition sm:p-4 ${getPlacementCardClass(player.rank)} ${
+                    isCurrentUser ? 'ring-2 ring-inset ring-bd-sky' : ''
                   }`}
                   style={{
                     borderColor:
@@ -377,7 +311,7 @@ export default function YahtzeeResults({
                   <div className="mb-2 h-2 w-full overflow-hidden rounded-full" style={{ background: 'rgba(41,37,36,0.08)' }}>
                     <div
                       className={`h-full rounded-full ${
-                        player.rank === 0 ? 'bg-(--bd-sun-deep)' : player.rank === 1 ? 'bg-(--bd-lav-deep)' : player.rank === 2 ? 'bg-(--bd-coral)' : 'bg-(--bd-sky)'
+                        player.rank === 0 ? 'bg-bd-sun-deep' : player.rank === 1 ? 'bg-bd-lav-deep' : player.rank === 2 ? 'bg-bd-coral' : 'bg-bd-sky'
                       }`}
                       style={{ width: `${scorePercent}%` }}
                     />
@@ -390,7 +324,7 @@ export default function YahtzeeResults({
                       <span className="font-medium">{t('yahtzee.results.upper')}</span>{' '}
                       <span className="font-semibold text-bd-ink">{player.upperSectionScore}</span>
                       {player.bonusAchieved && (
-                        <span className="ml-1 text-(--bd-mint-text)">
+                        <span className="ml-1 text-bd-mint-text">
                           {t('yahtzee.results.bonus', { count: player.bonusPoints })}
                         </span>
                       )}
@@ -423,17 +357,52 @@ export default function YahtzeeResults({
           </div>
         </div>
 
-        <div className="mx-auto mt-4 w-full max-w-sm">
-          <AfterGameActions
-            variant="card"
-            inviteCode={lobbyCode}
-            gameType="yahtzee"
-            isGuest={isGuest}
-            isRegistered={isRegistered}
-            gameId={gameId}
-          />
-        </div>
+        {inspecting && (
+          <div className="pointer-events-none sticky bottom-0 z-10 flex justify-center pb-2 pt-4">
+            <button
+              ref={showResultsRef}
+              type="button"
+              onClick={() => setInspecting(false)}
+              className="pointer-events-auto inline-flex min-h-11 items-center gap-2 rounded-full bg-bd-inverse px-5 text-sm font-semibold text-bd-ink-on-inverse shadow-bd-card transition-transform duration-150 ease-out enabled:active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-bd-lav-deep"
+            >
+              <Icon name="trophy" size={16} />
+              <span>{t('game.ui.showResults')}</span>
+            </button>
+          </div>
+        )}
       </div>
+
+      {!inspecting && (
+        <GameResultOverlay
+          title={isTie ? t('yahtzee.results.tie') : isWinner ? t('yahtzee.results.youWon') : t('yahtzee.results.playerWins', { player: winner.playerName })}
+          outcome={outcome}
+          isDraw={isTie && outcome !== 'loss'}
+          isSpectator={isSpectator}
+          standings={results.map((player) => ({
+            id: player.playerId,
+            name: player.playerName,
+            score: player.totalScore,
+            isViewer: player.playerId === currentUserId,
+          }))}
+          accentColor="var(--bd-sun)"
+          accentShadowColor="var(--bd-sun-deep)"
+          onInspect={() => setInspecting(true)}
+          isHost={canStartGame}
+          onPlayAgain={onPlayAgain}
+          onReturnToLobby={onReturnToWaiting}
+          extraActions={onReturnToLobbyRoom && !(canStartGame && onReturnToWaiting) ? [
+            { key: 'return-to-room', label: t('game.ui.returnToLobby'), icon: 'home', onClick: onReturnToLobbyRoom },
+          ] : undefined}
+          onLeave={onBackToLobby}
+          isGuest={isGuest}
+          isRegistered={isRegistered}
+          canAskRematch={canRequestRematch}
+          inviteCode={lobbyCode}
+          gameId={gameId}
+          gameType="yahtzee"
+          playsResultCue={false}
+        />
+      )}
     </div>
   )
 }

@@ -251,9 +251,9 @@ export default function GameLobbiesPage({
             <button
               type="button"
               aria-disabled={!canCreateLobby}
-              className={`bd-card group relative overflow-hidden p-6 text-left transition-all sm:p-8 ${
+              className={`bd-card group relative overflow-hidden p-6 text-left transition sm:p-8 ${
                 canCreateLobby
-                  ? 'hover:-translate-y-0.5 hover:shadow-[0_8px_0_#1F1B16,0_16px_36px_-12px_rgba(31,27,22,0.35)]'
+                  ? 'hover:-translate-y-0.5 hover:shadow-[0_8px_0_var(--bd-ink),0_16px_36px_-12px_rgba(31,27,22,0.35)]'
                   : 'cursor-not-allowed opacity-75'
               }`}
               onClick={() => {
@@ -385,7 +385,7 @@ export default function GameLobbiesPage({
 
                       <div className="flex items-center justify-between gap-2">
                         <div className="flex items-center gap-1.5 flex-wrap">
-                          <span className={`text-sm font-semibold ${isFull ? 'text-bd-sun-deep' : 'text-bd-ink-soft'}`}>
+                          <span className={`text-sm font-semibold ${isFull ? 'text-bd-sun-text' : 'text-bd-ink-soft'}`}>
                             <Icon name="users" size={13} /> {playerCount}/{lobby.maxPlayers}
                           </span>
                           {isWaiting && (

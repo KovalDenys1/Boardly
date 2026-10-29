@@ -2,7 +2,9 @@
 
 import Link from 'next/link'
 import { useTranslation } from '@/lib/i18n-helpers'
+import { getGuideCard } from '@/lib/guide-cards'
 import { ALL_GUIDES } from '@/lib/guides-catalog'
+import { useLocalizedHref, usePageLocale } from '@/lib/page-locale'
 import GameIcon from '@/components/GameIcon'
 import { Icon } from '@/components/icons'
 
@@ -17,6 +19,8 @@ import { Icon } from '@/components/icons'
  */
 export default function GuidesSection() {
   const { t } = useTranslation()
+  const locale = usePageLocale() ?? 'en'
+  const localize = useLocalizedHref()
 
   return (
     <section
@@ -36,49 +40,52 @@ export default function GuidesSection() {
             {t('home.guidesSubtitle')}
           </p>
         </div>
-        <Link href="/guides" className="bd-btn bd-btn-soft text-sm">
+        <Link href={localize('/guides')} className="bd-btn bd-btn-soft text-sm">
           {t('home.allGuides')} →
         </Link>
       </div>
 
       <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-        {ALL_GUIDES.map((guide, index) => (
-          <li
-            key={guide.slug}
-            className={index === ALL_GUIDES.length - 1 && ALL_GUIDES.length % 2 === 1 ? 'sm:col-span-2' : undefined}
-          >
-            <Link
-              href={`/guides/${guide.slug}`}
-              className="bd-card group flex h-full items-start gap-3 p-4 transition-transform hover:-translate-y-0.5"
+        {ALL_GUIDES.map((guide, index) => {
+          const card = getGuideCard(guide.slug, locale)
+          return (
+            <li
+              key={guide.slug}
+              className={index === ALL_GUIDES.length - 1 && ALL_GUIDES.length % 2 === 1 ? 'sm:col-span-2' : undefined}
             >
-              <span
-                aria-hidden="true"
-                className="grid h-10 w-10 shrink-0 place-items-center rounded-xl border-2 text-xl shadow-[2px_2px_0_var(--bd-ink)]"
-                style={{
-                  borderColor: 'var(--bd-ink)',
-                  background: `color-mix(in srgb, ${guide.accent} 18%, var(--bd-bg2))`,
-                }}
+              <Link
+                href={localize(`/guides/${guide.slug}`)}
+                className="bd-card group flex h-full items-start gap-3 p-4 transition-transform hover:-translate-y-0.5"
               >
-                {'game' in guide.icon ? (
-                  <GameIcon gameId={guide.icon.game} accentColor={guide.accent} size={22} variant="bare" />
-                ) : (
-                  <Icon name={guide.icon.glyph} size={22} style={{ color: guide.accent }} />
-                )}
-              </span>
-              <span className="min-w-0 flex-1">
                 <span
-                  className="block text-sm font-bold leading-snug group-hover:text-bd-coral"
-                  style={{ color: 'var(--bd-ink)', fontFamily: 'var(--bd-font-display)' }}
+                  aria-hidden="true"
+                  className="grid h-10 w-10 shrink-0 place-items-center rounded-xl border-2 text-xl shadow-[2px_2px_0_var(--bd-ink)]"
+                  style={{
+                    borderColor: 'var(--bd-ink)',
+                    background: `color-mix(in srgb, ${guide.accent} 18%, var(--bd-bg2))`,
+                  }}
                 >
-                  {guide.title}
+                  {'game' in guide.icon ? (
+                    <GameIcon gameId={guide.icon.game} accentColor={guide.accent} size={22} variant="bare" />
+                  ) : (
+                    <Icon name={guide.icon.glyph} size={22} style={{ color: guide.accent }} />
+                  )}
                 </span>
-                <span className="mt-0.5 block text-xs" style={{ color: 'var(--bd-ink-soft)' }}>
-                  {guide.readTime}
+                <span className="min-w-0 flex-1">
+                  <span
+                    className="block text-sm font-bold leading-snug group-hover:text-bd-coral-text"
+                    style={{ color: 'var(--bd-ink)', fontFamily: 'var(--bd-font-display)' }}
+                  >
+                    {card.title}
+                  </span>
+                  <span className="mt-0.5 block text-xs" style={{ color: 'var(--bd-ink-soft)' }}>
+                    {card.readTime}
+                  </span>
                 </span>
-              </span>
-            </Link>
-          </li>
-        ))}
+              </Link>
+            </li>
+          )
+        })}
       </ul>
     </section>
   )

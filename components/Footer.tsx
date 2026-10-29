@@ -269,7 +269,7 @@ export default function Footer({ listingBadge = false }: { listingBadge?: boolea
                 <button
                   id="footer-feedback-trigger"
                   onClick={() => window.dispatchEvent(new CustomEvent('open-feedback'))}
-                  className="cursor-pointer rounded-xl text-sm font-semibold transition-all"
+                  className="cursor-pointer rounded-xl text-sm font-semibold transition"
                   style={{
                     padding: '6px 14px',
                     border: '1.5px solid var(--bd-coral)',

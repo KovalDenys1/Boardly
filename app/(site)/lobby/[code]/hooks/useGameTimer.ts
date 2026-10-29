@@ -28,6 +28,19 @@ function resolveTurnStartedAtMs(gameState: GameState | null): number | null {
   return typeof lastMoveAt === 'number' && Number.isFinite(lastMoveAt) ? lastMoveAt : null
 }
 
+export type TimerLevel = 'normal' | 'low' | 'critical'
+
+/** One pair of thresholds for every game: the banner draws them, the tick sound starts at the second. */
+export const LOW_TIME_SECONDS = 10
+export const CRITICAL_TIME_SECONDS = 5
+
+export function getTimerLevel(secondsLeft: number, turnTimerLimit: number): TimerLevel {
+  if (!(turnTimerLimit > 0)) return 'normal'
+  if (secondsLeft <= CRITICAL_TIME_SECONDS) return 'critical'
+  if (secondsLeft <= LOW_TIME_SECONDS) return 'low'
+  return 'normal'
+}
+
 function calculateRemainingTimeSeconds(turnTimerLimit: number, turnStartedAt: number): number {
   const elapsedSeconds = Math.floor((Date.now() - turnStartedAt) / 1000)
   return Math.min(turnTimerLimit, Math.max(0, turnTimerLimit - elapsedSeconds))
@@ -227,5 +240,5 @@ export function useGameTimer({ isMyTurn, gameState, turnTimerLimit, onTimeout }:
     }
   }, [timerActive, timeLeft, gameState?.status, authoritativeTurnStartedAt, turnTimerLimit, timeoutRetryTick, scheduleTimeoutRetry])
 
-  return { timeLeft, timerActive }
+  return { timeLeft, timerActive, timerLevel: getTimerLevel(timeLeft, turnTimerLimit) }
 }

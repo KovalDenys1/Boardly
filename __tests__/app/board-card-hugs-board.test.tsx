@@ -378,34 +378,22 @@ const pillsIn = (container: HTMLElement) =>
 /** The overlay's primary action, which is the only way into the inspect state. */
 async function inspectTheBoard(container: HTMLElement) {
   await waitFor(() =>
-    expect(container.querySelectorAll('[data-testid="game-result-overlay"]').length).toBeGreaterThan(0)
+    expect(document.querySelectorAll('[data-testid="game-result-overlay"]').length).toBeGreaterThan(0)
   )
   fireEvent.click(screen.getAllByText('game.ui.viewBoard')[0])
   await waitFor(() => expect(pillsIn(container).length).toBeGreaterThan(0))
 }
 
 /**
- * The overlay is `position:absolute; inset:0` on its mount point, so the mount
- * point is what the 82%-opaque slab is shaped like. If it does not paint, the
- * slab hangs over bare page - the review's blocker.
+ * Since #1578 the result is a dialog fixed over the whole screen and portaled
+ * out of the board card, so no board card has to paint a slab's shape any more;
+ * what must hold is that it is not drawn inside the card.
  */
-const PAINTED_WHILE_RESULT_SHOWN = ['ttt-board-card--result', 'memory-board-panel--result', 'spy-board-card']
-
-function expectResultOverlayHasAPaintedMount(container: HTMLElement) {
-  const overlays = Array.from(container.querySelectorAll('[data-testid="game-result-overlay"]'))
-  expect(overlays.length).toBeGreaterThan(0)
-  for (const overlay of overlays) {
-    const mount = overlay.parentElement as HTMLElement
-    expect(mount).toBeTruthy()
-    const painted = PAINTED_WHILE_RESULT_SHOWN.some((cls) => mount.classList.contains(cls))
-    if (!painted) {
-      throw new Error(
-        `the result overlay is mounted on <${mount.tagName.toLowerCase()} class="${mount.className}">, ` +
-        `which paints nothing - the slab would hang over bare page (#903 review). ` +
-        `Expected one of: ${PAINTED_WHILE_RESULT_SHOWN.join(', ')}`
-      )
-    }
-  }
+function expectResultOverlayCoversTheScreen(container: HTMLElement) {
+  const overlays = Array.from(document.querySelectorAll<HTMLElement>('[data-testid="game-result-overlay"]'))
+  expect(overlays).toHaveLength(1)
+  expect(container.contains(overlays[0])).toBe(false)
+  expect(overlays[0].className).toContain('fixed')
 }
 
 describe('the board card does not paint the space the board leaves (#903)', () => {
@@ -483,40 +471,40 @@ describe('the board card does not paint the space the board leaves (#903)', () =
     })
   })
 
-  describe('the finished-game overlay always has a card under it', () => {
+  describe('the finished-game overlay covers the screen, not the card', () => {
     it('tic-tac-toe', async () => {
       respondWith(ticTacToeResponse('finished'))
       const { container } = render(<TicTacToeLobbyPage code="ABCD" />)
       await waitFor(() =>
-        expect(container.querySelectorAll('[data-testid="game-result-overlay"]').length).toBeGreaterThan(0)
+        expect(document.querySelectorAll('[data-testid="game-result-overlay"]').length).toBeGreaterThan(0)
       )
-      expectResultOverlayHasAPaintedMount(container)
+      expectResultOverlayCoversTheScreen(container)
     })
 
     it('connect four', async () => {
       respondWith(connectFourResponse('finished'))
       const { container } = render(<ConnectFourLobbyPage code="ABCD" />)
       await waitFor(() =>
-        expect(container.querySelectorAll('[data-testid="game-result-overlay"]').length).toBeGreaterThan(0)
+        expect(document.querySelectorAll('[data-testid="game-result-overlay"]').length).toBeGreaterThan(0)
       )
-      expectResultOverlayHasAPaintedMount(container)
+      expectResultOverlayCoversTheScreen(container)
     })
 
     it('rock paper scissors', async () => {
       respondWith(rockPaperScissorsResponse('finished'))
       const { container } = render(<RockPaperScissorsLobbyPage code="ABCD" />)
       await waitFor(() =>
-        expect(container.querySelectorAll('[data-testid="game-result-overlay"]').length).toBeGreaterThan(0)
+        expect(document.querySelectorAll('[data-testid="game-result-overlay"]').length).toBeGreaterThan(0)
       )
-      expectResultOverlayHasAPaintedMount(container)
+      expectResultOverlayCoversTheScreen(container)
     })
 
     it('memory, desktop', async () => {
       const { container } = renderMemory('finished')
       await waitFor(() =>
-        expect(container.querySelectorAll('[data-testid="game-result-overlay"]').length).toBeGreaterThan(0)
+        expect(document.querySelectorAll('[data-testid="game-result-overlay"]').length).toBeGreaterThan(0)
       )
-      expectResultOverlayHasAPaintedMount(container)
+      expectResultOverlayCoversTheScreen(container)
     })
 
     it('and the card is back to painting nothing while the game is being played', async () => {
@@ -524,7 +512,7 @@ describe('the board card does not paint the space the board leaves (#903)', () =
       const { container } = render(<TicTacToeLobbyPage code="ABCD" />)
       await waitFor(() => expect(screen.getAllByTestId('ttt-board').length).toBeGreaterThan(0))
 
-      expect(container.querySelectorAll('[data-testid="game-result-overlay"]')).toHaveLength(0)
+      expect(document.querySelectorAll('[data-testid="game-result-overlay"]')).toHaveLength(0)
       expect(container.querySelectorAll('.ttt-board-card--result')).toHaveLength(0)
     })
   })

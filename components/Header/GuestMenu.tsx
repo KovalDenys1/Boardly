@@ -52,7 +52,7 @@ export function GuestMenu() {
           leaveFrom="opacity-100 translate-y-0 scale-100"
           leaveTo="opacity-0 translate-y-1 scale-[0.98]"
         >
-          <PopoverPanel className="absolute right-0 z-50 mt-2 w-[220px] overflow-hidden rounded-[1.25rem] border-[1.5px] border-bd-line bg-(--bd-input-bg) p-1.5 shadow-[0_18px_36px_-18px_rgba(31,27,22,0.35)] focus:outline-hidden">
+          <PopoverPanel className="absolute right-0 z-50 mt-2 w-[220px] overflow-hidden rounded-[1.25rem] border-[1.5px] border-bd-line bg-bd-input-bg p-1.5 shadow-[0_18px_36px_-18px_rgba(31,27,22,0.35)] focus:outline-hidden">
             {({ close }) => (
               <>
                 <div className="truncate px-3 pb-1.5 pt-1 text-xs font-semibold text-bd-ink-muted">{t('header.guestSession')}</div>

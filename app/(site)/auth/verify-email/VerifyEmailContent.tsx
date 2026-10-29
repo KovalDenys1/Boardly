@@ -147,7 +147,7 @@ export default function VerifyEmailContent() {
   if (token && verifyState === 'success') {
     return authShell(
       <div className="bd-card w-full max-w-sm p-8 text-center">
-        <div className="mx-auto mb-6 grid h-20 w-20 place-items-center rounded-3xl border-2 border-bd-ink bg-bd-mint shadow-[4px_4px_0_#1F1B16]">
+        <div className="mx-auto mb-6 grid h-20 w-20 place-items-center rounded-3xl border-2 border-bd-ink bg-bd-mint shadow-[4px_4px_0_var(--bd-ink)]">
           <Icon name="check" size={40} tone="on-accent" />
         </div>
         <h1
@@ -166,7 +166,7 @@ export default function VerifyEmailContent() {
 
   return authShell(
     <div className="bd-card w-full max-w-sm p-8 text-center">
-      <div className="mx-auto mb-6 grid h-20 w-20 place-items-center rounded-3xl border-2 border-bd-ink bg-bd-sun shadow-[4px_4px_0_#1F1B16]">
+      <div className="mx-auto mb-6 grid h-20 w-20 place-items-center rounded-3xl border-2 border-bd-ink bg-bd-sun shadow-[4px_4px_0_var(--bd-ink)]">
         <Icon name="mail" size={40} tone="on-accent" />
       </div>
 

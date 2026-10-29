@@ -1,6 +1,6 @@
 'use client'
 
-import React from 'react'
+import React, { useId } from 'react'
 import { Icon } from '@/components/icons'
 import { useTranslation } from '@/lib/i18n-helpers'
 import Modal from './Modal'
@@ -9,7 +9,7 @@ interface ConfirmModalProps {
   isOpen: boolean
   onClose: () => void
   onConfirm: () => void
-  title?: string
+  title: string
   message: string
   confirmText?: string
   cancelText?: string
@@ -29,6 +29,8 @@ export default function ConfirmModal({
   icon
 }: ConfirmModalProps) {
   const { t } = useTranslation()
+  const titleId = useId()
+  const messageId = useId()
   // Resolved here, not defaulted in the signature: a default parameter value is
   // not JSX, so `confirmText = 'Confirm'` rendered English buttons to every
   // non-English viewer who did not pass the props (#889).
@@ -43,16 +45,19 @@ export default function ConfirmModal({
   const variantStyles = {
     danger: {
       buttonBg: 'var(--bd-coral)',
+      buttonText: 'text-bd-ink-on-accent',
       buttonHoverBg: '#e85a4b',
       icon: <Icon name="warning" size={26} />
     },
     warning: {
       buttonBg: 'var(--bd-sun)',
+      buttonText: 'text-bd-ink-on-accent',
       buttonHoverBg: '#e6b040',
       icon: <Icon name="bolt" size={26} />
     },
     info: {
       buttonBg: 'var(--bd-ink)',
+      buttonText: 'text-bd-bg',
       buttonHoverBg: '#352F26',
       icon: <Icon name="info" size={26} />
     }
@@ -62,7 +67,7 @@ export default function ConfirmModal({
   const displayIcon = icon || style.icon
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} maxWidth="sm">
+    <Modal isOpen={isOpen} onClose={onClose} maxWidth="sm" aria-labelledby={titleId} aria-describedby={messageId}>
       <div className="text-center py-4">
         {displayIcon && (
           <div className="mb-4 flex justify-center">
@@ -75,20 +80,18 @@ export default function ConfirmModal({
           </div>
         )}
 
-        {title && (
-          <h3 className="text-xl font-bold mb-3" style={{ color: 'var(--bd-ink)' }}>
-            {title}
-          </h3>
-        )}
+        <h3 id={titleId} className="text-xl font-bold mb-3" style={{ color: 'var(--bd-ink)' }}>
+          {title}
+        </h3>
 
-        <p className="mb-6 px-2" style={{ color: 'var(--bd-ink-soft)' }}>
+        <p id={messageId} className="mb-6 px-2" style={{ color: 'var(--bd-ink-soft)' }}>
           {message}
         </p>
 
         <div className="flex gap-3 justify-center">
           <button
             onClick={onClose}
-            className="px-6 py-2.5 rounded-xl font-medium transition-all"
+            className="px-6 py-2.5 rounded-xl font-medium transition"
             style={{
               background: 'var(--bd-bg2)',
               color: 'var(--bd-ink)',
@@ -99,7 +102,7 @@ export default function ConfirmModal({
           </button>
           <button
             onClick={handleConfirm}
-            className="px-6 py-2.5 rounded-xl font-medium transition-all text-white"
+            className={`px-6 py-2.5 rounded-xl font-medium transition ${style.buttonText}`}
             style={{ background: style.buttonBg }}
             autoFocus
           >

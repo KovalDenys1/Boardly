@@ -2,6 +2,7 @@ export type ThemeMode = 'light' | 'dark' | 'system'
 
 export const THEME_STORAGE_KEY = 'theme'
 export const DARK_MEDIA_QUERY = '(prefers-color-scheme: dark)'
+const THEME_SWITCHING_CLASS = 'bd-theme-switching'
 
 const VALID_THEME_MODES: ThemeMode[] = ['light', 'dark', 'system']
 
@@ -37,8 +38,14 @@ export function applyThemeMode(
   const matchMedia = options?.matchMedia ?? window.matchMedia
   const resolved = resolveThemeMode(mode, matchMedia(DARK_MEDIA_QUERY).matches)
 
+  const changes = documentElement.classList.contains('dark') !== (resolved === 'dark')
+  if (changes) documentElement.classList.add(THEME_SWITCHING_CLASS)
   documentElement.classList.toggle('dark', resolved === 'dark')
   documentElement.style.colorScheme = resolved
+  if (!changes) return
+  // Reading a computed style flushes the new colours while transitions are still off.
+  void documentElement.ownerDocument.defaultView?.getComputedStyle(documentElement).color
+  setTimeout(() => documentElement.classList.remove(THEME_SWITCHING_CLASS), 1)
 }
 
 export function getThemeInitScript() {

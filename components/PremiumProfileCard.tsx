@@ -263,7 +263,7 @@ function DarkCard({ profile }: { profile: ProfileData }) {
           display: 'flex', alignItems: 'center', gap: 5,
           boxShadow: '0 0 12px rgba(79,201,166,0.22)',
         }}>
-          <span style={{ width: 5, height: 5, borderRadius: 999, background: '#4FC9A6', boxShadow: '0 0 5px #4FC9A6' }} />
+          <span style={{ width: 5, height: 5, borderRadius: 999, background: '#4FC9A6', boxShadow: '0 0 5px var(--bd-mint)' }} />
           {t('common.premium')}
         </div>
       </div>

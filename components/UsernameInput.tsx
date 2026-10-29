@@ -142,12 +142,12 @@ export default function UsernameInput({
           type="text"
           required={required}
           disabled={disabled}
-          className={`w-full rounded-2xl border bg-(--bd-input-bg) px-4 py-3 pr-10 text-base text-bd-ink shadow-xs outline-hidden transition-all placeholder:text-bd-ink-muted desk:text-sm ${
+          className={`w-full rounded-2xl border bg-bd-input-bg px-4 py-3 pr-10 text-base text-bd-ink shadow-xs outline-hidden transition placeholder:text-bd-ink-muted desk:text-sm ${
             status === 'available'
               ? 'border-emerald-400 focus:ring-2 focus:ring-inset focus:ring-bd-lav-deep'
               : status === 'taken' || status === 'invalid'
                 ? 'border-red-400 focus:ring-2 focus:ring-inset focus:ring-bd-lav-deep'
-                : 'border-(--bd-input-border) focus:border-bd-lav-deep focus:ring-4 focus:ring-inset focus:ring-bd-lav-deep'
+                : 'border-bd-input-border focus:border-bd-lav-deep focus:ring-4 focus:ring-inset focus:ring-bd-lav-deep'
           }`}
           value={value}
           onChange={(e) => onChange(e.target.value)}
@@ -201,7 +201,7 @@ export default function UsernameInput({
                 key={suggestion}
                 type="button"
                 onClick={() => handleSuggestionClick(suggestion)}
-                className="rounded-xl border border-bd-line bg-(--bd-card-warm) px-3 py-1 text-xs font-medium text-bd-lav-text transition-colors hover:bg-bd-bg2"
+                className="rounded-xl border border-bd-line bg-bd-card-warm px-3 py-1 text-xs font-medium text-bd-lav-text transition-colors hover:bg-bd-bg2"
               >
                 {suggestion}
               </button>

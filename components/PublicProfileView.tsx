@@ -133,7 +133,7 @@ const PREMIUM_PAGE_THEMES: Record<string, {
 }
 
 const primaryActionClassName =
-  'inline-flex w-full items-center justify-center rounded-2xl bg-bd-ink px-5 py-3 text-sm font-bold text-bd-bg shadow-[0_4px_0_var(--bd-coral)] transition-all hover:-translate-y-0.5 hover:shadow-[0_6px_0_var(--bd-coral)] disabled:cursor-not-allowed disabled:opacity-60 dark:bg-white'
+  'inline-flex w-full items-center justify-center rounded-2xl bg-bd-ink px-5 py-3 text-sm font-bold text-bd-bg shadow-[0_4px_0_var(--bd-coral)] transition hover:-translate-y-0.5 hover:shadow-[0_6px_0_var(--bd-coral)] disabled:cursor-not-allowed disabled:opacity-60 dark:bg-white'
 const secondaryActionClassName =
   'inline-flex w-full items-center justify-center rounded-2xl border-2 border-bd-ink bg-bd-card-warm px-5 py-3 text-sm font-bold text-bd-ink transition-colors hover:bg-bd-bg2'
 const quietActionClassName =
@@ -336,7 +336,7 @@ export default function PublicProfileView({
       return (
         <Link
           href="/profile"
-          className="inline-flex w-full max-w-xs items-center justify-center rounded-2xl border-2 border-bd-lav-deep bg-bd-lav px-5 py-3 text-sm font-bold text-(--bd-ink-on-accent) shadow-[0_4px_0_var(--bd-lav-deep)] transition-all hover:-translate-y-0.5 hover:bg-bd-lav-mid hover:shadow-[0_6px_0_var(--bd-lav-deep)]"
+          className="inline-flex w-full max-w-xs items-center justify-center rounded-2xl border-2 border-bd-lav-deep bg-bd-lav px-5 py-3 text-sm font-bold text-bd-ink-on-accent shadow-[0_4px_0_var(--bd-lav-deep)] transition hover:-translate-y-0.5 hover:bg-bd-lav-mid hover:shadow-[0_6px_0_var(--bd-lav-deep)]"
         >
           {t('profile.publicProfile.goToOwnProfile')}
         </Link>
@@ -412,7 +412,7 @@ export default function PublicProfileView({
         <span>{t(note.key)}</span>
         <Link
           href={PRIVACY_SETTINGS_HREF}
-          className={`font-bold underline underline-offset-2 ${isDark ? 'text-bd-lav hover:text-white' : 'text-bd-lav-text hover:text-bd-ink dark:text-bd-lav'}`}
+          className={/* accent-text-allow: a dark skin keeps the fill */ `font-bold underline underline-offset-2 ${isDark ? 'text-bd-lav hover:text-white' : 'text-bd-lav-text hover:text-bd-ink dark:text-bd-lav'}`}
         >
           {t('profile.publicProfile.privacySettingsLink')}
         </Link>
@@ -423,7 +423,7 @@ export default function PublicProfileView({
   const renderAvatar = (sizeClassName = 'h-48 w-48 sm:h-56 sm:w-56') => (
     <div className="relative">
       <div
-        className={`flex ${sizeClassName} items-center justify-center overflow-hidden rounded-4xl border-[3px] border-bd-ink bg-bd-lav text-(--bd-ink-on-accent) shadow-[6px_6px_0_var(--bd-ink)]`}
+        className={`flex ${sizeClassName} items-center justify-center overflow-hidden rounded-4xl border-[3px] border-bd-ink bg-bd-lav text-bd-ink-on-accent shadow-[6px_6px_0_var(--bd-ink)]`}
       >
         {(profile.avatarUrl || profile.image) ? (
           // eslint-disable-next-line @next/next/no-img-element
@@ -558,7 +558,7 @@ export default function PublicProfileView({
                   <h1
                     className={`mt-3 font-display text-4xl font-black leading-none sm:text-5xl ${
                       profile.isPremium && !profile.accentColor
-                        ? 'text-amber-500'
+                        ? /* accent-text-allow: a dark skin keeps the fill */ isDark ? 'text-amber-500' : 'text-bd-sun-text'
                         : !profile.isPremium
                           ? isDark ? 'text-white' : 'text-bd-ink'
                           : ''
@@ -599,7 +599,7 @@ export default function PublicProfileView({
                     <p className={`font-mono text-[11px] uppercase tracking-[0.22em] ${tc.statLabel}`}>
                       {t('profile.friends.title')}
                     </p>
-                    <p className={`mt-3 font-display text-3xl font-bold ${isDark ? 'text-bd-coral' : 'text-bd-coral-text dark:text-white'}`}>
+                    <p className={/* accent-text-allow: a dark skin keeps the fill */ `mt-3 font-display text-3xl font-bold ${isDark ? 'text-bd-coral' : 'text-bd-coral-text dark:text-white'}`}>
                       {profile.friendsCount ?? 0}
                     </p>
                   </div>
@@ -608,7 +608,7 @@ export default function PublicProfileView({
                     <p className={`font-mono text-[11px] uppercase tracking-[0.22em] ${tc.statLabel}`}>
                       {t('profile.stats.gamesCompleted')}
                     </p>
-                    <p className={`mt-3 font-display text-3xl font-bold ${isDark ? 'text-bd-mint' : 'text-bd-mint-text dark:text-white'}`}>
+                    <p className={/* accent-text-allow: a dark skin keeps the fill */ `mt-3 font-display text-3xl font-bold ${isDark ? 'text-bd-mint' : 'text-bd-mint-text dark:text-white'}`}>
                       {levelSourceGames}
                     </p>
                   </div>
@@ -691,7 +691,7 @@ export default function PublicProfileView({
                         onClick={() => void handleCopyProfileLink()}
                         disabled={copiedProfileLink}
                         aria-label={copiedProfileLink ? t('profile.publicProfile.linkCopied') : t('profile.publicProfile.copyLink')}
-                        className="mt-4 inline-flex items-center justify-center gap-2 rounded-2xl border-2 border-bd-lav-deep bg-bd-lav px-4 py-3 text-sm font-bold text-(--bd-ink-on-accent) shadow-[0_4px_0_var(--bd-lav-deep)] transition-all hover:-translate-y-0.5 hover:bg-bd-lav-mid hover:shadow-[0_6px_0_var(--bd-lav-deep)] disabled:cursor-default disabled:opacity-90"
+                        className="mt-4 inline-flex items-center justify-center gap-2 rounded-2xl border-2 border-bd-lav-deep bg-bd-lav px-4 py-3 text-sm font-bold text-bd-ink-on-accent shadow-[0_4px_0_var(--bd-lav-deep)] transition hover:-translate-y-0.5 hover:bg-bd-lav-mid hover:shadow-[0_6px_0_var(--bd-lav-deep)] disabled:cursor-default disabled:opacity-90"
                       >
                         {copiedProfileLink ? (
                           <>

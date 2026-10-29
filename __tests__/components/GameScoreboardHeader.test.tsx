@@ -1,6 +1,8 @@
 import { render } from '@testing-library/react'
 import GameScoreboardHeader from '@/components/game-chrome/GameScoreboardHeader'
 
+jest.mock('@/lib/i18n-helpers', () => ({ useTranslation: () => ({ t: (key: string) => key }) }))
+
 /**
  * The class contract the phone-landscape rules in globals.css depend on
  * (#901). Nothing here can be asserted from computed styles: the rules live
@@ -51,5 +53,57 @@ describe('GameScoreboardHeader', () => {
     const right = container.querySelector('.game-scoreboard-cell--right') as HTMLElement
     expect(right.contains(getByText('Leave'))).toBe(true)
     expect(right.querySelector('.game-scoreboard-right-card')).not.toBeNull()
+  })
+})
+
+describe('GameScoreboardHeader as the one header (#1577)', () => {
+  const names = ['Mia', 'Noah', 'Liv', 'Jonas', 'Emma', 'Oskar']
+  const row = (active: number, count = 4) =>
+    names.slice(0, count).map((name, index) => (
+      <div key={name} data-active={index === active ? 'true' : 'false'}>{name}</div>
+    ))
+
+  it('keeps the current-turn player at its index in the player row when the turn passes', () => {
+    const { container, rerender } = render(<GameScoreboardHeader players={row(0)} />)
+    const order = () =>
+      [...container.querySelectorAll('.game-scoreboard-players > .game-scoreboard-player')].map((cell) => cell.textContent)
+    const active = () =>
+      [...container.querySelectorAll('.game-scoreboard-player')].findIndex((cell) => cell.querySelector('[data-active="true"]'))
+
+    expect(order()).toEqual(['Mia', 'Noah', 'Liv', 'Jonas'])
+    expect(active()).toBe(0)
+    rerender(<GameScoreboardHeader players={row(2)} />)
+    expect(order()).toEqual(['Mia', 'Noah', 'Liv', 'Jonas'])
+    expect(active()).toBe(2)
+  })
+
+  it('gives every seat the same track, from two players to eight', () => {
+    for (const count of [2, 3, 6]) {
+      const { container, unmount } = render(<GameScoreboardHeader players={row(0, count)} />)
+      const players = container.querySelector('.game-scoreboard-players') as HTMLElement
+      expect(players.style.getPropertyValue('--game-header-seats')).toBe(String(count))
+      expect(players.querySelectorAll(':scope > .game-scoreboard-player')).toHaveLength(count)
+      unmount()
+    }
+  })
+
+  it('puts the game, the room and Leave in the header itself', () => {
+    const onLeave = jest.fn()
+    const { container, getByText, getByRole } = render(
+      <GameScoreboardHeader
+        leftCard={<span>left</span>}
+        center={<span>0 : 0</span>}
+        rightCard={<span>right</span>}
+        room={{ gameId: 'connect-four', title: 'Connect Four', code: '7492', onLeave }}
+      />
+    )
+    const header = container.querySelector('.game-header') as HTMLElement
+    const bar = header.querySelector('.game-header__title') as HTMLElement
+    expect(bar.contains(getByText('Connect Four'))).toBe(true)
+    expect(bar.contains(getByText('#7492'))).toBe(true)
+    const leave = getByRole('button', { name: 'game.ui.leave' })
+    expect(header.querySelector('.game-header__actions')?.contains(leave)).toBe(true)
+    leave.click()
+    expect(onLeave).toHaveBeenCalledTimes(1)
   })
 })

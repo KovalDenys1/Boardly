@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import TicTacToeLobbyPage from '@/app/(site)/lobby/[code]/tic-tac-toe-page'
 import ConnectFourLobbyPage from '@/app/(site)/lobby/[code]/connect-four-page'
 import CheckersLobbyPage from '@/app/(site)/lobby/[code]/checkers-page'
@@ -145,8 +145,14 @@ function rockPaperScissorsMatchWon() {
 
 const mockFetch = fetchWithGuest as jest.MockedFunction<typeof fetchWithGuest>
 const respondWith = (body: unknown) => mockFetch.mockResolvedValue({ ok: true, json: async () => body } as Response)
-const overlayShown = (container: HTMLElement) =>
-  waitFor(() => expect(container.querySelectorAll('[data-testid="game-result-overlay"]').length).toBeGreaterThan(0))
+/** The replay link sits behind More since #1564, so the check opens it. */
+const overlayShown = async (_container: HTMLElement) => {
+  await waitFor(
+    () => expect(document.querySelector('[data-testid="game-result-overlay"]')?.getAttribute('data-state')).toBe('shown'),
+    { timeout: 3000 }
+  )
+  fireEvent.click(screen.getByText('game.ui.resultMore'))
+}
 const replayLinks = () => screen.queryAllByRole('link', { name: 'profile.gameReplay.watch' })
 
 describe('Watch replay on the result overlay waits for the series to end (#1421)', () => {

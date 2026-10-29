@@ -33,8 +33,7 @@ import ScorePop from '@/components/game-chrome/ScorePop'
 import { TURN_AFTER_MOVE_MS, useTurnSounds } from '@/hooks/useTurnSounds'
 import { useSpectatorResultCue } from '@/hooks/useSpectatorResultCue'
 import { useLudoRollSound } from './hooks/useLudoRollSound'
-import GameScoreboardHeader from '@/components/game-chrome/GameScoreboardHeader'
-import GameRoomCard from '@/components/game-chrome/GameRoomCard'
+import GameScoreboardHeader, { type GameHeaderRoom } from '@/components/game-chrome/GameScoreboardHeader'
 import GameStatusBanner from '@/components/game-chrome/GameStatusBanner'
 import { viewerOutcome } from '@/lib/game-outcome'
 import GameTabs from '@/components/game-chrome/GameTabs'
@@ -756,10 +755,19 @@ export default function LudoLobbyPage({ code, isSpectator = false, onGameReset }
         : t('games.ludo.game.noRollYet')
 
     const twoPlayers = state.players.length === 2
+    const headerRoom: GameHeaderRoom = {
+        gameId: 'ludo',
+        title: t('games.ludo.name'),
+        code,
+        isSpectator,
+        allowSpectators: !!lobby.allowSpectators,
+        onLeave: () => setShowLeaveConfirmModal(true),
+    }
     const headerSection = (
         <div className="ttt-card" style={{ background: 'linear-gradient(135deg, var(--bd-card-warm) 0%, rgba(255,196,77,0.10) 100%)', padding: '12px 16px', overflow: 'hidden' }}>
             {twoPlayers ? (
                 <GameScoreboardHeader
+                    room={headerRoom}
                     leftCard={renderPlayerCard(state.players[0].id, 'left')}
                     center={
                         <>
@@ -782,11 +790,10 @@ export default function LudoLobbyPage({ code, isSpectator = false, onGameReset }
                     rightCard={renderPlayerCard(state.players[1].id, 'right')}
                 />
             ) : (
-                <div className="ludo-player-grid">
-                    {state.players.map((player, index) => (
-                        <React.Fragment key={player.id}>{renderPlayerCard(player.id, index % 2 === 0 ? 'left' : 'right')}</React.Fragment>
-                    ))}
-                </div>
+                <GameScoreboardHeader
+                    room={headerRoom}
+                    players={state.players.map((player) => renderPlayerCard(player.id, 'left'))}
+                />
             )}
         </div>
     )
@@ -930,6 +937,7 @@ export default function LudoLobbyPage({ code, isSpectator = false, onGameReset }
                     kicker={winnerId === currentUserId ? t('games.ludo.game.youWon') : undefined}
                     accentColor="var(--bd-sun)"
                     accentShadowColor="rgba(0,0,0,0.25)"
+                    standings={state.players.map((p) => ({ id: p.id, name: getDisplayName(p.id), score: gameEngine.tokensHome(p.id), isViewer: p.id === currentUserId }))}
                     onInspect={() => setOverlayInspecting(true)}
                     isHost={isHost}
                     isLoading={isRematchSubmitting}
@@ -1021,25 +1029,12 @@ export default function LudoLobbyPage({ code, isSpectator = false, onGameReset }
 
     const themeStyle = getThemePageStyle(lobby.theme)
 
-    const roomCardProps = {
-        gameId: 'ludo',
-        title: t('games.ludo.name'),
-        code,
-        isSpectator,
-        leaveLabel: t('game.ui.leave'),
-        allowSpectators: !!lobby.allowSpectators,
-        onLeave: () => setShowLeaveConfirmModal(true),
-    }
-    const roomSection = <GameRoomCard {...roomCardProps} />
-    const roomSectionCompact = <GameRoomCard {...roomCardProps} compact />
-
     return (
         <div className="game-screen ttt-screen ludo-screen" style={themeStyle}>
             {/* ── DESKTOP ─────────────────────────────────────────────────── */}
             <div className="ttt-desktop-layout">
                 <div className="ttt-grid">
                     {headerSection}
-                    {roomSection}
                     <div className="ttt-center-col">
                         {statusSection}
                         {renderBoardSection()}
@@ -1068,7 +1063,7 @@ export default function LudoLobbyPage({ code, isSpectator = false, onGameReset }
                     {renderBoardSection()}
                 </div>
                 <div className="game-landscape-side">
-                    <div className="ttt-top-row">{headerSection}{roomSectionCompact}</div>
+                    <div className="ttt-top-row">{headerSection}</div>
                     {statusSection}
                     {actionsSection}
                     <GameTabs
@@ -1089,7 +1084,7 @@ export default function LudoLobbyPage({ code, isSpectator = false, onGameReset }
 
             {/* ── MOBILE ──────────────────────────────────────────────────── */}
             <div className="ttt-mobile-layout">
-                <div className="ttt-top-row">{headerSection}{roomSectionCompact}</div>
+                <div className="ttt-top-row">{headerSection}</div>
                 {statusSection}
                 <GameTabs
                     tabs={[

@@ -8,6 +8,7 @@ import { Icon } from '@/components/icons'
 import { useInviteShare } from '@/hooks/useInviteShare'
 import { hasReplayRenderer } from '@/components/replay/registry'
 import { trackDiscordCta, type AnalyticsGameType } from '@/lib/analytics'
+import { RESULT_MENU_ROW_CLASS } from '@/components/game-chrome/result-styles'
 
 /**
  * The one after-game block, on every end screen (#982).
@@ -19,9 +20,9 @@ import { trackDiscordCta, type AnalyticsGameType } from '@/lib/analytics'
  * component means a new next step lands everywhere at once instead of on whichever screen
  * someone remembered.
  *
- * It renders *below* the primary actions and stays quiet, for the reason CLAUDE.md gives
- * for keeping ads out of the overlay: anything competing with Play Again is competing with
- * the only action the player came for.
+ * It stays quiet – behind More on the result overlay (#1564), below the primary actions on a
+ * bespoke end screen – for the reason CLAUDE.md gives for keeping ads out of the overlay:
+ * anything competing with Play Again is competing with the only action the player came for.
  *
  * Deliberately takes `isRegistered` as a prop rather than calling `useSession()`: this
  * block renders inside YahtzeeResults and SpyResults, which the i18n smoke test mounts
@@ -39,27 +40,9 @@ export interface AfterGameActionsProps {
   isRegistered?: boolean
   /** The finished game; with it a registered player gets "Watch replay" for a game the replay page can draw. */
   gameId?: string | null
-  /** 'overlay' = white-on-dark inside GameResultOverlay; 'card' = light tokens on a bespoke end screen. */
-  variant?: 'overlay' | 'card'
+  /** 'menu' = rows in GameResultOverlay's More view; 'card' = light tokens on a bespoke end screen. */
+  variant?: 'menu' | 'card'
   className?: string
-}
-
-/** The share CTA: readable against the dark overlay without competing with Play Again. */
-const overlayShareBtn: React.CSSProperties = {
-  display: 'inline-flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  gap: 8,
-  width: '100%',
-  padding: '10px 20px',
-  borderRadius: 14,
-  fontSize: 14,
-  fontWeight: 700,
-  fontFamily: 'inherit',
-  cursor: 'pointer',
-  background: 'rgba(255,255,255,0.2)',
-  border: '1px solid rgba(255,255,255,0.45)',
-  color: '#fff',
 }
 
 const cardShareBtn: React.CSSProperties = {
@@ -85,12 +68,11 @@ export default function AfterGameActions({
   isGuest = false,
   isRegistered = false,
   gameId,
-  variant = 'overlay',
+  variant = 'card',
   className,
 }: AfterGameActionsProps) {
   const { t } = useTranslation()
   const shareInvite = useInviteShare(inviteCode)
-  const isOverlay = variant === 'overlay'
 
   /**
    * Slot 3's gate. A guest has no account to attach a push subscription to, so the two
@@ -98,6 +80,37 @@ export default function AfterGameActions({
    */
   const canAskForPush = isRegistered && !isGuest
   const replayHref = (isRegistered || isGuest) && gameId && hasReplayRenderer(gameType) ? `/replay/${gameId}` : null
+
+  if (variant === 'menu') {
+    // `contents`: the rows join the More view's own grid, beside Return to lobby and Leave.
+    return (
+      <div className="contents" data-testid="after-game-actions">
+        {inviteCode && (
+          <button type="button" onClick={() => void shareInvite('result_overlay')} className={`${RESULT_MENU_ROW_CLASS} text-bd-ink`}>
+            <Icon name="link" size={18} />
+            <span className="min-w-0">{t('game.ui.playAgainWithFriends')}</span>
+          </button>
+        )}
+        {replayHref && (
+          <Link href={replayHref} className={`${RESULT_MENU_ROW_CLASS} text-bd-ink`}>
+            <Icon name="play" size={18} />
+            <span className="min-w-0">{t('profile.gameReplay.watch')}</span>
+          </Link>
+        )}
+        {/* Always rendered: it is the only return channel that reaches a guest. */}
+        <a
+          href="/discord"
+          target="_blank"
+          rel="noopener noreferrer"
+          onClick={() => trackDiscordCta('after_game', gameType)}
+          className={`${RESULT_MENU_ROW_CLASS} text-bd-ink-soft`}
+        >
+          <Icon name="chat" size={18} />
+          <span className="min-w-0">{t('game.ui.discordAfterGame')}</span>
+        </a>
+      </div>
+    )
+  }
 
   return (
     <div
@@ -109,7 +122,7 @@ export default function AfterGameActions({
       {inviteCode && (
         <button
           onClick={() => void shareInvite('result_overlay')}
-          style={isOverlay ? overlayShareBtn : cardShareBtn}
+          style={cardShareBtn}
         >
           <Icon name="link" size={16} />
           <span>{t('game.ui.playAgainWithFriends')}</span>
@@ -117,7 +130,7 @@ export default function AfterGameActions({
       )}
 
       {replayHref && (
-        <Link href={replayHref} style={{ ...(isOverlay ? overlayShareBtn : cardShareBtn), textDecoration: 'none' }}>
+        <Link href={replayHref} style={{ ...cardShareBtn, textDecoration: 'none' }}>
           <Icon name="play" size={16} />
           <span>{t('profile.gameReplay.watch')}</span>
         </Link>
@@ -140,7 +153,7 @@ export default function AfterGameActions({
           lineHeight: 1.3,
           textAlign: 'center',
           textDecoration: 'none',
-          color: isOverlay ? 'rgba(255,255,255,0.7)' : 'var(--bd-ink-muted)',
+          color: 'var(--bd-ink-muted)',
         }}
       >
         <Icon name="chat" size={14} />

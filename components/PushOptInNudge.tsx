@@ -120,9 +120,15 @@ export function __resetPushAskStateForTests(): void {
 export interface PushOptInNudgeProps {
   source: PushPromptSource
   gameType?: AnalyticsGameType
+  /** `line`: the headline and both answers on one quiet row, for the result dialog's main view. */
+  variant?: 'card' | 'line'
 }
 
-export default function PushOptInNudge({ source, gameType }: PushOptInNudgeProps) {
+// 24px to see and 44px to hit: the ::after reaches past the box without taking room in the dialog.
+const LINE_BUTTON_CLASS =
+  'relative inline-flex h-6 shrink-0 items-center justify-center rounded-bd-sm transition-colors after:absolute after:-inset-y-2.5 after:content-[""] hover:bg-bd-bg2 disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-bd-lav-deep'
+
+export default function PushOptInNudge({ source, gameType, variant = 'card' }: PushOptInNudgeProps) {
   const { t } = useTranslation()
   const phase = useSyncExternalStore(subscribeToAsk, getAskPhase, getServerAskPhase)
   // Per copy, and deliberately not in the store: the six guards below are about this
@@ -234,6 +240,28 @@ export default function PushOptInNudge({ source, gameType }: PushOptInNudgeProps
   }, [source, gameType])
 
   if (!eligible || phase !== 'open') return null
+
+  if (variant === 'line') {
+    return (
+      <div
+        data-testid="push-ask-line"
+        className="flex w-full min-w-0 flex-wrap items-center justify-center gap-x-2 gap-y-1 text-[0.8125rem] leading-tight text-bd-ink-soft"
+      >
+        <p className="flex min-w-0 items-center gap-1.5">
+          <Icon name="clock" size={14} className="shrink-0" />
+          <span>{t('game.ui.pushAskHeadline')}</span>
+        </p>
+        <span className="flex items-center gap-3">
+          <button type="button" onClick={() => void accept()} disabled={busy} className={`${LINE_BUTTON_CLASS} px-1.5 font-bold text-bd-ink after:inset-x-0`}>
+            {t('game.ui.pushAskAccept')}
+          </button>
+          <button type="button" onClick={dismiss} aria-label={t('game.ui.pushAskDismiss')} className={`${LINE_BUTTON_CLASS} w-6 after:-inset-x-2.5`}>
+            <Icon name="close" size={14} weight="bold" />
+          </button>
+        </span>
+      </div>
+    )
+  }
 
   return (
     <div className="mt-2 w-full rounded-2xl border border-bd-line bg-bd-card-warm p-4 shadow-xs">

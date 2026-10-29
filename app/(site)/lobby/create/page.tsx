@@ -59,7 +59,6 @@ type GameInfo = {
   descriptionKey: string
   svgId: string
   accentColor: string
-  gradient: string
   allowedPlayers: number[]
   defaultMaxPlayers: number
   settings: GameSettings
@@ -76,7 +75,6 @@ function buildGameInfoFromCatalog(): Record<string, GameInfo> {
           descriptionKey: g.descriptionKey,
           svgId: g.id,
           accentColor: getGameMetadata(g.gameType)?.accentColor ?? 'var(--bd-coral)',
-          gradient: g.lobbyCreateConfig.gradient,
           allowedPlayers: g.lobbyCreateConfig.allowedPlayers,
           defaultMaxPlayers: g.lobbyCreateConfig.defaultMaxPlayers,
           settings: {
@@ -135,6 +133,12 @@ function FieldLabel({ icon, htmlFor, children }: { icon: IconName; htmlFor?: str
 
 const CREATE_SOUND_CUES: readonly CueId[] = ['ui.confirm', 'ui.error']
 
+/** The friends page links here with `?invite=<friend's user id>`; the invite route checks the friendship. */
+function readInvitedFriend(value: string | null): string[] {
+  const id = value?.trim()
+  return id && /^[A-Za-z0-9_-]{1,64}$/.test(id) ? [id] : []
+}
+
 function CreateLobbyPage() {
   const { t } = useTranslation()
   useSoundConsumer(CREATE_SOUND_CUES)
@@ -187,7 +191,7 @@ function CreateLobbyPage() {
   const [termsRequired, setTermsRequired] = useState(false)
   const [showPlayerWarning, setShowPlayerWarning] = useState(false)
   const [showFriendsModal, setShowFriendsModal] = useState(false)
-  const [selectedFriendIds, setSelectedFriendIds] = useState<string[]>([])
+  const [selectedFriendIds, setSelectedFriendIds] = useState<string[]>(() => readInvitedFriend(searchParams.get('invite')))
   const [selectedTheme, setSelectedTheme] = useState<LobbyTheme>('default')
   const [view, setView] = useState<View>('summary')
 
@@ -386,6 +390,8 @@ function CreateLobbyPage() {
             body: JSON.stringify({ friendIds: selectedFriendIds }),
           })
           const inviteResult = await inviteResponse.json().catch(() => null)
+          const skipped = Array.isArray(inviteResult?.skippedFriendIds) ? inviteResult.skippedFriendIds.length : 0
+          if (!inviteResponse.ok || skipped > 0) showToast.error('lobby.create.inviteNotSent')
           if (!inviteResponse.ok) {
             clientLogger.warn('Lobby created but party invite request failed', {
               lobbyCode, status: inviteResponse.status, error: inviteResult,
@@ -394,10 +400,11 @@ function CreateLobbyPage() {
             clientLogger.log('Party invite flow completed during lobby creation', {
               lobbyCode,
               invitedCount: typeof inviteResult?.invitedCount === 'number' ? inviteResult.invitedCount : selectedFriendIds.length,
-              skippedCount: Array.isArray(inviteResult?.skippedFriendIds) ? inviteResult.skippedFriendIds.length : 0,
+              skippedCount: skipped,
             })
           }
         } catch (inviteError) {
+          showToast.error('lobby.create.inviteNotSent')
           clientLogger.warn('Lobby created but party invite request threw an error', { lobbyCode, error: inviteError })
         }
       }
@@ -606,7 +613,11 @@ function CreateLobbyPage() {
                   <span className="text-bd-ink-soft"><Icon name="gear" size={18} /></span>
                   <span className="min-w-0 flex-1">
                     <span className="block font-semibold text-bd-ink">{t('lobby.create.settingsTitle')}</span>
-                    <span className="block truncate text-[13px] text-bd-ink-muted">{t('lobby.create.settingsRowHint')}</span>
+                    <span className="block truncate text-[13px] text-bd-ink-muted">
+                      {selectedFriendIds.length > 0
+                        ? t('lobby.create.friendsToInvite', { value: selectedFriendIds.length })
+                        : t('lobby.create.settingsRowHint')}
+                    </span>
                   </span>
                   <span className="text-bd-ink-muted"><Icon name="arrow-right" size={16} /></span>
                 </button>
@@ -704,7 +715,7 @@ function CreateLobbyPage() {
                     opacity: loading ? 0.7 : 1,
                     background: currentTheme.accent,
                     color: 'var(--bd-ink-on-accent)',
-                    boxShadow: `0 4px 0 0 color-mix(in srgb, ${currentTheme.accent} 60%, #1F1B16)`,
+                    boxShadow: `0 4px 0 0 color-mix(in srgb, ${currentTheme.accent} 60%, var(--bd-ink-on-accent))`,
                   }}
                 >
                   {loading ? (
@@ -909,7 +920,7 @@ function CreateLobbyPage() {
                 <div className="space-y-2">
                   <div className="flex items-center gap-2">
                     <FieldLabel icon="palette">{t('lobby.create.themeTitle')}</FieldLabel>
-                    {!isPremiumUser && <span className="text-[11px] font-bold text-amber-500"><Icon name="crown" size={11} /> {t('premium.breadcrumb')}</span>}
+                    {!isPremiumUser && <span className="text-[11px] font-bold text-bd-sun-text"><Icon name="crown" size={11} /> {t('premium.breadcrumb')}</span>}
                   </div>
                   <div className="flex flex-wrap gap-2">
                     {LOBBY_THEME_IDS.map((themeId) => {
@@ -970,7 +981,7 @@ function CreateLobbyPage() {
                   <div>
                     <div className="flex items-center gap-2">
                       <p className="font-semibold text-bd-ink">{t('game.ui.spectatorsLabel')}</p>
-                      {!isPremiumUser && <span className="text-[11px] font-bold text-amber-500"><Icon name="crown" size={11} /> {t('premium.breadcrumb')}</span>}
+                      {!isPremiumUser && <span className="text-[11px] font-bold text-bd-sun-text"><Icon name="crown" size={11} /> {t('premium.breadcrumb')}</span>}
                     </div>
                     <p className="text-[13px] text-bd-ink-muted">
                       {isPremiumUser ? t('lobby.create.spectatorsAllow') : t('lobby.create.spectatorsUpgrade')}

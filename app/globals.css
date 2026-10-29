@@ -1,11 +1,20 @@
 @import 'tailwindcss' source(none);
 @source '../app/**/*.{js,ts,jsx,tsx,mdx}';
 @source '../components/**/*.{js,ts,jsx,tsx,mdx}';
+@source '../lib/**/*.{ts,tsx}';
+@source '../hooks/**/*.{ts,tsx}';
+@source '../contexts/**/*.{ts,tsx}';
+/* Word lists are prose: every noun in them would become a utility. */
+@source not '../lib/games/*-words.ts';
+@source not '../lib/sketch-custom-words.ts';
+@source not '../lib/game-catalog.ts';
 
 @custom-variant dark (&:is(.dark *));
 /* Touch browsers report hover: none; v4 would stop applying hover: styles on tap there. */
 @custom-variant hover (&:hover);
 @custom-variant group-hover (&:is(:where(.group):hover *));
+@custom-variant short (@media (max-height: 30rem) and (orientation: landscape));
+@custom-variant short-portrait (@media (max-height: 40rem) and (orientation: portrait));
 
 /* inline: a lobby theme overrides --bd-* on a container, and a theme variable resolved on :root would not follow it. */
 @theme inline {
@@ -24,8 +33,27 @@
   --color-bd-mint-text: var(--bd-mint-text);
   --color-bd-lav-text: var(--bd-lav-text);
   --color-bd-sun-text: var(--bd-sun-text);
+  --color-bd-sky-text: var(--bd-sky-text);
   --color-bd-inverse: var(--bd-inverse);
   --color-bd-ink-on-inverse: var(--bd-ink-on-inverse);
+  --color-bd-btn-ink: var(--bd-btn-ink);
+  --color-bd-surface-raised: var(--bd-surface-raised);
+  --color-bd-coral: var(--bd-coral);
+  --color-bd-mint: var(--bd-mint);
+  --color-bd-sun: var(--bd-sun);
+  --color-bd-sun-deep: var(--bd-sun-deep);
+  --color-bd-lav: var(--bd-lav);
+  --color-bd-lav-mid: var(--bd-lav-mid);
+  --color-bd-logo-tile: var(--bd-logo-tile);
+  --color-bd-sky: var(--bd-sky);
+  --color-bd-card: var(--bd-card);
+  --color-bd-input-bg: var(--bd-input-bg);
+  --color-bd-input-border: var(--bd-input-border);
+  --color-bd-premium: var(--bd-premium);
+  --default-ring-color: var(--bd-lav-deep);
+  --shadow-bd-ink-4: 0 4px 0 var(--bd-ink);
+  --shadow-bd-ink-5: 0 5px 0 var(--bd-ink);
+  --shadow-bd-coral-4: 0 4px 0 var(--bd-coral-deep);
   --font-display: var(--bd-font-display), Georgia, serif;
 }
 
@@ -38,20 +66,9 @@
   /* The single mobile/desktop switch point (docs/RESPONSIVE.md), DESKTOP_MIN_WIDTH_PX in lib/responsive-tokens. */
   --breakpoint-desk: 1024px;
 
-  --color-primary: #3b82f6;
-  --color-secondary: #8b5cf6;
-  --color-bd-coral: #FF6B5B;
-  --color-bd-mint: #4FC9A6;
-  --color-bd-sun: #FFC44D;
-  --color-bd-sun-deep: #E5A82E;
-  --color-bd-lav: #9B8CFF;
-  --color-bd-lav-mid: #8B7DFF;
-  --color-bd-sky: #6BC1F0;
   --color-bd-danger-border: #F0B3AC;
   --color-bd-danger-bg: #FFF2EF;
   --color-bd-danger-text: #A6554A;
-
-  --default-ring-color: rgb(59 130 246 / 0.5);
 
   --text-xs--line-height: 1rem;
   --text-sm--line-height: 1.25rem;
@@ -65,9 +82,6 @@
   --shadow-bd-soft: 0 4px 14px rgba(31,27,22,0.07);
   --shadow-bd-card: 0 6px 0 0 rgba(31,27,22,0.08), 0 14px 28px -10px rgba(31,27,22,0.18);
   --shadow-bd-pop: 0 8px 0 0 rgba(31,27,22,0.85);
-  --shadow-bd-ink-4: 0 4px 0 #1F1B16;
-  --shadow-bd-ink-5: 0 5px 0 #1F1B16;
-  --shadow-bd-coral-4: 0 4px 0 #E04B3B;
 
   --radius-bd-sm: 10px;
   --radius-bd-md: 16px;
@@ -182,12 +196,12 @@
   ::before,
   ::backdrop,
   ::file-selector-button {
-    border-color: var(--color-gray-200, currentColor);
+    border-color: var(--bd-line);
   }
 
   input::placeholder,
   textarea::placeholder {
-    color: var(--color-gray-400);
+    color: var(--bd-ink-muted);
   }
 
   button:not(:disabled),
@@ -243,11 +257,13 @@
   /* A slab that stays dark in dark, where --bd-ink turns cream; text on it is --bd-ink-on-inverse. */
   --bd-inverse: #1F1B16;
   --bd-ink-on-inverse: #FBF6EE;
-  /* Accent-coloured text. The -deep shades are the border and shadow of a fill and do not flip. */
-  --bd-coral-text: #E04B3B;
-  --bd-mint-text: #2FA787;
-  --bd-lav-text: #7867E8;
-  --bd-sun-text: #8A5F00;
+  /* Accent-coloured text, 4.5:1 on every surface and on its own 10-20 % tint. The -deep shades are
+     the border and shadow of a fill and do not flip. */
+  --bd-coral-text: #B71F14;
+  --bd-mint-text: #076F57;
+  --bd-lav-text: #5E49C7;
+  --bd-sun-text: #875D01;
+  --bd-sky-text: #04658C;
   --bd-btn-ink: var(--bd-ink);
   --bd-line: #E8DDC8;
   /* A plate raised above whatever is behind it - a player pill on a team card,
@@ -297,12 +313,13 @@ html.dark {
   --bd-ink:       #F0E8DB;
   --bd-ink-soft:  #B5A494;
   --bd-ink-muted: #9C8E7E;
-  --bd-coral-text: #FF8273;
-  --bd-mint-text: #45BF9C;
-  --bd-lav-text:  #A99BFF;
+  --bd-coral-text: #FF8475;
+  --bd-mint-text: #4AC3A0;
+  --bd-lav-text:  #AA9DFF;
   --bd-inverse:   #35302A;
   --bd-ink-on-inverse: #F0E8DB;
   --bd-sun-text:  #FFC44D;
+  --bd-sky-text:  #77CDFD;
   --bd-line:      #3A3530;
   --bd-card-warm: #242018;
   --bd-card:      #242018;
@@ -452,7 +469,7 @@ html.dark {
   .waiting-room-chat .chat-composer-hint { display: none; }
   /* The terms panel is taller than the composer: the list may shrink to nothing under it, and a
      longer translation scrolls inside the panel. */
-  .waiting-room-chat .bd-card:has(> .terms-consent) > .chat-messages { padding-block: 0 4px; }
+  .waiting-room-chat .chat-panel:has(> .terms-consent) > .chat-messages { padding-block: 0 4px; }
   .waiting-room-chat .terms-consent { min-height: 0; flex-shrink: 1; overflow-y: auto; }
 }
 
@@ -1054,19 +1071,19 @@ html.dark {
 }
 
 :root {
-  --primary-500: 59, 130, 246;
-  --primary-600: 37, 99, 235;
-  --primary-700: 29, 78, 216;
-  --secondary-500: 139, 92, 246;
-  --secondary-600: 124, 58, 237;
-  --success-500: 34, 197, 94;
-  --error-500: 239, 68, 68;
   --mobile-tabs-offset: 5.75rem;
   color-scheme: light;
 }
 
 html.dark {
   color-scheme: dark;
+}
+
+/* lib/theme.ts sets this for one frame, so a theme switch does not fade each surface on its own timer. */
+.bd-theme-switching *,
+.bd-theme-switching *::before,
+.bd-theme-switching *::after {
+  transition: none !important;
 }
 
 @supports (padding-bottom: env(safe-area-inset-bottom)) {
@@ -1208,7 +1225,7 @@ input:focus, select:focus, textarea:focus {
 }
 
 .dice {
-  @apply w-16 h-16 border-2 rounded-lg flex items-center justify-center text-2xl font-bold cursor-pointer transition-all;
+  @apply w-16 h-16 border-2 rounded-lg flex items-center justify-center text-2xl font-bold cursor-pointer transition;
   background: var(--bd-input-bg);
   border-color: var(--bd-ink);
   color: var(--bd-ink);
@@ -1224,7 +1241,7 @@ input:focus, select:focus, textarea:focus {
 }
 
 .btn {
-  @apply px-4 py-2 rounded-lg font-semibold transition-all duration-200 transform active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100 focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-bd-lav-deep focus-visible:outline-hidden;
+  @apply px-4 py-2 rounded-lg font-semibold transition duration-200 transform active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100 focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-bd-lav-deep focus-visible:outline-hidden;
 }
 
 .btn-primary {
@@ -1250,14 +1267,14 @@ input:focus, select:focus, textarea:focus {
 }
 
 .card {
-  @apply rounded-lg shadow-lg p-4 sm:p-6 transition-all duration-200 hover:shadow-xl;
+  @apply rounded-lg shadow-lg p-4 sm:p-6 transition duration-200 hover:shadow-xl;
   background: var(--bd-card-warm);
   border: 1.5px solid var(--bd-line);
   color: var(--bd-ink);
 }
 
 .input {
-  @apply w-full px-4 py-3 rounded-lg focus:ring-2 focus:ring-inset focus:ring-bd-lav-deep focus:border-transparent transition-all;
+  @apply w-full px-4 py-3 rounded-lg focus:ring-2 focus:ring-inset focus:ring-bd-lav-deep focus:border-transparent transition;
   border: 1px solid var(--bd-input-border);
   background: var(--bd-input-bg);
   color: var(--bd-ink);
@@ -1269,7 +1286,7 @@ input:focus, select:focus, textarea:focus {
 }
 
 .oauth-btn {
-  @apply w-full px-4 py-3 rounded-lg font-semibold transition-all flex items-center justify-center gap-2 border-2;
+  @apply w-full px-4 py-3 rounded-lg font-semibold transition flex items-center justify-center gap-2 border-2;
 }
 
 .oauth-btn-google {
@@ -1455,14 +1472,19 @@ input:focus, select:focus, textarea:focus {
 
 /* Custom Range Slider Styles */
 input[type="range"].slider-thumb {
+  appearance: none;
   height: 8px;
+  border-radius: 4px;
+  accent-color: var(--bd-ink);
 }
 
 input[type="range"].slider-thumb::-webkit-slider-thumb {
   appearance: none;
+  box-sizing: border-box;
   width: 20px;
   height: 20px;
-  background: white;
+  background: var(--bd-card);
+  border: 2px solid var(--bd-ink);
   border-radius: 50%;
   cursor: pointer;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
@@ -1480,10 +1502,11 @@ input[type="range"].slider-thumb::-webkit-slider-thumb:active {
 }
 
 input[type="range"].slider-thumb::-moz-range-thumb {
+  box-sizing: border-box;
   width: 20px;
   height: 20px;
-  background: white;
-  border: none;
+  background: var(--bd-card);
+  border: 2px solid var(--bd-ink);
   border-radius: 50%;
   cursor: pointer;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
@@ -1633,7 +1656,7 @@ input[type="range"].slider-thumb::-moz-range-track {
   background: var(--bd-card-warm);
   border-radius: 24px;
   border: 1.5px solid var(--bd-line);
-  box-shadow: 0 6px 0 0 rgba(31,27,22,0.08), 0 14px 28px -10px rgba(31,27,22,0.18);
+  box-shadow: var(--shadow-bd-card);
 }
 
 /* Dot-grid background texture */
@@ -1774,8 +1797,10 @@ input[type="range"].slider-thumb::-moz-range-track {
 .ttt-grid {
   flex: 1;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 320px;
-  /* Row 1: scoreboard | room card, stretched to one height. Row 2: the columns. */
+  /* A height-bound board leaves width over in the centre column: the side
+     column takes some of it on wide screens (#1566). */
+  grid-template-columns: minmax(0, 1fr) clamp(320px, 28vw, 400px);
+  /* Row 1: the one header, across both columns (#1577). Row 2: the columns. */
   grid-template-rows: auto minmax(0, 1fr);
   gap: 12px 16px;
   height: 100%;
@@ -1784,6 +1809,7 @@ input[type="range"].slider-thumb::-moz-range-track {
   width: 100%;
 }
 .ttt-grid > .ttt-card { display: flex; flex-direction: column; justify-content: center; }
+.ttt-grid > :has(.game-header) { grid-column: 1 / -1; }
 .ttt-center-col {
   display: flex;
   flex-direction: column;
@@ -1803,71 +1829,6 @@ input[type="range"].slider-thumb::-moz-range-track {
   height: 100%;
   min-height: 0;
 }
-/* The room card: to the right of the scoreboard on desktop (same grid row,
-   same height), beside it in one row on phones as two icon buttons. */
-.game-room-card {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 12px 14px;
-  border-radius: 18px;
-  border: 1.5px solid var(--bd-line);
-  background: var(--bd-bg);
-  box-shadow: 0 4px 14px rgba(31,27,22,0.07);
-  min-width: 0;
-}
-.game-room-card__emoji { font-size: 28px; line-height: 1; flex-shrink: 0; }
-.game-room-card__text { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1 1 auto; }
-.game-room-card__title {
-  font-family: var(--bd-font-display);
-  font-weight: 700;
-  font-size: 15px;
-  color: var(--bd-ink);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.game-room-card__meta { display: inline-flex; align-items: center; gap: 8px; min-width: 0; }
-.game-room-card__code { font-family: ui-monospace, monospace; font-size: 12px; font-weight: 700; color: var(--bd-ink-soft); letter-spacing: 0.04em; }
-.game-room-card__copy {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 3px 8px;
-  border-radius: 999px;
-  border: 1px solid var(--bd-line);
-  background: var(--bd-card-warm);
-  color: var(--bd-ink-soft);
-  font-size: 11px;
-  font-weight: 600;
-  font-family: inherit;
-  cursor: pointer;
-  white-space: nowrap;
-  transition: background 0.15s, color 0.15s, border-color 0.15s, transform 0.15s;
-}
-.game-room-card__copy:hover { background: var(--bd-ink); color: var(--bd-bg); border-color: var(--bd-ink); }
-.game-room-card__copy:active { transform: translateY(1px); }
-.game-room-card__chip {
-  display: inline-flex;
-  align-items: center;
-  padding: 3px 8px;
-  border-radius: 999px;
-  border: 1px dashed var(--bd-line);
-  /* bd-ink-muted was 3.86:1 here — AA large-text only (DESIGN.md
-     "Contrast"), and this chip text is normal-size (#1171 axe pass). */
-  color: var(--bd-ink-soft);
-  font-size: 11px;
-  font-weight: 600;
-  white-space: nowrap;
-}
-.game-room-card--compact {
-  padding: 0;
-  border: none;
-  background: transparent;
-  box-shadow: none;
-  gap: 6px;
-}
-.game-room-card--compact .game-room-card__copy { min-height: 40px; padding: 8px 10px; border-radius: 14px; border-width: 1.5px; font-size: 16px; }
 .ttt-top-row {
   display: flex;
   align-items: stretch;
@@ -1875,19 +1836,6 @@ input[type="range"].slider-thumb::-moz-range-track {
   flex-shrink: 0;
 }
 .ttt-top-row > :first-child { flex: 1 1 auto; min-width: 0; }
-.ttt-top-row > .game-room-card { align-self: center; flex-shrink: 0; }
-/* Phone portrait: Leave runs the full height of the scoreboard card beside it –
-   same top and bottom, same 18px radius as .ttt-card, icon centred – instead of
-   a 40px chip floating halfway down a ~100px card (Denys, real iPhone, v1.37.0).
-   Keyed to the row's own width, not the viewport, and only where the scoreboard
-   takes its compact form: wider rows (768 portrait) and the landscape side
-   column keep the chip as it was. Liar's Party tunes its own phone header
-   (.liars-header-card), so it is left out. */
-.ttt-mobile-layout > .ttt-top-row:not(:has(.liars-header-card)) { container: game-top-row / inline-size; }
-@container game-top-row (max-width: 559px) {
-  .ttt-top-row > .game-room-card--compact { align-self: stretch; align-items: stretch; }
-  .ttt-top-row > .game-room-card--compact > :is(.game-leave-button, .game-room-card__copy) { border-radius: 18px; }
-}
 
 /* Cards */
 .ttt-card {
@@ -1915,7 +1863,7 @@ input[type="range"].slider-thumb::-moz-range-track {
      a separate box that hugs the board; this one stretches, unseen, and the
      space it keeps reads as page padding. */
   container-type: size;
-  --c4-cell: clamp(22px, min(calc((100cqw - 79px) / 7), calc((100cqh - 97px) / 6)), 80px);
+  --c4-cell: clamp(16px, min(calc((100cqw - 79px) / 7), calc((100cqh - 97px) / 6)), 120px);
   /* Not decoration: .ttt-board-overlay takes its radius from here. */
   border-radius: 18px;
   display: flex;
@@ -1985,7 +1933,6 @@ input[type="range"].slider-thumb::-moz-range-track {
 .replay-board.ttt-board-card {
   --c4-cell: clamp(16px, min(calc((100cqw - 79px) / 7), calc((100cqh - 73px) / 6)), 80px);
 }
-/* A 320×568 replay card is ~190 px tall, below the live boards' floors (Checkers 248 px, Ludo 180 + 27 px). */
 .replay-board .ck-board {
   --ck-cell: clamp(16px, min(calc((100cqw - 40px) / 8), calc((100cqh - 40px) / 8)), 72px);
 }
@@ -1998,7 +1945,7 @@ input[type="range"].slider-thumb::-moz-range-track {
    board's own chrome only: the surface's padding and border (2×12 + 2×1.5) and
    the frame's padding (2×6), rounded up. */
 .ck-board {
-  --ck-cell: clamp(26px, min(calc((100cqw - 40px) / 8), calc((100cqh - 40px) / 8)), 72px);
+  --ck-cell: clamp(16px, min(calc((100cqw - 40px) / 8), calc((100cqh - 40px) / 8)), 110px);
   --ck-pad: 6px;
   position: relative;
   display: grid;
@@ -2118,28 +2065,106 @@ input[type="range"].slider-thumb::-moz-range-track {
   from { opacity: 0; transform: translateY(6px); }
   to { opacity: 1; transform: none; }
 }
-/* Idle turn (#1343): a ring on the banner's own box pulses, so the nudge adds
-   no block and the board never moves. */
-.game-status-banner { position: relative; }
-.game-status-banner--idle::after {
+/* Low time (#1580) lives in the timer, never on the banner's box. The bar and the
+   clock carry data-level from useGameTimer's thresholds. The seat colours include
+   coral and sun, so neither level is told by hue: low stripes the seat's own colour,
+   critical fills the bar with neutral ink and the clock turns into a solid pill.
+   Only opacity changes; under five seconds the clock also beats once a second. */
+.game-status-timer-track {
+  margin-top: 6px;
+  height: 5px;
+  background: var(--bd-bg2);
+  border-radius: 999px;
+  overflow: hidden;
+}
+.game-status-timer-fill { position: relative; }
+.game-status-timer-fill__layer {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  transition: opacity var(--bd-dur) var(--bd-ease-out);
+}
+.game-status-timer-fill__layer--low {
+  background-image: repeating-linear-gradient(-45deg, transparent 0 3px, color-mix(in srgb, var(--bd-ink-on-accent) 55%, transparent) 3px 6px);
+}
+.game-status-timer-fill__layer--critical { background: var(--bd-ink); }
+.game-status-timer-fill[data-level="low"] > .game-status-timer-fill__layer--low,
+.game-status-timer-fill[data-level="critical"] > .game-status-timer-fill__layer--critical { opacity: 1; }
+.game-status-clock {
+  position: relative;
+  isolation: isolate;
+  display: inline-grid;
+  place-items: center;
+  flex-shrink: 0;
+  min-width: 56px;
+  height: 30px;
+  padding: 0 8px;
+  box-sizing: border-box;
+  border-radius: 999px;
+  font-family: ui-monospace, monospace;
+  font-size: 18px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--bd-ink);
+}
+.game-status-clock::before,
+.game-status-clock::after {
   content: '';
   position: absolute;
-  inset: -3px;
-  border-radius: 16px;
-  border: 2px solid var(--bd-sun);
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  opacity: 0;
+  transition: opacity var(--bd-dur) var(--bd-ease-out);
   pointer-events: none;
-  animation: status-idle-pulse 1.4s var(--bd-ease-out) infinite;
+}
+.game-status-clock::before {
+  background: color-mix(in srgb, var(--bd-sun) 24%, transparent);
+  box-shadow: inset 0 0 0 1.5px var(--bd-sun);
+}
+.game-status-clock::after {
+  background: var(--bd-coral);
+  box-shadow: inset 0 0 0 1.5px var(--bd-coral-deep);
+}
+.game-status-clock__digits { display: inline-block; }
+.game-status-clock[data-level="low"] { color: var(--bd-sun-text); }
+.game-status-clock[data-level="low"]::before { opacity: 1; }
+.game-status-clock[data-level="critical"] { color: var(--bd-ink-on-accent); }
+.game-status-clock[data-level="critical"]::after { opacity: 1; }
+@media (prefers-reduced-motion: no-preference) {
+  .game-status-clock[data-level="critical"] .game-status-clock__digits {
+    animation: status-clock-beat 1s var(--bd-ease-out) infinite;
+  }
+}
+@keyframes status-clock-beat {
+  0% { transform: scale(1); }
+  18% { transform: scale(1.12); }
+  50%, 100% { transform: scale(1); }
+}
+/* Idle turn (#1343): a ring in the player's colour on the banner's own edge. The
+   -1.5px inset covers the banner's border, so the ring never leaves its box. */
+.game-status-banner { position: relative; }
+.game-status-banner[data-idle="true"]::after {
+  content: '';
+  position: absolute;
+  inset: -1.5px;
+  border-radius: inherit;
+  box-shadow: inset 0 0 0 2px var(--game-status-accent, var(--bd-ink));
+  pointer-events: none;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .game-status-banner[data-idle="true"]::after {
+    animation: status-idle-pulse 1.4s var(--bd-ease-out) infinite;
+  }
 }
 @keyframes status-idle-pulse {
-  0%, 100% { opacity: 0; transform: scale(1); }
-  50% { opacity: 1; transform: scale(1.012); }
-}
-@media (prefers-reduced-motion: reduce) {
-  .game-status-banner--idle::after { animation: none; opacity: 1; }
+  0%, 100% { opacity: 0.35; }
+  50% { opacity: 1; }
 }
 /* Score-change pop (components/game-chrome/ScorePop, #1111). Transform only,
    so the scoreboard never relays. */
 .score-pop {
+  font-variant-numeric: tabular-nums;
   animation: score-pop var(--bd-dur-slow) var(--bd-ease-spring) both;
 }
 @keyframes score-pop {
@@ -2147,145 +2172,9 @@ input[type="range"].slider-thumb::-moz-range-track {
   35% { transform: scale(1.18); }
   100% { transform: scale(1); }
 }
-/* Shared result overlay (components/game-chrome/GameResultOverlay, #1111).
-   The component holds data-state="pending" for its reveal delay, then flips to
-   "shown": the scrim fades, the panel rises and settles. */
-.game-result-overlay[data-state='shown'] {
-  animation: fade-in-plain var(--bd-dur) var(--bd-ease-out) both;
-}
-.game-result-overlay[data-state='shown'] .game-result-overlay__panel {
-  animation: result-panel-in var(--bd-dur-slow) var(--bd-ease-spring) both;
-}
 @keyframes fade-in-plain {
   from { opacity: 0; }
   to { opacity: 1; }
-}
-@keyframes result-panel-in {
-  from { opacity: 0; transform: translateY(10px) scale(0.94); }
-  to { opacity: 1; transform: none; }
-}
-/* Layout (#1341). The overlay covers the board card exactly, so it is a size
-   container: a ~274px phone-landscape board drops the icon and tightens the
-   type instead of pushing Leave below the fold. The scroller, not the scrim,
-   carries the bottom fade, so the scrim stays opaque to the edge. */
-.game-result-overlay { container: game-result / size; }
-.game-result-overlay__scroll {
-  flex: 1 1 auto;
-  min-height: 0;
-  display: flex;
-  overflow-y: auto;
-  overscroll-behavior: contain;
-}
-.game-result-overlay__scroll[data-more-below='true'] {
-  -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 40px), transparent);
-  mask-image: linear-gradient(to bottom, #000 calc(100% - 40px), transparent);
-}
-.game-result-overlay__panel {
-  margin: auto;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 6px;
-  padding: 20px 16px;
-  width: 100%;
-}
-.game-result-overlay__icon { display: flex; justify-content: center; }
-.game-result-overlay__kicker {
-  font-size: 10px;
-  color: rgba(255,255,255,0.5);
-  text-transform: uppercase;
-  letter-spacing: 0.12em;
-  font-family: ui-monospace, monospace;
-  margin-top: 8px;
-  margin-bottom: 2px;
-}
-.game-result-overlay__title {
-  font-family: var(--bd-font-display);
-  font-weight: 800;
-  font-size: clamp(22px, 4vw, 28px);
-  color: #fff;
-  text-align: center;
-  margin: 0 0 14px;
-  line-height: 1.1;
-}
-.game-result-overlay__actions {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  width: 100%;
-  max-width: 300px;
-}
-.game-result-overlay__primary {
-  min-height: 48px;
-  padding: 10px 20px;
-  border-radius: 14px;
-  font-weight: 700;
-  font-size: 15px;
-  color: var(--bd-ink-on-accent);
-  border: none;
-  cursor: pointer;
-  font-family: inherit;
-}
-.game-result-overlay__primary:disabled { cursor: not-allowed; opacity: 0.65; }
-.game-result-overlay__note {
-  font-weight: 700;
-  font-size: 14px;
-  color: var(--bd-sun);
-  text-align: center;
-  animation: game-result-note-in 300ms ease-out both;
-}
-@keyframes game-result-note-in {
-  from { opacity: 0; transform: translateY(6px); }
-  to { opacity: 1; transform: none; }
-}
-@media (prefers-reduced-motion: reduce) {
-  .game-result-overlay__note { animation: none; }
-}
-.game-result-overlay__plate {
-  min-height: 44px;
-  display: grid;
-  place-items: center;
-  padding: 8px 16px;
-  border-radius: 14px;
-  font-weight: 600;
-  font-size: 14px;
-  background: rgba(255,255,255,0.08);
-  color: rgba(255,255,255,0.55);
-  border: 1px solid rgba(255,255,255,0.15);
-  text-align: center;
-}
-/* View board, Return to lobby and Leave: one row of equal tiles; a long label
-   wraps inside its tile rather than adding a row. */
-.game-result-overlay__secondary {
-  display: grid;
-  grid-auto-flow: column;
-  grid-auto-columns: minmax(0, 1fr);
-  gap: 8px;
-}
-.game-result-overlay__ghost {
-  min-height: 44px;
-  padding: 6px 8px;
-  border-radius: 14px;
-  font-weight: 600;
-  font-size: 13px;
-  line-height: 1.15;
-  background: rgba(255,255,255,0.12);
-  color: rgba(255,255,255,0.85);
-  border: 1px solid rgba(255,255,255,0.25);
-  cursor: pointer;
-  font-family: inherit;
-  overflow-wrap: anywhere;
-}
-.game-result-overlay__ghost:disabled { cursor: not-allowed; opacity: 0.65; }
-.game-result-overlay__more { margin-top: 6px; }
-@container game-result (max-height: 420px) {
-  .game-result-overlay__panel { padding: 12px 14px; gap: 4px; }
-  .game-result-overlay__kicker { margin-top: 0; }
-  .game-result-overlay__title { font-size: 20px; margin-bottom: 8px; }
-  .game-result-overlay__primary { min-height: 44px; padding: 8px 16px; }
-}
-@container game-result (max-height: 320px) {
-  .game-result-overlay__icon { display: none; }
 }
 .ttt-board-overlay {
   position: absolute;
@@ -2328,6 +2217,7 @@ input[type="range"].slider-thumb::-moz-range-track {
    side column until the numbers moved. */
 .game-scoreboard-header {
   position: relative;
+  font-variant-numeric: tabular-nums;
   display: grid;
   /* Every column is minmax(0, …): with a bare `auto` the centre could not
      shrink, so as the header narrowed the two 1fr cells collapsed toward zero
@@ -2368,8 +2258,282 @@ input[type="range"].slider-thumb::-moz-range-track {
    neither cell stacks there (#1180). */
 :is(.sketch-header-card, .spy-header-card, .alias-header-card, .liars-header-card) .game-scoreboard-cell { container-type: normal; }
 
+/* The one in-game header (#1577): game and room, players, actions. Narrow, the
+   game and the actions share the first row and the players take the second;
+   from 760px of header they all share one row. The header's own width decides,
+   not the viewport: the same header sits in a 300px landscape side column and
+   across a 1280px desktop grid. */
+.game-header {
+  container: game-header / inline-size;
+  min-width: 0;
+}
+.game-header__layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  row-gap: 8px;
+  align-items: center;
+}
+.game-header__bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-width: 0;
+}
+.game-header__title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+.game-header__icon {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 34px;
+  height: 34px;
+  border-radius: 11px;
+  background: var(--bd-bg2);
+  color: var(--bd-ink);
+}
+.game-header__text {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  min-width: 0;
+}
+.game-header__name {
+  min-width: 0;
+  font-family: var(--bd-font-display);
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.2;
+  color: var(--bd-ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.game-header__code {
+  flex-shrink: 0;
+  font-family: ui-monospace, monospace;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--bd-ink-soft);
+}
+.game-header__actions {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+.game-header__actions-inline {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.game-header__actions-menu { display: none; }
+.game-header :is(.game-header__invite, .game-header__more) {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0 12px;
+  border-radius: 14px;
+  border: 1.5px solid var(--bd-line);
+  background: var(--bd-card-warm);
+  color: var(--bd-ink-soft);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  white-space: nowrap;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: background-color var(--bd-dur-fast) ease-out, color var(--bd-dur-fast) ease-out,
+    border-color var(--bd-dur-fast) ease-out, transform var(--bd-dur-fast) ease-out;
+}
+@media (hover: hover) {
+  .game-header :is(.game-header__invite, .game-header__more):hover {
+    border-color: var(--bd-ink);
+    background: var(--bd-ink);
+    color: var(--bd-bg);
+  }
+}
+.game-header :is(.game-header__invite, .game-header__more):active { transform: scale(0.96); }
+.game-header :is(.game-header__invite, .game-header__more, .game-leave-button):focus-visible {
+  outline: 3px solid var(--bd-lav-deep);
+  outline-offset: -3px;
+}
+.game-header__more[aria-expanded="true"] {
+  border-color: var(--bd-ink);
+  background: var(--bd-ink);
+  color: var(--bd-bg);
+}
+/* Under 760px of header the invite and Leave are icon tiles; the label stays in the
+   accessible name. Leave's own phone rule keys on the viewport, this one on the header. */
+@container game-header (max-width: 759px) {
+  .game-header :is(.game-header__invite-label, .game-leave-button__label) {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+  .game-header :is(.game-header__invite, .game-leave-button) { padding: 0; }
+  .game-header .game-leave-button__back-icon { display: inline-flex; }
+}
+/* Phones narrower than 390 and the landscape side column: two actions become one
+   menu. A game screen's header is 316px wide on a 390 phone. */
+@container game-header (max-width: 315px) {
+  .game-header__actions:has(.game-header__actions-menu) .game-header__actions-inline { display: none; }
+  .game-header__actions-menu { display: block; }
+}
+@container game-header (min-width: 760px) {
+  .game-header__layout {
+    grid-template-columns: minmax(0, max-content) minmax(0, 1fr) auto;
+    grid-template-areas: "title seats actions";
+    column-gap: 20px;
+  }
+  .game-header__bar { display: contents; }
+  .game-header__title { grid-area: title; max-width: 220px; }
+  .game-header__text { flex-direction: column; align-items: flex-start; gap: 2px; }
+  .game-header__actions { grid-area: actions; }
+  .game-header__layout > :is(.game-scoreboard-header, .game-scoreboard-players) { grid-area: seats; }
+  .game-header .game-leave-button__label {
+    position: static;
+    width: auto;
+    height: auto;
+    overflow: visible;
+    clip: auto;
+  }
+  .game-header .game-leave-button__back-icon { display: none; }
+}
+/* Phone landscape: the side column shares ~390px of height between the header,
+   the banner and chat, and a second header row left chat 60px under its floor
+   (#902) at 844x390. The header keeps one row – the players and the actions –
+   and the game's name stays for screen readers. */
+@media (max-width: 1023px) and (orientation: landscape) {
+  .game-landscape-side .game-header__layout {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas: "seats actions";
+    column-gap: 8px;
+  }
+  .game-landscape-side .game-header__bar { display: contents; }
+  .game-landscape-side .game-header__title {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+  .game-landscape-side .game-header__actions { grid-area: actions; }
+  .game-landscape-side .game-header__layout > :is(.game-scoreboard-header, .game-scoreboard-players) { grid-area: seats; }
+}
+/* Short portrait phones (the short-portrait variant's 40rem): at 320x568 the second
+   header row took ~52px from the board card. Same one row as landscape, with both
+   actions behind the menu. */
+@media (max-width: 1023px) and (max-height: 40rem) and (orientation: portrait) {
+  .game-header__layout {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas: "seats actions";
+    column-gap: 8px;
+  }
+  .game-header__bar { display: contents; }
+  .game-header__title {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+  .game-header__actions { grid-area: actions; }
+  .game-header__layout > :is(.game-scoreboard-header, .game-scoreboard-players) { grid-area: seats; }
+  .game-header__actions:has(.game-header__actions-menu) .game-header__actions-inline { display: none; }
+  .game-header__actions-menu { display: block; }
+}
+.game-header__menu {
+  position: fixed;
+  inset: auto;
+  margin: 0;
+  z-index: 60;
+  display: flex;
+  flex-direction: column;
+  min-width: 200px;
+  padding: 6px;
+  border-radius: 16px;
+  border: 1.5px solid var(--bd-line);
+  background: var(--bd-card);
+  color: var(--bd-ink);
+  box-shadow: 0 12px 32px -12px rgba(31,27,22,0.35), 0 2px 6px rgba(31,27,22,0.08);
+  overscroll-behavior: contain;
+  transform-origin: top right;
+  animation: game-header-menu-in var(--bd-dur-fast) ease-out both;
+}
+.game-header__menu-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--bd-ink);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+}
+.game-header__menu-item:focus-visible {
+  outline: 3px solid var(--bd-lav-deep);
+  outline-offset: -3px;
+}
+@media (hover: hover) {
+  .game-header__menu-item:hover { background: var(--bd-bg2); }
+}
+.game-header__menu-item--leave { color: var(--bd-coral-text); }
+@keyframes game-header-menu-in {
+  from { opacity: 0; transform: translateY(-4px) scale(0.97); }
+  to { opacity: 1; transform: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .game-header__menu { animation: fade-in-plain var(--bd-dur-fast) ease-out both; }
+}
+/* Every seat on one equal track (#1577): the player whose turn it is keeps their
+   seat and is marked by the active plate, so nothing moves when the turn passes. */
+.game-scoreboard-players {
+  display: grid;
+  grid-template-columns: repeat(var(--game-header-seats, 2), minmax(0, 1fr));
+  gap: 8px;
+  min-width: 0;
+}
+.game-scoreboard-player {
+  min-width: 0;
+  display: flex;
+  container: game-scoreboard-cell / inline-size;
+}
+.game-scoreboard-player > .game-player-card { flex: 1 1 auto; max-width: none; }
+/* Every seat sits on the same quiet plate; the active plate (::before) covers it. */
+.game-header .game-player-card { background: color-mix(in srgb, var(--bd-ink) 5%, transparent); }
+/* The header never grows a line for whose turn it is: the plate marks the seat and
+   the status banner says it, so the header keeps its height as the turn passes. */
+.game-header .game-player-turn {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
 .game-player-card {
   position: relative;
+  font-variant-numeric: tabular-nums;
   isolation: isolate;
   display: flex;
   align-items: center;
@@ -2495,8 +2659,9 @@ input[type="range"].slider-thumb::-moz-range-track {
    header is ~96px (55px in RPS beside its round block), and the row form needs
    ~76px of padding, avatar and gap before the name starts – so names came out
    as "Kov…", the turn line and the active plate ran over the score. Below
-   150px of cell the card stacks: avatar on top, the name under it with the
-   whole cell width, which reads "Kovalenko" and "Gravity Gra…" at 390.
+   110px of cell the card stacks: avatar on top, the name under it with the
+   whole cell width. With Leave up in the header bar (#1577) a 390 cell is
+   ~125px, which keeps one line on a 32px avatar.
 
    The subline and the turn line go, as they already do in the landscape side
    column (#901): the subline repeats the score and the corner badge, and whose
@@ -2509,12 +2674,23 @@ input[type="range"].slider-thumb::-moz-range-track {
   .game-scoreboard-header--has-compact .game-scoreboard-center { display: none; }
   .game-scoreboard-header--has-compact .game-scoreboard-center--compact { display: block; }
 }
-@container game-scoreboard-cell (max-width: 149px) {
+/* 110-149px: still one line, on a smaller avatar. */
+@container game-scoreboard-cell (min-width: 110px) and (max-width: 149px) {
+  :is(.game-scoreboard-cell--left, .game-scoreboard-right-card, .game-scoreboard-player) > .game-player-card { gap: 8px; padding: 6px 8px; }
+  :is(.game-scoreboard-cell--left, .game-scoreboard-right-card, .game-scoreboard-player) > .game-player-card .game-player-avatar { width: 32px; height: 32px; }
+  :is(.game-scoreboard-cell--left, .game-scoreboard-right-card, .game-scoreboard-player) > .game-player-card .game-player-avatar--initial { font-size: 14px; }
+  :is(.game-scoreboard-cell--left, .game-scoreboard-right-card, .game-scoreboard-player) > .game-player-card .game-player-avatar-wrap > :not(.game-player-avatar) {
+    transform: translate(2px, 2px) scale(0.72);
+    transform-origin: bottom right;
+  }
+  :is(.game-scoreboard-cell--left, .game-scoreboard-right-card, .game-scoreboard-player) > .game-player-card .game-player-name { font-size: 13px; }
+}
+@container game-scoreboard-cell (max-width: 109px) {
   /* Centred on both axes: the avatar-and-name block sits in the middle of the
      plate, so the two cards line up with each other and with the score between
      them. 8px between avatar and name – at 3px the corner badge, which hangs
      off the avatar's bottom edge, touched the name (Denys, real iPhone, v1.37.0). */
-  :is(.game-scoreboard-cell--left, .game-scoreboard-right-card) > .game-player-card {
+  :is(.game-scoreboard-cell--left, .game-scoreboard-right-card, .game-scoreboard-player) > .game-player-card {
     flex-direction: column;
     justify-content: center;
     align-items: center;
@@ -2524,44 +2700,44 @@ input[type="range"].slider-thumb::-moz-range-track {
   /* A photo avatar is an inline <img>, which leaves a descender gap under it
      inside the wrap – extra space under the avatar that the initial avatar
      does not have, so the block sat lower in the plate with a photo. */
-  :is(.game-scoreboard-cell--left, .game-scoreboard-right-card) > .game-player-card .game-player-avatar-wrap { display: flex; }
-  :is(.game-scoreboard-cell--left, .game-scoreboard-right-card) > .game-player-card .game-player-avatar {
+  :is(.game-scoreboard-cell--left, .game-scoreboard-right-card, .game-scoreboard-player) > .game-player-card .game-player-avatar-wrap { display: flex; }
+  :is(.game-scoreboard-cell--left, .game-scoreboard-right-card, .game-scoreboard-player) > .game-player-card .game-player-avatar {
     width: 34px;
     height: 34px;
   }
-  :is(.game-scoreboard-cell--left, .game-scoreboard-right-card) > .game-player-card .game-player-avatar--initial { font-size: 15px; }
+  :is(.game-scoreboard-cell--left, .game-scoreboard-right-card, .game-scoreboard-player) > .game-player-card .game-player-avatar--initial { font-size: 15px; }
   /* The corner badge (C4 disc, Checkers piece, RPS pick, Ludo token, TTT mark)
      is 18-22px of inline style sized for the 42px avatar; on the 34px one it
      covered most of the initial. Scaled from its own anchored corner to ~12px
      and pushed a little further out, so the initial reads and the badge still
      sits on the avatar's edge. A transform, because the games set its size
      inline and an inline width outranks any stylesheet. */
-  :is(.game-scoreboard-cell--left, .game-scoreboard-right-card) > .game-player-card .game-player-avatar-wrap > :not(.game-player-avatar) {
+  :is(.game-scoreboard-cell--left, .game-scoreboard-right-card, .game-scoreboard-player) > .game-player-card .game-player-avatar-wrap > :not(.game-player-avatar) {
     transform: translate(2px, 2px) scale(0.6);
     transform-origin: bottom right;
   }
-  :is(.game-scoreboard-cell--left, .game-scoreboard-right-card) > .game-player-card .game-player-identity {
+  :is(.game-scoreboard-cell--left, .game-scoreboard-right-card, .game-scoreboard-player) > .game-player-card .game-player-identity {
     align-self: stretch;
     min-width: 0;
     text-align: center;
   }
-  :is(.game-scoreboard-cell--left, .game-scoreboard-right-card) > .game-player-card .game-player-name-row { justify-content: center; gap: 3px; }
+  :is(.game-scoreboard-cell--left, .game-scoreboard-right-card, .game-scoreboard-player) > .game-player-card .game-player-name-row { justify-content: center; gap: 3px; }
   /* A tight line box, so the name's leading does not add invisible space
      under the text and push the visible block off centre. */
-  :is(.game-scoreboard-cell--left, .game-scoreboard-right-card) > .game-player-card .game-player-name { font-size: 13px; line-height: 1.25; }
+  :is(.game-scoreboard-cell--left, .game-scoreboard-right-card, .game-scoreboard-player) > .game-player-card .game-player-name { font-size: 13px; line-height: 1.25; }
   /* The WIN pill is taller than the name and, inline, took half the name's
      width: the winner's card grew and sat lower than the other one. Stacked, it
      hangs on the plate's top edge instead, out of the flow, so both cards keep
      the same box and the name keeps its width. */
-  :is(.game-scoreboard-cell--left, .game-scoreboard-right-card) > .game-player-card .game-player-win-badge {
+  :is(.game-scoreboard-cell--left, .game-scoreboard-right-card, .game-scoreboard-player) > .game-player-card .game-player-win-badge {
     position: absolute;
     top: 0;
     left: 50%;
     transform: translate(-50%, -50%);
     z-index: 1;
   }
-  :is(.game-scoreboard-cell--left, .game-scoreboard-right-card) > .game-player-card .game-player-subline { display: none; }
-  :is(.game-scoreboard-cell--left, .game-scoreboard-right-card) > .game-player-card .game-player-turn {
+  :is(.game-scoreboard-cell--left, .game-scoreboard-right-card, .game-scoreboard-player) > .game-player-card .game-player-subline { display: none; }
+  :is(.game-scoreboard-cell--left, .game-scoreboard-right-card, .game-scoreboard-player) > .game-player-card .game-player-turn {
     position: absolute;
     width: 1px;
     height: 1px;
@@ -2573,8 +2749,23 @@ input[type="range"].slider-thumb::-moz-range-track {
 /* A 320px phone leaves ~64px a cell: two pixels of side padding and a point
    of type are another letter or two of the name. */
 @container game-scoreboard-cell (max-width: 79px) {
-  :is(.game-scoreboard-cell--left, .game-scoreboard-right-card) > .game-player-card { padding-inline: 2px; }
-  :is(.game-scoreboard-cell--left, .game-scoreboard-right-card) > .game-player-card .game-player-name { font-size: 12px; }
+  :is(.game-scoreboard-cell--left, .game-scoreboard-right-card, .game-scoreboard-player) > .game-player-card { padding-inline: 2px; }
+  :is(.game-scoreboard-cell--left, .game-scoreboard-right-card, .game-scoreboard-player) > .game-player-card .game-player-name { font-size: 12px; }
+}
+/* Six to eight seats on a phone: the avatar alone, its name kept for screen readers. */
+@container game-scoreboard-cell (max-width: 63px) {
+  .game-scoreboard-player > .game-player-card { gap: 0; padding: 6px 2px; }
+  .game-scoreboard-player > .game-player-card .game-player-avatar { width: 30px; height: 30px; }
+  .game-scoreboard-player > .game-player-card .game-player-avatar--initial { font-size: 13px; }
+  .game-scoreboard-player > .game-player-card .game-player-identity {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    min-width: 0;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
 }
 
 /* Shared in-game chat dock (#736) — wraps components/Chat.tsx (fullScreen)
@@ -2597,7 +2788,7 @@ input[type="range"].slider-thumb::-moz-range-track {
   /* Both terms read the board card, which is the size container – the surface
      between them hugs, so a percentage here would have nothing to resolve
      against. 27px is the surface's own padding and border on one axis. */
-  width: min(calc(100cqw - 27px), calc(100cqh - 27px), 560px);
+  width: min(calc(100cqw - 27px), calc(100cqh - 27px), 880px);
   aspect-ratio: 1;
   height: auto;
   display: flex;
@@ -2848,7 +3039,7 @@ input[type="range"].slider-thumb::-moz-range-track {
   background:
     repeating-linear-gradient(45deg, rgba(255,255,255,0.14) 0 10px, transparent 10px 20px),
     var(--bd-lav);
-  color: #fff;
+  color: var(--bd-ink-on-accent);
   transform: rotateY(180deg) translateZ(1px);
   -webkit-backface-visibility: hidden;
   backface-visibility: hidden;
@@ -3116,38 +3307,35 @@ input[type="range"].slider-thumb::-moz-range-track {
 .yz-sheet {
   --yz-cat-min: 7rem;
   --yz-col-min: 3rem;
-  --yz-row-min: 28px;
-  --yz-split-gap: 14px;
+  --yz-row-min: 20px;
+  /* How far the rows sit above the 20px floor (4rem is the header and total row), capped at 8px; type grows with it. */
+  --yz-grow: clamp(0px, calc((100cqh - 4rem) / var(--yz-body-rows) - 20px), 8px);
   height: 100%;
   box-sizing: border-box;
-  overflow-y: auto;
+  overflow: auto;
   overscroll-behavior: contain;
   display: grid;
-  grid-template-columns:
-    [a-start] minmax(var(--yz-cat-min), 1.5fr) [a-cat-end]
-    repeat(var(--yz-players), minmax(var(--yz-col-min), 1fr)) [a-end];
-  grid-template-rows: auto repeat(var(--yz-stack-rows), minmax(var(--yz-row-min), 1fr)) minmax(var(--yz-row-min), auto);
+  grid-template-columns: minmax(var(--yz-cat-min), 1.5fr) repeat(var(--yz-players), minmax(var(--yz-col-min), 1fr));
+  grid-template-rows: auto repeat(var(--yz-body-rows), 1fr) auto;
   border-radius: 16px;
   border: 1.5px solid var(--bd-line);
   background: var(--bd-card);
   font-variant-numeric: tabular-nums;
 }
-/* A finger needs taller rows than a pointer; a short window scrolls the pad, never the page. */
+/* The rows share the pad's height down to the floor and only then scroll inside it; a finger's floor is the 24px target minimum. */
 @media (pointer: coarse) {
-  .yz-sheet { --yz-row-min: 38px; }
+  .yz-sheet { --yz-row-min: 24px; }
 }
 .yz-sheet[aria-busy='true'] .yz-ghost { opacity: 0.6; }
 
 .yz-sheet__row {
   display: grid;
   grid-template-columns: subgrid;
-  grid-column: a-start / a-end;
+  grid-column: 1 / -1;
   grid-row: var(--yz-row);
 }
 .yz-sheet__row--head { grid-row: 1; position: sticky; top: 0; z-index: 2; }
 .yz-sheet__row--total { position: sticky; bottom: 0; z-index: 2; }
-.yz-sheet__row--head-b,
-.yz-sheet__row--upperTotal { display: none; }
 
 .yz-sheet__rh,
 .yz-sheet__corner,
@@ -3155,9 +3343,19 @@ input[type="range"].slider-thumb::-moz-range-track {
 .yz-cell {
   position: relative;
   min-width: 0;
+  min-height: var(--yz-row-min);
   display: flex;
   align-items: center;
   border-bottom: 1px solid var(--bd-line);
+}
+/* The category column stays put while the player columns scroll under it; the shadow is its edge once they do. */
+.yz-sheet__rh,
+.yz-sheet__corner {
+  position: sticky;
+  inset-inline-start: 0;
+  z-index: 1;
+  background-color: var(--bd-card);
+  box-shadow: 1px 0 0 var(--bd-line);
 }
 .yz-sheet__ph,
 .yz-cell {
@@ -3170,7 +3368,6 @@ input[type="range"].slider-thumb::-moz-range-track {
 
 .yz-sheet__corner,
 .yz-sheet__ph {
-  min-height: 34px;
   background-color: var(--bd-card-warm);
   border-bottom: 2px solid var(--bd-ink);
 }
@@ -3185,8 +3382,6 @@ input[type="range"].slider-thumb::-moz-range-track {
   text-align: center;
 }
 .yz-sheet__ph-marks { display: flex; align-items: center; justify-content: center; gap: 4px; height: 12px; color: var(--bd-lav-text); }
-/* Three or four players: the marks go above the name, which gets the column's whole width. */
-.yz-sheet:is([data-players='3'], [data-players='4']) .yz-sheet__ph { flex-direction: column; }
 .yz-sheet__ph.is-current { background-color: color-mix(in srgb, var(--bd-sun) 26%, var(--bd-card-warm)); }
 .yz-sheet__ph-name { max-width: 100%; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow-wrap: break-word; hyphens: auto; }
 .yz-sheet__ph.is-departed .yz-sheet__ph-name { color: var(--bd-ink-soft); text-decoration: line-through; }
@@ -3207,13 +3402,13 @@ input[type="range"].slider-thumb::-moz-range-track {
   display: flex;
   align-items: center;
   gap: 7px;
-  padding: 3px 6px 3px 12px;
+  padding: calc(2px + var(--yz-grow) / 8) 6px calc(2px + var(--yz-grow) / 8) 12px;
   box-sizing: border-box;
   border: 0;
   background: none;
   color: var(--bd-ink);
   font: inherit;
-  font-size: 13px;
+  font-size: calc(12px + var(--yz-grow) / 8);
   font-weight: 700;
   line-height: 1.15;
   text-align: start;
@@ -3244,9 +3439,9 @@ input[type="range"].slider-thumb::-moz-range-track {
 @media (hover: hover) {
   .yz-sheet__cat:not(.yz-sheet__cat--static):hover .yz-sheet__cat-info { color: var(--bd-ink); }
 }
-.yz-sheet__cat--total { width: auto; padding-inline-end: 14px; font-family: var(--bd-font-display); font-size: 15px; font-weight: 800; }
+.yz-sheet__cat--total { width: auto; padding-inline-end: 14px; font-family: var(--bd-font-display); font-size: calc(14px + var(--yz-grow) / 8); font-weight: 800; }
 .yz-mini-die {
-  width: 16px; height: 16px; flex-shrink: 0;
+  width: calc(14px + var(--yz-grow) / 4); height: calc(14px + var(--yz-grow) / 4); flex-shrink: 0;
   display: grid; grid-template: repeat(3, 1fr) / repeat(3, 1fr);
   padding: 2px; box-sizing: border-box;
   border: 1.5px solid var(--bd-ink); border-radius: 4px;
@@ -3257,17 +3452,15 @@ input[type="range"].slider-thumb::-moz-range-track {
 
 .yz-cell { overflow: hidden; }
 .yz-cell__num {
-  font-family: var(--bd-font-display); font-weight: 700; font-size: 17px; line-height: 1; color: var(--bd-ink);
+  font-family: var(--bd-font-display); font-weight: 700; font-size: calc(14px + var(--yz-grow) * 0.375); line-height: 1; color: var(--bd-ink);
 }
-.yz-cell__dash { color: var(--bd-ink-muted); font-size: 15px; line-height: 1; }
+.yz-cell__dash { color: var(--bd-ink-muted); font-size: calc(13px + var(--yz-grow) / 4); line-height: 1; }
 .yz-sheet__row--sum > *,
-.yz-sheet__row--bonus > *,
-.yz-sheet__row--upperTotal > * { background-color: var(--bd-card-warm); }
+.yz-sheet__row--bonus > * { background-color: var(--bd-card-warm); }
 .yz-sheet__row--sum .yz-cell.is-current,
-.yz-sheet__row--bonus .yz-cell.is-current,
-.yz-sheet__row--upperTotal .yz-cell.is-current { background-color: color-mix(in srgb, var(--bd-sun) 18%, var(--bd-card-warm)); }
+.yz-sheet__row--bonus .yz-cell.is-current { background-color: color-mix(in srgb, var(--bd-sun) 18%, var(--bd-card-warm)); }
 .yz-sheet__row--bonus > * { border-bottom: 2px solid var(--bd-line); }
-.yz-cell--summary .yz-cell__num { font-size: 15px; color: var(--bd-ink-soft); }
+.yz-cell--summary .yz-cell__num { font-size: calc(13px + var(--yz-grow) / 4); color: var(--bd-ink-soft); }
 .yz-cell--summary .yz-cell__num--bonus { color: var(--bd-ink); font-weight: 800; }
 .yz-cell__bar {
   position: absolute; inset-inline: 10px; bottom: 4px;
@@ -3290,9 +3483,10 @@ input[type="range"].slider-thumb::-moz-range-track {
   border-bottom: 0;
 }
 .yz-sheet__row--total > .yz-cell.is-current { background-color: color-mix(in srgb, var(--bd-sun) 26%, var(--bd-card-warm)); }
-.yz-cell__total { font-family: var(--bd-font-display); font-weight: 800; font-size: 20px; line-height: 1; color: var(--bd-ink); }
+.yz-cell__total { font-family: var(--bd-font-display); font-weight: 800; font-size: calc(17px + var(--yz-grow) * 0.375); line-height: 1; color: var(--bd-ink); }
 
-.yz-cell--action { padding: 3px; }
+/* The score button takes the row's height and never adds to it. */
+.yz-cell--action { padding: calc(2px + var(--yz-grow) / 8); contain: size; }
 .yz-ghost {
   width: min(100%, 6.5rem);
   height: min(100%, 2.75rem);
@@ -3313,7 +3507,7 @@ input[type="range"].slider-thumb::-moz-range-track {
   transition-timing-function: ease-out;
   -webkit-tap-highlight-color: transparent;
 }
-.yz-ghost__value { font-family: var(--bd-font-display); font-weight: 700; font-size: 17px; line-height: 1; }
+.yz-ghost__value { font-family: var(--bd-font-display); font-weight: 700; font-size: calc(13px + var(--yz-grow) / 2); line-height: 1; }
 .yz-ghost--zero { background: transparent; border-color: color-mix(in srgb, var(--bd-input-border) 55%, transparent); color: var(--bd-ink-muted); }
 .yz-ghost--burn { border-color: var(--bd-ink-soft); }
 .yz-ghost--best {
@@ -3373,52 +3567,6 @@ input[type="range"].slider-thumb::-moz-range-track {
   pointer-events: none;
 }
 
-/* Side by side on shared rows, fifteen boxes take the height of nine. */
-@container yzsheet (min-width: 470px) {
-  .yz-sheet--classic:is([data-players='1'], [data-players='2']) {
-    grid-template-columns:
-      [a-start] minmax(var(--yz-cat-min), 1.4fr) [a-cat-end] repeat(var(--yz-players), minmax(var(--yz-col-min), 1fr)) [a-end]
-      var(--yz-split-gap)
-      [b-start] minmax(var(--yz-cat-min), 1.4fr) [b-cat-end] repeat(var(--yz-players), minmax(var(--yz-col-min), 1fr)) [b-end];
-    grid-template-rows: auto repeat(9, minmax(var(--yz-row-min), 1fr)) minmax(var(--yz-row-min), auto);
-  }
-  .yz-sheet--classic:is([data-players='1'], [data-players='2']) .yz-sheet__row--upper { grid-row: var(--yz-split-row); }
-  .yz-sheet--classic:is([data-players='1'], [data-players='2']) .yz-sheet__row--lower { grid-column: b-start / b-end; grid-row: var(--yz-split-row); }
-  .yz-sheet--classic:is([data-players='1'], [data-players='2']) .yz-sheet__row--head-b { display: grid; grid-column: b-start / b-end; }
-  .yz-sheet--classic:is([data-players='1'], [data-players='2']) .yz-sheet__row--upperTotal { display: grid; }
-  .yz-sheet--classic:is([data-players='1'], [data-players='2']) .yz-sheet__row--total { grid-column: a-start / b-end; grid-row: 11; }
-  .yz-sheet--classic:is([data-players='1'], [data-players='2']) .yz-sheet__row--total > .yz-sheet__rh { grid-column: a-start / b-cat-end; justify-content: flex-end; }
-}
-@container yzsheet (min-width: 580px) {
-  .yz-sheet--classic[data-players='3'] {
-    grid-template-columns:
-      [a-start] minmax(var(--yz-cat-min), 1.4fr) [a-cat-end] repeat(var(--yz-players), minmax(var(--yz-col-min), 1fr)) [a-end]
-      var(--yz-split-gap)
-      [b-start] minmax(var(--yz-cat-min), 1.4fr) [b-cat-end] repeat(var(--yz-players), minmax(var(--yz-col-min), 1fr)) [b-end];
-    grid-template-rows: auto repeat(9, minmax(var(--yz-row-min), 1fr)) minmax(var(--yz-row-min), auto);
-  }
-  .yz-sheet--classic[data-players='3'] .yz-sheet__row--upper { grid-row: var(--yz-split-row); }
-  .yz-sheet--classic[data-players='3'] .yz-sheet__row--lower { grid-column: b-start / b-end; grid-row: var(--yz-split-row); }
-  .yz-sheet--classic[data-players='3'] .yz-sheet__row--head-b { display: grid; grid-column: b-start / b-end; }
-  .yz-sheet--classic[data-players='3'] .yz-sheet__row--upperTotal { display: grid; }
-  .yz-sheet--classic[data-players='3'] .yz-sheet__row--total { grid-column: a-start / b-end; grid-row: 11; }
-  .yz-sheet--classic[data-players='3'] .yz-sheet__row--total > .yz-sheet__rh { grid-column: a-start / b-cat-end; justify-content: flex-end; }
-}
-@container yzsheet (min-width: 680px) {
-  .yz-sheet--classic[data-players='4'] {
-    grid-template-columns:
-      [a-start] minmax(var(--yz-cat-min), 1.4fr) [a-cat-end] repeat(var(--yz-players), minmax(var(--yz-col-min), 1fr)) [a-end]
-      var(--yz-split-gap)
-      [b-start] minmax(var(--yz-cat-min), 1.4fr) [b-cat-end] repeat(var(--yz-players), minmax(var(--yz-col-min), 1fr)) [b-end];
-    grid-template-rows: auto repeat(9, minmax(var(--yz-row-min), 1fr)) minmax(var(--yz-row-min), auto);
-  }
-  .yz-sheet--classic[data-players='4'] .yz-sheet__row--upper { grid-row: var(--yz-split-row); }
-  .yz-sheet--classic[data-players='4'] .yz-sheet__row--lower { grid-column: b-start / b-end; grid-row: var(--yz-split-row); }
-  .yz-sheet--classic[data-players='4'] .yz-sheet__row--head-b { display: grid; grid-column: b-start / b-end; }
-  .yz-sheet--classic[data-players='4'] .yz-sheet__row--upperTotal { display: grid; }
-  .yz-sheet--classic[data-players='4'] .yz-sheet__row--total { grid-column: a-start / b-end; grid-row: 11; }
-  .yz-sheet--classic[data-players='4'] .yz-sheet__row--total > .yz-sheet__rh { grid-column: a-start / b-cat-end; justify-content: flex-end; }
-}
 /* A narrow pad (320, four players) gives the names the width and drops the info glyph. */
 @container yzsheet (max-width: 359px) {
   .yz-sheet { --yz-cat-min: 5.75rem; --yz-col-min: 2.6rem; }
@@ -3555,15 +3703,12 @@ button.yz-pill:focus-visible { outline: 3px solid var(--bd-lav-deep); outline-of
 .yz-scoreboard-card .game-scoreboard-cell--left > .game-player-card,
 .yz-scoreboard-card .game-scoreboard-right-card > .game-player-card { flex: 1 1 auto; max-width: none; }
 .yz-scoreboard-card .game-scoreboard-center { align-self: center; overflow: visible; padding-inline: 8px; }
-.yz-scoreboard-card .game-player-identity { min-height: 56px; }
 .yz-scoreboard-score {
   font-family: var(--bd-font-display); font-weight: 800; font-size: 28px; line-height: 1;
   color: var(--bd-ink); white-space: nowrap;
 }
 .yz-scoreboard-score__sep { color: var(--bd-ink-muted); margin: 0 6px; }
 .yz-scoreboard-meta { font-size: 11px; font-weight: 700; color: var(--bd-ink-soft); margin-top: 4px; }
-.yz-player-grid { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 8px; }
-.yz-player-grid .game-player-card { max-width: none; height: 100%; box-sizing: border-box; }
 .ttt-center-col > .yz-board-card { flex: 1 1 auto; min-height: 0; }
 .yz-board-card {
   position: relative;
@@ -3817,16 +3962,15 @@ button.yz-pill:focus-visible { outline: 3px solid var(--bd-lav-deep); outline-of
      ran the cards into the score: "Swee… 0 : 0Che…". Here the card stacks,
      a 24px avatar over a name with the cell's full width, so it fits down to
      ~34px of cell and a name keeps ~9 letters. 9px taller than the row form.
-     Leave, where a game puts it in `trailing`, gets its own track, so both
-     player cells stay the same width. The conversation games tune their own
-     header below and are left out. */
+     Leave sits in the header's bar above (#1577), so both player cells are
+     the same width. The conversation games tune their own header below and
+     are left out. */
   .game-landscape-side .game-scoreboard-header:not(:is(.sketch-header-card, .spy-header-card, .liars-header-card) *) {
-    grid-template-columns: minmax(0, 1fr) minmax(0, auto) minmax(0, 1fr) auto;
-    grid-template-areas: "left center right trailing";
+    grid-template-columns: minmax(0, 1fr) minmax(0, auto) minmax(0, 1fr);
+    grid-template-areas: "left center right";
   }
   .game-landscape-side .game-scoreboard-header:not(:is(.sketch-header-card, .spy-header-card, .liars-header-card) *) .game-scoreboard-cell--right { display: contents; }
   .game-landscape-side .game-scoreboard-header:not(:is(.sketch-header-card, .spy-header-card, .liars-header-card) *) .game-scoreboard-right-card { grid-area: right; min-width: 0; }
-  .game-landscape-side .game-scoreboard-header:not(:is(.sketch-header-card, .spy-header-card, .liars-header-card) *) .game-scoreboard-cell--right > :not(.game-scoreboard-right-card) { grid-area: trailing; }
   .game-landscape-side .game-scoreboard-header:not(:is(.sketch-header-card, .spy-header-card, .liars-header-card) *) :is(.game-scoreboard-cell--left, .game-scoreboard-right-card) > .game-player-card {
     flex-direction: column;
     justify-content: center;
@@ -3941,8 +4085,8 @@ button.yz-pill:focus-visible { outline: 3px solid var(--bd-lav-deep); outline-of
 }
 
 
-/* Shared in-game Leave control (layout DoD 2026-09-06): the trailing slot of
-   GameScoreboardHeader on every game. Spectators get the --back variant. */
+/* Shared in-game Leave control (layout DoD 2026-09-06): the header's actions
+   on every game (#1577). Spectators get the --back variant. */
 .game-leave-button {
   display: inline-flex;
   align-items: center;
@@ -3955,8 +4099,8 @@ button.yz-pill:focus-visible { outline: 3px solid var(--bd-lav-deep); outline-of
   border: 1.5px solid rgba(224,75,59,0.35);
   background: rgba(255,107,91,0.12);
   /* Ink text at rest, not bd-coral-deep — 3.31:1 on this tint, below the
-     4.5:1 AA text minimum (#1171 axe pass, appears on every game's shared
-     GameScoreboardHeader trailing slot). The coral border still marks it as
+     4.5:1 AA text minimum (#1171 axe pass, appears in every game's shared
+     header). The coral border still marks it as
      the leave action; the coral *fill* on hover/focus below is the
      brand-button pattern DESIGN.md documents as Denys's call, so that one
      keeps white text. */
@@ -3989,9 +4133,10 @@ button.yz-pill:focus-visible { outline: 3px solid var(--bd-lav-deep); outline-of
   background: var(--bd-ink);
   color: var(--bd-bg);
 }
+.game-leave-button__back-icon { display: none; }
 @media (max-width: 1023px) {
   /* Below the desktop breakpoint: icon only, the label stays in the accessible name. */
-  .game-leave-button--compact.game-leave-button--leave .game-leave-button__label {
+  .game-leave-button--compact .game-leave-button__label {
     position: absolute;
     width: 1px;
     height: 1px;
@@ -3999,7 +4144,8 @@ button.yz-pill:focus-visible { outline: 3px solid var(--bd-lav-deep); outline-of
     clip: rect(0 0 0 0);
     white-space: nowrap;
   }
-  .game-leave-button--compact.game-leave-button--leave { padding: 8px 10px; }
+  .game-leave-button--compact { padding: 8px 10px; }
+  .game-leave-button--compact .game-leave-button__back-icon { display: inline-flex; }
 }
 
 /* ── Liar's Party (#1040 skin, #1041 chrome) ───────────────────────
@@ -4023,15 +4169,6 @@ button.yz-pill:focus-visible { outline: 3px solid var(--bd-lav-deep); outline-of
   overflow: hidden;
   padding: 12px 16px;
   background: linear-gradient(135deg, var(--bd-card-warm) 0%, rgba(155,140,255,0.12) 100%);
-}
-.liars-header-card__mark {
-  position: absolute;
-  right: -14px;
-  top: -18px;
-  opacity: 0.12;
-  transform: rotate(10deg);
-  pointer-events: none;
-  line-height: 1;
 }
 /* The round counter inside GameScoreboardHeader's centre cell. */
 .liars-counter__kicker {
@@ -4129,15 +4266,6 @@ button.yz-pill:focus-visible { outline: 3px solid var(--bd-lav-deep); outline-of
   font-family: inherit;
   white-space: nowrap;
 }
-.liars-overlay-icon {
-  width: 56px;
-  height: 56px;
-  border-radius: 50%;
-  display: grid;
-  place-items: center;
-  box-shadow: inset 0 0 0 3px rgba(255,255,255,0.15);
-}
-
 /* The players panel: the roster before the game, the standings during it. Top
    of the right column on desktop, the Players tab on mobile, beside the phase
    in landscape. */
@@ -4211,7 +4339,6 @@ html.dark .liars-seat { background: var(--bd-bg2); }
    right cell shrinks to what it holds. The watermark goes too: at this size it
    sits behind the names rather than behind empty card. */
 @media (max-width: 1023px) {
-  .liars-header-card__mark { display: none; }
   .liars-header-card .game-scoreboard-header--has-compact .game-scoreboard-center { display: none; }
   .liars-header-card .game-scoreboard-header--has-compact .game-scoreboard-center--compact { display: block; }
   .liars-header-card .game-scoreboard-right-card { display: none; }
@@ -4234,8 +4361,8 @@ html.dark .liars-seat { background: var(--bd-bg2); }
   /* The header keeps the shared family's row sizing, and only its padding is
      this game's. Sketch & Guess puts its header card straight in this column,
      where `flex: 0 0 auto` means height and holds off a vertical squeeze; here
-     the card rides in a `.ttt-top-row` beside the compact room card, and that
-     row is already `flex-shrink: 0`, so no squeeze reaches it. In a ROW flex
+     the card rides in a `.ttt-top-row`, and that row is already
+     `flex-shrink: 0`, so no squeeze reaches it. In a ROW flex
      container the same declaration means WIDTH, and it overrode
      `.ttt-top-row > :first-child { flex: 1 1 auto }`: measured live at 844x390
      it sized the header to its content and left 37 to 78px of dead row beside
@@ -4592,7 +4719,7 @@ html.dark .liars-seat { background: var(--bd-bg2); }
 .rps-tile__emoji { font-size: var(--rps-emoji-md); line-height: 1; transition: transform 0.18s ease; }
 .rps-tile:not(:disabled):hover .rps-tile__emoji { transform: scale(1.12) rotate(-6deg); }
 .rps-tile__label { font-size: 13px; font-weight: 700; }
-.rps-tile__beats { font-size: 10px; color: var(--bd-ink-muted); }
+.rps-tile__beats { font-size: 10px; color: var(--bd-ink-muted); max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .rps-tile--selected {
   background: color-mix(in srgb, var(--tile-accent) 14%, var(--bd-bg));
   border-color: var(--tile-accent);
@@ -4672,6 +4799,10 @@ html.dark .liars-seat { background: var(--bd-bg2); }
   .rps-stage__vs { display: none; }
   .rps-stage__score { display: none; }
   .rps-stage__result { width: 100%; margin-top: 0; }
+}
+/* The longest hint needs a 91px tile: shown from a 345px card (390 px phones), hidden below. */
+@container (max-width: 344px) {
+  .rps-tile__beats { display: none; }
 }
 /* Rounds timeline in the side column. */
 .rps-round-row {
@@ -4912,7 +5043,7 @@ html.dark .liars-seat { background: var(--bd-bg2); }
 
 
 .memory-grid {
-  width: min(100%, 780px);
+  width: min(100%, 1040px);
   margin: 0 auto;
   display: grid;
   gap: clamp(6px, 1.3vw, 12px);
@@ -4926,7 +5057,7 @@ html.dark .liars-seat { background: var(--bd-bg2); }
     /* Both terms read the panel, which is the size container; 27px is the
        surface's padding and border on one axis (#903). A percentage would have
        nothing to resolve against now that the surface hugs this grid. */
-    width: min(calc(100cqw - 27px), 780px, calc((100cqh - 27px) * var(--grid-cols, 4) / var(--grid-rows, 4)));
+    width: min(calc(100cqw - 27px), 1040px, calc((100cqh - 27px) * var(--grid-cols, 4) / var(--grid-rows, 4)));
   }
 }
 
@@ -5096,12 +5227,7 @@ html.dark .liars-seat { background: var(--bd-bg2); }
 }
 
 .memory-mobile-header {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 10px 14px 8px;
-  background: var(--bd-bg);
-  border-bottom: 1.5px solid var(--bd-line);
+  padding: 6px 12px 0;
   flex-shrink: 0;
 }
 
@@ -5269,10 +5395,9 @@ html.dark .spy-secret-tile {
       strip, a toolbar and a submit button around the canvas, and a guesser an
       input and a button, so the card stacks them and gives the canvas whatever
       height is left.
-   2. The scoreboard row spans the whole first grid row. Every other kit game
-      puts a room card beside it; here the seat count runs to ten, so the roster
-      lives in the scores panel on the right and the header gets the full width
-      rather than a card with two names in it and a hole next to them.
+   2. The header spans the whole first grid row, as in every kit game (#1577).
+      The seat count runs to ten, so the roster lives in the scores panel on
+      the right and the header keeps its two featured seats.
    3. The canvas sizes from its own wrapper, not from the screen: the wrapper is
       a size container, so `100cqh` is the height actually left over after the
       phase's controls, whichever phase is on screen. */
@@ -5628,11 +5753,6 @@ html.dark .spy-secret-tile {
 .sketch-score-row__name { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; color: var(--bd-ink); }
 .sketch-score-row__score { flex-shrink: 0; font-weight: 700; color: var(--bd-ink); font-family: ui-monospace, monospace; }
 
-/* The scoreboard row owns the whole first grid row (see 2 above). */
-.ttt-grid > .sketch-header-card,
-.ttt-grid > .spy-header-card,
-.ttt-grid > .alias-header-card { grid-column: 1 / -1; }
-
 .sketch-chat-note {
   flex-shrink: 0;
   padding: 8px 12px;
@@ -5655,12 +5775,12 @@ html.dark .sketch-score-row { background: var(--bd-bg2); }
   min-height: 0;
 }
 
-/* The scoreboard row spans the full grid width here (there is no room card to
-   sit beside it), and at 1280 that stretched each 1fr cell to ~580px – a
+/* The scoreboard row spans the full grid width here, and at 1280 that
+   stretched each 1fr cell to ~580px – a
    player card is an avatar and two short lines, so it became a wide empty
    plate, which is exactly what the layout DoD calls a card with small content
    floating in it. Cap the cards and let the cells keep the slack: the left card
-   stays left, the right card and Leave stay hard right. */
+   stays left, the right card stays hard right. */
 .sketch-header-card .game-player-card,
 .spy-header-card .game-player-card,
 .alias-header-card .game-player-card { max-width: 340px; }
@@ -5689,12 +5809,10 @@ html.dark .sketch-score-row { background: var(--bd-bg2); }
   }
 }
 
-/* Phone landscape: the side column is min(300px, 42vw) and this header has one
-   more thing in it than the other kit games put there – Leave rides in the
-   scoreboard trailing slot rather than in a room card beside it. Measured at
-   844x390 the round counter printed 13px over the opponent name, in all three
-   phases. Same answer as portrait: the viewer card goes, the drawer stays, and
-   the right cell shrinks to the button. */
+/* Phone landscape: the side column is min(300px, 42vw). Measured at 844x390
+   the round counter printed 13px over the opponent name, in all three phases.
+   Same answer as portrait: the viewer card goes, the drawer stays, and the
+   right cell shrinks to nothing. */
 @media (max-width: 1023px) and (orientation: landscape) {
   .game-landscape-side :is(.sketch-header-card, .spy-header-card, .alias-header-card) .game-scoreboard-right-card { display: none; }
   .game-landscape-side :is(.sketch-header-card, .spy-header-card, .alias-header-card) .game-scoreboard-header {
@@ -5868,7 +5986,7 @@ html.dark .sketch-score-row { background: var(--bd-bg2); }
    axis. Tokens move by transform only (a WAAPI walk, #1113); nothing animates size. */
 .ludo-board {
   display: block;
-  width: clamp(180px, min(calc(100cqw - 27px), calc(100cqh - 27px)), 720px);
+  width: clamp(140px, min(calc(100cqw - 27px), calc(100cqh - 27px)), 960px);
   height: auto;
   aspect-ratio: 1 / 1;
   user-select: none;
@@ -5962,25 +6080,6 @@ html.dark .sketch-score-row { background: var(--bd-bg2); }
 }
 .ludo-roll-button:active:not(:disabled) { transform: translateY(3px); box-shadow: 0 1px 0 var(--bd-ink); }
 .ludo-roll-button:disabled { opacity: 0.45; cursor: not-allowed; box-shadow: 0 2px 0 var(--bd-ink); }
-
-/* Three or four players: the kit's player cards two to a row. The turn line
-   is dropped because GameStatusBanner right below says whose turn it is, and
-   the active card is already raised. A narrow grid (phones, 320-390) shrinks
-   the cards the way the landscape side column does (#901), measured on the
-   grid itself so it holds wherever the header renders. */
-.ludo-player-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 6px;
-  container-type: inline-size;
-}
-.ludo-player-grid .game-player-card { max-width: none; }
-.ludo-player-grid .game-player-turn { display: none; }
-@container (max-width: 420px) {
-  .ludo-player-grid .game-player-card { gap: 6px; padding: 4px 6px; }
-  .ludo-player-grid .game-player-avatar { width: 30px; height: 30px; }
-  .ludo-player-grid .game-player-avatar--initial { font-size: 14px; }
-}
 
 /* Per-player roll history above the move log. */
 .ludo-history-card { max-height: 340px; }

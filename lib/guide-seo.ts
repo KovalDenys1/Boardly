@@ -1,7 +1,10 @@
 import type { Metadata } from 'next'
 
+import { getGuideCard } from './guide-cards'
 import { BOARDLY_URL, ORGANIZATION_ID } from './organization-json-ld'
-import { getGuideBySlug, type GuideEntry } from './guides-catalog'
+import { getGuideBySlug, type LocalizedGuideSeo } from './guides-catalog'
+import { HREFLANG, OG_LOCALES, languageAlternates, localizedPath, type PrefixedLocale, type SeoLocale } from './seo-locales'
+import { serverTranslator } from './server-i18n'
 import { OG_SITE_DEFAULTS, guideSocialCardKey, socialImages } from './social-preview'
 
 /**
@@ -17,19 +20,39 @@ import { OG_SITE_DEFAULTS, guideSocialCardKey, socialImages } from './social-pre
 
 const TITLE_SUFFIX = ' | Boardly'
 
+/** A guide in one of the prefixed languages: its `<head>` copy, from the translation itself. */
+export interface GuideTranslation {
+  locale: PrefixedLocale
+  seo: LocalizedGuideSeo
+}
+
 /** `https://boardly.online/guides/how-to-play-yahtzee-online` */
 export function getGuideCanonical(slug: string): string {
   return `${BOARDLY_URL}/guides/${getGuideBySlug(slug).slug}`
 }
 
-function resolve(slug: string): { guide: GuideEntry; url: string } {
+function resolve(slug: string, translation?: GuideTranslation) {
   const guide = getGuideBySlug(slug)
-  return { guide, url: `${BOARDLY_URL}/guides/${guide.slug}` }
+  const locale: SeoLocale = translation?.locale ?? 'en'
+  const at = (path: string) => {
+    const localized = localizedPath(path, locale)
+    return localized === '/' ? BOARDLY_URL : `${BOARDLY_URL}${localized}`
+  }
+  const card = getGuideCard(guide.slug, locale)
+  return {
+    guide,
+    locale,
+    path: `/guides/${guide.slug}`,
+    url: at(`/guides/${guide.slug}`),
+    at,
+    seo: translation?.seo ?? guide.seo,
+    published: card.published,
+    updated: card.updated,
+  }
 }
 
-export function buildGuideMetadata(slug: string): Metadata {
-  const { guide, url } = resolve(slug)
-  const { seo } = guide
+export function buildGuideMetadata(slug: string, translation?: GuideTranslation): Metadata {
+  const { guide, path, url, seo, published, updated } = resolve(slug, translation)
   const ogTitle = `${seo.ogTitle}${TITLE_SUFFIX}`
 
   const images = socialImages(guideSocialCardKey(guide.slug))
@@ -37,16 +60,17 @@ export function buildGuideMetadata(slug: string): Metadata {
   return {
     title: seo.title,
     description: seo.description,
-    keywords: seo.keywords,
+    ...(translation ? {} : { keywords: guide.seo.keywords }),
     openGraph: {
       ...OG_SITE_DEFAULTS,
+      ...(translation ? { locale: OG_LOCALES[translation.locale] } : {}),
       images,
       title: ogTitle,
       description: seo.ogDescription,
       url,
       type: 'article',
-      publishedTime: guide.published,
-      modifiedTime: guide.updated,
+      publishedTime: published,
+      modifiedTime: updated,
     },
     twitter: {
       card: 'summary_large_image',
@@ -54,7 +78,7 @@ export function buildGuideMetadata(slug: string): Metadata {
       title: ogTitle,
       description: seo.ogDescription,
     },
-    alternates: { canonical: url },
+    alternates: { canonical: url, languages: languageAlternates(path) },
     robots: { index: true, follow: true },
   }
 }
@@ -65,34 +89,35 @@ export function buildGuideMetadata(slug: string): Metadata {
  * all twelve guides did. Google resolves the `@id`; two differing copies of
  * one organization on the same page are what it cannot resolve.
  */
-export function buildGuideArticleJsonLd(slug: string): Record<string, unknown> {
-  const { guide, url } = resolve(slug)
+export function buildGuideArticleJsonLd(slug: string, translation?: GuideTranslation): Record<string, unknown> {
+  const { locale, url, seo, published, updated } = resolve(slug, translation)
 
   return {
     '@context': 'https://schema.org',
     '@type': 'Article',
-    headline: guide.seo.headline,
-    description: guide.seo.articleDescription,
+    headline: seo.headline,
+    description: seo.articleDescription,
     url,
     image: `${BOARDLY_URL}/opengraph-image`,
-    datePublished: guide.published,
-    dateModified: guide.updated,
-    inLanguage: 'en',
+    datePublished: published,
+    dateModified: updated,
+    inLanguage: HREFLANG[locale],
     author: { '@id': ORGANIZATION_ID },
     publisher: { '@id': ORGANIZATION_ID },
   }
 }
 
-export function buildGuideBreadcrumbJsonLd(slug: string): Record<string, unknown> {
-  const { guide, url } = resolve(slug)
+export function buildGuideBreadcrumbJsonLd(slug: string, translation?: GuideTranslation): Record<string, unknown> {
+  const { locale, url, at, seo } = resolve(slug, translation)
+  const t = serverTranslator(locale)
 
   return {
     '@context': 'https://schema.org',
     '@type': 'BreadcrumbList',
     itemListElement: [
-      { '@type': 'ListItem', position: 1, name: 'Home', item: BOARDLY_URL },
-      { '@type': 'ListItem', position: 2, name: 'Guides', item: `${BOARDLY_URL}/guides` },
-      { '@type': 'ListItem', position: 3, name: guide.seo.breadcrumbLabel, item: url },
+      { '@type': 'ListItem', position: 1, name: t('breadcrumbs.home'), item: at('/') },
+      { '@type': 'ListItem', position: 2, name: t('header.guides'), item: at('/guides') },
+      { '@type': 'ListItem', position: 3, name: seo.breadcrumbLabel, item: url },
     ],
   }
 }

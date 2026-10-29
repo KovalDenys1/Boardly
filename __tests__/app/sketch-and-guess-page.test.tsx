@@ -1,5 +1,5 @@
 // @ts-nocheck
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import SketchAndGuessLobbyPage from '@/app/(site)/lobby/[code]/sketch-and-guess-page'
 import { fetchWithGuest } from '@/lib/fetch-with-guest'
 import { showToast } from '@/lib/i18n-toast'
@@ -385,12 +385,12 @@ describe('SketchAndGuessLobbyPage shared chrome', () => {
     return view
   }
 
-  it('puts Leave inside the scoreboard header trailing slot, not a header of its own', async () => {
+  it('puts Leave inside the shared header\'s actions, not a header of its own', async () => {
     const { container } = await renderPage()
 
-    // The trailing slot is the header's right cell; a Leave button anywhere else
-    // on the page is the hand-rolled corner this migration removed.
-    const trailingLeave = container.querySelectorAll('.game-scoreboard-cell--right button.game-leave-button')
+    // A Leave button anywhere but the header's actions (#1577) is the
+    // hand-rolled corner this migration removed.
+    const trailingLeave = container.querySelectorAll('.game-header__actions button.game-leave-button')
     expect(trailingLeave.length).toBeGreaterThan(0)
     expect(container.querySelectorAll('button.game-leave-button').length).toBe(trailingLeave.length)
   })
@@ -406,7 +406,7 @@ describe('SketchAndGuessLobbyPage shared chrome', () => {
       { isSpectator: true }
     )
 
-    const back = container.querySelectorAll('.game-scoreboard-cell--right a.game-leave-button--back')
+    const back = container.querySelectorAll('.game-header__actions a.game-leave-button--back')
     expect(back.length).toBeGreaterThan(0)
     expect(back[0].getAttribute('href')).toBe('/lobby/ABCD')
     expect(container.querySelectorAll('button.game-leave-button').length).toBe(0)
@@ -521,9 +521,11 @@ describe('SketchAndGuessLobbyPage shared chrome', () => {
       response.activeGame.state.data.ranking = ['user-1', 'user-2', 'user-3']
     })
 
-    expect(screen.getAllByRole('button', { name: 'game.ui.viewBoard' }).length).toBeGreaterThan(0)
-    expect(screen.getAllByRole('button', { name: 'lobby.game.playAgain' }).length).toBeGreaterThan(0)
-    expect(screen.getAllByRole('button', { name: 'game.ui.returnToLobby' }).length).toBeGreaterThan(0)
+    const dialog = await screen.findByRole('dialog', {}, { timeout: 3000 })
+    expect(within(dialog).getByRole('button', { name: 'game.ui.viewBoard' })).toBeTruthy()
+    expect(within(dialog).getByRole('button', { name: 'lobby.game.playAgain' })).toBeTruthy()
+    fireEvent.click(within(dialog).getByTestId('game-result-more-button'))
+    expect(within(dialog).getByRole('button', { name: 'game.ui.returnToLobby' })).toBeTruthy()
   })
 
   it('sends the rematch to the same endpoint the waiting room uses', async () => {
@@ -533,8 +535,9 @@ describe('SketchAndGuessLobbyPage shared chrome', () => {
       response.activeGame.state.data.winnerId = 'user-1'
     })
 
+    const dialog = await screen.findByRole('dialog', {}, { timeout: 3000 })
     await act(async () => {
-      fireEvent.click(screen.getAllByRole('button', { name: 'lobby.game.playAgain' })[0])
+      fireEvent.click(within(dialog).getByRole('button', { name: 'lobby.game.playAgain' }))
     })
 
     const rematchCalls = mockFetchWithGuest.mock.calls.filter((call) => String(call[0]) === '/api/game/create')

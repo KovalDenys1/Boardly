@@ -79,7 +79,7 @@ describe('YahtzeeReplayRenderer', () => {
     const step = steps.find((s) => s.index > 0 && stateOf(s).currentPlayerIndex === 1 && stateOf(s).status === 'playing')!
     renderStep(step)
     const robo = fixture.players[1]
-    const current = document.querySelectorAll('.yz-sheet__row--head-a .yz-sheet__ph.is-current')
+    const current = document.querySelectorAll('.yz-sheet__row--head .yz-sheet__ph.is-current')
     expect(current).toHaveLength(1)
     expect(current[0]).toHaveTextContent(robo.name)
   })
@@ -96,7 +96,7 @@ describe('YahtzeeReplayRenderer', () => {
   it('shows the viewer\'s column first whoever the viewer is', () => {
     const robo = fixture.players[1]
     renderStep(steps[0], robo.userId)
-    expect(document.querySelectorAll('.yz-sheet__row--head-a .yz-sheet__ph')[1]).toHaveTextContent(fixture.players[0].name)
+    expect(document.querySelectorAll('.yz-sheet__row--head .yz-sheet__ph')[1]).toHaveTextContent(fixture.players[0].name)
   })
 
   it('renders nothing for a malformed state', () => {

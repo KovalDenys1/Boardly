@@ -121,7 +121,8 @@ describe('the score pad', () => {
 
   it('shares the card height between its rows, with a floor, so a tall pad has no empty band', () => {
     const rule = css.match(/\.yz-sheet\s*\{([^}]*)\}/)
-    expect(rule?.[1]).toMatch(/grid-template-rows:[^;]*minmax\(var\(--yz-row-min\), 1fr\)/)
-    expect(rule?.[1]).toMatch(/overflow-y:\s*auto/)
+    expect(rule?.[1]).toMatch(/grid-template-rows:[^;]*repeat\(var\(--yz-body-rows\), 1fr\)/)
+    expect(rule?.[1]).toMatch(/overflow:\s*auto/)
+    expect(css.match(/\.yz-cell\s*\{([^}]*)\}/)?.[1]).toMatch(/min-height:\s*var\(--yz-row-min\)/)
   })
 })

@@ -42,8 +42,7 @@ import { nextDropKey, type DropKey } from '@/lib/connect-four-drop-key'
 import { TURN_AFTER_MOVE_MS, useTurnSounds } from '@/hooks/useTurnSounds'
 import { useSpectatorResultCue } from '@/hooks/useSpectatorResultCue'
 import { useConnectFourDropSound } from './hooks/useConnectFourDropSound'
-import GameScoreboardHeader from '@/components/game-chrome/GameScoreboardHeader'
-import GameRoomCard from '@/components/game-chrome/GameRoomCard'
+import GameScoreboardHeader, { type GameHeaderRoom } from '@/components/game-chrome/GameScoreboardHeader'
 import GameStatusBanner from '@/components/game-chrome/GameStatusBanner'
 import { viewerOutcome } from '@/lib/game-outcome'
 import GameTabs from '@/components/game-chrome/GameTabs'
@@ -784,9 +783,18 @@ export default function ConnectFourLobbyPage({ code, isSpectator = false, onGame
 
     // ─── Sections ─────────────────────────────────────────────────────────────
 
+    const headerRoom: GameHeaderRoom = {
+        gameId: 'connect-four',
+        title: t('games.connect_four.name'),
+        code,
+        isSpectator,
+        allowSpectators: !!lobby.allowSpectators,
+        onLeave: () => setShowLeaveConfirmModal(true),
+    }
     const headerSection = (
         <div className="ttt-card" style={{ background: 'linear-gradient(135deg, var(--bd-card-warm) 0%, rgba(255,196,77,0.08) 100%)', padding: '12px 16px', overflow: 'hidden' }}>
             <GameScoreboardHeader
+                room={headerRoom}
                 leftCard={<GamePlayerCard name={p1Name} isActive={!isFinished && gameData.currentDisc === 1} isMe={myDisc === 1} isWinner={!isDraw && winnerDisc === 1} side="left" avatarSrc={p1Avatar} isPremium={p1IsPremium} userId={reportablePlayerId(players, state.players[0]?.id)} lobbyCode={code} accentColor={DISC_RED} subline={`${p1Wins}W`} cornerBadge={<C4DiscBadge disc={1} />} />}
                 center={
                     <>
@@ -941,6 +949,10 @@ export default function ConnectFourLobbyPage({ code, isSpectator = false, onGame
                             isDraw={isDraw}
                             accentColor="var(--bd-mint-deep)"
                             accentShadowColor="rgba(0,0,0,0.25)"
+                            standings={[
+                                { id: 'p1', name: p1Name, score: p1Wins, isViewer: myDisc === 1 },
+                                { id: 'p2', name: p2Name, score: p2Wins, isViewer: myDisc === 2 },
+                            ]}
                             onInspect={() => setOverlayInspecting(true)}
                             isHost={!!lobby && lobby.creatorId === currentUserId}
                             isLoading={isRematchSubmitting}
@@ -1012,28 +1024,12 @@ export default function ConnectFourLobbyPage({ code, isSpectator = false, onGame
 
     const themeStyle = getThemePageStyle(lobby.theme)
 
-    // The room card sits to the right of the scoreboard, in the same grid row
-    // and at the same height (layout DoD, scheme A): game, room code, invite
-    // link, and Leave. Phones get the compact form beside the scoreboard.
-    const roomCardProps = {
-        gameId: 'connect-four',
-        title: t('games.connect_four.name'),
-        code,
-        isSpectator,
-        leaveLabel: t('game.ui.leave'),
-        allowSpectators: !!lobby.allowSpectators,
-        onLeave: () => setShowLeaveConfirmModal(true),
-    }
-    const roomSection = <GameRoomCard {...roomCardProps} />
-    const roomSectionCompact = <GameRoomCard {...roomCardProps} compact />
-
     return (
         <div className="game-screen ttt-screen" style={themeStyle}>
             {/* ── DESKTOP ─────────────────────────────────────────────────── */}
             <div className="ttt-desktop-layout">
                 <div className="ttt-grid">
                     {headerSection}
-                    {roomSection}
                     <div className="ttt-center-col">
                         {statusSection}
                         {requestSection}
@@ -1053,7 +1049,7 @@ export default function ConnectFourLobbyPage({ code, isSpectator = false, onGame
                     {renderBoardSection()}
                 </div>
                 <div className="game-landscape-side">
-                    <div className="ttt-top-row">{headerSection}{roomSectionCompact}</div>
+                    <div className="ttt-top-row">{headerSection}</div>
                     {statusSection}
                     {requestSection}
                     <GameTabs
@@ -1074,7 +1070,7 @@ export default function ConnectFourLobbyPage({ code, isSpectator = false, onGame
 
             {/* ── MOBILE ──────────────────────────────────────────────────── */}
             <div className="ttt-mobile-layout">
-                <div className="ttt-top-row">{headerSection}{roomSectionCompact}</div>
+                <div className="ttt-top-row">{headerSection}</div>
                 {statusSection}
                 {requestSection}
                 <GameTabs

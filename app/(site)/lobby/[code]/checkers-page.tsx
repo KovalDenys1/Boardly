@@ -38,8 +38,7 @@ import Chat from '@/components/Chat'
 import GameResultOverlay, { RESULT_REVEAL_DELAY_MS } from '@/components/game-chrome/GameResultOverlay'
 import GamePlayerCard from '@/components/game-chrome/GamePlayerCard'
 import { reportablePlayerId } from '@/lib/reportable-player'
-import GameScoreboardHeader from '@/components/game-chrome/GameScoreboardHeader'
-import GameRoomCard from '@/components/game-chrome/GameRoomCard'
+import GameScoreboardHeader, { type GameHeaderRoom } from '@/components/game-chrome/GameScoreboardHeader'
 import GameStatusBanner from '@/components/game-chrome/GameStatusBanner'
 import { viewerOutcome } from '@/lib/game-outcome'
 import GameTabs from '@/components/game-chrome/GameTabs'
@@ -826,9 +825,18 @@ export default function CheckersLobbyPage({ code, isSpectator = false, onGameRes
         </>
     )
 
+    const headerRoom: GameHeaderRoom = {
+        gameId: 'checkers',
+        title: t('games.checkers.name'),
+        code,
+        isSpectator,
+        allowSpectators: !!lobby.allowSpectators,
+        onLeave: () => setShowLeaveConfirmModal(true),
+    }
     const headerSection = (
         <div className="ttt-card" style={{ background: 'linear-gradient(135deg, var(--bd-card-warm) 0%, rgba(255,107,91,0.08) 100%)', padding: '12px 16px', overflow: 'hidden' }}>
             <GameScoreboardHeader
+                room={headerRoom}
                 leftCard={<GamePlayerCard name={p1Name} isActive={!isFinished && gameData.currentSide === 1} isMe={mySide === 1} isWinner={!isDraw && winnerSide === 1} side="left" avatarSrc={p1Id ? getPlayerAvatar(p1Id) : null} isPremium={p1Id ? getIsPremium(p1Id) : false} userId={reportablePlayerId(players, p1Id)} lobbyCode={code} accentColor={SIDE_ACCENT[1]} subline={renderSubline(p1Id, 1)} cornerBadge={<SideBadge side={1} />} />}
                 center={
                     <>
@@ -939,6 +947,10 @@ export default function CheckersLobbyPage({ code, isSpectator = false, onGameRes
                     isDraw={isDraw}
                     accentColor="var(--bd-mint-deep)"
                     accentShadowColor="rgba(0,0,0,0.25)"
+                    standings={[
+                        { id: 'p1', name: p1Name, score: p1Wins, isViewer: mySide === 1 },
+                        { id: 'p2', name: p2Name, score: p2Wins, isViewer: mySide === 2 },
+                    ]}
                     onInspect={() => setOverlayInspecting(true)}
                     isHost={!!lobby && lobby.creatorId === currentUserId}
                     isLoading={isRematchSubmitting}
@@ -1004,27 +1016,12 @@ export default function CheckersLobbyPage({ code, isSpectator = false, onGameRes
 
     const themeStyle = getThemePageStyle(lobby.theme)
 
-    // Room card beside the scoreboard (layout DoD, scheme A): game, room code,
-    // invite link, and Leave.
-    const roomCardProps = {
-        gameId: 'checkers',
-        title: t('games.checkers.name'),
-        code,
-        isSpectator,
-        leaveLabel: t('game.ui.leave'),
-        allowSpectators: !!lobby.allowSpectators,
-        onLeave: () => setShowLeaveConfirmModal(true),
-    }
-    const roomSection = <GameRoomCard {...roomCardProps} />
-    const roomSectionCompact = <GameRoomCard {...roomCardProps} compact />
-
     return (
         <div className="game-screen ttt-screen" style={themeStyle}>
             {/* ── DESKTOP ─────────────────────────────────────────────────── */}
             <div className="ttt-desktop-layout">
                 <div className="ttt-grid">
                     {headerSection}
-                    {roomSection}
                     <div className="ttt-center-col">
                         {statusSection}
                         {renderBoardSection()}
@@ -1043,7 +1040,7 @@ export default function CheckersLobbyPage({ code, isSpectator = false, onGameRes
                     {renderBoardSection()}
                 </div>
                 <div className="game-landscape-side">
-                    <div className="ttt-top-row">{headerSection}{roomSectionCompact}</div>
+                    <div className="ttt-top-row">{headerSection}</div>
                     {statusSection}
                     {hintSection}
                     <GameTabs
@@ -1063,7 +1060,7 @@ export default function CheckersLobbyPage({ code, isSpectator = false, onGameRes
 
             {/* ── MOBILE ──────────────────────────────────────────────────── */}
             <div className="ttt-mobile-layout">
-                <div className="ttt-top-row">{headerSection}{roomSectionCompact}</div>
+                <div className="ttt-top-row">{headerSection}</div>
                 {statusSection}
                 <GameTabs
                     tabs={[

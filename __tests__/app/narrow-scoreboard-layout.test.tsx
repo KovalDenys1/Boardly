@@ -49,10 +49,10 @@ function valueOf(selector: string, prop: string, atRule?: { name: string; params
   return declsFor(selector, atRule).find((decls) => prop in decls)?.[prop]
 }
 
-const STACKED = { name: 'container', params: 'game-scoreboard-cell (max-width: 149px)' }
+const STACKED = { name: 'container', params: 'game-scoreboard-cell (max-width: 109px)' }
 const NARROW_HEADER = { name: 'container', params: 'game-scoreboard (max-width: 479px)' }
 const LANDSCAPE = { name: 'media', params: '(max-width: 1023px) and (orientation: landscape)' }
-const CELL = ':is(.game-scoreboard-cell--left, .game-scoreboard-right-card) > .game-player-card'
+const CELL = ':is(.game-scoreboard-cell--left, .game-scoreboard-right-card, .game-scoreboard-player) > .game-player-card'
 
 describe('narrow scoreboard header (#1180)', () => {
   it('makes the header and both player cells named size containers', () => {
@@ -97,11 +97,11 @@ describe('narrow scoreboard header (#1180)', () => {
     const SIDE = '.game-landscape-side .game-scoreboard-header:not(:is(.sketch-header-card, .spy-header-card, .liars-header-card) *)'
     const SIDE_CARD = `${SIDE} :is(.game-scoreboard-cell--left, .game-scoreboard-right-card) > .game-player-card`
 
-    it('gives Leave its own track so both player cells are the same width', () => {
-      expect(valueOf(SIDE, 'grid-template-areas', LANDSCAPE)).toBe('"left center right trailing"')
+    it('gives both player cells the same width, with Leave up in the header bar (#1577)', () => {
+      expect(valueOf(SIDE, 'grid-template-columns', LANDSCAPE)).toBe('minmax(0, 1fr) minmax(0, auto) minmax(0, 1fr)')
+      expect(valueOf(SIDE, 'grid-template-areas', LANDSCAPE)).toBe('"left center right"')
       expect(valueOf(`${SIDE} .game-scoreboard-cell--right`, 'display', LANDSCAPE)).toBe('contents')
       expect(valueOf(`${SIDE} .game-scoreboard-right-card`, 'grid-area', LANDSCAPE)).toBe('right')
-      expect(valueOf(`${SIDE} .game-scoreboard-cell--right > :not(.game-scoreboard-right-card)`, 'grid-area', LANDSCAPE)).toBe('trailing')
     })
 
     it('stacks a small avatar over a name with no width floor, so nothing reaches the score', () => {
@@ -109,6 +109,13 @@ describe('narrow scoreboard header (#1180)', () => {
       expect(valueOf(`${SIDE_CARD} .game-player-avatar`, 'width', LANDSCAPE)).toBe('24px')
       expect(valueOf(`${SIDE_CARD} .game-player-identity`, 'min-width', LANDSCAPE)).toBe('0')
     })
+  })
+
+  it('keeps the landscape side header to one row of players and actions (#1577)', () => {
+    expect(valueOf('.game-landscape-side .game-header__layout', 'grid-template-areas', LANDSCAPE)).toBe('"seats actions"')
+    expect(valueOf('.game-landscape-side .game-header__bar', 'display', LANDSCAPE)).toBe('contents')
+    // Visually hidden, not removed: the game's name stays for screen readers.
+    expect(valueOf('.game-landscape-side .game-header__title', 'clip', LANDSCAPE)).toBe('rect(0 0 0 0)')
   })
 
   it('keeps the conversation games out: their phone right cell is an auto track', () => {

@@ -44,42 +44,42 @@ export default function CelebrationBanner({ event, onComplete }: CelebrationBann
           border: 'rgba(255,196,77,0.34)',
           gradient: 'linear-gradient(135deg,rgba(255,196,77,0.2),var(--bd-bg))',
           icon: 'bg-[rgba(255,196,77,0.24)]',
-          badge: 'bg-[rgba(255,196,77,0.22)] text-(--bd-coral-text)',
+          badge: 'bg-[rgba(255,196,77,0.22)] text-bd-sun-text',
         }
       case 'largeStraight':
         return {
           border: 'rgba(155,140,255,0.28)',
           gradient: 'linear-gradient(135deg,rgba(155,140,255,0.16),var(--bd-bg))',
           icon: 'bg-[rgba(155,140,255,0.18)]',
-          badge: 'bg-[rgba(155,140,255,0.18)] text-(--bd-lav-text)',
+          badge: 'bg-[rgba(155,140,255,0.18)] text-bd-lav-text',
         }
       case 'fullHouse':
         return {
           border: 'rgba(79,201,166,0.28)',
           gradient: 'linear-gradient(135deg,rgba(79,201,166,0.18),var(--bd-bg))',
           icon: 'bg-[rgba(79,201,166,0.18)]',
-          badge: 'bg-[rgba(79,201,166,0.18)] text-(--bd-mint-text)',
+          badge: 'bg-[rgba(79,201,166,0.18)] text-bd-mint-text',
         }
       case 'highScore':
         return {
           border: 'rgba(255,107,91,0.28)',
           gradient: 'linear-gradient(135deg,rgba(255,107,91,0.16),var(--bd-bg))',
           icon: 'bg-[rgba(255,107,91,0.16)]',
-          badge: 'bg-[rgba(255,107,91,0.18)] text-(--bd-coral-text)',
+          badge: 'bg-[rgba(255,107,91,0.18)] text-bd-coral-text',
         }
       case 'perfectRoll':
         return {
           border: 'rgba(107,193,240,0.28)',
           gradient: 'linear-gradient(135deg,rgba(107,193,240,0.18),var(--bd-bg))',
           icon: 'bg-[rgba(107,193,240,0.18)]',
-          badge: 'bg-[rgba(107,193,240,0.18)] text-(--bd-sky-deep)',
+          badge: 'bg-[rgba(107,193,240,0.18)] text-bd-sky-text',
         }
       default:
         return {
           border: 'rgba(107,193,240,0.28)',
           gradient: 'linear-gradient(135deg,rgba(107,193,240,0.18),var(--bd-bg))',
           icon: 'bg-[rgba(107,193,240,0.18)]',
-          badge: 'bg-[rgba(107,193,240,0.18)] text-(--bd-sky-deep)',
+          badge: 'bg-[rgba(107,193,240,0.18)] text-bd-sky-text',
         }
     }
   }

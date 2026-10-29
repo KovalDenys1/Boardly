@@ -85,7 +85,7 @@ describe('POST /api/quick-play', () => {
     const body = await res.json()
 
     expect(res.status).toBe(200)
-    expect(body).toEqual({ lobbyCode: '1234', isNew: true })
+    expect(body).toEqual({ lobbyCode: '1234', lobbyId: 'lobby-new', isNew: true })
     // Only the lobby (with the human creator nested inside) is created —
     // no standalone players.create calls, which is how bots get added.
     expect(prisma.players.create).not.toHaveBeenCalled()
@@ -95,6 +95,14 @@ describe('POST /api/quick-play', () => {
     const res = await POST(makeRequest({ gameType: 'guess_the_spy', forceSolo: true }))
     expect(res.status).toBe(400)
     expect(prisma.lobbies.create).not.toHaveBeenCalled()
+  })
+
+  it('answers a Play vs Bot lobby with its id, so the page can start the game at once (#1541)', async () => {
+    const res = await POST(makeRequest({ gameType: 'connect_four', difficulty: 'medium', forceSolo: true }))
+    const body = await res.json()
+
+    expect(res.status).toBe(200)
+    expect(body).toEqual({ lobbyCode: '1234', lobbyId: 'lobby-new', isNew: true })
   })
 
   it('still bot-fills a bot-supported game on lobby creation', async () => {
@@ -133,7 +141,7 @@ describe('POST /api/quick-play', () => {
     const body = await res.json()
 
     expect(res.status).toBe(200)
-    expect(body).toEqual({ lobbyCode: '5678', isNew: false })
+    expect(body).toEqual({ lobbyCode: '5678', lobbyId: 'lobby-1', isNew: false })
     expect(prisma.lobbies.create).not.toHaveBeenCalled()
   })
 

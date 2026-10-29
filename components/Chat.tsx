@@ -279,7 +279,7 @@ export default function Chat({
   return (
     <div
       ref={chatRef}
-      className={`bd-card flex flex-col overflow-hidden ${fullScreen ? 'h-full rounded-none border-0 shadow-none' : 'fixed z-50 rounded-bd-lg'}`}
+      className={`chat-panel flex flex-col overflow-hidden ${fullScreen ? 'h-full' : 'bd-card fixed z-50 rounded-bd-lg'}`}
       style={fullScreen ? {
         background: 'linear-gradient(180deg, var(--bd-bg) 0%, var(--bd-card-warm) 100%)',
       } : {
@@ -443,7 +443,7 @@ export default function Chat({
                   <div className={`flex flex-col ${msg.type === 'system' ? 'mx-auto items-center' : isCurrentUser ? 'items-end' : 'items-start'}`}>
                     {msg.type !== 'system' && showAvatar && !isCurrentUser && (
                       <div
-                        className={`mb-1 px-1 text-xs font-semibold ${isPremium ? 'text-amber-500' : 'text-bd-ink-soft'} ${onProfileClick && msg.userId !== 'system' ? 'cursor-pointer hover:underline' : ''}`}
+                        className={`mb-1 px-1 text-xs font-semibold ${isPremium ? 'text-bd-sun-text' : 'text-bd-ink-soft'} ${onProfileClick && msg.userId !== 'system' ? 'cursor-pointer hover:underline' : ''}`}
                         onClick={onProfileClick && msg.userId !== 'system' ? () => onProfileClick(msg.userId) : undefined}
                       >
                         {isPremium && <span className="mr-0.5">👑</span>}
@@ -452,11 +452,11 @@ export default function Chat({
                     )}
 
                     <div
-                      className={`max-w-[280px] rounded-2xl px-4 py-2.5 shadow-xs transition-all hover:shadow-md sm:max-w-xs ${
+                      className={`max-w-[280px] rounded-2xl px-4 py-2.5 shadow-xs transition hover:shadow-md sm:max-w-xs ${
                         msg.type === 'system'
                           ? 'text-center text-xs italic'
                           : isCurrentUser
-                            ? 'rounded-br-md text-(--bd-bg)'
+                            ? 'rounded-br-md text-bd-bg'
                             : 'rounded-bl-md text-bd-ink'
                       }`}
                       style={
@@ -637,7 +637,7 @@ export default function Chat({
               onKeyDown={handleKeyPress}
               placeholder={t('chat.placeholder')}
               aria-label={t('chat.placeholder')}
-              className="bd-input h-full pr-14! hover:border-(--bd-ink)! focus:ring-2 focus:ring-inset focus:ring-bd-lav-deep"
+              className="bd-input h-full pr-14! hover:border-bd-ink! focus:ring-2 focus:ring-inset focus:ring-bd-lav-deep"
               maxLength={200}
             />
             <div className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs font-medium text-bd-ink-muted" aria-hidden="true">

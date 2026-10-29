@@ -115,7 +115,7 @@ export default function LanguageSwitcher({ anchor }: LanguageSwitcherProps) {
       >
         <MenuItems
           anchor={anchor ? { to: anchor, gap: 8 } : undefined}
-          className={`z-50 overflow-hidden rounded-[1.25rem] border-[1.5px] border-bd-line bg-(--bd-input-bg) p-1.5 shadow-[0_18px_36px_-18px_rgba(31,27,22,0.35)] focus:outline-hidden ${
+          className={`z-50 overflow-hidden rounded-[1.25rem] border-[1.5px] border-bd-line bg-bd-input-bg p-1.5 shadow-[0_18px_36px_-18px_rgba(31,27,22,0.35)] focus:outline-hidden ${
             anchor ? '' : 'absolute right-0 mt-2'
           } w-[176px]`}
         >
@@ -139,7 +139,7 @@ export default function LanguageSwitcher({ anchor }: LanguageSwitcherProps) {
                     <span
                       className={`inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full font-mono text-[11px] font-bold uppercase tracking-[0.16em] ${
                         isSelected
-                          ? 'bg-bd-lav text-(--bd-ink-on-accent)'
+                          ? 'bg-bd-lav text-bd-ink-on-accent'
                           : 'bg-bd-bg2 text-bd-ink-muted'
                       }`}
                     >

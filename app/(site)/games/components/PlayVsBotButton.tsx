@@ -1,16 +1,45 @@
 'use client'
 
-import { useEffect, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from 'react'
+import { useEffect, useEffectEvent, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import { useSession } from 'next-auth/react'
 import { useTranslation, type TranslationKeys } from '@/lib/i18n-helpers'
 import { Icon, type IconName } from '@/components/icons'
 import { useGuest } from '@/contexts/GuestContext'
-import { fetchWithGuest } from '@/lib/fetch-with-guest'
+import { useOnboarding } from '@/contexts/OnboardingContext'
+import { fetchWithGuest, hasStoredGuestToken, storedGuestName } from '@/lib/fetch-with-guest'
 import { showToast } from '@/lib/i18n-toast'
+import { getGameMetadata, hasBotSupport } from '@/lib/game-catalog'
+import { toAnalyticsGameType } from '@/lib/analytics-game-types'
 import { AuthGateModal } from '@/components/AuthGateModal'
 
 type Difficulty = 'easy' | 'medium' | 'hard'
+
+/** Taken off the address in place, so neither Back nor a reload starts a second game. */
+function takePlayBotFlag(): boolean {
+  const url = new URL(window.location.href)
+  if (url.searchParams.get('play') !== 'bot') return false
+  url.searchParams.delete('play')
+  window.history.replaceState(null, '', `${url.pathname}${url.search}${url.hash}`)
+  return true
+}
+
+/** A name the guest-session route accepts; it suffixes one that is taken. */
+function generatedGuestName(): string {
+  return `Player${Math.floor(1000 + Math.random() * 9000)}`
+}
+
+/** The onboarding modal's age and Terms step for an OAuth account; unknown counts as owed. */
+async function ageStepOwed(): Promise<boolean> {
+  try {
+    const res = await fetch('/api/onboarding/status', { cache: 'no-store' })
+    if (!res.ok) return true
+    const data = await res.json() as { needsAgeConfirmation?: boolean }
+    return data.needsAgeConfirmation === true
+  } catch {
+    return true
+  }
+}
 
 const DIFFICULTIES: { id: Difficulty; icon: IconName; labelKey: TranslationKeys }[] = [
   { id: 'easy', icon: 'bot-easy' as const, labelKey: 'lobby.create.difficultyEasy' },
@@ -28,14 +57,15 @@ export default function PlayVsBotButton({ gameType, className = '' }: PlayVsBotB
   const router = useRouter()
   const pathname = usePathname()
   const { status } = useSession()
-  const { isGuest } = useGuest()
+  const { isGuest, setGuestMode } = useGuest()
+  const { completeOnboarding } = useOnboarding()
   const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState(false)
   const [pendingDifficulty, setPendingDifficulty] = useState<Difficulty | null>(null)
   const rootRef = useRef<HTMLDivElement>(null)
 
   /** The lobby the server says is still open, with the difficulty the player picked (#1344). */
-  const [openLobby, setOpenLobby] = useState<{ code: string; difficulty: Difficulty } | null>(null)
+  const [openLobby, setOpenLobby] = useState<{ code: string; difficulty: Difficulty; autoStart: boolean } | null>(null)
   const popoverShown = open || openLobby !== null
   const triggerRef = useRef<HTMLButtonElement>(null)
   const dialogRef = useRef<HTMLDivElement>(null)
@@ -86,7 +116,7 @@ export default function PlayVsBotButton({ gameType, className = '' }: PlayVsBotB
 
   const leaveAndPlay = async () => {
     if (!openLobby) return
-    const { code, difficulty } = openLobby
+    const { code, difficulty, autoStart } = openLobby
     setOpenLobby(null)
     setLoading(true)
     try {
@@ -100,10 +130,44 @@ export default function PlayVsBotButton({ gameType, className = '' }: PlayVsBotB
       setLoading(false)
       return
     }
-    await startQuickPlay(difficulty, { afterLeave: true })
+    await startQuickPlay(difficulty, { afterLeave: true, autoStart })
   }
 
-  const startQuickPlay = async (difficulty: Difficulty, { afterLeave = false } = {}) => {
+  // On failure the lobby's waiting room still offers Start.
+  const startBotGame = async (lobbyCode: string, lobbyId: string) => {
+    try {
+      const res = await fetchWithGuest('/api/game/create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ gameType, lobbyId }),
+      })
+      if (!res.ok) return
+      const data = await res.json() as { game?: { players?: { user?: { bot?: unknown } }[] } }
+      const players = data.game?.players ?? []
+      const botCount = players.filter((player) => player.user?.bot).length
+      const analyticsGameType = toAnalyticsGameType(gameType)
+      if (analyticsGameType) {
+        // @vercel/analytics is ESM-only, which every Jest suite loading a game page would otherwise have to mock.
+        const { trackGameStarted } = await import('@/lib/analytics')
+        trackGameStarted({
+          lobbyCode,
+          gameType: analyticsGameType,
+          isPrivate: false,
+          maxPlayers: getGameMetadata(gameType)?.maxPlayers ?? players.length,
+          playerCount: players.length,
+          hasBot: botCount > 0,
+          botCount,
+        })
+      }
+    } catch {
+      return
+    }
+  }
+
+  const startQuickPlay = async (
+    difficulty: Difficulty,
+    { afterLeave = false, autoStart = false }: { afterLeave?: boolean; autoStart?: boolean } = {},
+  ) => {
     setLoading(true)
     try {
       const res = await fetchWithGuest('/api/quick-play', {
@@ -111,14 +175,14 @@ export default function PlayVsBotButton({ gameType, className = '' }: PlayVsBotB
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ gameType, difficulty, forceSolo: true }),
       })
-      const data = await res.json() as { lobbyCode?: string; error?: string; code?: string }
+      const data = await res.json() as { lobbyCode?: string; lobbyId?: string; error?: string; code?: string }
       if (res.status === 401) {
         // No client-side check can predict this one: a guest token expires or
         // is rejected while `isGuest` is still true locally. The answer is the
         // same as for a fresh visitor — offer the gate, never a raw
         // "Unauthorized" toast, which tells a player nothing they can act on.
         setLoading(false)
-        setPendingDifficulty(difficulty)
+        if (!autoStart) setPendingDifficulty(difficulty)
         return
       }
       // Already has a game open (#907). Sending them there unasked read as the
@@ -131,19 +195,57 @@ export default function PlayVsBotButton({ gameType, className = '' }: PlayVsBotB
         }
         setLoading(false)
         setOpen(false)
-        setOpenLobby({ code: data.lobbyCode, difficulty })
+        setOpenLobby({ code: data.lobbyCode, difficulty, autoStart })
         return
       }
       if (!res.ok) throw new Error(data.error ?? 'Failed')
+      if (autoStart && data.lobbyCode && data.lobbyId) await startBotGame(data.lobbyCode, data.lobbyId)
       router.push(`/lobby/${data.lobbyCode}`)
     } catch (err) {
-      showToast.error('errors.general', undefined, {
-        message: err instanceof Error ? err.message : 'Something went wrong',
-      })
+      if (!autoStart) {
+        showToast.error('errors.general', undefined, {
+          message: err instanceof Error ? err.message : 'Something went wrong',
+        })
+      }
       setLoading(false)
       setOpen(false)
     }
   }
+
+  const startFromFlag = useEffectEvent(async () => {
+    if (status === 'authenticated') {
+      if (await ageStepOwed()) {
+        setLoading(false)
+        return
+      }
+    } else {
+      // Written before the guest exists, or the welcome sheet opens over this page until the lobby loads.
+      void completeOnboarding()
+      if (hasStoredGuestToken()) {
+        // The session token lasts 12 h; this is GuestProvider's startup refresh, under the stored name so nothing is renamed.
+        await setGuestMode(storedGuestName() || generatedGuestName()).catch(() => undefined)
+      } else if (!isGuest) {
+        try {
+          await setGuestMode(generatedGuestName())
+        } catch {
+          setLoading(false)
+          return
+        }
+      }
+    }
+    await startQuickPlay('medium', { autoStart: true })
+  })
+
+  const playBotFlag = useRef<'unread' | 'waiting' | 'used'>('unread')
+  useEffect(() => {
+    if (playBotFlag.current === 'unread') {
+      playBotFlag.current = hasBotSupport(gameType) && takePlayBotFlag() ? 'waiting' : 'used'
+      if (playBotFlag.current === 'waiting') setLoading(true)
+    }
+    if (playBotFlag.current !== 'waiting' || status === 'loading') return
+    playBotFlag.current = 'used'
+    void startFromFlag()
+  }, [status, gameType])
 
   const handleDifficulty = async (difficulty: Difficulty) => {
     // `!== 'authenticated'`, not `=== 'unauthenticated'`. NextAuth reports

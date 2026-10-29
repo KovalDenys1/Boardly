@@ -2,8 +2,9 @@
  * Single source of truth for the SEO guide pages under /guides.
  * Used by the guides index, the sitemap, and the "Guides" section that links
  * every guide from `/` and `/games` (the only two pages Google crawls today).
- * Guide content is English-only, so titles/descriptions are deliberately not
- * routed through i18n – they mirror the page <title>s.
+ * These are the English guides; the /ru, /uk and /no versions keep their text beside each guide
+ * (`copy/<locale>.ts`) and their cards in `lib/guide-cards`, not in `locales/*`, because the
+ * site's language switch covers six languages and the guides are written in four.
  */
 
 import type { IconName } from '@/components/icons/names'
@@ -61,6 +62,21 @@ export interface GuideSeo {
   articleDescription: string
   /** The last breadcrumb crumb, which is usually shorter than the page title. */
   breadcrumbLabel: string
+}
+
+/** A translated guide's `<head>` copy: the English shape without keywords, as on the translated game pages. */
+export type LocalizedGuideSeo = Omit<GuideSeo, 'keywords'>
+
+/**
+ * A translated guide as the guides index and the home page list it. The dates are the
+ * translation's own: it was written later than the English, and is updated when it changes.
+ */
+export interface LocalizedGuideCard {
+  title: string
+  description: string
+  readTime: string
+  published: string
+  updated: string
 }
 
 export const HOW_TO_PLAY_GUIDES: GuideEntry[] = [

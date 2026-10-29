@@ -43,6 +43,7 @@ function TicTacToeArt() {
             borderRight: i % size < size - 1 ? '1.5px solid var(--bd-line)' : 'none',
             borderBottom: Math.floor(i / size) < size - 1 ? '1.5px solid var(--bd-line)' : 'none',
             fontFamily: 'var(--bd-font-display)', fontWeight: 800, fontSize: 26,
+            // accent-text-allow: a 26 px bold mark in the illustration, large text at 3:1
             color: marks[i] === 'X' ? 'var(--bd-coral)' : 'var(--bd-lav-deep)',
           }}
         >

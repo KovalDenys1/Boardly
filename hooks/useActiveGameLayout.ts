@@ -12,9 +12,9 @@ export type ActiveGameLayout = 'desktop' | 'landscape' | 'mobile'
  * time and hides two of them with `display: none`. That hides pixels and nothing
  * else: React mounts all three subtrees and runs all three sets of effects. For
  * a board that is fine – a hidden grid of buttons costs nothing but DOM. For the
- * result overlay it is not: the after-game block inside it reports
- * `push_prompt_shown` and `signup_prompt shown` on mount, so a finished Memory
- * game sent three of each, and Memory is the most played game on the site.
+ * result overlay it is not: only the first copy mounted draws, but every copy
+ * runs its own reveal timer and rematch listener. Memory is the most played game
+ * on the site.
  *
  * Which copy is visible is a CSS fact, so the components inside the overlay
  * cannot see it and must not try to elect one. This hook reads the same two
@@ -24,8 +24,8 @@ export type ActiveGameLayout = 'desktop' | 'landscape' | 'mobile'
  *
  * Returns `null` until the first client effect has run. The server render and
  * the first client render must agree, and guessing "desktop" there would mount
- * the hidden desktop overlay on a phone for one commit – which is another mount,
- * and another pair of beacons. One frame with no overlay over an already-visible
+ * the hidden desktop overlay on a phone for one commit – which is another mount
+ * of the overlay and its listeners. One frame with no overlay over an already-visible
  * finished board is the cheaper trade.
  */
 export function useActiveGameLayout(): ActiveGameLayout | null {

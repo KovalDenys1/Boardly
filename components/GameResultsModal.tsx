@@ -345,7 +345,7 @@ export default function GameResultsModal({
           style={{
             border: '1.5px solid #FF6B5B60',
             background: '#FF6B5B10',
-            color: 'var(--bd-coral)',
+            color: 'var(--bd-coral-text)',
           }}
         >
           {error}
@@ -419,7 +419,7 @@ export default function GameResultsModal({
             <Link
               href={`/replay/${game.id}`}
               onClick={onClose}
-              className="flex w-full items-center justify-center gap-3 rounded-2xl px-4 py-4 text-sm font-semibold text-bd-bg transition-all active:scale-[0.99]"
+              className="flex w-full items-center justify-center gap-3 rounded-2xl px-4 py-4 text-sm font-semibold text-bd-bg transition active:scale-[0.99]"
               style={{ background: 'var(--bd-ink)', boxShadow: '0 3px 0 var(--bd-coral)' }}
             >
               <svg viewBox="0 0 24 24" fill="currentColor" className="h-4 w-4 shrink-0">

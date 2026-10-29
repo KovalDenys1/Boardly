@@ -7,9 +7,8 @@ import SpyVoting from '@/components/SpyVoting'
 import SpyResults, { SPY_OUTCOME_LINE_STEP, spyResultsLastStep } from '@/components/SpyResults'
 import { resolveSpyGameResult, resolveSpyOutcome } from '@/lib/games/spy-outcome'
 import Chat from '@/components/Chat'
-import GameScoreboardHeader from '@/components/game-chrome/GameScoreboardHeader'
+import GameScoreboardHeader, { type GameHeaderRoom } from '@/components/game-chrome/GameScoreboardHeader'
 import GamePlayerCard from '@/components/game-chrome/GamePlayerCard'
-import GameLeaveButton from '@/components/game-chrome/GameLeaveButton'
 import GameStatusBanner from '@/components/game-chrome/GameStatusBanner'
 import { hasTopScore, viewerOutcome } from '@/lib/game-outcome'
 import GameTabs from '@/components/game-chrome/GameTabs'
@@ -100,6 +99,8 @@ interface SpyGameBoardProps {
   isRestarting?: boolean
   onLeave?: () => void
   isSpectator?: boolean
+  /** Whether the lobby admits spectators, so the header can offer the invite. */
+  allowSpectators?: boolean
   /**
    * Lobby chat, handed down by whoever owns `useLobbyChat` (LobbyPageClient,
    * or the spectate page). Guess the Spy is a conversation game – the talking
@@ -175,7 +176,7 @@ function SpyTextBox({ value, onChange, placeholder, termsRequired, autoFocusTerm
         onAccept={handleAcceptTerms}
         autoFocus={autoFocusTerms}
         context="play"
-        className="rounded-xl border border-(--bd-line) bg-(--bd-card-warm) p-4"
+        className="rounded-xl border border-bd-line bg-bd-card-warm p-4"
       />
     )
   }
@@ -210,6 +211,7 @@ export default function SpyGameBoard({
   isRestarting = false,
   onLeave,
   isSpectator = false,
+  allowSpectators = false,
   chatMessages = [],
   onSendChatMessage,
   chatTermsAccepted,
@@ -468,6 +470,21 @@ export default function SpyGameBoard({
           payload = await res.json().catch(() => null)
         }
 
+        if (res.status === 409 && payload?.code === 'TURN_ALREADY_ENDED') {
+          await refreshAfterAction()
+          trackMoveSubmitApplied({
+            gameType: 'guess_the_spy',
+            moveType: action,
+            durationMs: Date.now() - submitStartedAt,
+            isGuest,
+            success: false,
+            applied: false,
+            statusCode: responseStatus,
+          })
+          moveMetricTracked = true
+          return false
+        }
+
         if (!res.ok) {
           throw new Error(payload?.error || 'Failed to submit action')
         }
@@ -697,12 +714,18 @@ export default function SpyGameBoard({
     />
   )
 
+  const headerRoom: GameHeaderRoom = {
+    gameId: 'spy',
+    title: t('games.spy.name'),
+    code: lobbyCode,
+    isSpectator,
+    allowSpectators,
+    onLeave,
+  }
   const headerSection = (
     <div className="ttt-card spy-header-card" style={{ background: 'linear-gradient(135deg, var(--bd-card-warm) 0%, rgba(155,140,255,0.12) 100%)', overflow: 'hidden', padding: '12px 16px' }}>
-      <div style={{ position: 'absolute', right: -10, top: -14, opacity: 0.12, transform: 'rotate(12deg)', pointerEvents: 'none', lineHeight: 1 }}>
-        <Icon name="eye" size={96} />
-      </div>
       <GameScoreboardHeader
+        room={headerRoom}
         leftCard={seatCard(
           waitingOnId ? playersById.get(waitingOnId) : undefined,
           'left',
@@ -731,13 +754,6 @@ export default function SpyGameBoard({
           'right',
           isQuestioning && !!rightSeatId && rightSeatId === data.currentTargetId
         )}
-        trailing={
-          isSpectator
-            ? <GameLeaveButton label={t('game.ui.backToLobby')} href={`/lobby/${lobbyCode}`} variant="back" />
-            : onLeave
-              ? <GameLeaveButton label={t('game.ui.leave')} onClick={onLeave} />
-              : undefined
-        }
       />
     </div>
   )
@@ -790,7 +806,7 @@ export default function SpyGameBoard({
   const roleCard = showRoleCard && roleInfo ? (
     <section className="spy-panel p-4">
       <p className="bd-kicker">{t('spy.yourRole')}</p>
-      <h3 className={`mt-1 text-2xl font-black ${roleInfo.role === 'Spy' ? 'text-(--bd-coral-text)' : 'text-(--bd-mint-text)'}`}>
+      <h3 className={`mt-1 text-2xl font-black ${roleInfo.role === 'Spy' ? 'text-bd-coral-text' : 'text-bd-mint-text'}`}>
         {t(roleInfo.role === 'Spy' ? 'spy.roles.spy' : 'spy.roles.regular')}
       </h3>
       {roleInfo.role === 'Spy' ? (
@@ -803,7 +819,7 @@ export default function SpyGameBoard({
           {/* The engine accepts a guess only while questioning (#1263): during
               the vote the button would only earn a 400. */}
           {phase === SpyGamePhase.QUESTIONING && roleInfo.possibleLocations && roleInfo.possibleLocations.length > 0 && (
-            <div className="mt-4 border-t border-(--bd-line) pt-4">
+            <div className="mt-4 border-t border-bd-line pt-4">
               {!showGuessConfirm ? (
                 <button
                   type="button"
@@ -814,7 +830,7 @@ export default function SpyGameBoard({
                 </button>
               ) : (
                 <div className="space-y-2">
-                  <p className="text-xs font-semibold text-(--bd-ink-muted)">
+                  <p className="text-xs font-semibold text-bd-ink-muted">
                     {t('spy.guessLocationWarning')}
                   </p>
                   <div className="relative">
@@ -856,9 +872,9 @@ export default function SpyGameBoard({
           )}
         </>
       ) : (
-        <div className="mt-3 space-y-2 text-sm font-semibold text-(--bd-ink-soft)">
-          <p><span className="text-(--bd-ink-muted)">{t('spy.location')}:</span> {roleInfo.location}</p>
-          <p><span className="text-(--bd-ink-muted)">{t('spy.roleAtLocation')}:</span> {roleInfo.locationRole}</p>
+        <div className="mt-3 space-y-2 text-sm font-semibold text-bd-ink-soft">
+          <p><span className="text-bd-ink-muted">{t('spy.location')}:</span> {roleInfo.location}</p>
+          <p><span className="text-bd-ink-muted">{t('spy.roleAtLocation')}:</span> {roleInfo.locationRole}</p>
         </div>
       )}
     </section>
@@ -900,7 +916,7 @@ export default function SpyGameBoard({
                 ) : (
                   <span className="bd-avatar bd-avatar-sky h-8 w-8">{player.name.charAt(0).toUpperCase()}</span>
                 )}
-                <span className={`flex min-w-0 flex-1 items-center gap-1 truncate font-bold ${player.isPremium ? 'text-amber-500' : ''}`}>
+                <span className={`flex min-w-0 flex-1 items-center gap-1 truncate font-bold ${player.isPremium ? 'text-bd-sun-text' : ''}`}>
                   {player.name}
                   {player.isPremium && <Icon name="crown" size={13} tone="premium" label="Premium" className="shrink-0" />}
                 </span>
@@ -939,8 +955,8 @@ export default function SpyGameBoard({
         {phase === SpyGamePhase.WAITING && (
           <div className="spy-panel bd-screen p-6 text-center">
             <p className="bd-kicker">{t('spy.phases.waiting')}</p>
-            <h3 className="mt-2 text-2xl font-black text-(--bd-ink)">{t('spy.gameTitle')}</h3>
-            <p className="mt-2 text-sm font-semibold text-(--bd-ink-muted)">
+            <h3 className="mt-2 text-2xl font-black text-bd-ink">{t('spy.gameTitle')}</h3>
+            <p className="mt-2 text-sm font-semibold text-bd-ink-muted">
               {isSpectator
                 ? t('spy.waitingForCreator')
                 : isCreator
@@ -977,7 +993,7 @@ export default function SpyGameBoard({
 
         {phase === SpyGamePhase.ROLE_REVEAL && (isSpectator || !roleInfo) && (
           <div className="spy-panel p-6 text-center">
-            <p className="text-sm font-semibold text-(--bd-ink-muted)">
+            <p className="text-sm font-semibold text-bd-ink-muted">
               {isSpectator
                 ? `${seatedReadyCount}/${seatedPlayers.length} ${t('spy.phases.roleReveal').toLowerCase()}`
                 : isRoleLoading ? t('spy.loadingRole') : t('spy.roleUnavailable')}
@@ -994,7 +1010,7 @@ export default function SpyGameBoard({
 
                 {isMyQuestionTurn && !data.currentTargetId && !isSpectator && (
                   <div className="mt-5 space-y-3">
-                    <label className="block text-sm font-bold text-(--bd-ink)">{t('spy.targetPlayer')}</label>
+                    <label className="block text-sm font-bold text-bd-ink">{t('spy.targetPlayer')}</label>
                     <div className="relative">
                       <select
                         value={questionTargetId}
@@ -1014,7 +1030,7 @@ export default function SpyGameBoard({
                       </div>
                     </div>
 
-                    <label className="block text-sm font-bold text-(--bd-ink)">{t('spy.questionLabel')}</label>
+                    <label className="block text-sm font-bold text-bd-ink">{t('spy.questionLabel')}</label>
                     <SpyTextBox
                       value={questionText}
                       onChange={setQuestionText}
@@ -1056,8 +1072,8 @@ export default function SpyGameBoard({
 
                 {shouldAnswerNow && !isSpectator && (
                   <div className="mt-5 space-y-3">
-                    <div className="rounded-xl border border-(--bd-line) bg-(--bd-card-warm) p-4 text-sm font-semibold text-(--bd-ink-soft)">
-                      <strong className="text-(--bd-ink)">{t('spy.questionPrompt')}</strong>{' '}
+                    <div className="rounded-xl border border-bd-line bg-bd-card-warm p-4 text-sm font-semibold text-bd-ink-soft">
+                      <strong className="text-bd-ink">{t('spy.questionPrompt')}</strong>{' '}
                       <BlockedText blocked={questionerBlocked} from={data.currentQuestionerId}>{data.pendingQuestion}</BlockedText>
                     </div>
                     <SpyTextBox
@@ -1090,11 +1106,11 @@ export default function SpyGameBoard({
 
                 {(!isMyQuestionTurn || isSpectator) && !shouldAnswerNow && (
                   // Keyed on the questioner, so the turn passing slides the line in again.
-                  <div key={`${data.currentQuestionerId || 'none'}:${data.pendingQuestion ? data.currentTargetId : ''}`} className="game-status-cue mt-5 rounded-xl border border-(--bd-line) bg-(--bd-card-warm) p-4 text-sm font-semibold text-(--bd-ink-muted)">
+                  <div key={`${data.currentQuestionerId || 'none'}:${data.pendingQuestion ? data.currentTargetId : ''}`} className="game-status-cue mt-5 rounded-xl border border-bd-line bg-bd-card-warm p-4 text-sm font-semibold text-bd-ink-muted">
                     {currentTarget && data.pendingQuestion ? (
                       <>
                         <p>{t('spy.askedQuestion', { asker: currentQuestioner?.name ?? '', target: currentTarget.name })}</p>
-                        <p className="mt-1 text-base font-bold text-(--bd-ink)">
+                        <p className="mt-1 text-base font-bold text-bd-ink">
                           <BlockedText blocked={questionerBlocked} from={data.currentQuestionerId}>{data.pendingQuestion}</BlockedText>
                         </p>
                         <p className="mt-1">{t('spy.waitingForAnswer', { player: currentTarget.name })}</p>
@@ -1111,7 +1127,7 @@ export default function SpyGameBoard({
                 )}
 
                 {isMyQuestionTurn && data.currentTargetId && !isSpectator && (
-                  <div className="mt-5 rounded-xl border border-(--bd-line) bg-(--bd-card-warm) p-4 text-sm font-semibold text-(--bd-ink-muted)">
+                  <div className="mt-5 rounded-xl border border-bd-line bg-bd-card-warm p-4 text-sm font-semibold text-bd-ink-muted">
                     {t('spy.waitingForAnswer', { player: currentTarget?.name || t('spy.targetPlayer') })}
                   </div>
                 )}
@@ -1135,24 +1151,24 @@ export default function SpyGameBoard({
                 <h3 className="spy-section-title">{t('spy.conversation')}</h3>
                 <div className="mt-3 max-h-[420px] space-y-2 overflow-y-auto pr-1">
                   {questionHistory.length === 0 && (
-                    <p className="rounded-xl bg-(--bd-card-warm) p-4 text-sm font-semibold text-(--bd-ink-muted)">{t('spy.noQuestionsYet')}</p>
+                    <p className="rounded-xl bg-bd-card-warm p-4 text-sm font-semibold text-bd-ink-muted">{t('spy.noQuestionsYet')}</p>
                   )}
                   {questionHistory.map((entry, index) => {
                     const isNewest = index === questionHistory.length - 1 && latestEntryFresh
                     return (
                     <div
                       key={`${entry.timestamp}-${entry.askerId}`}
-                      className={`rounded-xl border border-(--bd-line) bg-(--bd-bg) p-3 text-sm ${isNewest ? 'social-entry-in' : ''}`}
+                      className={`rounded-xl border border-bd-line bg-bd-bg p-3 text-sm ${isNewest ? 'social-entry-in' : ''}`}
                       onAnimationEnd={isNewest ? onOwnAnimationEnd(settleLatestEntry) : undefined}
                     >
-                      <p className="font-black text-(--bd-ink)">
+                      <p className="font-black text-bd-ink">
                         {entry.askerName} - {entry.targetName}
                       </p>
-                      <p className="mt-2 text-(--bd-ink-soft)">
+                      <p className="mt-2 text-bd-ink-soft">
                         <strong>{t('spy.questionPrefix')}</strong>{' '}
                         <BlockedText blocked={blockedIds.has(entry.askerId)} from={entry.askerId}>{entry.question}</BlockedText>
                       </p>
-                      <p className="mt-1 text-(--bd-ink-soft)">
+                      <p className="mt-1 text-bd-ink-soft">
                         <strong>{t('spy.answerPrefix')}</strong>{' '}
                         <BlockedText blocked={blockedIds.has(entry.targetId)} from={entry.targetId}>{entry.answer}</BlockedText>
                       </p>
@@ -1178,7 +1194,7 @@ export default function SpyGameBoard({
         {phase === SpyGamePhase.VOTING && isSpectator && (
           <div className="spy-panel bd-screen p-5 text-center">
             <p className="bd-kicker">{t('spy.phases.voting')}</p>
-            <ScorePop value={votesSubmitted} className="mt-2 text-sm font-semibold text-(--bd-ink-muted)">
+            <ScorePop value={votesSubmitted} className="mt-2 text-sm font-semibold text-bd-ink-muted">
               {votesSubmitted}/{seatedPlayers.length} {t('spy.phases.voting').toLowerCase()}
             </ScorePop>
           </div>
@@ -1227,19 +1243,12 @@ export default function SpyGameBoard({
         <GameResultOverlay
           canAskRematch={false}
           title={finishedMessage}
-          kicker={t('lobby.game.gameOver')}
           isDraw={gameResult.isDraw}
           accentColor="var(--bd-lav)"
           accentShadowColor="var(--bd-lav-deep)"
           // A draw takes the kit's own handshake; a decided game gets the
           // trophy for the winner and the eye for everyone else.
-          icon={
-            gameResult.isDraw ? undefined : (
-              <div style={{ width: 56, height: 56, borderRadius: '50%', background: iWon ? 'var(--bd-mint-deep)' : 'var(--bd-coral)', display: 'grid', placeItems: 'center', boxShadow: 'inset 0 0 0 3px rgba(255,255,255,0.15)' }}>
-                <Icon name={iWon ? 'trophy' : 'eye'} size={28} tone="on-accent" />
-              </div>
-            )
-          }
+          icon={gameResult.isDraw ? undefined : <Icon name={iWon ? 'trophy' : 'eye'} size={34} />}
           onInspect={() => setOverlayInspecting(true)}
           isHost={isCreator}
           isLoading={isRequestingRematch || isActionLoading || isRestarting}

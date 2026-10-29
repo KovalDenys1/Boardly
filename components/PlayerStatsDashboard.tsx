@@ -575,8 +575,8 @@ export default function PlayerStatsDashboard({ userId }: PlayerStatsDashboardPro
                 </div>
               ) : (
                 <div className="grid gap-5 xl:grid-cols-[minmax(0,1.4fr)_minmax(0,0.9fr)]">
-                  <div className="space-y-5">
-                    <div className={`${warmSurfaceClassName} p-5`}>
+                  <div className="flex flex-col gap-5">
+                    <div className={`${warmSurfaceClassName} flex flex-1 flex-col p-5`}>
                       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                         <div className="min-w-0">
                           <p className={eyebrowClassName}>{t('profile.stats.dashboard.filters.gameLabel')}</p>
@@ -598,9 +598,9 @@ export default function PlayerStatsDashboard({ userId }: PlayerStatsDashboardPro
                         ) : null}
                       </div>
 
-                      <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-3">
+                      <div className="mt-5 grid flex-1 grid-cols-1 gap-3 sm:grid-cols-3">
                         {highlightItems.map((item) => (
-                          <div key={item.id} className={`${tileClassName} px-4 py-4 text-center`}>
+                          <div key={item.id} className={`${tileClassName} flex flex-col items-center justify-center px-4 py-4 text-center`}>
                             <span className={`inline-flex rounded-full px-2.5 py-1 text-[11px] font-bold ${item.accentClassName ?? metricAccents.rate}`}>
                               {item.label}
                             </span>
@@ -610,11 +610,11 @@ export default function PlayerStatsDashboard({ userId }: PlayerStatsDashboardPro
                       </div>
                     </div>
 
-                    <div className={`${warmSurfaceClassName} p-5`}>
+                    <div className={`${warmSurfaceClassName} flex flex-1 flex-col p-5`}>
                       <h4 className="text-lg font-bold text-bd-ink">
                         {t(selectedAnalyticsProfile.titleKey)}
                       </h4>
-                      <div className="mt-4 grid grid-cols-2 gap-3 md:grid-cols-3 2xl:grid-cols-5">
+                      <div className="mt-4 grid flex-1 grid-cols-2 gap-3 md:grid-cols-3 2xl:grid-cols-5">
                         {gameInsightItems.map((item) => (
                           <div
                             key={item.id}

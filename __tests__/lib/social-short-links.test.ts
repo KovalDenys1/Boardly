@@ -5,8 +5,13 @@ import nextConfig from '@/next.config.js'
 import robots from '@/app/robots'
 import sitemap from '@/app/sitemap'
 import { deriveSignupSource } from '@/lib/signup-source'
-import { getCatalogGames } from '@/lib/game-catalog'
-import { SOCIAL_SHORT_LINKS, SOCIAL_SHORT_LINK_GAME_SLUGS, socialShortLinkRedirects } from '@/lib/social-short-links'
+import { getCatalogGames, hasBotSupport } from '@/lib/game-catalog'
+import {
+  SOCIAL_SHORT_LINKS,
+  SOCIAL_SHORT_LINK_BOT_GAME_SLUGS,
+  SOCIAL_SHORT_LINK_GAME_SLUGS,
+  socialShortLinkRedirects,
+} from '@/lib/social-short-links'
 
 type Redirect = { source: string; destination: string; permanent?: boolean; has?: unknown }
 
@@ -124,6 +129,7 @@ describe('social short links (#1096)', () => {
         utm_source: source,
         utm_medium: 'social',
         utm_campaign: 'checkers-trap',
+        play: 'bot',
       })
     })
 
@@ -172,6 +178,42 @@ describe('social short links (#1096)', () => {
         .map((d) => d.name)
       expect([...SOCIAL_SHORT_LINK_GAME_SLUGS].sort()).toEqual([...new Set(fromCatalog)].sort())
       expect([...SOCIAL_SHORT_LINK_GAME_SLUGS].sort()).toEqual(fromPages.sort())
+    })
+  })
+
+  describe('a game with a bot starts a Medium bot game on arrival (#1541)', () => {
+    const slugOf = (route: string | undefined) => route?.match(/^\/games\/([^/]+)\//)?.[1]
+
+    it('knows exactly the catalog games that support bots', () => {
+      const withBots = getCatalogGames()
+        .filter((game) => game.gameType && hasBotSupport(game.gameType))
+        .map((game) => slugOf(game.route))
+        .filter((slug): slug is string => Boolean(slug))
+      expect([...SOCIAL_SHORT_LINK_BOT_GAME_SLUGS].sort()).toEqual([...new Set(withBots)].sort())
+    })
+
+    it.each(['connect-four', 'connect-four-trap', 'yahtzee_rematch', 'tic-tac-toe-win', 'memory', 'rock-paper-scissors', 'checkers-solved', 'ludo-race'])(
+      '/tt/%s carries play=bot',
+      async (campaign) => {
+        const hit = await resolve(`/tt/${campaign}`)
+        expect(hit!.url.pathname).toMatch(/^\/games\//)
+        expect(hit!.url.searchParams.get('play')).toBe('bot')
+        expect(hit!.url.searchParams.get('utm_campaign')).toBe(campaign)
+      },
+    )
+
+    it.each(['spy-trap', 'alias', 'liars-party-bluff', 'sketch-and-guess'])('/ig/%s lands on its page without the flag', async (campaign) => {
+      const hit = await resolve(`/ig/${campaign}`)
+      expect(hit!.url.pathname).toMatch(/^\/games\//)
+      expect(hit!.url.searchParams.has('play')).toBe(false)
+    })
+
+    it('leaves the home page and the default campaign without the flag', async () => {
+      for (const short of ['/tt', '/tt/profile', '/tt/ai_skit', '/tt/a.b']) {
+        const hit = await resolve(short)
+        expect(hit!.url.pathname).toBe('/')
+        expect(hit!.url.searchParams.has('play')).toBe(false)
+      }
     })
   })
 

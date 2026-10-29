@@ -220,7 +220,7 @@ export async function POST(req: NextRequest) {
             lobbyCode: target.code,
           })
 
-          return NextResponse.json({ lobbyCode: target.code, isNew: false })
+          return NextResponse.json({ lobbyCode: target.code, lobbyId: target.id, isNew: false })
         } catch (err) {
           const msg = err instanceof Error ? err.message : ''
           if (msg === 'LOBBY_FULL' && attempt < MAX_JOIN_RETRIES) continue
@@ -345,5 +345,5 @@ export async function POST(req: NextRequest) {
     botFilled: supportsBots,
   })
 
-  return NextResponse.json({ lobbyCode: newCode, isNew: true })
+  return NextResponse.json({ lobbyCode: newCode, lobbyId: newLobbyId, isNew: true })
 }

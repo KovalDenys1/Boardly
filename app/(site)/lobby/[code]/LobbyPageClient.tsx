@@ -119,8 +119,7 @@ import GameLeaveButton from '@/components/game-chrome/GameLeaveButton'
 import GameStatusBanner from '@/components/game-chrome/GameStatusBanner'
 import GameTabs from '@/components/game-chrome/GameTabs'
 import GamePlayerCard from '@/components/game-chrome/GamePlayerCard'
-import GameScoreboardHeader from '@/components/game-chrome/GameScoreboardHeader'
-import GameRoomCard from '@/components/game-chrome/GameRoomCard'
+import GameScoreboardHeader, { type GameHeaderRoom } from '@/components/game-chrome/GameScoreboardHeader'
 import ScorePop from '@/components/game-chrome/ScorePop'
 import YahtzeeDesktopLayout from '@/components/yahtzee/YahtzeeDesktopLayout'
 import { reportablePlayerId } from '@/lib/reportable-player'
@@ -1915,10 +1914,19 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
       )
     }
     const scoreOf = (index: number) => enginePlayers[index]?.score || 0
+    const headerRoom: GameHeaderRoom = {
+      gameId: 'yahtzee',
+      title: t('games.yahtzee.name'),
+      code,
+      isSpectator,
+      allowSpectators: !!lobby?.allowSpectators,
+      onLeave: () => setShowLeaveConfirmModal(true),
+    }
     const scoreboard = (
       <div className="ttt-card yz-scoreboard-card">
         {enginePlayers.length === 2 ? (
           <GameScoreboardHeader
+            room={headerRoom}
             leftCard={playerCard(enginePlayers[0].id, 'left')}
             center={
               <>
@@ -1931,25 +1939,9 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
             rightCard={playerCard(enginePlayers[1].id, 'right')}
           />
         ) : (
-          <div className="yz-player-grid">
-            {enginePlayers.map((p, index) => (
-              <React.Fragment key={p.id}>{playerCard(p.id, index % 2 === 0 ? 'left' : 'right')}</React.Fragment>
-            ))}
-          </div>
+          <GameScoreboardHeader room={headerRoom} players={enginePlayers.map((p) => playerCard(p.id, 'left'))} />
         )}
       </div>
-    )
-
-    const room = (
-      <GameRoomCard
-        gameId="yahtzee"
-        title={t('games.yahtzee.name')}
-        code={code}
-        isSpectator={isSpectator}
-        leaveLabel={t('game.ui.leave')}
-        allowSpectators={!!lobby?.allowSpectators}
-        onLeave={() => setShowLeaveConfirmModal(true)}
-      />
     )
 
     const panel = (variant?: 'board') => (
@@ -1960,7 +1952,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
       </div>
     )
 
-    return { header, statusBanner, diceBar, table, revertNotice, scoreboard, room, panel }
+    return { header, statusBanner, diceBar, table, revertNotice, scoreboard, panel }
   })() : null
 
   return (
@@ -1999,9 +1991,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
             currentUserId={getCurrentUserId() || null}
             canStartGame={!!canStartGame}
             canRequestRematch={!!isInGame}
-            isRequestRematchPending={isRequestingRematch}
             onPlayAgain={handleStartGame}
-            onRequestRematch={handleRequestRematch}
             onBackToLobby={() => router.push(getGameLobbiesRoute(lobby.gameType) ?? '/games')}
             onReturnToLobbyRoom={yahtzeeResults.release}
             onReturnToWaiting={canStartGame ? handleReturnToWaiting : undefined}
@@ -2045,7 +2035,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
                 <Icon name={tab === 'players' ? 'users' : 'chat'} size={16} />
                 <span>{tab === 'players' ? t('game.ui.tabPlayers') : t('game.ui.tabChat')}</span>
                 {tab === 'chat' && unreadMessageCount > 0 && (
-                  <span className="flex h-5 min-w-[20px] items-center justify-center rounded-full bg-bd-coral px-1 text-[11px] font-bold text-(--bd-ink-on-accent)">
+                  <span className="flex h-5 min-w-[20px] items-center justify-center rounded-full bg-bd-coral px-1 text-[11px] font-bold text-bd-ink-on-accent">
                     {unreadMessageCount}
                   </span>
                 )}
@@ -2167,7 +2157,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
                 <button
                   type="button"
                   onClick={() => router.push(`/lobby/${code}/spectate`)}
-                  className="shrink-0 rounded-xl border-2 border-bd-ink bg-(--bd-bg2) px-3 py-1 text-xs font-bold text-bd-ink hover:bg-bd-sun/60 transition-colors"
+                  className="shrink-0 rounded-xl border-2 border-bd-ink bg-bd-bg2 px-3 py-1 text-xs font-bold text-bd-ink hover:bg-bd-sun/60 transition-colors"
                 >
                   {t('lobby.spectatingOpenView')}
                 </button>
@@ -2182,9 +2172,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
               currentUserId={getCurrentUserId() || null}
               canStartGame={!!canStartGame}
               canRequestRematch={!!isInGame}
-              isRequestRematchPending={isRequestingRematch}
               onPlayAgain={handleStartGame}
-              onRequestRematch={handleRequestRematch}
               onBackToLobby={() => router.push(getGameLobbiesRoute(lobby.gameType) ?? '/games')}
               onReturnToWaiting={canStartGame ? handleReturnToWaiting : undefined}
               isGuest={isGuest}
@@ -2197,7 +2185,6 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
               {(gameLayout === null || gameLayout === 'desktop') && (
                 <YahtzeeDesktopLayout
                   header={yahtzeeView?.scoreboard}
-                  room={yahtzeeView?.room}
                   status={yahtzeeView?.statusBanner}
                   board={<div className="yz-board-card">{yahtzeeView?.panel('board')}</div>}
                   events={<YahtzeeEventLog entries={rollHistory} />}
@@ -2325,6 +2312,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
               onReturnToWaiting={canStartGame ? handleReturnToWaiting : undefined}
               isRestarting={startingGame || isReturningToWaiting}
               onLeave={() => setShowLeaveConfirmModal(true)}
+              allowSpectators={!!lobby?.allowSpectators}
               chatMessages={hasMultipleHumans ? chatMessages : undefined}
               onSendChatMessage={hasMultipleHumans ? sendChatMessage : undefined}
               chatTermsAccepted={chatTermsAccepted}
@@ -2348,6 +2336,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
               onPlayAgain={handleStartGame}
               onReturnToWaiting={canStartGame ? handleReturnToWaiting : undefined}
               onLeave={() => setShowLeaveConfirmModal(true)}
+              allowSpectators={!!lobby?.allowSpectators}
               isRestarting={startingGame || isReturningToWaiting}
               chatMessages={chatMessages}
               onSendChatMessage={sendChatMessage}
@@ -2362,7 +2351,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
             />
           ) : gameEngine ? (
             <div className="flex h-full items-center justify-center p-4">
-              <div className="w-full max-w-2xl bg-(--bd-bg2) border border-(--bd-line) rounded-2xl p-8 text-center">
+              <div className="w-full max-w-2xl bg-bd-bg2 border border-bd-line rounded-2xl p-8 text-center">
                 <h2 className="mb-3 text-2xl font-extrabold text-bd-ink">{t('lobby.gameStartedTitle')}</h2>
                 {/* The game type is interpolated into the sentence rather than
                     wrapped in its own <code> chip: every locale needs to place

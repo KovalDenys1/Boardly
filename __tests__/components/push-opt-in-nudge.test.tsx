@@ -83,6 +83,21 @@ describe('PushOptInNudge (#984)', () => {
     expect(mockTrackPushPrompt).toHaveBeenCalledWith('shown', 'after_game', 'yahtzee')
   })
 
+  it('as one line it keeps the headline, Turn on and Not now, and drops the body', async () => {
+    render(<PushOptInNudge source="after_game" gameType="yahtzee" variant="line" />)
+    await act(async () => {
+      await Promise.resolve()
+    })
+
+    expect(screen.queryByText('game.ui.pushAskHeadline')).not.toBeNull()
+    expect(screen.queryByText('game.ui.pushAskBody')).toBeNull()
+    expect(screen.getByRole('button', { name: 'game.ui.pushAskAccept' })).toBeTruthy()
+    act(() => {
+      screen.getByRole('button', { name: 'game.ui.pushAskDismiss' }).click()
+    })
+    expect(mockTrackPushPrompt).toHaveBeenCalledWith('dismissed', 'after_game', 'yahtzee')
+  })
+
   it('stays hidden without the VAPID key - subscribing could only ever fail', async () => {
     delete process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY
 

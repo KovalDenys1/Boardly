@@ -13,6 +13,10 @@ AI-agent reference for all visual decisions in this codebase.
 - In SVG `stroke`/`fill` attributes → convert to `style` prop: `style={{ stroke: 'var(--bd-coral)' }}`
 - In Tailwind arbitrary values → CSS variables work: `shadow-[0_4px_0_var(--bd-ink)]`
 
+`npm run audit:design-tokens` (part of `ci:quick`) refuses the legacy palette classes beyond their
+baseline, an accent fill or shade used as text, a focus colour other than `bd-lav-deep`, a colour spelled
+`-(--bd-x)` when the `bd-x` utility exists, a token's hex inside a shadow, and `transition-all`.
+
 The only legitimate exception is `app/root-document.tsx` — the `<style dangerouslySetInnerHTML>` block contains a critical inline CSS string for SSR first-paint performance. **Do not change it.**
 
 ---
@@ -42,13 +46,13 @@ All tokens are defined in `app/globals.css` (`:root`) and mirrored in its `@them
 | Card warm (card surfaces) | `var(--bd-card-warm)` | `bd-card-warm` | `#FFF8EC` |
 | Inverse (dark slab) | `var(--bd-inverse)` | `bd-inverse` | `#1F1B16` |
 | Ink on inverse | `var(--bd-ink-on-inverse)` | `bd-ink-on-inverse` | `#FBF6EE` |
-| Coral text | `var(--bd-coral-text)` | `bd-coral-text` | `#E04B3B` |
-| Mint text | `var(--bd-mint-text)` | `bd-mint-text` | `#2FA787` |
-| Lav text | `var(--bd-lav-text)` | `bd-lav-text` | `#7867E8` |
-| Sun text (on a sun tint) | `var(--bd-sun-text)` | `bd-sun-text` | `#8A5F00` |
+| Coral text | `var(--bd-coral-text)` | `bd-coral-text` | `#B71F14` |
+| Mint text | `var(--bd-mint-text)` | `bd-mint-text` | `#076F57` |
+| Lav text | `var(--bd-lav-text)` | `bd-lav-text` | `#5E49C7` |
+| Sun text (on a sun tint) | `var(--bd-sun-text)` | `bd-sun-text` | `#875D01` |
 
 Dark values (`html.dark`) that are not obvious from the light ones: `--bd-ink-muted` `#9C8E7E`,
-`--bd-coral-text` `#FF8273`, `--bd-mint-text` `#45BF9C`, `--bd-lav-text` `#A99BFF`, `--bd-inverse`
+`--bd-coral-text` `#FF8475`, `--bd-mint-text` `#4AC3A0`, `--bd-lav-text` `#AA9DFF`, `--bd-inverse`
 `#35302A`, `--bd-ink-on-inverse` `#F0E8DB`, `--bd-sun-text` `#FFC44D`.
 
 **Accent text is `-text`; `-deep` is a shade.** `--bd-*-deep` draws what belongs to a fill: the border
@@ -68,8 +72,14 @@ but its text must be `--bd-bg`, never white. A logo tile is `--bd-logo-tile`.
 ## Contrast
 
 Target (WCAG 2.0 AA / forskrift om universell utforming av IKT § 4, which binds this
-private site today — see #1171): **4.5:1 for normal text, 3:1 for large text (≥18px, or
-≥14px bold) and for UI component boundaries** (input borders, focus indicators).
+private site today — see #1171): **4.5:1 for normal text, 3:1 for large text (≥24px, or
+≥18.66px bold – WCAG's 18 pt and 14 pt bold) and for UI component boundaries** (input borders,
+focus indicators).
+
+**Focus is one colour: `--bd-lav-deep`, drawn inside the box** (`ring-2 ring-inset ring-bd-lav-deep`, or
+an outline with a negative offset); `scripts/audit-focus-rings.ts` refuses an outer ring, since any
+`overflow` ancestor cuts it off. A `ring` with no colour class already draws in lav-deep
+(`--default-ring-color` in `@theme inline`).
 
 Ratios below are computed straight from the hex values in the Color tokens table above
 (WCAG relative-luminance formula), not eyeballed:
@@ -83,6 +93,8 @@ Ratios below are computed straight from the hex values in the Color tokens table
 | `bd-ink-on-inverse` on `bd-inverse` (marquee, CTA band, finished banner) | 15.9:1 (dark 10.7:1) | AA text + large |
 | accents on `bd-inverse` in dark (coral, lav, mint, sky, sun) | 4.67-8.25:1 | AA text + large |
 | `bd-sun-text` on a `bd-sun/25` tint | 5.0:1 (dark 5.5:1) | AA text + large |
+| `bd-coral/mint/lav/sun/sky-text` on every surface and on its own 10-20 % tint | 4.54:1 or more in light (coral on a 20 % tint over `bd-bg2`), 4.55:1 in dark (mint, the same) | AA text + large |
+| `bd-ink-on-accent` on a hover fill (`bd-coral`, `bd-lav-mid`); never on a `-deep` shade, 4.27:1 on coral-deep | 5.27:1 or more | AA text + large |
 | `bd-bg` text on `bd-ink` (primary button) | 15.9:1 | AA text + large |
 | `bd-ink` text on `bd-sun` (badges) | 10.8:1 | AA text + large |
 | `bd-ink` text on `bd-mint` | 8.3:1 | AA text + large |
@@ -93,6 +105,7 @@ Ratios below are computed straight from the hex values in the Color tokens table
 | `bd-ink-on-accent` text on `bd-lav` (Lav button) | 6.2:1 | AA text + large |
 | white text on `bd-coral` / `bd-lav` | 2.8:1 | **fails AA at any size — never use** |
 | `bd-input-border` on white (`.bd-input` resting border) | 3.6:1 | AA UI boundary |
+| `bd-lav-deep` focus ring on the page, cards, inputs and an ink-filled control | 3:1 or more in every theme (Ocean lifts it to `#8272F4`) | AA UI boundary |
 | `bd-line` border on `bd-bg` (cards, dividers) | 1.3:1 | decorative only — not for a field's edge |
 
 **Text on a coral or lavender fill is `--bd-ink-on-accent` (#1F1B16, the same in both
@@ -120,7 +133,7 @@ mode and the premium lobby themes:
 
 | Component | Grid | Use |
 |---|---|---|
-| `<Icon name size tone label>` (`components/icons`) | 24×24 | UI chrome: status, buttons, chips, tabs, empty states |
+| `<Icon name size tone label>` (`components/icons`, Phosphor glyphs from `@phosphor-icons/react`) | 24×24 | UI chrome: status, buttons, chips, tabs, empty states |
 | `<GameIcon gameId accentColor size variant>` (`components/GameIcon.tsx`) | 48×48 | anything that stands for a game |
 
 `Icon` defaults to 20px and `currentColor`; `tone` picks a token (`ink`, `muted`, `coral`,
@@ -149,9 +162,12 @@ Drawing rules for new glyphs (review them on `/dev/icons`, dev only):
 | `shadow-bd-soft` | `0 4px 14px rgba(31,27,22,0.07)` | Subtle card lift |
 | `shadow-bd-card` | `0 6px 0 rgba(…0.08), 0 14px 28px -10px rgba(…0.18)` | Cards and panels |
 | `shadow-bd-pop` | `0 8px 0 rgba(31,27,22,0.85)` | Pop-out elements |
-| `shadow-bd-ink-4` | `0 4px 0 #1F1B16` | Ink-colored button press |
-| `shadow-bd-ink-5` | `0 5px 0 #1F1B16` | Taller ink press |
-| `shadow-bd-coral-4` | `0 4px 0 #E04B3B` | Coral button press shadow |
+| `shadow-bd-ink-4` | `0 4px 0 var(--bd-ink)` | Ink-colored button press |
+| `shadow-bd-ink-5` | `0 5px 0 var(--bd-ink)` | Taller ink press |
+| `shadow-bd-coral-4` | `0 4px 0 var(--bd-coral-deep)` | Coral button press shadow |
+
+The three that name a colour live in `@theme inline`, so they flip in dark mode and follow a lobby
+theme; a hex there would not, which is why the audit refuses a token's hex in any shadow.
 
 For non-standard offsets (e.g. `6px 6px`), use Tailwind arbitrary with CSS variable:
 ```jsx
@@ -173,7 +189,8 @@ className="shadow-[6px_6px_0_var(--bd-ink)]"
 
 ## Typography
 
-Display font: **Bricolage Grotesque** (fallback: Georgia, serif)
+Display font: **Bricolage Grotesque** (fallback: Georgia, serif). Body font: **Inter**, the page default.
+Both load through `next/font` in `app/root-document.tsx`.
 
 ```jsx
 // Tailwind
@@ -184,16 +201,23 @@ style={{ fontFamily: 'var(--bd-font-display)' }}
 ```
 
 Use `font-display` for headings, hero text, badges, button labels, score values.
-Use system font (default) for body text, descriptions, labels.
+Use the default (Inter) for body text, descriptions, labels.
+
+**Numbers that change in place use tabular figures** (`tabular-nums`), or Bricolage's proportional
+digits shift sideways as a score moves from 11 to 18. The scoreboard header, the player card, the score
+pop and the leaderboard rows set it already.
 
 ---
 
 ## Button patterns
 
 ### Primary (ink bg, coral shadow)
+
+Use the class: `bd-btn bd-btn-primary` (`--bd-btn-ink` fill, `--bd-bg` text, `0 4px 0 var(--bd-coral)`).
+Spelled out, for a one-off size:
 ```jsx
 <button
-  className="px-6 py-3 rounded-bd-md font-semibold text-bd-bg bg-bd-ink shadow-bd-ink-4 hover:-translate-y-px transition-transform"
+  className="px-6 py-3 rounded-bd-md font-semibold text-bd-bg bg-bd-btn-ink shadow-[0_4px_0_var(--bd-coral)] hover:-translate-y-px transition-transform"
 >
   Play →
 </button>
@@ -202,7 +226,7 @@ Use system font (default) for body text, descriptions, labels.
 ### Coral CTA (coral bg, coral-deep shadow)
 ```jsx
 <button
-  className="px-6 py-3 rounded-bd-md font-bold text-[color:var(--bd-ink-on-accent)] bg-bd-coral shadow-bd-coral-4 hover:scale-105 transition-transform"
+  className="px-6 py-3 rounded-bd-md font-bold text-bd-ink-on-accent bg-bd-coral shadow-bd-coral-4 hover:scale-105 transition-transform"
 >
   Play free
 </button>
@@ -220,7 +244,7 @@ Use system font (default) for body text, descriptions, labels.
 ### Lav (feedback/lav actions)
 ```jsx
 <button
-  className="px-6 py-3 rounded-bd-md font-bold text-[color:var(--bd-ink-on-accent)] bg-bd-lav border-2 border-bd-lav-deep shadow-[0_4px_0_var(--bd-lav-deep)] hover:bg-bd-lav-mid hover:-translate-y-0.5 transition-all"
+  className="px-6 py-3 rounded-bd-md font-bold text-bd-ink-on-accent bg-bd-lav border-2 border-bd-lav-deep shadow-[0_4px_0_var(--bd-lav-deep)] hover:bg-bd-lav-mid hover:-translate-y-0.5 transition"
 >
   Send
 </button>
@@ -232,13 +256,14 @@ Use system font (default) for body text, descriptions, labels.
 
 ```jsx
 <div
-  className="rounded-bd-lg border border-bd-line bg-white shadow-bd-card"
+  className="rounded-bd-lg border border-bd-line bg-bd-card shadow-bd-card"
 >
   {/* content */}
 </div>
 ```
 
-For warm card surfaces use `bg-bd-card-warm` instead of `bg-white`.
+For warm card surfaces use `bg-bd-card-warm` instead of `bg-bd-card`. Never `bg-white`: it stays
+white in dark mode.
 
 ---
 
@@ -246,7 +271,7 @@ For warm card surfaces use `bg-bd-card-warm` instead of `bg-white`.
 
 ```jsx
 const navBtn = (active: boolean) =>
-  `rounded-xl font-medium transition-all duration-150 ${
+  `rounded-xl font-medium transition-colors duration-150 ${
     active
       ? 'bg-bd-ink text-bd-bg'
       : 'text-bd-ink-soft hover:bg-bd-bg2 hover:text-bd-ink'
@@ -309,7 +334,29 @@ Dark mode is implemented via CSS variable swapping. **Do not use `dark:` Tailwin
 - `system` (default) follows `prefers-color-scheme` automatically
 - Toggle UI: `ThemeToggle` (desktop header icon), `ThemeSegmented` (the drawer's quick-settings row, compact; Profile → Settings → Appearance in full through `ThemeSettingsPanel`)
 - Lobby premium themes (`ocean`, `midnight`, `sakura`, `neon_city`) override CSS vars at container level via `getThemePageStyle()` — they are immune to the global dark/light toggle
-- Existing `dark:` classes in Header/MobileMenu are legacy and will be cleaned up when those components are redesigned
+- About 90 `dark:` classes remain in `app/` and `components/`, half of them on the profile page: dark-mode patches for palette colours that wait for status tokens. New code uses the tokens; a `dark:` variant of an accent text class is the one the audit allows, since the fills read on the dark surfaces
+- `applyThemeMode()` (`lib/theme.ts`) turns transitions off for one frame (`bd-theme-switching`) while the class changes, so a switch repaints every surface at once instead of each fading on its own timer
+
+---
+
+## Motion
+
+The motion tokens are in `:root` and do not change with the theme:
+
+| Token | Value | Use |
+|---|---|---|
+| `--bd-dur-fast` | `150ms` | hover, press and small fades |
+| `--bd-dur` | `250ms` | a status cue, a last-move marker, a fade |
+| `--bd-dur-slow` | `420ms` | a score pop, the result panel, a last-move ring |
+| `--bd-ease-out` | `cubic-bezier(0.2, 0.7, 0.2, 1)` | the default curve |
+| `--bd-ease-spring` | `cubic-bezier(0.2, 1.4, 0.4, 1)` | a pop that overshoots slightly |
+
+- Animate `transform` and `opacity` only (CLAUDE.md, "never animate height"). Use `transition`, never
+  `transition-all`: v4's `transition` leaves width, height and margins out, and the audit refuses
+  `transition-all`. An animation that still moves a layout property names it (`transition-[width]`), so
+  it can be found.
+- `prefers-reduced-motion` is collapsed by the global rule in `globals.css`. A wait that lives in
+  JavaScript asks `prefersReducedMotion()` from `lib/motion.ts`, never its own `matchMedia`.
 
 ---
 

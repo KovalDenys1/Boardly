@@ -32,7 +32,6 @@ export type GameCatalogAvailability = 'available' | 'in-development' | 'planned'
 export type GameDifficulty = 'easy' | 'medium' | 'hard'
 
 export type LobbyCreateConfig = {
-  gradient: string
   allowedPlayers: number[]
   defaultMaxPlayers: number
   turnTimer?: { options: number[]; default: number }
@@ -425,7 +424,6 @@ const FEATURED_GAME_CATALOG: readonly GameCatalogEntry[] = [
     route: '/games/yahtzee/lobbies',
     color: 'from-blue-500 to-purple-600',
     lobbyCreateConfig: {
-      gradient: 'from-purple-600 via-pink-500 to-orange-400',
       allowedPlayers: [2, 3, 4],
       defaultMaxPlayers: 4,
       turnTimer: { options: [30, 60, 90, 120], default: 60 },
@@ -477,7 +475,6 @@ const FEATURED_GAME_CATALOG: readonly GameCatalogEntry[] = [
     route: '/games/spy/lobbies',
     color: 'from-red-500 to-pink-600',
     lobbyCreateConfig: {
-      gradient: 'from-blue-600 via-cyan-500 to-green-400',
       allowedPlayers: [3, 4, 5, 6, 7, 8],
       defaultMaxPlayers: 6,
     },
@@ -524,7 +521,6 @@ const FEATURED_GAME_CATALOG: readonly GameCatalogEntry[] = [
     route: '/games/tic-tac-toe/lobbies',
     color: 'from-red-500 to-coral-500',
     lobbyCreateConfig: {
-      gradient: 'from-indigo-600 via-blue-500 to-sky-400',
       allowedPlayers: [2],
       defaultMaxPlayers: 2,
       rounds: { options: [3, 5, 10], default: null },
@@ -572,7 +568,6 @@ const FEATURED_GAME_CATALOG: readonly GameCatalogEntry[] = [
     route: '/games/memory/lobbies',
     color: 'from-green-400 to-teal-500',
     lobbyCreateConfig: {
-      gradient: 'from-emerald-500 via-teal-500 to-cyan-400',
       allowedPlayers: [2, 3, 4],
       defaultMaxPlayers: 4,
       turnTimer: { options: [30, 60, 90, 120], default: 60 },
@@ -627,7 +622,6 @@ const FEATURED_GAME_CATALOG: readonly GameCatalogEntry[] = [
     route: '/games/connect-four/lobbies',
     color: 'from-red-500 to-yellow-400',
     lobbyCreateConfig: {
-      gradient: 'from-red-500 via-orange-400 to-yellow-400',
       allowedPlayers: [2],
       defaultMaxPlayers: 2,
       turnTimer: { options: [30, 60, 90, 120], default: 60 },
@@ -677,7 +671,6 @@ const FEATURED_GAME_CATALOG: readonly GameCatalogEntry[] = [
     route: '/games/alias/lobbies',
     color: 'from-coral-400 to-red-500',
     lobbyCreateConfig: {
-      gradient: 'from-coral-500 via-red-500 to-pink-500',
       allowedPlayers: [3, 4, 6, 8, 10, 12, 16],
       defaultMaxPlayers: 8,
       turnTimer: { options: [30, 60, 90, 120], default: 60 },
@@ -724,7 +717,6 @@ const FEATURED_GAME_CATALOG: readonly GameCatalogEntry[] = [
     route: '/games/liars-party/lobbies',
     color: 'from-violet-500 to-purple-600',
     lobbyCreateConfig: {
-      gradient: 'from-violet-600 via-purple-500 to-fuchsia-400',
       allowedPlayers: [4, 5, 6, 7, 8, 9, 10, 11, 12],
       defaultMaxPlayers: 8,
     },
@@ -770,7 +762,6 @@ const FEATURED_GAME_CATALOG: readonly GameCatalogEntry[] = [
     route: '/games/rock-paper-scissors/lobbies',
     color: 'from-indigo-400 to-purple-500',
     lobbyCreateConfig: {
-      gradient: 'from-indigo-500 via-purple-500 to-pink-400',
       allowedPlayers: [2],
       defaultMaxPlayers: 2,
     },
@@ -821,7 +812,6 @@ const FEATURED_GAME_CATALOG: readonly GameCatalogEntry[] = [
     route: '/games/sketch-and-guess/lobbies',
     color: 'from-cyan-500 to-blue-600',
     lobbyCreateConfig: {
-      gradient: 'from-cyan-500 via-sky-500 to-indigo-500',
       // The engine's own range (SketchAndGuessGame's default GameConfig), so the
       // form cannot offer a lobby the game refuses to start.
       allowedPlayers: [3, 4, 5, 6, 7, 8, 9, 10],
@@ -879,7 +869,6 @@ const FEATURED_GAME_CATALOG: readonly GameCatalogEntry[] = [
     route: '/games/checkers/lobbies',
     color: 'from-red-500 to-stone-700',
     lobbyCreateConfig: {
-      gradient: 'from-red-600 via-rose-500 to-stone-600',
       allowedPlayers: [2],
       defaultMaxPlayers: 2,
       turnTimer: { options: [30, 60, 90, 120], default: 60 },
@@ -933,7 +922,6 @@ const FEATURED_GAME_CATALOG: readonly GameCatalogEntry[] = [
     route: '/games/ludo/lobbies',
     color: 'from-yellow-400 to-red-500',
     lobbyCreateConfig: {
-      gradient: 'from-amber-400 via-orange-500 to-rose-500',
       allowedPlayers: [2, 3, 4],
       defaultMaxPlayers: 4,
       turnTimer: { options: [30, 60, 90, 120], default: 30 },
