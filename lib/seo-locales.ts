@@ -2,16 +2,20 @@ import { defaultLocale, type Locale } from '@/locales/meta'
 
 /**
  * Locales the marketing pages are served at on their own URL (#928, #1394).
- * English stays unprefixed; `no` joins in a later part of #928.
+ * English stays unprefixed.
  */
-export const SEO_LOCALES = ['en', 'ru', 'uk'] as const
+export const SEO_LOCALES = ['en', 'ru', 'uk', 'no'] as const
 export type SeoLocale = (typeof SEO_LOCALES)[number]
 
 /** The locales with a URL prefix of their own. */
-export const PREFIXED_LOCALES = ['ru', 'uk'] as const satisfies readonly SeoLocale[]
+export const PREFIXED_LOCALES = ['ru', 'uk', 'no'] as const satisfies readonly SeoLocale[]
 export type PrefixedLocale = (typeof PREFIXED_LOCALES)[number]
 
-export const OG_LOCALES: Record<SeoLocale, string> = { en: 'en_US', ru: 'ru_RU', uk: 'uk_UA' }
+/** The language code in hreflang and `<html lang>`: the Norwegian text is Bokmål, ISO 639-1 `nb`. */
+export const HREFLANG = { en: 'en', ru: 'ru', uk: 'uk', no: 'nb' } as const satisfies Record<SeoLocale, string>
+export type Hreflang = (typeof HREFLANG)[SeoLocale]
+
+export const OG_LOCALES: Record<SeoLocale, string> = { en: 'en_US', ru: 'ru_RU', uk: 'uk_UA', no: 'nb_NO' }
 
 const BASE = 'https://boardly.online'
 
@@ -37,16 +41,21 @@ export function unlocalizedPath(pathname: string): string {
 }
 
 /** `alternates.languages` for a page: every served locale plus x-default, identical from each version. */
-export function languageAlternates(pathname: string): Record<SeoLocale | 'x-default', string> {
+export function languageAlternates(pathname: string): Record<Hreflang | 'x-default', string> {
   const path = unlocalizedPath(pathname)
-  const entries = SEO_LOCALES.map((locale) => [locale, `${BASE}${localizedPath(path, locale)}`] as const)
+  const entries = SEO_LOCALES.map((locale) => [HREFLANG[locale], `${BASE}${localizedPath(path, locale)}`] as const)
   return {
-    ...(Object.fromEntries(entries) as Record<SeoLocale, string>),
+    ...(Object.fromEntries(entries) as Record<Hreflang, string>),
     'x-default': `${BASE}${path}`,
   }
 }
 
-/** The pages served at /ru/... and /uk/... as well: `/`, `/games` and each game's page. */
+/** The locale whose pages carry this hreflang code: `nb` is `no`. */
+export function localeForHreflang(code: string): string {
+  return SEO_LOCALES.find((locale) => HREFLANG[locale] === code) ?? code
+}
+
+/** The pages served at /ru/..., /uk/... and /no/... as well: `/`, `/games` and each game's page. */
 export function isLocalizedPage(path: string): boolean {
   return path === '/' || path === '/games' || /^\/games\/[^/]+$/.test(path)
 }

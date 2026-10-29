@@ -1,14 +1,16 @@
 // @ts-nocheck
 
 /**
- * #1394: /ru/... and /uk/... render their own language on the server, and a
- * language the visitor stored earlier must not turn them back after hydration.
+ * #1394, #928: /ru/..., /uk/... and /no/... render their own language on the
+ * server, and a language the visitor stored earlier must not turn them back
+ * after hydration.
  */
 
 import { act, render, screen } from '@testing-library/react'
 import { renderToString } from 'react-dom/server'
 import i18n from '@/i18n'
 import Providers from '@/app/providers'
+import NoPageLocale from '@/components/i18n/NoPageLocale'
 import RuPageLocale from '@/components/i18n/RuPageLocale'
 import UkPageLocale from '@/components/i18n/UkPageLocale'
 import { useTranslation } from '@/lib/i18n-helpers'
@@ -16,6 +18,7 @@ import { useLocalizedHref } from '@/lib/page-locale'
 import ru from '@/locales/ru'
 import uk from '@/locales/uk'
 import en from '@/locales/en'
+import no from '@/locales/no'
 
 jest.mock('next-auth/react', () => ({
   SessionProvider: ({ children }) => <>{children}</>,
@@ -31,6 +34,11 @@ jest.mock('next/dynamic', () => () => () => null)
 function GameName() {
   const { t } = useTranslation()
   return <p data-testid="name">{t('games.alias.name')}</p>
+}
+
+function YahtzeeName() {
+  const { t } = useTranslation()
+  return <p data-testid="yahtzee">{t('games.yahtzee.name')}</p>
 }
 
 function Links() {
@@ -93,6 +101,42 @@ describe('a prefixed page keeps its own language (#1394)', () => {
     expect(i18n.language).not.toBe('ru')
   })
 
+  it('renders Norwegian in the server HTML of /no pages', () => {
+    const html = renderToString(
+      <NoPageLocale>
+        <YahtzeeName />
+      </NoPageLocale>
+    )
+    expect(html).toContain('>Yatzy<')
+    expect(no.games.yahtzee.name).toBe('Yatzy')
+    expect(html).not.toContain(`>${en.games.yahtzee.name}<`)
+  })
+
+  it('stays Norwegian after hydration when the visitor stored Russian', async () => {
+    window.localStorage.setItem('i18nextLng', 'ru')
+    document.documentElement.lang = 'nb'
+
+    render(
+      <NoPageLocale>
+        <Providers pathLocale="no">
+          <YahtzeeName />
+        </Providers>
+      </NoPageLocale>
+    )
+    await act(async () => {})
+
+    expect(screen.getByTestId('yahtzee').textContent).toBe('Yatzy')
+    expect(document.documentElement.lang).toBe('nb')
+    expect(i18n.language).not.toBe('ru')
+  })
+
+  it('reads <html lang="nb"> as Norwegian in the shared instance toasts and helpers use', () => {
+    document.documentElement.lang = 'nb'
+    jest.isolateModules(() => {
+      expect(require('@/i18n').default.language).toBe('no')
+    })
+  })
+
   it('links within the set stay in the page language, everything else stays English', () => {
     render(
       <RuPageLocale>
@@ -100,6 +144,15 @@ describe('a prefixed page keeps its own language (#1394)', () => {
       </RuPageLocale>
     )
     expect(screen.getByTestId('links').textContent).toBe('/ru /ru/games /ru/games/alias /games/alias/lobbies /guides')
+  })
+
+  it('links within the set stay Norwegian on a /no page', () => {
+    render(
+      <NoPageLocale>
+        <Links />
+      </NoPageLocale>
+    )
+    expect(screen.getByTestId('links').textContent).toBe('/no /no/games /no/games/alias /games/alias/lobbies /guides')
   })
 
   it('leaves links alone on an unprefixed page', () => {

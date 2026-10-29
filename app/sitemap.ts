@@ -2,7 +2,7 @@ import { MetadataRoute } from 'next'
 
 import { ALL_GUIDES } from '@/lib/guides-catalog'
 import { getRouteUpdated, type DatedRoute } from '@/lib/route-dates'
-import { isLocalizedPage, languageAlternates } from '@/lib/seo-locales'
+import { HREFLANG, SEO_LOCALES, isLocalizedPage, languageAlternates } from '@/lib/seo-locales'
 
 const BASE = 'https://boardly.online'
 
@@ -22,12 +22,12 @@ function page(
   }
 }
 
-// A page with /ru and /uk versions is listed three times, each entry naming all three (#1394).
+// A page with /ru, /uk and /no versions is listed once per language, each entry naming them all (#1394, #928).
 function withLanguageVersions(entry: MetadataRoute.Sitemap[number]): MetadataRoute.Sitemap {
   const path = entry.url.slice(BASE.length) || '/'
   if (!isLocalizedPage(path)) return [entry]
   const languages = languageAlternates(path)
-  return [languages.en, languages.ru, languages.uk].map((url) => ({ ...entry, url, alternates: { languages } }))
+  return SEO_LOCALES.map((locale) => ({ ...entry, url: languages[HREFLANG[locale]], alternates: { languages } }))
 }
 
 export default function sitemap(): MetadataRoute.Sitemap {
