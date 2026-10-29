@@ -64,13 +64,13 @@ const warmSurfaceClassName =
 const tileClassName =
   'rounded-2xl border border-bd-line bg-bd-card-warm'
 const primaryButtonClassName =
-  'inline-flex items-center justify-center gap-2 rounded-2xl border-2 border-bd-lav-deep bg-bd-lav px-4 py-3 text-sm font-bold text-(--bd-ink-on-accent) shadow-[0_4px_0_var(--bd-lav-deep)] transition-all hover:-translate-y-0.5 hover:bg-bd-lav-mid hover:shadow-[0_6px_0_var(--bd-lav-deep)] disabled:cursor-not-allowed disabled:opacity-65'
+  'inline-flex items-center justify-center gap-2 rounded-2xl border-2 border-bd-lav-deep bg-bd-lav px-4 py-3 text-sm font-bold text-bd-ink-on-accent shadow-[0_4px_0_var(--bd-lav-deep)] transition-all hover:-translate-y-0.5 hover:bg-bd-lav-mid hover:shadow-[0_6px_0_var(--bd-lav-deep)] disabled:cursor-not-allowed disabled:opacity-65'
 const secondaryButtonClassName =
   'inline-flex items-center justify-center gap-2 rounded-2xl border-[1.5px] border-bd-line bg-bd-card-warm px-4 py-3 text-sm font-semibold text-bd-ink shadow-[0_3px_0_var(--bd-line)] transition-all hover:-translate-y-0.5 hover:bg-bd-bg2'
 const dangerButtonClassName =
   'inline-flex items-center justify-center gap-2 rounded-2xl border border-bd-coral/40 bg-bd-card-warm px-4 py-3 text-sm font-semibold text-bd-coral-text transition-colors hover:bg-bd-coral/10 dark:border-red-500/30 dark:text-red-300 dark:hover:bg-red-500/10'
 const inputClassName =
-  'w-full rounded-2xl border border-(--bd-input-border) bg-(--bd-input-bg) px-4 py-3 text-base font-medium desk:text-sm text-bd-ink shadow-xs outline-hidden transition-all placeholder:text-bd-ink-muted focus:border-bd-lav-deep focus:ring-4 focus:ring-inset focus:ring-bd-lav-deep'
+  'w-full rounded-2xl border border-bd-input-border bg-bd-input-bg px-4 py-3 text-base font-medium desk:text-sm text-bd-ink shadow-xs outline-hidden transition-all placeholder:text-bd-ink-muted focus:border-bd-lav-deep focus:ring-4 focus:ring-inset focus:ring-bd-lav-deep'
 const eyebrowClassName =
   'font-mono text-[11px] font-semibold uppercase tracking-[0.18em] text-bd-ink-soft'
 
@@ -716,7 +716,7 @@ export default function Friends() {
                 onClick={() => setActiveTab(tab.id)}
                 className={`flex min-h-[52px] items-center justify-center gap-2 rounded-2xl px-3 py-3 text-sm font-semibold transition-all ${
                   activeTab === tab.id
-                    ? 'bg-bd-lav text-(--bd-ink-on-accent) shadow-[0_4px_0_var(--bd-lav-deep)]'
+                    ? 'bg-bd-lav text-bd-ink-on-accent shadow-[0_4px_0_var(--bd-lav-deep)]'
                     : 'text-bd-ink-soft hover:bg-bd-bg2 hover:text-bd-ink'
                 }`}
               >
@@ -727,7 +727,7 @@ export default function Friends() {
                 <span
                   className={`inline-flex min-w-[1.8rem] items-center justify-center rounded-full px-2 py-0.5 text-[11px] font-bold ${
                     activeTab === tab.id
-                      ? 'bg-white/30 text-(--bd-ink-on-accent)'
+                      ? 'bg-white/30 text-bd-ink-on-accent'
                       : 'bg-bd-bg2 text-bd-ink-soft'
                   }`}
                 >
@@ -813,7 +813,7 @@ export default function Friends() {
                       <div className="flex items-center justify-between gap-4 p-5 sm:p-6">
                         <div className="flex min-w-0 flex-1 items-start gap-4">
                           <div className="relative shrink-0">
-                            <div className="flex h-14 w-14 items-center justify-center overflow-hidden rounded-[1.1rem] border-2 border-bd-ink bg-bd-lav text-(--bd-ink-on-accent) shadow-[2px_2px_0_var(--bd-ink)]">
+                            <div className="flex h-14 w-14 items-center justify-center overflow-hidden rounded-[1.1rem] border-2 border-bd-ink bg-bd-lav text-bd-ink-on-accent shadow-[2px_2px_0_var(--bd-ink)]">
                               {renderAvatar(friend.username || 'Unknown', friend.avatar)}
                             </div>
                             {isOnline && (
@@ -903,7 +903,7 @@ export default function Friends() {
                         <div className="flex h-16 w-16 items-center justify-center overflow-hidden rounded-[1.15rem] border-2 border-bd-ink bg-bd-mint text-bd-ink-on-accent shadow-[2px_2px_0_var(--bd-ink)]">
                           {renderAvatar(request.sender?.username || 'Unknown', request.sender?.avatar, 'text-2xl font-bold')}
                         </div>
-                        <div className="absolute -right-1 -top-1 flex h-6 w-6 items-center justify-center rounded-full border-2 border-bd-card-warm bg-bd-lav text-(--bd-ink-on-accent)">
+                        <div className="absolute -right-1 -top-1 flex h-6 w-6 items-center justify-center rounded-full border-2 border-bd-card-warm bg-bd-lav text-bd-ink-on-accent">
                           <MailIcon />
                         </div>
                       </div>
@@ -1023,7 +1023,7 @@ export default function Friends() {
                       onClick={() => setAddMethod('link')}
                       className={`flex min-h-[48px] items-center justify-center gap-2 rounded-2xl px-4 py-3 text-sm font-semibold transition-all ${
                         addMethod === 'link'
-                          ? 'bg-bd-lav text-(--bd-ink-on-accent) shadow-[0_4px_0_var(--bd-lav-deep)]'
+                          ? 'bg-bd-lav text-bd-ink-on-accent shadow-[0_4px_0_var(--bd-lav-deep)]'
                           : 'text-bd-ink-soft hover:bg-bd-bg2 hover:text-bd-ink'
                       }`}
                     >
@@ -1035,7 +1035,7 @@ export default function Friends() {
                       onClick={() => setAddMethod('code')}
                       className={`flex min-h-[48px] items-center justify-center gap-2 rounded-2xl px-4 py-3 text-sm font-semibold transition-all ${
                         addMethod === 'code'
-                          ? 'bg-bd-lav text-(--bd-ink-on-accent) shadow-[0_4px_0_var(--bd-lav-deep)]'
+                          ? 'bg-bd-lav text-bd-ink-on-accent shadow-[0_4px_0_var(--bd-lav-deep)]'
                           : 'text-bd-ink-soft hover:bg-bd-bg2 hover:text-bd-ink'
                       }`}
                     >

@@ -1810,7 +1810,7 @@ export default function ProfilePage() {
   const settingsScopeBadgeClassName =
     'inline-flex w-fit rounded-full bg-bd-bg2 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-bd-ink-soft'
   const actionPrimaryButtonClassName =
-    'inline-flex items-center justify-center gap-2 rounded-2xl border-2 border-bd-lav-deep bg-bd-lav px-5 py-3 text-sm font-bold text-(--bd-ink-on-accent) shadow-[0_4px_0_#7867E8] transition-all hover:-translate-y-0.5 hover:bg-bd-lav-mid hover:shadow-[0_6px_0_#7867E8] disabled:cursor-not-allowed disabled:opacity-60'
+    'inline-flex items-center justify-center gap-2 rounded-2xl border-2 border-bd-lav-deep bg-bd-lav px-5 py-3 text-sm font-bold text-bd-ink-on-accent shadow-[0_4px_0_#7867E8] transition-all hover:-translate-y-0.5 hover:bg-bd-lav-mid hover:shadow-[0_6px_0_#7867E8] disabled:cursor-not-allowed disabled:opacity-60'
   const actionSecondaryButtonClassName =
     'inline-flex items-center justify-center gap-2 rounded-2xl border-[1.5px] border-bd-line bg-bd-card-warm px-5 py-3 text-sm font-semibold text-bd-ink shadow-[0_3px_0_var(--bd-line)] transition-all hover:-translate-y-0.5 hover:bg-bd-bg2'
   const actionDangerButtonClassName =
@@ -1818,7 +1818,7 @@ export default function ProfilePage() {
   const profileSurfaceClassName =
     'rounded-3xl border border-bd-line bg-bd-bg p-5'
   const fieldInputClassName =
-    'w-full rounded-2xl border bg-(--bd-input-bg) px-4 py-3 text-base text-bd-ink shadow-xs outline-hidden desk:text-sm transition-all focus:ring-2 focus:ring-inset focus:ring-bd-lav-deep'
+    'w-full rounded-2xl border bg-bd-input-bg px-4 py-3 text-base text-bd-ink shadow-xs outline-hidden desk:text-sm transition-all focus:ring-2 focus:ring-inset focus:ring-bd-lav-deep'
   const settingsSyncBadgeClassName =
     'inline-flex w-fit rounded-full bg-bd-lav/15 px-2.5 py-1 text-xs font-semibold text-bd-lav-text dark:text-bd-lav'
 
@@ -1882,7 +1882,7 @@ export default function ProfilePage() {
                           image={profileSummary?.avatarUrl || profileSummary?.image || session?.user?.image || null}
                           userName={currentUsername || displayName}
                           userEmail={currentEmail}
-                          className="h-28 w-28 border-[3px] border-[#1F1B16] bg-bd-lav text-(--bd-ink-on-accent) outline-solid outline-4 outline-white outline-offset-[-7px] sm:h-32 sm:w-32"
+                          className="h-28 w-28 border-[3px] border-[#1F1B16] bg-bd-lav text-bd-ink-on-accent outline-solid outline-4 outline-white outline-offset-[-7px] sm:h-32 sm:w-32"
                           textClassName="font-display text-5xl font-bold"
                         />
                         <div className="absolute -bottom-2 -right-4 rotate-[8deg] rounded-full border-2 border-bd-ink bg-bd-mint px-3 py-1 font-display text-xs font-bold text-bd-ink-on-accent shadow-[2px_2px_0_#1F1B16]">
@@ -1975,7 +1975,7 @@ export default function ProfilePage() {
                             type="button"
                             onClick={openPublicProfilePreview}
                             disabled={isPublicProfilePreviewTransitioning}
-                            className="group inline-flex items-center justify-center gap-2 rounded-2xl border-2 border-bd-lav-deep bg-bd-lav px-4 py-3 text-sm font-bold text-(--bd-ink-on-accent) shadow-[0_4px_0_#7867E8] transition-all hover:-translate-y-0.5 hover:bg-bd-lav-mid hover:shadow-[0_6px_0_#7867E8] disabled:cursor-not-allowed disabled:opacity-70 dark:border-bd-lav-mid dark:bg-bd-lav dark:text-(--bd-ink-on-accent)"
+                            className="group inline-flex items-center justify-center gap-2 rounded-2xl border-2 border-bd-lav-deep bg-bd-lav px-4 py-3 text-sm font-bold text-bd-ink-on-accent shadow-[0_4px_0_#7867E8] transition-all hover:-translate-y-0.5 hover:bg-bd-lav-mid hover:shadow-[0_6px_0_#7867E8] disabled:cursor-not-allowed disabled:opacity-70 dark:border-bd-lav-mid dark:bg-bd-lav dark:text-bd-ink-on-accent"
                           >
                             <span>{t('profile.publicProfile.viewOwn')}</span>
                             <span aria-hidden className="transition-transform group-hover:translate-x-0.5">
@@ -2092,7 +2092,7 @@ export default function ProfilePage() {
                   onClick={() => handleTabChange(tab.id)}
                   className={`relative z-10 flex flex-1 items-center justify-center gap-1.5 rounded-xl px-3 py-2.5 text-sm font-semibold transition-colors duration-300 sm:px-4 ${
                     activeTab === tab.id
-                      ? `text-(--bd-ink-on-accent) ${activeTabIndicatorStyle.opacity ? '' : 'bg-bd-lav'}`
+                      ? `text-bd-ink-on-accent ${activeTabIndicatorStyle.opacity ? '' : 'bg-bd-lav'}`
                       : 'text-bd-ink-soft hover:bg-bd-bg2 hover:text-bd-ink'
                   }`}
                 >
@@ -2189,7 +2189,7 @@ export default function ProfilePage() {
                             ? 'border-emerald-400 dark:border-emerald-500'
                             : emailStatus === 'taken' || emailStatus === 'invalid' || emailStatus === 'error'
                               ? 'border-red-400 dark:border-red-500'
-                              : 'border-(--bd-input-border) focus:border-bd-lav-deep'
+                              : 'border-bd-input-border focus:border-bd-lav-deep'
                         }`}
                         autoComplete="email"
                       />
@@ -2223,7 +2223,7 @@ export default function ProfilePage() {
                           value={currentPassword}
                           onChange={(event) => setCurrentPassword(event.target.value)}
                           id="profile-current-password-input"
-                          className={`${fieldInputClassName} border-(--bd-input-border) focus:border-bd-lav-deep`}
+                          className={`${fieldInputClassName} border-bd-input-border focus:border-bd-lav-deep`}
                           autoComplete="current-password"
                         />
                         <p className="mt-1.5 text-xs text-bd-ink-soft">
@@ -2417,7 +2417,7 @@ export default function ProfilePage() {
                           type="button"
                           onClick={handleRequestAccountDeletion}
                           disabled={deleteLoading}
-                          className="inline-flex items-center justify-center gap-2 rounded-2xl bg-bd-coral px-4 py-2.5 text-sm font-semibold text-(--bd-ink-on-accent) transition-colors hover:bg-bd-coral-deep disabled:opacity-50"
+                          className="inline-flex items-center justify-center gap-2 rounded-2xl bg-bd-coral px-4 py-2.5 text-sm font-semibold text-bd-ink-on-accent transition-colors hover:bg-bd-coral-deep disabled:opacity-50"
                         >
                           {deleteLoading ? (
                             <>
@@ -3052,7 +3052,7 @@ export default function ProfilePage() {
                     onChange={(e) => setProfileBio(e.target.value.slice(0, 160))}
                     placeholder={t('profile.customization.bioPlaceholder')}
                     rows={3}
-                    className="w-full rounded-xl border border-(--bd-input-border) bg-(--bd-input-bg) px-3 py-2.5 text-base text-bd-ink placeholder:text-bd-ink-muted focus:border-bd-ink desk:text-sm focus:outline-hidden"
+                    className="w-full rounded-xl border border-bd-input-border bg-bd-input-bg px-3 py-2.5 text-base text-bd-ink placeholder:text-bd-ink-muted focus:border-bd-ink desk:text-sm focus:outline-hidden"
                   />
                   <div className="mt-1 flex items-center justify-between">
                     <span className={`text-xs font-medium transition-colors ${profileBio.length >= 140 ? 'text-bd-sun-text' : 'text-bd-ink-muted'}`}>
@@ -3062,7 +3062,7 @@ export default function ProfilePage() {
                       type="button"
                       disabled={customizeSaving}
                       onClick={() => void handleSaveCustomization({ bio: profileBio })}
-                      className="inline-flex items-center gap-1.5 rounded-xl border-2 border-bd-lav-deep bg-bd-lav px-3 py-1.5 text-xs font-bold text-(--bd-ink-on-accent) shadow-[0_3px_0_#7867E8] transition-all hover:-translate-y-px hover:bg-bd-lav-mid hover:shadow-[0_4px_0_#7867E8] disabled:cursor-not-allowed disabled:opacity-50"
+                      className="inline-flex items-center gap-1.5 rounded-xl border-2 border-bd-lav-deep bg-bd-lav px-3 py-1.5 text-xs font-bold text-bd-ink-on-accent shadow-[0_3px_0_#7867E8] transition-all hover:-translate-y-px hover:bg-bd-lav-mid hover:shadow-[0_4px_0_#7867E8] disabled:cursor-not-allowed disabled:opacity-50"
                     >
                       {customizeSaving ? (
                         <>
@@ -3200,7 +3200,7 @@ export default function ProfilePage() {
                           <span style={{ color: text, fontWeight: 700, fontSize: 13, textShadow: '0 1px 3px rgba(0,0,0,0.3)' }}>{t(nameKey)}</span>
                           <span style={{ color: text, fontSize: 10, opacity: 0.75, textShadow: '0 1px 2px rgba(0,0,0,0.25)' }}>{t(descKey)}</span>
                           {active && (
-                            <span className="absolute right-1.5 top-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-white text-(--bd-ink-on-accent) shadow-xs"><Icon name="check" size={10} /></span>
+                            <span className="absolute right-1.5 top-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-white text-bd-ink-on-accent shadow-xs"><Icon name="check" size={10} /></span>
                           )}
                         </button>
                       )

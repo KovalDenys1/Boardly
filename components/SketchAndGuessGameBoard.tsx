@@ -745,7 +745,7 @@ function GuesserDrawingView({
           autoFocus={focusTermsConsent}
           context="play"
           compact
-          className="rounded-xl border border-(--bd-line) bg-(--bd-bg2) px-3 py-2"
+          className="rounded-xl border border-bd-line bg-bd-bg2 px-3 py-2"
         />
       ) : (
         <div className="sketch-guess-form">
@@ -771,7 +771,7 @@ function GuesserDrawingView({
               maxLength={80}
               enterKeyHint="send"
               autoComplete="off"
-              className="min-w-0 flex-1 rounded-xl border border-(--bd-line) bg-(--bd-bg) px-3 py-2 text-base font-semibold text-bd-ink"
+              className="min-w-0 flex-1 rounded-xl border border-bd-line bg-bd-bg px-3 py-2 text-base font-semibold text-bd-ink"
             />
             {/* An arrow rather than a word: the row has to leave the box most of
                 a 320px screen, and "Отправить ответ" alone would take half. */}

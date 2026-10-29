@@ -1,6 +1,6 @@
 import { existsSync, readdirSync, readFileSync, statSync, writeFileSync } from 'fs'
 import path from 'path'
-import { LEGACY_CLASS, accentTextLines, focusColourLines } from './design-token-rules'
+import { LEGACY_CLASS, accentTextLines, colourUtilities, focusColourLines, varShorthandLines } from './design-token-rules'
 
 /**
  * Design-token audit – the pre-Boardly palette must not come back (#1254).
@@ -17,7 +17,8 @@ import { LEGACY_CLASS, accentTextLines, focusColourLines } from './design-token-
  *
  * It also fails on an accent fill or shade used as a text colour (#1457), with no baseline: text
  * takes --bd-<accent>-text. An `accent-text-allow` comment on the line or the one above exempts it.
- * And on a focus ring or outline in any colour but --bd-lav-deep, the one focus colour.
+ * And on a focus ring or outline in any colour but --bd-lav-deep, the one focus colour, and on a
+ * colour spelled `-(--bd-x)` or `-[var(--bd-x)]` where the `bd-x` utility exists.
  */
 
 const repoRoot = process.cwd()
@@ -42,6 +43,8 @@ for (const root of scanRoots) if (existsSync(path.join(repoRoot, root))) walk(pa
 const counts: Record<string, number> = {}
 const accentText: string[] = []
 const focusColour: string[] = []
+const varShorthand: string[] = []
+const utilities = colourUtilities(readFileSync(path.join(repoRoot, 'app', 'globals.css'), 'utf8'))
 for (const file of files) {
   const src = readFileSync(file, 'utf8')
   const rel = path.relative(repoRoot, file).split(path.sep).join('/')
@@ -50,6 +53,7 @@ for (const file of files) {
   if (file.endsWith('.css')) continue
   for (const line of accentTextLines(src)) accentText.push(`${rel}:${line}`)
   for (const line of focusColourLines(src)) focusColour.push(`${rel}:${line}`)
+  for (const line of varShorthandLines(src, utilities)) varShorthand.push(`${rel}:${line}`)
 }
 
 if (updateBaseline) {
@@ -75,6 +79,7 @@ for (const [file, allowed] of Object.entries(baseline)) {
 
 for (const at of accentText) problems.push(`${at}: an accent fill or shade as text – use --bd-<accent>-text (DESIGN.md)`)
 for (const at of focusColour) problems.push(`${at}: a focus ring in another colour – use bd-lav-deep (DESIGN.md)`)
+for (const at of varShorthand) problems.push(`${at}: a colour spelled through its variable – use the bd-* utility`)
 
 if (problems.length > 0) {
   console.error('design-tokens audit FAILED:\n  ' + problems.join('\n  '))

@@ -50,3 +50,25 @@ export function focusColourLines(src: string): number[] {
   })
   return hits
 }
+
+/** The `bd-*` colour utility names globals.css defines, from `--color-bd-*` in either @theme block. */
+export function colourUtilities(globalsCss: string): Set<string> {
+  return new Set([...globalsCss.matchAll(/--color-(bd-[a-z0-9-]+):/g)].map((m) => m[1]))
+}
+
+const COLOUR_PROPS = '(?:bg|text|border(?:-[trblxy])?|ring|outline|fill|stroke|from|to|via|decoration|divide|placeholder|accent|caret)'
+const VAR_SHORTHAND = new RegExp(String.raw`(?<![\w-])(?:[a-z0-9-]+:)*${COLOUR_PROPS}-(?:\(--(bd-[a-z0-9-]+)\)|\[(?:color:)?var\(--(bd-[a-z0-9-]+)\)\])`, 'g')
+
+/** 1-based lines that spell a colour as `-(--bd-x)` or `-[var(--bd-x)]` where the `bd-x` utility exists (#1457 S12). */
+export function varShorthandLines(src: string, utilities: Set<string>): number[] {
+  const hits: number[] = []
+  src.split('\n').forEach((line, i) => {
+    for (const m of line.matchAll(VAR_SHORTHAND)) {
+      if (utilities.has(m[1] ?? m[2])) {
+        hits.push(i + 1)
+        return
+      }
+    }
+  })
+  return hits
+}

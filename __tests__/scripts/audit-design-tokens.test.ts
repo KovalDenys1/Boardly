@@ -1,6 +1,8 @@
 import { existsSync, readdirSync, readFileSync, statSync } from 'fs'
 import path from 'path'
-import { accentTextLines, focusColourLines } from '../../scripts/design-token-rules'
+import { accentTextLines, colourUtilities, focusColourLines, varShorthandLines } from '../../scripts/design-token-rules'
+
+const globalsCss = readFileSync(path.join(__dirname, '..', '..', 'app', 'globals.css'), 'utf8')
 
 describe('accent colour used as text', () => {
   it.each([
@@ -43,6 +45,36 @@ describe('focus ring colour', () => {
   })
 })
 
+describe('colour tokens as utilities', () => {
+  it('wires every --bd-* colour in :root into @theme inline as a var() link', () => {
+    const root = globalsCss.slice(globalsCss.indexOf(':root {\n  --bd-bg:'))
+    const declared = [...root.slice(0, root.indexOf('\n}')).matchAll(/--(bd-[a-z0-9-]+):\s*(?:#|rgba?\(|var\(--bd-)/g)].map((m) => m[1])
+    const inline = globalsCss.slice(globalsCss.indexOf('@theme inline {'))
+    const wired = inline.slice(0, inline.indexOf('\n}'))
+    expect(declared.filter((name) => !wired.includes(`--color-${name}: var(--${name});`))).toEqual([])
+  })
+
+  it('keeps no static hex for a colour that has a --bd-* variable', () => {
+    const block = /@theme \{([^]*?)\n\}/.exec(globalsCss)![1]
+    const hex = [...block.matchAll(/--color-(bd-[a-z0-9-]+):\s*#/g)].map((m) => m[1]).filter((name) => globalsCss.includes(`--${name}:`))
+    expect(hex).toEqual([])
+  })
+
+  const utilities = colourUtilities(globalsCss)
+  it.each([
+    ['a variable spelling', '<p className="text-(--bd-ink)">'],
+    ['a bracket spelling', '<div className="bg-[var(--bd-card)]">'],
+    ['a typed bracket spelling', '<a className="text-[color:var(--bd-ink-on-accent)]">'],
+    ['a variant with opacity', '<div className="hover:bg-(--bd-card-warm)/80">'],
+  ])('flags %s of a colour that has a utility', (_label, line) => {
+    expect(varShorthandLines(line, utilities)).toEqual([1])
+  })
+
+  it('leaves a shadow value and a variable with no utility alone', () => {
+    expect(varShorthandLines('<div className="shadow-[0_4px_0_var(--bd-ink)] bg-(--bd-unknown)">', utilities)).toEqual([])
+  })
+})
+
 function scan(rule: (src: string) => number[]): string[] {
   const root = path.join(__dirname, '..', '..')
   const found: string[] = []
@@ -64,5 +96,10 @@ describe('the app and components', () => {
 
   it('draw every focus ring in lav-deep', () => {
     expect(scan(focusColourLines)).toEqual([])
+  })
+
+  it('spell a colour with a utility as that utility', () => {
+    const utilities = colourUtilities(globalsCss)
+    expect(scan((src) => varShorthandLines(src, utilities))).toEqual([])
   })
 })

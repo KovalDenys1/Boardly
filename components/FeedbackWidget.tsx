@@ -114,7 +114,7 @@ export default function FeedbackWidget() {
         aria-hidden={shouldHideFloatingButton}
         aria-label={t('feedback.buttonAriaLabel')}
         tabIndex={shouldHideFloatingButton ? -1 : 0}
-        className={`fixed bottom-[max(1.25rem,calc(1.25rem+env(safe-area-inset-bottom)))] right-5 z-40 inline-flex items-center gap-2 rounded-2xl border-2 border-bd-lav-deep bg-bd-lav px-4 py-3 text-sm font-bold text-(--bd-ink-on-accent) shadow-[0_4px_0_var(--bd-lav-deep)] transition-all duration-200 hover:-translate-y-0.5 hover:bg-bd-lav-mid hover:shadow-[0_6px_0_var(--bd-lav-deep)] ${
+        className={`fixed bottom-[max(1.25rem,calc(1.25rem+env(safe-area-inset-bottom)))] right-5 z-40 inline-flex items-center gap-2 rounded-2xl border-2 border-bd-lav-deep bg-bd-lav px-4 py-3 text-sm font-bold text-bd-ink-on-accent shadow-[0_4px_0_var(--bd-lav-deep)] transition-all duration-200 hover:-translate-y-0.5 hover:bg-bd-lav-mid hover:shadow-[0_6px_0_var(--bd-lav-deep)] ${
           shouldHideFloatingButton ? 'pointer-events-none translate-y-2 opacity-0' : 'opacity-100'
         }`}
       >
@@ -134,7 +134,7 @@ export default function FeedbackWidget() {
             if (e.target === e.currentTarget) setIsOpen(false)
           }}
         >
-          <div className="relative w-full max-w-md overflow-hidden rounded-4xl border-[1.5px] border-bd-line bg-(--bd-input-bg) text-bd-ink shadow-bd-card dark:text-white">
+          <div className="relative w-full max-w-md overflow-hidden rounded-4xl border-[1.5px] border-bd-line bg-bd-input-bg text-bd-ink shadow-bd-card dark:text-white">
             <div className="dot-grid pointer-events-none absolute inset-0 opacity-30" />
             <div className="pointer-events-none absolute -right-12 -top-12 h-32 w-32 rounded-full bg-bd-lav/20" />
             <div className="pointer-events-none absolute -bottom-14 left-10 h-28 w-28 rotate-12 rounded-[1.75rem] bg-bd-sun/20" />
@@ -161,7 +161,7 @@ export default function FeedbackWidget() {
 
             {submitted ? (
               <div className="relative px-5 py-10 text-center">
-                <div className="mx-auto mb-4 grid h-14 w-14 place-items-center rounded-2xl border-2 border-bd-lav-deep bg-bd-lav font-display text-xl font-black text-(--bd-ink-on-accent) shadow-[3px_3px_0_var(--bd-lav-deep)]">
+                <div className="mx-auto mb-4 grid h-14 w-14 place-items-center rounded-2xl border-2 border-bd-lav-deep bg-bd-lav font-display text-xl font-black text-bd-ink-on-accent shadow-[3px_3px_0_var(--bd-lav-deep)]">
                   {t('feedback.successBadge')}
                 </div>
                 <p className="mb-1 font-display text-2xl font-bold text-bd-ink dark:text-white">
@@ -173,7 +173,7 @@ export default function FeedbackWidget() {
                 <button
                   type="button"
                   onClick={() => setIsOpen(false)}
-                  className="mt-6 inline-flex items-center justify-center rounded-2xl border-2 border-bd-lav-deep bg-bd-lav px-6 py-3 text-sm font-bold text-(--bd-ink-on-accent) shadow-[0_4px_0_var(--bd-lav-deep)] transition-all hover:-translate-y-0.5 hover:bg-bd-lav-mid hover:shadow-[0_6px_0_var(--bd-lav-deep)]"
+                  className="mt-6 inline-flex items-center justify-center rounded-2xl border-2 border-bd-lav-deep bg-bd-lav px-6 py-3 text-sm font-bold text-bd-ink-on-accent shadow-[0_4px_0_var(--bd-lav-deep)] transition-all hover:-translate-y-0.5 hover:bg-bd-lav-mid hover:shadow-[0_6px_0_var(--bd-lav-deep)]"
                 >
                   {t('feedback.close')}
                 </button>
@@ -193,7 +193,7 @@ export default function FeedbackWidget() {
                         aria-label={opt.label}
                         className={`rounded-xl border px-3 py-2 text-sm font-bold transition-all ${
                           type === opt.type
-                            ? 'border-bd-lav-deep bg-bd-lav text-(--bd-ink-on-accent) shadow-[0_3px_0_var(--bd-lav-deep)]'
+                            ? 'border-bd-lav-deep bg-bd-lav text-bd-ink-on-accent shadow-[0_3px_0_var(--bd-lav-deep)]'
                             : 'border-bd-line bg-bd-card-warm text-bd-ink-soft hover:bg-bd-bg2 hover:text-bd-ink'
                         }`}
                       >
@@ -247,7 +247,7 @@ export default function FeedbackWidget() {
                 <button
                   type="submit"
                   disabled={submitting || !message.trim()}
-                  className="w-full rounded-2xl border-2 border-bd-lav-deep bg-bd-lav py-3 text-sm font-bold text-(--bd-ink-on-accent) shadow-[0_4px_0_var(--bd-lav-deep)] transition-all hover:-translate-y-0.5 hover:bg-bd-lav-mid hover:shadow-[0_6px_0_var(--bd-lav-deep)] disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:translate-y-0 disabled:hover:shadow-[0_4px_0_var(--bd-lav-deep)]"
+                  className="w-full rounded-2xl border-2 border-bd-lav-deep bg-bd-lav py-3 text-sm font-bold text-bd-ink-on-accent shadow-[0_4px_0_var(--bd-lav-deep)] transition-all hover:-translate-y-0.5 hover:bg-bd-lav-mid hover:shadow-[0_6px_0_var(--bd-lav-deep)] disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:translate-y-0 disabled:hover:shadow-[0_4px_0_var(--bd-lav-deep)]"
                 >
                   {submitting ? t('feedback.submitting') : t('feedback.submit')}
                 </button>

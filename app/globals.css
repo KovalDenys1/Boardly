@@ -27,6 +27,20 @@
   --color-bd-sky-text: var(--bd-sky-text);
   --color-bd-inverse: var(--bd-inverse);
   --color-bd-ink-on-inverse: var(--bd-ink-on-inverse);
+  --color-bd-btn-ink: var(--bd-btn-ink);
+  --color-bd-surface-raised: var(--bd-surface-raised);
+  --color-bd-coral: var(--bd-coral);
+  --color-bd-mint: var(--bd-mint);
+  --color-bd-sun: var(--bd-sun);
+  --color-bd-sun-deep: var(--bd-sun-deep);
+  --color-bd-lav: var(--bd-lav);
+  --color-bd-lav-mid: var(--bd-lav-mid);
+  --color-bd-logo-tile: var(--bd-logo-tile);
+  --color-bd-sky: var(--bd-sky);
+  --color-bd-card: var(--bd-card);
+  --color-bd-input-bg: var(--bd-input-bg);
+  --color-bd-input-border: var(--bd-input-border);
+  --color-bd-premium: var(--bd-premium);
   --font-display: var(--bd-font-display), Georgia, serif;
 }
 
@@ -41,13 +55,6 @@
 
   --color-primary: #3b82f6;
   --color-secondary: #8b5cf6;
-  --color-bd-coral: #FF6B5B;
-  --color-bd-mint: #4FC9A6;
-  --color-bd-sun: #FFC44D;
-  --color-bd-sun-deep: #E5A82E;
-  --color-bd-lav: #9B8CFF;
-  --color-bd-lav-mid: #8B7DFF;
-  --color-bd-sky: #6BC1F0;
   --color-bd-danger-border: #F0B3AC;
   --color-bd-danger-bg: #FFF2EF;
   --color-bd-danger-text: #A6554A;

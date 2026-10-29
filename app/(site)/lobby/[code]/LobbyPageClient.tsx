@@ -2045,7 +2045,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
                 <Icon name={tab === 'players' ? 'users' : 'chat'} size={16} />
                 <span>{tab === 'players' ? t('game.ui.tabPlayers') : t('game.ui.tabChat')}</span>
                 {tab === 'chat' && unreadMessageCount > 0 && (
-                  <span className="flex h-5 min-w-[20px] items-center justify-center rounded-full bg-bd-coral px-1 text-[11px] font-bold text-(--bd-ink-on-accent)">
+                  <span className="flex h-5 min-w-[20px] items-center justify-center rounded-full bg-bd-coral px-1 text-[11px] font-bold text-bd-ink-on-accent">
                     {unreadMessageCount}
                   </span>
                 )}
@@ -2167,7 +2167,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
                 <button
                   type="button"
                   onClick={() => router.push(`/lobby/${code}/spectate`)}
-                  className="shrink-0 rounded-xl border-2 border-bd-ink bg-(--bd-bg2) px-3 py-1 text-xs font-bold text-bd-ink hover:bg-bd-sun/60 transition-colors"
+                  className="shrink-0 rounded-xl border-2 border-bd-ink bg-bd-bg2 px-3 py-1 text-xs font-bold text-bd-ink hover:bg-bd-sun/60 transition-colors"
                 >
                   {t('lobby.spectatingOpenView')}
                 </button>
@@ -2362,7 +2362,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
             />
           ) : gameEngine ? (
             <div className="flex h-full items-center justify-center p-4">
-              <div className="w-full max-w-2xl bg-(--bd-bg2) border border-(--bd-line) rounded-2xl p-8 text-center">
+              <div className="w-full max-w-2xl bg-bd-bg2 border border-bd-line rounded-2xl p-8 text-center">
                 <h2 className="mb-3 text-2xl font-extrabold text-bd-ink">{t('lobby.gameStartedTitle')}</h2>
                 {/* The game type is interpolated into the sentence rather than
                     wrapped in its own <code> chip: every locale needs to place

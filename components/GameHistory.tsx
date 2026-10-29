@@ -355,7 +355,7 @@ export default function GameHistory() {
                     {game.hasReplay ? (
                       <Link
                         href={`/replay/${game.id}`}
-                        className={`inline-flex h-11 shrink-0 items-center gap-2 rounded-2xl border-2 border-bd-lav-deep bg-bd-lav px-3 text-sm font-bold text-(--bd-ink-on-accent) shadow-[0_3px_0_var(--bd-lav-deep)] transition-transform hover:-translate-y-0.5 sm:px-4 ${focusRing}`}
+                        className={`inline-flex h-11 shrink-0 items-center gap-2 rounded-2xl border-2 border-bd-lav-deep bg-bd-lav px-3 text-sm font-bold text-bd-ink-on-accent shadow-[0_3px_0_var(--bd-lav-deep)] transition-transform hover:-translate-y-0.5 sm:px-4 ${focusRing}`}
                         aria-label={`${t('profile.gameReplay.watch')}: ${gameName(game.gameType)}`}
                       >
                         <ReplayIcon />

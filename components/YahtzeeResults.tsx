@@ -210,7 +210,7 @@ export default function YahtzeeResults({
                   'linear-gradient(180deg, rgba(255,196,77,0.16) 0%, var(--bd-bg) 100%)',
               }}
             >
-              <div className="flex items-center gap-2 text-(--bd-coral-text)">
+              <div className="flex items-center gap-2 text-bd-coral-text">
                 <Icon name={isTie ? 'handshake' : 'crown'} size={20} />
                 <span className="bd-kicker">{isTie ? t('yahtzee.results.tieLabel') : t('yahtzee.results.winnerLabel')}</span>
               </div>
@@ -236,7 +236,7 @@ export default function YahtzeeResults({
                   <div className="mt-1 text-2xl font-bold text-bd-ink">
                     {winner.upperSectionScore}
                     {winner.bonusAchieved && (
-                      <span className="ml-1 text-sm font-semibold text-(--bd-mint-text)">+{winner.bonusPoints}</span>
+                      <span className="ml-1 text-sm font-semibold text-bd-mint-text">+{winner.bonusPoints}</span>
                     )}
                   </div>
                 </div>
@@ -328,7 +328,7 @@ export default function YahtzeeResults({
                 <div
                   key={player.playerId}
                   className={`rounded-[22px] border p-3 transition-all sm:p-4 ${getPlacementCardClass(player.rank)} ${
-                    isCurrentUser ? 'ring-2 ring-inset ring-(--bd-sky)' : ''
+                    isCurrentUser ? 'ring-2 ring-inset ring-bd-sky' : ''
                   }`}
                   style={{
                     borderColor:
@@ -377,7 +377,7 @@ export default function YahtzeeResults({
                   <div className="mb-2 h-2 w-full overflow-hidden rounded-full" style={{ background: 'rgba(41,37,36,0.08)' }}>
                     <div
                       className={`h-full rounded-full ${
-                        player.rank === 0 ? 'bg-(--bd-sun-deep)' : player.rank === 1 ? 'bg-(--bd-lav-deep)' : player.rank === 2 ? 'bg-(--bd-coral)' : 'bg-(--bd-sky)'
+                        player.rank === 0 ? 'bg-bd-sun-deep' : player.rank === 1 ? 'bg-bd-lav-deep' : player.rank === 2 ? 'bg-bd-coral' : 'bg-bd-sky'
                       }`}
                       style={{ width: `${scorePercent}%` }}
                     />
@@ -390,7 +390,7 @@ export default function YahtzeeResults({
                       <span className="font-medium">{t('yahtzee.results.upper')}</span>{' '}
                       <span className="font-semibold text-bd-ink">{player.upperSectionScore}</span>
                       {player.bonusAchieved && (
-                        <span className="ml-1 text-(--bd-mint-text)">
+                        <span className="ml-1 text-bd-mint-text">
                           {t('yahtzee.results.bonus', { count: player.bonusPoints })}
                         </span>
                       )}

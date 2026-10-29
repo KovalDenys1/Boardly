@@ -60,7 +60,7 @@ function BlockToggle({ playerId, username }: { playerId: string; username: strin
       type="button"
       onClick={() => void toggle()}
       disabled={!ready}
-      className="inline-flex items-center gap-1.5 rounded-lg px-2 py-1 text-xs font-semibold transition-colors hover:bg-(--bd-bg2) focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-bd-lav-deep disabled:cursor-not-allowed disabled:opacity-50"
+      className="inline-flex items-center gap-1.5 rounded-lg px-2 py-1 text-xs font-semibold transition-colors hover:bg-bd-bg2 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-bd-lav-deep disabled:cursor-not-allowed disabled:opacity-50"
       style={{ color: 'var(--bd-ink-muted)' }}
     >
       <Icon name="prohibit" size={13} />
@@ -166,7 +166,7 @@ export default function PlayerProfileCard({ userId, onClose, reportContext }: Pl
       <div className="p-5 stack-y-4 relative">
         <button
           onClick={onClose}
-          className="absolute top-0 right-0 flex h-7 w-7 items-center justify-center rounded-full text-lg transition-colors hover:bg-(--bd-bg2)"
+          className="absolute top-0 right-0 flex h-7 w-7 items-center justify-center rounded-full text-lg transition-colors hover:bg-bd-bg2"
           style={{ color: 'var(--bd-ink-soft)' }}
           aria-label={t('common.close')}
         >
@@ -327,7 +327,7 @@ export default function PlayerProfileCard({ userId, onClose, reportContext }: Pl
                   <button
                     type="button"
                     onClick={() => setView('report')}
-                    className="inline-flex items-center gap-1.5 rounded-lg px-2 py-1 text-xs font-semibold transition-colors hover:bg-(--bd-bg2) focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-bd-lav-deep"
+                    className="inline-flex items-center gap-1.5 rounded-lg px-2 py-1 text-xs font-semibold transition-colors hover:bg-bd-bg2 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-bd-lav-deep"
                     style={{ color: 'var(--bd-ink-muted)' }}
                   >
                     <Icon name="flag" size={13} />

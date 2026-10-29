@@ -66,7 +66,7 @@ export default function SketchCustomWords() {
             className="w-full rounded-xl border p-3 text-base text-bd-ink desk:text-sm"
             style={{ borderColor: 'var(--bd-line)', background: 'var(--bd-bg)' }}
           />
-          <p className={`text-xs ${draftShort ? 'text-(--bd-coral-text)' : 'text-bd-ink-soft'}`} aria-live="polite">
+          <p className={`text-xs ${draftShort ? 'text-bd-coral-text' : 'text-bd-ink-soft'}`} aria-live="polite">
             {draftShort
               ? t('games.guess_my_drawing.customWords.tooFew', { count: draftCount, min: SKETCH_CUSTOM_WORDS_MIN })
               : t('games.guess_my_drawing.customWords.count', { count: draftCount })}
