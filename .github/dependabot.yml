@@ -25,6 +25,9 @@ updates:
       # Vercel and CI run Node 22; the types must not describe APIs the runtime lacks.
       - dependency-name: "@types/node"
         versions: [">=23"]
+      # Every minor from 22.2 pins a newer API version; moving it needs the webhook endpoint moved with it (#1322).
+      - dependency-name: "stripe"
+        versions: [">=22.2.0"]
 
   - package-ecosystem: "github-actions"
     directory: "/"

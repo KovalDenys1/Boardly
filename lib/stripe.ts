@@ -1,8 +1,5 @@
 import Stripe from 'stripe'
 
-// Stripe renders webhook events at the version their endpoint was created with, so a new major needs a new endpoint first.
-const API_VERSION = Stripe.API_VERSION satisfies `${string}.endive`
-
 let _stripe: Stripe | null = null
 
 export function getStripe(): Stripe {
@@ -11,7 +8,7 @@ export function getStripe(): Stripe {
       throw new Error('STRIPE_SECRET_KEY is not set')
     }
     _stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
-      apiVersion: API_VERSION,
+      apiVersion: '2026-04-22.dahlia',
     })
   }
   return _stripe
