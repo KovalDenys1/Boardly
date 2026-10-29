@@ -4596,7 +4596,7 @@ html.dark .liars-seat { background: var(--bd-bg2); }
 .rps-tile__emoji { font-size: var(--rps-emoji-md); line-height: 1; transition: transform 0.18s ease; }
 .rps-tile:not(:disabled):hover .rps-tile__emoji { transform: scale(1.12) rotate(-6deg); }
 .rps-tile__label { font-size: 13px; font-weight: 700; }
-.rps-tile__beats { font-size: 10px; color: var(--bd-ink-muted); }
+.rps-tile__beats { font-size: 10px; color: var(--bd-ink-muted); max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .rps-tile--selected {
   background: color-mix(in srgb, var(--tile-accent) 14%, var(--bd-bg));
   border-color: var(--tile-accent);
@@ -4676,6 +4676,10 @@ html.dark .liars-seat { background: var(--bd-bg2); }
   .rps-stage__vs { display: none; }
   .rps-stage__score { display: none; }
   .rps-stage__result { width: 100%; margin-top: 0; }
+}
+/* Tiles under ~96px (320 px phones) have no room for the hint line under the emoji and label. */
+@container (max-width: 360px) {
+  .rps-tile__beats { display: none; }
 }
 /* Rounds timeline in the side column. */
 .rps-round-row {
