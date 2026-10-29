@@ -1,5 +1,5 @@
 # Stripe 23 and API version endive
-Status: in-audit | Class: personal | Repo: ~/Projects/boardly | Worktree: /Users/denyskoval/Projects/.worktrees/boardly-1322 | Branch: feature/1322-stripe-23 | Base: origin/develop | Created: 2026-10-29 | Updated: 2026-10-29
+Status: done | Class: personal | Repo: ~/Projects/boardly | Worktree: /Users/denyskoval/Projects/.worktrees/boardly-1322 | Branch: feature/1322-stripe-23 | Base: origin/develop | Created: 2026-10-29 | Updated: 2026-10-29
 
 ## Purpose
 Premium keeps taking, cancelling and renewing subscriptions without a hitch while Boardly moves to the current Stripe library (stripe-node 23) and API version `2026-09-30.endive`, so dependency updates stop being held back and the payment code runs on a supported version.
