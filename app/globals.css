@@ -1,6 +1,12 @@
 @import 'tailwindcss' source(none);
 @source '../app/**/*.{js,ts,jsx,tsx,mdx}';
 @source '../components/**/*.{js,ts,jsx,tsx,mdx}';
+@source '../lib/**/*.{ts,tsx}';
+@source '../hooks/**/*.{ts,tsx}';
+@source '../contexts/**/*.{ts,tsx}';
+/* Word lists are prose: every noun in them would become a utility. */
+@source not '../lib/games/*-words.ts';
+@source not '../lib/sketch-custom-words.ts';
 
 @custom-variant dark (&:is(.dark *));
 /* Touch browsers report hover: none; v4 would stop applying hover: styles on tap there. */
@@ -187,12 +193,12 @@
   ::before,
   ::backdrop,
   ::file-selector-button {
-    border-color: var(--color-gray-200, currentColor);
+    border-color: var(--bd-line);
   }
 
   input::placeholder,
   textarea::placeholder {
-    color: var(--color-gray-400);
+    color: var(--bd-ink-muted);
   }
 
   button:not(:disabled),

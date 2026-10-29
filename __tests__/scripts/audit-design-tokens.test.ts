@@ -114,6 +114,22 @@ describe('dead tokens', () => {
   })
 })
 
+describe('preflight defaults and sources', () => {
+  const base = /@layer base \{([^]*?)\n\}/.exec(globalsCss)![1]
+
+  it('a border with no colour class draws in --bd-line, so it flips with the theme', () => {
+    expect(base).toMatch(/::file-selector-button \{\s*border-color: var\(--bd-line\);/)
+  })
+
+  it('placeholders in inputs and textareas use --bd-ink-muted, which holds 4.5:1', () => {
+    expect(base).toMatch(/textarea::placeholder \{\s*color: var\(--bd-ink-muted\);/)
+  })
+
+  it.each(['lib', 'hooks', 'contexts'])('Tailwind scans %s/, where class maps live too', (dir) => {
+    expect(globalsCss).toContain(`@source '../${dir}/**/*.{ts,tsx}';`)
+  })
+})
+
 function scan(rule: (src: string) => number[]): string[] {
   const root = path.join(__dirname, '..', '..')
   const found: string[] = []
