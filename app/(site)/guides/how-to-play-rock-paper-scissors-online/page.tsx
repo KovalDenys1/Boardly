@@ -198,7 +198,7 @@ export default function HowToPlayRockPaperScissorsGuide() {
             <p><strong style={{ color: 'var(--bd-ink)' }}>Rematch:</strong> When a match ends the host can start another one straight away, keeping both players in the same room.</p>
             <p>
               Everything on this page describes the version you can play right now on the{' '}
-              <Link href="/games/rock-paper-scissors" className="underline transition-colors hover:text-bd-coral" style={{ color: 'var(--bd-ink)' }}>
+              <Link href="/games/rock-paper-scissors" className="underline transition-colors hover:text-bd-coral-text" style={{ color: 'var(--bd-ink)' }}>
                 Rock Paper Scissors game page
               </Link>.
             </p>

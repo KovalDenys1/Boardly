@@ -150,7 +150,7 @@ export default function HowToPlayConnectFourGuide() {
             },
           ]} />
                   <p className="mt-4 text-sm leading-relaxed" style={{ color: 'var(--bd-ink-soft)' }}>
-            These five cover the basics. For the deeper plan – keeping two threats in separate columns, why odd and even rows matter and how to play the hard bot – read the <Link href="/games/connect-four#strategy" className="font-semibold underline transition-colors hover:text-bd-coral" style={{ color: 'var(--bd-ink)' }}>strategy section of the Connect Four game page</Link>.
+            These five cover the basics. For the deeper plan – keeping two threats in separate columns, why odd and even rows matter and how to play the hard bot – read the <Link href="/games/connect-four#strategy" className="font-semibold underline transition-colors hover:text-bd-coral-text" style={{ color: 'var(--bd-ink)' }}>strategy section of the Connect Four game page</Link>.
           </p>
         </GuideSection>
 
@@ -159,7 +159,7 @@ export default function HowToPlayConnectFourGuide() {
             <p><strong style={{ color: 'var(--bd-ink)' }}>vs AI:</strong> Play solo at any time. Great for practicing before challenging a friend.</p>
             <p><strong style={{ color: 'var(--bd-ink)' }}>vs Friend:</strong> Share a lobby link — your friend joins in seconds, no account needed.</p>
             <p><strong style={{ color: 'var(--bd-ink)' }}>Turn timer:</strong> Every turn is on a countdown, and running out forfeits the round. Choose 30, 60, 90, or 120 seconds when you create the lobby.</p>
-            <p>All of these are chosen when you create a game from the <Link href="/games/connect-four" className="font-semibold underline transition-colors hover:text-bd-coral" style={{ color: 'var(--bd-ink)' }}>Connect Four game page</Link>.</p>
+            <p>All of these are chosen when you create a game from the <Link href="/games/connect-four" className="font-semibold underline transition-colors hover:text-bd-coral-text" style={{ color: 'var(--bd-ink)' }}>Connect Four game page</Link>.</p>
           </div>
         </GuideSection>
 

@@ -68,7 +68,7 @@ function LeaderboardRow({ entry, isLast, t }: { entry: LeaderboardEntry; isLast:
         )}
         <div className="min-w-0">
           <div className="flex items-center gap-1.5">
-            <span className={`block truncate text-base font-bold ${entry.isPremium ? 'text-amber-500' : 'text-bd-ink'}`}>{entry.username}</span>
+            <span className={`block truncate text-base font-bold ${entry.isPremium ? 'text-bd-sun-text' : 'text-bd-ink'}`}>{entry.username}</span>
             {entry.isPremium && <Icon name="crown" size={14} tone="premium" label="Premium" className="shrink-0" />}
           </div>
           {entry.publicProfileId && (
@@ -142,7 +142,7 @@ function LeaderboardPageContent({ initial }: { initial: LeaderboardPage | null }
                   style={{ fontFamily: 'var(--bd-font-display)' }}
                 >
                   {t('leaderboard.title', 'Leaderboard')}
-                  <span className="block text-bd-coral">
+                  <span className="block text-bd-coral-text">
                     {selectedFilter.value ? selectedFilter.label : t('leaderboard.allGames', 'All Games')}
                   </span>
                 </h1>
@@ -277,7 +277,7 @@ function LeaderboardPageContent({ initial }: { initial: LeaderboardPage | null }
               </div>
               <div className="bd-card p-4">
                 <p className="bd-kicker">{t('leaderboard.wins', 'Wins')}</p>
-                <p className="mt-2 truncate text-2xl font-extrabold text-bd-coral" style={{ fontFamily: 'var(--bd-font-display)' }}>
+                <p className="mt-2 truncate text-2xl font-extrabold text-bd-coral-text" style={{ fontFamily: 'var(--bd-font-display)' }}>
                   {visibleWins}
                 </p>
               </div>

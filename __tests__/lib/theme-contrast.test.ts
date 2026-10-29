@@ -86,7 +86,7 @@ describe.each(Object.entries(THEMES))('%s accent text', (_name, tokens) => {
   const v = (name: string) => tokens[`--bd-${name}`]
 
   // Chips, badges and hover plates put the text on its own accent at 10-20 %.
-  it.each(['coral', 'mint', 'lav', 'sun'])('%s-text reads on every surface and on its own tint', (accent) => {
+  it.each(['coral', 'mint', 'lav', 'sun', 'sky'])('%s-text reads on every surface and on its own tint', (accent) => {
     const text = v(`${accent}-text`)
     const pairs: Array<[string, string, string]> = []
     for (const s of TEXT_SURFACES) {
@@ -135,7 +135,7 @@ describe('lobby themes', () => {
     const theme = LOBBY_THEMES[id]
     const style = getThemePageStyle(id) as Record<string, string>
     const pairs: Array<[string, string, string]> = [['on-inverse on inverse', style['--bd-ink-on-inverse'], style['--bd-inverse']]]
-    for (const accent of ['coral', 'mint', 'lav', 'sun']) {
+    for (const accent of ['coral', 'mint', 'lav', 'sun', 'sky']) {
       const text = style[`--bd-${accent}-text`]
       expect(text).toMatch(/^#[0-9A-F]{6}$/i)
       pairs.push([`${accent}-text on bg`, text, theme.bg], [`${accent}-text on bg2`, text, theme.bg2])

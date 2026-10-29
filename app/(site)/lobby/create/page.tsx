@@ -909,7 +909,7 @@ function CreateLobbyPage() {
                 <div className="space-y-2">
                   <div className="flex items-center gap-2">
                     <FieldLabel icon="palette">{t('lobby.create.themeTitle')}</FieldLabel>
-                    {!isPremiumUser && <span className="text-[11px] font-bold text-amber-500"><Icon name="crown" size={11} /> {t('premium.breadcrumb')}</span>}
+                    {!isPremiumUser && <span className="text-[11px] font-bold text-bd-sun-text"><Icon name="crown" size={11} /> {t('premium.breadcrumb')}</span>}
                   </div>
                   <div className="flex flex-wrap gap-2">
                     {LOBBY_THEME_IDS.map((themeId) => {
@@ -970,7 +970,7 @@ function CreateLobbyPage() {
                   <div>
                     <div className="flex items-center gap-2">
                       <p className="font-semibold text-bd-ink">{t('game.ui.spectatorsLabel')}</p>
-                      {!isPremiumUser && <span className="text-[11px] font-bold text-amber-500"><Icon name="crown" size={11} /> {t('premium.breadcrumb')}</span>}
+                      {!isPremiumUser && <span className="text-[11px] font-bold text-bd-sun-text"><Icon name="crown" size={11} /> {t('premium.breadcrumb')}</span>}
                     </div>
                     <p className="text-[13px] text-bd-ink-muted">
                       {isPremiumUser ? t('lobby.create.spectatorsAllow') : t('lobby.create.spectatorsUpgrade')}

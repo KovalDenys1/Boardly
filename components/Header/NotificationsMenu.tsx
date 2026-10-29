@@ -314,7 +314,7 @@ export function NotificationsMenu() {
                   <button
                     type="button"
                     onClick={handleClearAll}
-                    className="rounded-full border border-(--bd-line) bg-(--bd-bg) px-3 py-1.5 text-xs font-bold text-(--bd-ink-soft) transition-colors hover:bg-(--bd-card-warm) hover:text-(--bd-coral)"
+                    className="rounded-full border border-(--bd-line) bg-(--bd-bg) px-3 py-1.5 text-xs font-bold text-(--bd-ink-soft) transition-colors hover:bg-(--bd-card-warm) hover:text-bd-coral-text"
                   >
                     {t('header.clearAll')}
                   </button>
@@ -329,7 +329,7 @@ export function NotificationsMenu() {
                 </div>
               ) : error ? (
                 <div className="px-4 py-8 text-center">
-                  <p className="text-sm font-semibold text-(--bd-coral)">
+                  <p className="text-sm font-semibold text-bd-coral-text">
                     {t('header.notificationsError')}
                   </p>
                   <button

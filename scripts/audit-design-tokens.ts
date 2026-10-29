@@ -1,5 +1,6 @@
 import { existsSync, readdirSync, readFileSync, statSync, writeFileSync } from 'fs'
 import path from 'path'
+import { LEGACY_CLASS, accentTextLines } from './design-token-rules'
 
 /**
  * Design-token audit – the pre-Boardly palette must not come back (#1254).
@@ -13,6 +14,9 @@ import path from 'path'
  * audit: a file over its baseline count fails (no new debt), and a file under it fails too, so
  * the baseline shrinks in the same change that migrates the file.
  * Regenerate after a migration with: npx tsx scripts/audit-design-tokens.ts --update-baseline
+ *
+ * It also fails on an accent fill or shade used as a text colour (#1457), with no baseline: text
+ * takes --bd-<accent>-text. An `accent-text-allow` comment on the line or the one above exempts it.
  */
 
 const repoRoot = process.cwd()
@@ -21,12 +25,6 @@ const extensions = new Set(['.ts', '.tsx', '.css'])
 const ignored = new Set(['node_modules', '.next', '.git', 'coverage'])
 const baselinePath = path.join(repoRoot, 'scripts', 'design-tokens-baseline.json')
 const updateBaseline = process.argv.includes('--update-baseline')
-
-// Tailwind's default neutrals and blues, with any variant prefix (dark:, hover:, md:...).
-// `bd-sky`, `bd-lav` and the other tokens never match: the colour must follow a utility and be
-// followed by a shade number.
-const LEGACY_CLASS =
-  /(?<![\w-])(?:[a-z0-9]+:)*(?:bg|text|border|from|to|via|ring|outline|divide|placeholder|shadow|fill|stroke|accent|caret|decoration)-(?:slate|gray|zinc|neutral|stone|blue|indigo)-\d{2,3}(?:\/\d{1,3})?(?![\w-])/g
 
 function walk(dir: string, out: string[]) {
   for (const name of readdirSync(dir)) {
@@ -41,9 +39,13 @@ const files: string[] = []
 for (const root of scanRoots) if (existsSync(path.join(repoRoot, root))) walk(path.join(repoRoot, root), files)
 
 const counts: Record<string, number> = {}
+const accentText: string[] = []
 for (const file of files) {
-  const n = (readFileSync(file, 'utf8').match(LEGACY_CLASS) ?? []).length
-  if (n > 0) counts[path.relative(repoRoot, file).split(path.sep).join('/')] = n
+  const src = readFileSync(file, 'utf8')
+  const rel = path.relative(repoRoot, file).split(path.sep).join('/')
+  const n = (src.match(LEGACY_CLASS) ?? []).length
+  if (n > 0) counts[rel] = n
+  if (!file.endsWith('.css')) for (const line of accentTextLines(src)) accentText.push(`${rel}:${line}`)
 }
 
 if (updateBaseline) {
@@ -66,6 +68,8 @@ for (const [file, allowed] of Object.entries(baseline)) {
   const n = counts[file] ?? 0
   if (n < allowed) problems.push(`${file}: baseline ${allowed} but only ${n} left – shrink it with --update-baseline`)
 }
+
+for (const at of accentText) problems.push(`${at}: an accent fill or shade as text – use --bd-<accent>-text (DESIGN.md)`)
 
 if (problems.length > 0) {
   console.error('design-tokens audit FAILED:\n  ' + problems.join('\n  '))

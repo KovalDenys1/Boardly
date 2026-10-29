@@ -173,7 +173,7 @@ export default function PasswordInput({
       )}
 
       {error && (
-        <p className="mt-1 text-sm" style={{ color: 'var(--bd-coral)' }}>{error}</p>
+        <p className="mt-1 text-sm" style={{ color: 'var(--bd-coral-text)' }}>{error}</p>
       )}
     </div>
   )

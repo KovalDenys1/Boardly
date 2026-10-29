@@ -338,7 +338,7 @@ export default function LoginForm() {
           </h1>
           <p style={{ color: 'var(--bd-ink-soft)', fontSize: 16, marginBottom: 28 }}>
             {t('auth.login.noAccount')}{' '}
-            <Link href={buildAuthUrl('register', returnUrl)} style={{ color: 'var(--bd-coral)', fontWeight: 600, textDecoration: 'underline' }}>
+            <Link href={buildAuthUrl('register', returnUrl)} style={{ color: 'var(--bd-coral-text)', fontWeight: 600, textDecoration: 'underline' }}>
               {t('auth.login.register')}
             </Link>
           </p>

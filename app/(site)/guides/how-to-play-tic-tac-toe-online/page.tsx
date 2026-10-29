@@ -125,7 +125,7 @@ export default function HowToPlayTicTacToeGuide() {
             <p><strong style={{ color: 'var(--bd-ink)' }}>vs AI:</strong> Play solo against a bot — great for practising strategy without waiting for an opponent.</p>
             <p><strong style={{ color: 'var(--bd-ink)' }}>vs Friend:</strong> Share a lobby link and play in real time. No account needed for either player.</p>
             <p><strong style={{ color: 'var(--bd-ink)' }}>Match mode:</strong> Play a series of rounds to determine the overall winner — best of 3 or best of 5.</p>
-            <p>All of these are chosen when you create a game from the <Link href="/games/tic-tac-toe" className="font-semibold underline transition-colors hover:text-bd-coral" style={{ color: 'var(--bd-ink)' }}>Tic-Tac-Toe game page</Link>.</p>
+            <p>All of these are chosen when you create a game from the <Link href="/games/tic-tac-toe" className="font-semibold underline transition-colors hover:text-bd-coral-text" style={{ color: 'var(--bd-ink)' }}>Tic-Tac-Toe game page</Link>.</p>
           </div>
         </GuideSection>
 

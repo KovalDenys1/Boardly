@@ -786,7 +786,7 @@ function GuesserDrawingView({
           {validationError ? (
             <p className="text-center text-xs font-semibold text-rose-600">{validationError}</p>
           ) : closeHint ? (
-            <p className="text-center text-xs font-semibold text-amber-600">{t('games.guess_my_drawing.game.closeGuess')}</p>
+            <p className="text-center text-xs font-semibold text-bd-sun-text">{t('games.guess_my_drawing.game.closeGuess')}</p>
           ) : null}
         </div>
       )}

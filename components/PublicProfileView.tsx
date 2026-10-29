@@ -412,7 +412,7 @@ export default function PublicProfileView({
         <span>{t(note.key)}</span>
         <Link
           href={PRIVACY_SETTINGS_HREF}
-          className={`font-bold underline underline-offset-2 ${isDark ? 'text-bd-lav hover:text-white' : 'text-bd-lav-text hover:text-bd-ink dark:text-bd-lav'}`}
+          className={/* accent-text-allow: a dark skin keeps the fill */ `font-bold underline underline-offset-2 ${isDark ? 'text-bd-lav hover:text-white' : 'text-bd-lav-text hover:text-bd-ink dark:text-bd-lav'}`}
         >
           {t('profile.publicProfile.privacySettingsLink')}
         </Link>
@@ -558,7 +558,7 @@ export default function PublicProfileView({
                   <h1
                     className={`mt-3 font-display text-4xl font-black leading-none sm:text-5xl ${
                       profile.isPremium && !profile.accentColor
-                        ? 'text-amber-500'
+                        ? /* accent-text-allow: a dark skin keeps the fill */ isDark ? 'text-amber-500' : 'text-bd-sun-text'
                         : !profile.isPremium
                           ? isDark ? 'text-white' : 'text-bd-ink'
                           : ''
@@ -599,7 +599,7 @@ export default function PublicProfileView({
                     <p className={`font-mono text-[11px] uppercase tracking-[0.22em] ${tc.statLabel}`}>
                       {t('profile.friends.title')}
                     </p>
-                    <p className={`mt-3 font-display text-3xl font-bold ${isDark ? 'text-bd-coral' : 'text-bd-coral-text dark:text-white'}`}>
+                    <p className={/* accent-text-allow: a dark skin keeps the fill */ `mt-3 font-display text-3xl font-bold ${isDark ? 'text-bd-coral' : 'text-bd-coral-text dark:text-white'}`}>
                       {profile.friendsCount ?? 0}
                     </p>
                   </div>
@@ -608,7 +608,7 @@ export default function PublicProfileView({
                     <p className={`font-mono text-[11px] uppercase tracking-[0.22em] ${tc.statLabel}`}>
                       {t('profile.stats.gamesCompleted')}
                     </p>
-                    <p className={`mt-3 font-display text-3xl font-bold ${isDark ? 'text-bd-mint' : 'text-bd-mint-text dark:text-white'}`}>
+                    <p className={/* accent-text-allow: a dark skin keeps the fill */ `mt-3 font-display text-3xl font-bold ${isDark ? 'text-bd-mint' : 'text-bd-mint-text dark:text-white'}`}>
                       {levelSourceGames}
                     </p>
                   </div>

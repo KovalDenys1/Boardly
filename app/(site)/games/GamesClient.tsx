@@ -78,7 +78,7 @@ export default function GamesClient({ games }: GamesClientProps) {
               style={{ fontFamily: 'var(--bd-font-display)' }}
             >
               {t('games.title')}<br />
-              <span className="text-bd-coral">{t('games.subtitle')}</span>
+              <span className="text-bd-coral-text">{t('games.subtitle')}</span>
             </h1>
           </div>
         </div>

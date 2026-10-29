@@ -20,12 +20,12 @@ export function getLobbyTheme(theme: string | null | undefined) {
   return LOBBY_THEMES.default
 }
 
-const DARK_THEME_TEXT: Record<string, string> = { '--bd-coral-text': '#FF8475', '--bd-mint-text': '#4AC3A0', '--bd-lav-text': '#A99BFF' }
+const DARK_THEME_TEXT: Record<string, string> = { '--bd-coral-text': '#FF8475', '--bd-mint-text': '#4AC3A0', '--bd-lav-text': '#A99BFF', '--bd-sky-text': '#77CDFD' }
 // The theme's own surfaces are lighter than html.dark's, so the default lav-deep ring falls under 3:1 on them.
 const DARK_THEME_SHADE: Record<string, string> = { '--bd-lav-deep': '#8070EE' }
 // Ocean's ink is a mid navy, so the default ring on an ink-filled control is 2.7:1; this one is 3.1:1 there and on its pale surfaces.
 const OCEAN_SHADE: Record<string, string> = { '--bd-lav-deep': '#8272F4' }
-const LIGHT_THEME_TEXT: Record<string, string> = { '--bd-coral-text': '#B71F14', '--bd-mint-text': '#076F57', '--bd-lav-text': '#5E49C7' }
+const LIGHT_THEME_TEXT: Record<string, string> = { '--bd-coral-text': '#B71F14', '--bd-mint-text': '#076F57', '--bd-lav-text': '#5E49C7', '--bd-sky-text': '#04658C' }
 
 export function getThemePageStyle(theme: string | null | undefined): CSSProperties {
   const t = getLobbyTheme(theme)

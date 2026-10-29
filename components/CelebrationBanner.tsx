@@ -72,14 +72,14 @@ export default function CelebrationBanner({ event, onComplete }: CelebrationBann
           border: 'rgba(107,193,240,0.28)',
           gradient: 'linear-gradient(135deg,rgba(107,193,240,0.18),var(--bd-bg))',
           icon: 'bg-[rgba(107,193,240,0.18)]',
-          badge: 'bg-[rgba(107,193,240,0.18)] text-(--bd-sky-deep)',
+          badge: 'bg-[rgba(107,193,240,0.18)] text-(--bd-sky-text)',
         }
       default:
         return {
           border: 'rgba(107,193,240,0.28)',
           gradient: 'linear-gradient(135deg,rgba(107,193,240,0.18),var(--bd-bg))',
           icon: 'bg-[rgba(107,193,240,0.18)]',
-          badge: 'bg-[rgba(107,193,240,0.18)] text-(--bd-sky-deep)',
+          badge: 'bg-[rgba(107,193,240,0.18)] text-(--bd-sky-text)',
         }
     }
   }

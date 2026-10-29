@@ -87,7 +87,7 @@ export default function HowToPlayMemoryGuide() {
 
         <GuideSection title="Difficulty Levels">
           <p className="mb-4 text-sm leading-relaxed" style={{ color: 'var(--bd-ink-soft)' }}>
-            <Link href="/games/memory" className="font-semibold underline transition-colors hover:text-bd-coral" style={{ color: 'var(--bd-ink)' }}>Boardly Memory</Link> has three difficulty levels that change the grid size and number of pairs.
+            <Link href="/games/memory" className="font-semibold underline transition-colors hover:text-bd-coral-text" style={{ color: 'var(--bd-ink)' }}>Boardly Memory</Link> has three difficulty levels that change the grid size and number of pairs.
           </p>
           <div className="space-y-3">
             {[

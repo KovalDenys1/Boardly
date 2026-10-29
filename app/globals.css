@@ -24,6 +24,7 @@
   --color-bd-mint-text: var(--bd-mint-text);
   --color-bd-lav-text: var(--bd-lav-text);
   --color-bd-sun-text: var(--bd-sun-text);
+  --color-bd-sky-text: var(--bd-sky-text);
   --color-bd-inverse: var(--bd-inverse);
   --color-bd-ink-on-inverse: var(--bd-ink-on-inverse);
   --font-display: var(--bd-font-display), Georgia, serif;
@@ -249,6 +250,7 @@
   --bd-mint-text: #076F57;
   --bd-lav-text: #5E49C7;
   --bd-sun-text: #875D01;
+  --bd-sky-text: #04658C;
   --bd-btn-ink: var(--bd-ink);
   --bd-line: #E8DDC8;
   /* A plate raised above whatever is behind it - a player pill on a team card,
@@ -304,6 +306,7 @@ html.dark {
   --bd-inverse:   #35302A;
   --bd-ink-on-inverse: #F0E8DB;
   --bd-sun-text:  #FFC44D;
+  --bd-sky-text:  #77CDFD;
   --bd-line:      #3A3530;
   --bd-card-warm: #242018;
   --bd-card:      #242018;

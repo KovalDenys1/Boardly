@@ -345,7 +345,7 @@ export default function GameResultsModal({
           style={{
             border: '1.5px solid #FF6B5B60',
             background: '#FF6B5B10',
-            color: 'var(--bd-coral)',
+            color: 'var(--bd-coral-text)',
           }}
         >
           {error}

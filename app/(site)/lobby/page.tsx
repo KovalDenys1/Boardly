@@ -165,7 +165,7 @@ function LobbyListPageContent() {
           </div>
 
           {hasLoadError && (
-            <div className="mb-4 rounded-xl border-[1.5px] border-[rgba(255,196,77,0.3)] bg-[rgba(255,196,77,0.12)] px-4 py-3 text-sm text-bd-sun-deep">
+            <div className="mb-4 rounded-xl border-[1.5px] border-[rgba(255,196,77,0.3)] bg-[rgba(255,196,77,0.12)] px-4 py-3 text-sm text-bd-sun-text">
               {t('lobby.loadFailed')}
             </div>
           )}

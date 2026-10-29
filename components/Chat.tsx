@@ -443,7 +443,7 @@ export default function Chat({
                   <div className={`flex flex-col ${msg.type === 'system' ? 'mx-auto items-center' : isCurrentUser ? 'items-end' : 'items-start'}`}>
                     {msg.type !== 'system' && showAvatar && !isCurrentUser && (
                       <div
-                        className={`mb-1 px-1 text-xs font-semibold ${isPremium ? 'text-amber-500' : 'text-bd-ink-soft'} ${onProfileClick && msg.userId !== 'system' ? 'cursor-pointer hover:underline' : ''}`}
+                        className={`mb-1 px-1 text-xs font-semibold ${isPremium ? 'text-bd-sun-text' : 'text-bd-ink-soft'} ${onProfileClick && msg.userId !== 'system' ? 'cursor-pointer hover:underline' : ''}`}
                         onClick={onProfileClick && msg.userId !== 'system' ? () => onProfileClick(msg.userId) : undefined}
                       >
                         {isPremium && <span className="mr-0.5">👑</span>}

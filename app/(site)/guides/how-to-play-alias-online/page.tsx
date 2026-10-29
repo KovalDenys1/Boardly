@@ -179,7 +179,7 @@ export default function HowToPlayAliasGuide() {
             <p><strong style={{ color: 'var(--bd-ink)' }}>No account needed:</strong> Share a lobby link — everyone joins as a guest. Works on any device.</p>
             <p>
               Player counts, timers and everything else about the game are on the{' '}
-              <Link href="/games/alias" className="font-semibold underline transition-colors hover:text-bd-coral" style={{ color: 'var(--bd-ink)' }}>
+              <Link href="/games/alias" className="font-semibold underline transition-colors hover:text-bd-coral-text" style={{ color: 'var(--bd-ink)' }}>
                 Alias game page
               </Link>.
             </p>

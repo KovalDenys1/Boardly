@@ -126,7 +126,7 @@ export default function WaitingRoom({
             )}
 
             <div className="flex-1 min-w-0 flex flex-wrap items-center gap-1.5">
-              <span className={`truncate text-sm font-bold ${isPremium ? 'text-bd-premium' : 'text-bd-ink'}`}>{playerName}</span>
+              <span className={`truncate text-sm font-bold ${isPremium ? 'text-bd-sun-text' : 'text-bd-ink'}`}>{playerName}</span>
               {isPremium && (
                 <Icon name="crown" size={12} tone="premium" label="Premium" className="shrink-0" />
               )}
@@ -197,7 +197,7 @@ export default function WaitingRoom({
             >
               <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-dashed text-sm font-bold ${
                 isPulse
-                  ? 'animate-pulse border-bd-sun/60 bg-bd-sun/10 text-bd-sun-deep'
+                  ? 'animate-pulse border-bd-sun/60 bg-bd-sun/10 text-bd-sun-text'
                   : 'border-bd-line bg-bd-bg2 text-bd-ink-muted'
               }`}>
                 {playerCount + i + 1}

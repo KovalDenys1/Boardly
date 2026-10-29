@@ -431,7 +431,7 @@ export default function PremiumContent({ pricing }: { pricing: PremiumPricing })
                   }`}
                   style={{ background: 'var(--bd-bg2)', border: '1px solid var(--bd-line)' }}
                 >
-                  <span className="mt-0.5 shrink-0" style={{ color: 'var(--bd-sun-deep)' }}>
+                  <span className="mt-0.5 shrink-0" style={{ color: 'var(--bd-sun-text)' }}>
                     <Icon name={icon} size={20} />
                   </span>
                   <span className="min-w-0">

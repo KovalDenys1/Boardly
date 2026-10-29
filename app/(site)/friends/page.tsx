@@ -39,7 +39,7 @@ function FriendsPageContent() {
                 style={{ fontFamily: 'var(--bd-font-display)' }}
               >
                 {t('profile.friends.title')}{' '}
-                <span style={{ color: 'var(--bd-coral)' }}>{t('profile.friends.pageSubtitle')}</span>
+                <span style={{ color: 'var(--bd-coral-text)' }}>{t('profile.friends.pageSubtitle')}</span>
               </h1>
             </div>
           </div>

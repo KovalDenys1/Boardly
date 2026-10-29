@@ -52,6 +52,7 @@ export const THEME_TOKENS: readonly ThemeToken[] = [
   { name: 'bd-lav-deep', group: 'accent', note: 'Focus rings, a checked box, the border and shadow of a lavender fill. Does not flip', light: '#7867E8', dark: null },
   { name: 'bd-lav-text', group: 'accent', note: 'Lavender text and icons', light: '#5E49C7', dark: '#A99BFF' },
   { name: 'bd-sun-text', group: 'accent', note: 'Sun-coloured text on a sun tint (--bd-sun-deep is a border shade)', light: '#875D01', dark: '#FFC44D' },
+  { name: 'bd-sky-text', group: 'accent', note: 'Sky text and icons', light: '#04658C', dark: '#77CDFD' },
   { name: 'bd-sky', group: 'accent', note: 'Connect four, links, the info state', light: '#6BC1F0', dark: null },
   { name: 'bd-premium', group: 'accent', note: 'The crown and every premium marker', light: '#F59E0B', dark: null },
 

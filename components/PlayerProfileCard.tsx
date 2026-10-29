@@ -217,7 +217,7 @@ export default function PlayerProfileCard({ userId, onClose, reportContext }: Pl
                   <h2
                     ref={nameRef}
                     tabIndex={-1}
-                    className={`font-bold text-base truncate focus:outline-hidden ${data.isPremium ? 'text-amber-500' : ''}`}
+                    className={`font-bold text-base truncate focus:outline-hidden ${data.isPremium ? 'text-bd-sun-text' : ''}`}
                     style={data.isPremium ? {} : { color: 'var(--bd-ink)' }}
                   >
                     {data.username ?? t('game.ui.playerFallback')}
@@ -240,7 +240,7 @@ export default function PlayerProfileCard({ userId, onClose, reportContext }: Pl
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-xs hover:underline"
-                    style={{ color: 'var(--bd-coral)' }}
+                    style={{ color: 'var(--bd-coral-text)' }}
                     onClick={onClose}
                   >
                     {t('profile.playerCard.viewFullProfile')}
@@ -303,7 +303,7 @@ export default function PlayerProfileCard({ userId, onClose, reportContext }: Pl
                 ) : data.relation === 'request_sent' ? (
                   <p className="flex items-center gap-1.5 text-sm font-semibold" style={{ color: 'var(--bd-ink-soft)' }}><Icon name="mail" size={15} /> {t('profile.playerCard.requestSent')}</p>
                 ) : data.relation === 'request_received' ? (
-                  <p className="flex items-center gap-1.5 text-sm font-semibold" style={{ color: 'var(--bd-sun)' }}><Icon name="mail" size={15} /> {t('profile.playerCard.requestReceived')}</p>
+                  <p className="flex items-center gap-1.5 text-sm font-semibold" style={{ color: 'var(--bd-sun-text)' }}><Icon name="mail" size={15} /> {t('profile.playerCard.requestReceived')}</p>
                 ) : data.relation === 'can_send' ? (
                   <button
                     onClick={handleAddFriend}

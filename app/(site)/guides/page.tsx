@@ -93,7 +93,7 @@ function GuideCard({ slug, title, description, icon, readTime, accent }: {
         </div>
         <div className="min-w-0 flex-1">
           <h2
-            className="mb-1 text-[15px] font-bold leading-snug group-hover:text-bd-coral"
+            className="mb-1 text-[15px] font-bold leading-snug group-hover:text-bd-coral-text"
             style={{ color: 'var(--bd-ink)', fontFamily: 'var(--bd-font-display)' }}
           >
             {title}
