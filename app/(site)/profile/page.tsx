@@ -201,11 +201,7 @@ const PROFILE_PREVIEW_ENTER_MS = 420
 const PROFILE_TAB_INDICATOR_X_INSET_PX = 2
 
 function getProfilePreviewTransitionTimings() {
-  if (
-    typeof window !== 'undefined' &&
-    typeof window.matchMedia === 'function' &&
-    window.matchMedia('(prefers-reduced-motion: reduce)').matches
-  ) {
+  if (prefersReducedMotion()) {
     return {
       exitMs: 0,
       enterMs: 0,
