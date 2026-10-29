@@ -26,34 +26,24 @@ const MERGED_GUIDES: Record<string, string> = {
 /** Minimum body copy for a guide to earn its own URL (#923 acceptance). */
 const MIN_WORDS = 600
 
+/** A guide's English copy: every word of the page, kept apart from its markup since #1583. */
+const englishCopy = (slug: string): { question: string; answer: string } =>
+  require(`../../app/(site)/guides/${slug}/copy/en`).default
+
 /**
- * Words a visitor actually reads: the JSX text and the prose string literals of
- * the page component, with the <head> region removed. `metadata` keywords and
- * the JSON-LD blocks are markup for crawlers, not content, and counting them
- * was how every one of these pages looked longer than it was.
+ * Words a visitor actually reads: every prose string of the copy, a link counted by its label.
+ * Single words and paths are left out – a label like "Easy" or an href is not body copy, and
+ * counting them is how these pages once looked longer than they were.
  */
-function proseWordCount(source: string): number {
-  let body = source
-    .replace(/^export const metadata: Metadata = \{[\s\S]*?^\}\n/m, '')
-    .replace(/^const \w*[Jj]sonLd = \{[\s\S]*?^\}\n/gm, '')
-    .replace(/^import .*$/gm, '')
-    .replace(/\{\/\*[\s\S]*?\*\/\}/g, '')
-    .replace(/\/\*[\s\S]*?\*\//g, '')
-    .replace(/^\s*\/\/.*$/gm, '')
-    .replace(/className=("[^"]*"|\{[^{}]*(\{[^{}]*\}[^{}]*)*\})/g, ' ')
-    .replace(/style=\{\{[\s\S]*?\}\}/g, ' ')
-
-  let words = 0
-  const countIfProse = (raw: string) => {
-    const value = raw.trim()
-    if (!value || /^(https?:|\/|var\(|@|#|[a-z-]+$)/.test(value)) return
-    const parts = value.split(/\s+/).filter(Boolean)
-    if (parts.length >= 2) words += parts.length
+function proseWordCount(copy: unknown): number {
+  if (typeof copy === 'string') {
+    const value = copy.replace(/\[([^\]]+)\]\([^)]+\)/g, '$1').trim()
+    if (!value || /^(https?:|\/|var\(|@|#|[a-z-]+$)/.test(value)) return 0
+    const words = value.split(/\s+/).filter(Boolean).length
+    return words >= 2 ? words : 0
   }
-
-  for (const match of body.matchAll(/(['"`])((?:\\.|(?!\1)[\s\S])*?)\1/g)) countIfProse(match[2])
-  for (const match of body.matchAll(/>([^<>{}]+)</g)) countIfProse(match[1])
-  return words
+  if (!copy || typeof copy !== 'object') return 0
+  return Object.values(copy as Record<string, unknown>).reduce<number>((sum, value) => sum + proseWordCount(value), 0)
 }
 
 const guideDirs = readdirSync(path.join(root, 'app', '(site)', 'guides'))
@@ -110,18 +100,15 @@ describe('guide pruning (#923)', () => {
 
 describe('guide content bar (#923)', () => {
   it.each(ALL_GUIDES.map((guide) => guide.slug))('%s carries at least %s words', (slug) => {
-    expect(proseWordCount(read(`app/(site)/guides/${slug}/page.tsx`))).toBeGreaterThanOrEqual(MIN_WORDS)
+    expect(proseWordCount(englishCopy(slug))).toBeGreaterThanOrEqual(MIN_WORDS)
   })
 
   it.each(ALL_GUIDES.map((guide) => guide.slug))('%s opens with a question and its answer', (slug) => {
-    const source = read(`app/(site)/guides/${slug}/page.tsx`)
-    expect(source).toContain(`slug="${slug}"`)
+    expect(read(`app/(site)/guides/${slug}/guide.tsx`)).toContain(`slug: '${slug}'`)
 
-    const question = source.match(/\n\s+question="([^"]+)"/)
-    expect(question?.[1]).toMatch(/\?$/)
-
-    const answer = source.match(/\n\s+answer="([^"]+)"/)
-    expect(answer?.[1]?.split(/\s+/).length ?? 0).toBeGreaterThanOrEqual(12)
+    const { question, answer } = englishCopy(slug)
+    expect(question).toMatch(/\?$/)
+    expect(answer.split(/\s+/).length).toBeGreaterThanOrEqual(12)
   })
 
   it('draws the question as an h2 and shows when the guide was last updated', () => {

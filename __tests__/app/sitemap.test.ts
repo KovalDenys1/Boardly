@@ -97,12 +97,17 @@ describe('sitemap (#922)', () => {
   })
 
   it('derives every guide Article node from the catalog, dates included', () => {
+    // Every guide page renders GuidePage, which builds both nodes from the slug (#1583).
+    const guidePage = read('app/(site)/guides/components/GuidePage.tsx')
+    expect(guidePage).toMatch(/buildGuideArticleJsonLd\(guide\.slug\b/)
+    expect(guidePage).toMatch(/buildGuideBreadcrumbJsonLd\(guide\.slug\b/)
     for (const guide of ALL_GUIDES) {
       const source = read(`app/(site)/guides/${guide.slug}/page.tsx`)
-      expect(source).toContain(`buildGuideArticleJsonLd('${guide.slug}')`)
-      expect(source).toContain(`buildGuideBreadcrumbJsonLd('${guide.slug}')`)
-      // no hand-typed date of either kind survives in a guide page
-      expect(source).not.toMatch(/date(Modified|Published):\s*['"]/)
+      expect(source).toMatch(/<GuidePage guide=\{guide\}/)
+      // no hand-typed date of either kind survives in a guide's page, body or copy
+      for (const file of ['page.tsx', 'guide.tsx', 'copy/en.ts']) {
+        expect(read(`app/(site)/guides/${guide.slug}/${file}`)).not.toMatch(/date(Modified|Published):\s*['"]/)
+      }
 
       const article = buildGuideArticleJsonLd(guide.slug)
       expect(article.dateModified).toBe(guide.updated)

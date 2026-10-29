@@ -63,6 +63,9 @@ export interface GuideSeo {
   breadcrumbLabel: string
 }
 
+/** A translated guide's `<head>` copy: the English shape without keywords, as on the translated game pages. */
+export type LocalizedGuideSeo = Omit<GuideSeo, 'keywords'>
+
 export const HOW_TO_PLAY_GUIDES: GuideEntry[] = [
   {
     slug: 'how-to-play-yahtzee-online',
