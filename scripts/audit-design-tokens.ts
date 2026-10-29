@@ -1,6 +1,6 @@
 import { existsSync, readdirSync, readFileSync, statSync, writeFileSync } from 'fs'
 import path from 'path'
-import { LEGACY_CLASS, accentTextLines } from './design-token-rules'
+import { LEGACY_CLASS, accentTextLines, focusColourLines } from './design-token-rules'
 
 /**
  * Design-token audit – the pre-Boardly palette must not come back (#1254).
@@ -17,6 +17,7 @@ import { LEGACY_CLASS, accentTextLines } from './design-token-rules'
  *
  * It also fails on an accent fill or shade used as a text colour (#1457), with no baseline: text
  * takes --bd-<accent>-text. An `accent-text-allow` comment on the line or the one above exempts it.
+ * And on a focus ring or outline in any colour but --bd-lav-deep, the one focus colour.
  */
 
 const repoRoot = process.cwd()
@@ -40,12 +41,15 @@ for (const root of scanRoots) if (existsSync(path.join(repoRoot, root))) walk(pa
 
 const counts: Record<string, number> = {}
 const accentText: string[] = []
+const focusColour: string[] = []
 for (const file of files) {
   const src = readFileSync(file, 'utf8')
   const rel = path.relative(repoRoot, file).split(path.sep).join('/')
   const n = (src.match(LEGACY_CLASS) ?? []).length
   if (n > 0) counts[rel] = n
-  if (!file.endsWith('.css')) for (const line of accentTextLines(src)) accentText.push(`${rel}:${line}`)
+  if (file.endsWith('.css')) continue
+  for (const line of accentTextLines(src)) accentText.push(`${rel}:${line}`)
+  for (const line of focusColourLines(src)) focusColour.push(`${rel}:${line}`)
 }
 
 if (updateBaseline) {
@@ -70,6 +74,7 @@ for (const [file, allowed] of Object.entries(baseline)) {
 }
 
 for (const at of accentText) problems.push(`${at}: an accent fill or shade as text – use --bd-<accent>-text (DESIGN.md)`)
+for (const at of focusColour) problems.push(`${at}: a focus ring in another colour – use bd-lav-deep (DESIGN.md)`)
 
 if (problems.length > 0) {
   console.error('design-tokens audit FAILED:\n  ' + problems.join('\n  '))

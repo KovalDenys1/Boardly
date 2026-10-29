@@ -33,3 +33,20 @@ export function accentTextLines(src: string): number[] {
   })
   return hits
 }
+
+// A focus ring or outline colour: anything but lav-deep is off the one focus colour (#1457 S5).
+const FOCUS_COLOUR = /(?<![\w-])(?:[a-z0-9-]+:)*focus(?:-visible|-within)?:(?:[a-z0-9-]+:)*(?:ring|outline)-((?:bd-[a-z-]+|\(--[a-z-]+\)|\[[^\]]+\]|white|black|[a-z]+-\d{2,3})(?:\/\d+)?)!?(?![\w-])/g
+const NOT_A_COLOUR = /^(?:offset-.*|\d+|inset|solid|dashed|dotted|double|hidden|none|\[\d+(?:\.\d+)?px\])$/
+
+/** 1-based line numbers of a focus ring or outline drawn in a colour other than --bd-lav-deep. */
+export function focusColourLines(src: string): number[] {
+  const hits: number[] = []
+  src.split('\n').forEach((line, i) => {
+    for (const m of line.matchAll(FOCUS_COLOUR)) {
+      if (NOT_A_COLOUR.test(m[1]) || m[1] === 'bd-lav-deep') continue
+      hits.push(i + 1)
+      return
+    }
+  })
+  return hits
+}

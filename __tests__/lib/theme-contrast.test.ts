@@ -143,3 +143,15 @@ describe('lobby themes', () => {
     expect(below(pairs)).toEqual([])
   })
 })
+
+describe('accent fills in globals.css', () => {
+  it('write their text in --bd-ink-on-accent', () => {
+    const wrong: string[] = []
+    for (const m of css.matchAll(/([^{}]+)\{([^{}]*)\}/g)) {
+      const fill = /background(?:-color)?:[^;]*var\(--bd-(?:coral|mint|lav|sun|sky)\)\s*(?:!important)?\s*;/.test(m[2])
+      const color = /(?<![-\w])color:\s*([^;]+);/.exec(m[2])
+      if (fill && color && !color[1].includes('--bd-ink-on-accent')) wrong.push(`${m[1].trim()}: ${color[1]}`)
+    }
+    expect(wrong).toEqual([])
+  })
+})

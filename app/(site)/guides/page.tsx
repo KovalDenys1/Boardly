@@ -155,7 +155,7 @@ export default function GuidesPage() {
                     className="grid h-10 w-10 place-items-center rounded-xl border-2 shadow-[2px_2px_0_var(--bd-ink)]"
                     style={{ borderColor: 'var(--bd-ink)', background: 'var(--bd-sun)' }}
                   >
-                    <GameIcon gameId={gameId} accentColor="var(--bd-ink)" detailColor="var(--bd-sun)" size={24} variant="bare" />
+                    <GameIcon gameId={gameId} accentColor="var(--bd-ink-on-accent)" detailColor="var(--bd-sun)" size={24} variant="bare" />
                   </span>
                 ))}
               </div>

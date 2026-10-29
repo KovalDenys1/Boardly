@@ -2852,7 +2852,7 @@ input[type="range"].slider-thumb::-moz-range-track {
   background:
     repeating-linear-gradient(45deg, rgba(255,255,255,0.14) 0 10px, transparent 10px 20px),
     var(--bd-lav);
-  color: #fff;
+  color: var(--bd-ink-on-accent);
   transform: rotateY(180deg) translateZ(1px);
   -webkit-backface-visibility: hidden;
   backface-visibility: hidden;
