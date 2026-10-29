@@ -469,7 +469,7 @@ html.dark {
   .waiting-room-chat .chat-composer-hint { display: none; }
   /* The terms panel is taller than the composer: the list may shrink to nothing under it, and a
      longer translation scrolls inside the panel. */
-  .waiting-room-chat .bd-card:has(> .terms-consent) > .chat-messages { padding-block: 0 4px; }
+  .waiting-room-chat .chat-panel:has(> .terms-consent) > .chat-messages { padding-block: 0 4px; }
   .waiting-room-chat .terms-consent { min-height: 0; flex-shrink: 1; overflow-y: auto; }
 }
 

@@ -279,7 +279,7 @@ export default function Chat({
   return (
     <div
       ref={chatRef}
-      className={`bd-card flex flex-col overflow-hidden ${fullScreen ? 'h-full rounded-none border-0 shadow-none' : 'fixed z-50 rounded-bd-lg'}`}
+      className={`chat-panel flex flex-col overflow-hidden ${fullScreen ? 'h-full' : 'bd-card fixed z-50 rounded-bd-lg'}`}
       style={fullScreen ? {
         background: 'linear-gradient(180deg, var(--bd-bg) 0%, var(--bd-card-warm) 100%)',
       } : {
