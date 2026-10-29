@@ -140,6 +140,9 @@ disagree, the vault's newer dated entry wins; fix this file in the same session.
 
 ## Responsive UI — Definition of Done (details: docs/RESPONSIVE.md)
 
+`.bd-btn` sits in `@layer utilities` and wins over Tailwind's own utilities: `px-*`, `py-*`,
+`text-sm` or `gap-*` on a `.bd-btn` do nothing (measured 2026-10-29). Use the `!` suffix (`px-3!`).
+
 Any change touching layout, a game board, or an in-game view is NOT done until all of:
 
 1. **Uses a shared primitive, never ad-hoc viewport math:**
@@ -193,11 +196,11 @@ plus 844×390 landscape). Check before calling it done:
    history card and chat; when a panel is hidden for another reason, its space is
    taken by something useful, such as a rules strip.
 2. **Shared controls in the same place in every game**, current and future:
-   - Leave: top-right, in the `trailing` slot of `GameScoreboardHeader`, via
-     `components/game-chrome/GameLeaveButton`; spectators get "Back to lobby" there.
+   - Leave: in the actions of `GameScoreboardHeader`'s `room` (`GameHeaderActions`); below a
+     316 px header the actions fold into one menu; spectators get "Back to lobby" there.
    - Whose turn / status: `GameStatusBanner` directly under the header.
    - Chat: right column on desktop, `GameTabs` tab on mobile.
-   - Result: `GameResultOverlay` over the board.
+   - Result: `GameResultOverlay`, a modal dialog over the whole game screen (z-61, above chat).
    Exceptions only where a game genuinely needs a different UI, and they are
    written down in the game's ticket.
 3. **Every state change moves (Denys, 2026-09-24).** A game with instant state swaps is not
@@ -242,7 +245,7 @@ plus 844×390 landscape). Check before calling it done:
 - [ ] Run `npx prisma generate` then `npm run db:migrate`
 
 ### Pages & UI
-- [ ] **Layout DoD above: Leave in the header trailing slot, no empty regions at 320 / 390 / 768 / 1280.**
+- [ ] **Layout DoD above: Leave in the header's `room` actions, no empty regions at 320 / 390 / 768 / 1280.**
 - [ ] **Motion DoD above (item 3):**
   - the opponent's and bot's moves animate from their origin to their destination;
   - captures, rolls, flips, turn and score changes move;
@@ -766,7 +769,7 @@ as tickets in the queue's shape (labels `growth`, `agent-ok` / `needs-denys`), n
 it. Decisions taken 2026-09-14, not to re-open: $2.99 subscription + yearly plan, no
 one-time unlock, no tip jar, no Reddit posting, no Poki/CrazyGames (Product Hunt was on that
 list; Denys reopened it 2026-09-28 and confirmed it as a standing channel 2026-10-03), no
-ads near a game, localized URLs for game pages only. **2026-09-24: social accounts are on**
+ads near a game, localized URLs for game pages and guides only. **2026-09-24: social accounts are on**
 (TikTok, Instagram, YouTube, Threads, Facebook Page, Pinterest; handle `@playboardly`; plan in
 the vault's `Growth/Social Launch Kit 2026-09.md`), and the brand is **faceless**: never
 Denys's name, face or voice in marketing — screen recordings, on-screen text, synthetic voice,
