@@ -137,3 +137,13 @@ describe('the i18n allowlist no longer excuses these pages (#1061)', () => {
     }
   })
 })
+
+describe('GameDetailPage links stay in the visitor language (#1583)', () => {
+  it('sends every internal link through localize()', () => {
+    const source = readFileSync(
+      path.join(root, 'app/(site)/games/components/GameDetailPage.tsx'),
+      'utf8'
+    )
+    expect(source).not.toMatch(/href=\{?["'`]\//)
+  })
+})
