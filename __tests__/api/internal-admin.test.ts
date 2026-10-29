@@ -12,6 +12,8 @@ import { POST as postSuspensionNotice } from '@/app/api/internal/admin/suspensio
 import { POST as postDeleteAccount } from '@/app/api/internal/admin/delete-account/route'
 import { POST as postRemoveContent } from '@/app/api/internal/admin/remove-content/route'
 import { POST as postRemoveChatMessage } from '@/app/api/internal/admin/remove-chat-message/route'
+import { POST as postRevalidateAnnouncements } from '@/app/api/internal/admin/revalidate-announcements/route'
+import { revalidateTag } from 'next/cache'
 import { prisma } from '@/lib/db'
 import { sendSuspensionNoticeEmail } from '@/lib/email'
 import { deleteUserAccount } from '@/lib/account-deletion'
@@ -24,6 +26,7 @@ jest.mock('@/lib/db', () => ({
     users: { findUnique: jest.fn(), findMany: jest.fn(), update: jest.fn() },
   },
 }))
+jest.mock('next/cache', () => ({ revalidateTag: jest.fn(), unstable_cache: jest.fn((fn) => fn) }))
 jest.mock('@/lib/email', () => ({ sendSuspensionNoticeEmail: jest.fn() }))
 jest.mock('@/lib/account-deletion', () => ({ deleteUserAccount: jest.fn() }))
 jest.mock('@/lib/chat-history', () => ({ removeChatMessage: jest.fn() }))
@@ -472,6 +475,23 @@ describe('/api/internal/admin', () => {
 
       expect(response.status).toBe(502)
       await expect(response.json()).resolves.toEqual({ code: 'CHAT_STORE_UNAVAILABLE' })
+    })
+  })
+
+  describe('POST /revalidate-announcements', () => {
+    it('answers 401 without the secret and expires nothing', async () => {
+      const response = await postRevalidateAnnouncements(request('revalidate-announcements', {}, {}))
+
+      expect(response.status).toBe(401)
+      expect(revalidateTag).not.toHaveBeenCalled()
+    })
+
+    it('expires the announcements tag at once', async () => {
+      const response = await postRevalidateAnnouncements(request('revalidate-announcements', {}))
+
+      expect(response.status).toBe(200)
+      await expect(response.json()).resolves.toEqual({ revalidated: true })
+      expect(revalidateTag).toHaveBeenCalledWith('announcements', { expire: 0 })
     })
   })
 })

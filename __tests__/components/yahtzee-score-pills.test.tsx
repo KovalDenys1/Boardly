@@ -7,9 +7,6 @@ jest.mock('@/lib/i18n-helpers', () => ({
   }),
 }))
 
-jest.mock('@/lib/sounds', () => ({
-  sounds: { play: jest.fn() },
-}))
 
 const players = [
   { id: 'me', name: 'Ada', score: 10 },

@@ -3,6 +3,10 @@ import GameResultOverlay, {
   RESULT_REVEAL_DELAY_MS,
   resetResultOverlayRevealState,
 } from '@/components/game-chrome/GameResultOverlay'
+import { playCue } from '@/lib/sound-engine'
+import { noteLiveFinish, resetLiveFinish } from '@/lib/live-finish'
+
+jest.mock('@/lib/sound-engine', () => ({ playCue: jest.fn(() => true) }))
 
 jest.mock('@/lib/i18n-helpers', () => ({
   useTranslation: () => ({
@@ -63,7 +67,6 @@ describe('GameResultOverlay (#736 phase 2)', () => {
         {...base}
         inviteCode="AB12"
         isGuest
-        registerUrl="/auth/register"
         isRegistered={false}
       />
     )
@@ -75,7 +78,6 @@ describe('GameResultOverlay (#736 phase 2)', () => {
         gameType: 'tic_tac_toe',
         isGuest: true,
         isRegistered: false,
-        registerUrl: '/auth/register',
       })
     )
   })
@@ -324,5 +326,136 @@ describe('GameResultOverlay reveal (#1111)', () => {
     const { unmount } = render(<GameResultOverlay {...base} />)
     unmount()
     expect(jest.getTimerCount()).toBe(0)
+  })
+})
+
+describe('GameResultOverlay sound (#1464)', () => {
+  const base = {
+    title: 'Alice wins!',
+    onInspect: jest.fn(),
+    isHost: true,
+    onPlayAgain: jest.fn(),
+    gameType: 'tic_tac_toe' as const,
+  }
+  const play = playCue as jest.Mock
+  const resultCalls = () => play.mock.calls.filter(([cue]) => String(cue).startsWith('result.'))
+  const wait = (ms: number) => act(() => { jest.advanceTimersByTime(ms) })
+  const reveal = () => { wait(RESULT_REVEAL_DELAY_MS); wait(1) }
+
+  beforeEach(() => {
+    jest.useFakeTimers()
+    jest.clearAllMocks()
+    resetResultOverlayRevealState()
+    resetLiveFinish()
+    noteLiveFinish()
+    mockRematch.requestedBy = null
+    mockRematch.askState = 'idle'
+  })
+
+  afterEach(() => jest.useRealTimers())
+
+  it('plays the viewer’s result at the reveal, not at mount, keyed on the finish', () => {
+    render(<GameResultOverlay {...base} outcome="win" resultKey="g1:100" gameId="g1" />)
+    wait(1)
+    expect(resultCalls()).toEqual([])
+    reveal()
+    expect(resultCalls()).toEqual([['result.win', { gameId: 'g1#1' }]])
+  })
+
+  it.each([
+    ['loss', false, 'result.loss'],
+    ['draw', false, 'result.draw'],
+    [undefined, false, 'result.over'],
+    ['win', true, 'result.over'],
+  ] as const)('outcome %s (spectator %s) plays %s', (outcome, isSpectator, cue) => {
+    render(<GameResultOverlay {...base} outcome={outcome} isSpectator={isSpectator} resultKey="g1:100" revealDelayMs={0} />)
+    wait(1)
+    expect(resultCalls()).toEqual([[cue, { gameId: 'g1#1' }]])
+  })
+
+  it('stays silent for a finish the page did not see happen: opened on a finished game, a late spectator, a return', () => {
+    resetLiveFinish()
+    render(<GameResultOverlay {...base} outcome="win" resultKey="g1:100" revealDelayMs={0} />)
+    wait(RESULT_REVEAL_DELAY_MS)
+    expect(resultCalls()).toEqual([])
+  })
+
+  it('plays once per finish: not again on the way back from View board, again for the next one', () => {
+    const first = render(<GameResultOverlay {...base} outcome="loss" resultKey="g1:100" />)
+    reveal()
+    fireEvent.click(screen.getByText('game.ui.viewBoard'))
+    first.unmount()
+
+    const back = render(<GameResultOverlay {...base} outcome="loss" resultKey="g1:100" />)
+    reveal()
+    expect(resultCalls()).toHaveLength(1)
+    back.unmount()
+
+    noteLiveFinish()
+    render(<GameResultOverlay {...base} outcome="win" resultKey="g2:250" />)
+    reveal()
+    expect(resultCalls()).toEqual([
+      ['result.loss', { gameId: 'g1#1' }],
+      ['result.win', { gameId: 'g2#2' }],
+    ])
+  })
+
+  it('plays once when the server answer changes the result key under the overlay, then View board and back', () => {
+    const local = render(<GameResultOverlay {...base} outcome="win" resultKey="g1:100" />)
+    reveal()
+    fireEvent.click(screen.getByText('game.ui.viewBoard'))
+    local.unmount()
+
+    render(<GameResultOverlay {...base} outcome="win" resultKey="g1:105" />)
+    reveal()
+    expect(resultCalls()).toEqual([['result.win', { gameId: 'g1#1' }]])
+  })
+
+  it('plays again for the next round of a series, which keeps the game id', () => {
+    const first = render(<GameResultOverlay {...base} outcome="win" resultKey="g1:100" revealDelayMs={0} />)
+    wait(1)
+    first.unmount()
+    noteLiveFinish()
+    render(<GameResultOverlay {...base} outcome="loss" resultKey="g1:180" revealDelayMs={0} />)
+    wait(1)
+    expect(resultCalls()).toEqual([
+      ['result.win', { gameId: 'g1#1' }],
+      ['result.loss', { gameId: 'g1#2' }],
+    ])
+  })
+
+  it('does not try again on a remount when the engine dropped the first attempt', () => {
+    play.mockReturnValueOnce(false)
+    const first = render(<GameResultOverlay {...base} outcome="win" resultKey="g1:100" revealDelayMs={0} />)
+    wait(1)
+    first.unmount()
+    render(<GameResultOverlay {...base} outcome="win" resultKey="g1:100" revealDelayMs={0} />)
+    wait(1)
+    expect(resultCalls()).toHaveLength(1)
+  })
+
+  it('keys on the game id when the adopter passes no resultKey', () => {
+    render(<GameResultOverlay {...base} outcome="draw" gameId="g7" revealDelayMs={0} />)
+    wait(1)
+    expect(resultCalls()).toEqual([['result.draw', { gameId: 'g7#1' }]])
+  })
+
+  it('asks the host with social.ask when a rematch request arrives, not for one already shown at mount', () => {
+    const { rerender } = render(<GameResultOverlay {...base} />)
+    expect(play).not.toHaveBeenCalledWith('social.ask')
+    mockRematch.requestedBy = 'Bob'
+    rerender(<GameResultOverlay {...base} />)
+    expect(play.mock.calls.filter(([cue]) => cue === 'social.ask')).toHaveLength(1)
+
+    jest.clearAllMocks()
+    render(<GameResultOverlay {...base} />)
+    expect(play).not.toHaveBeenCalledWith('social.ask')
+  })
+
+  it('confirms Play again with ui.confirm', () => {
+    render(<GameResultOverlay {...base} revealDelayMs={0} />)
+    fireEvent.click(screen.getByText('lobby.game.playAgain'))
+    expect(play).toHaveBeenCalledWith('ui.confirm')
+    expect(base.onPlayAgain).toHaveBeenCalled()
   })
 })

@@ -97,16 +97,16 @@ Architecture: Supabase Realtime — no separate server process.
 
 ### Client-side subscription
 
-- `app/lobby/[code]/hooks/useRealtimeConnection.ts` – subscribes to:
+- `app/(site)/lobby/[code]/hooks/useRealtimeConnection.ts` – subscribes to:
   - `lobby:{code}:{realtimeSecret}` Broadcast channel (game events), through `lib/lobby-channel-registry.ts`
   - `lobby-pg:{code}` Postgres Changes channel (lobby row changes)
-- `app/lobby/use-lobby-list.ts` – global Postgres Changes on `Lobbies` table
-- `app/games/components/GameLobbiesPage.tsx` – Postgres Changes on `Lobbies` per game type
+- `app/(site)/lobby/use-lobby-list.ts` – global Postgres Changes on `Lobbies` table
+- `app/(site)/games/components/GameLobbiesPage.tsx` – Postgres Changes on `Lobbies` per game type
 - `components/SocialLoopListener.tsx` and `components/Header/NotificationsMenu.tsx` – the user's own
   `user:{userId}:{tag}` Broadcast channel (invites, rematch requests, `notification-created` pokes),
   through the registry. The tag is an HMAC of the id under a server key (`buildUserTopic`); the user
   fetches the name from `GET /api/realtime/user-topic`, which hands out only the caller's own.
-- `app/lobby/[code]/spectate/page.tsx` – the lobby topic through the registry, plus
+- `app/(site)/lobby/[code]/spectate/page.tsx` – the lobby topic through the registry, plus
   `spectators:{code}:{realtimeSecret}` (`spectatorTopicFor`), Presence and spectator chat, client to client
 
 All Postgres Changes subscribers run as `anon` and receive only the columns that role may select
@@ -138,8 +138,31 @@ make every other client apply a forged `game-update`, leave on a forged `game-ab
   (re)joined the topic, or stamped more than two minutes before the newest message it has accepted
   there – the last two are a genuine message recorded and played back later.
 - **Peer events are the exception, and are named.** `LOBBY_PEER_EVENTS` holds one: `sketch-live`, the
-  drawer's canvas while drawing, non-authoritative and checked by `parseSketchLiveMessage`. It is the
-  only unsigned frame a lobby topic delivers, and `emitWhenConnected` refuses to send anything else.
+  drawer's canvas while drawing. It is the only frame a lobby topic delivers without a server
+  signature, and `emitWhenConnected` refuses to send anything else. It still proves its sender (#1503):
+  the drawer's page makes a P-256 key, `POST /api/game/[gameId]/sketch-live-key` seals it with the
+  server key for the topic, game, round and drawer once it has checked the caller is that round's
+  drawer, and every frame carries that certificate, a counter, a server-time stamp and the drawer
+  key's signature (`lib/sketch-live.ts`, `lib/client/sketch-live-signing.ts`). A page paints a frame
+  only when the certificate verifies for its own topic and names the game, round and drawer it is
+  showing, the signature verifies under the certified key, the stamp is within ten seconds of the
+  server's clock, no newer certificate for that round has been seen (a drawer who reloads gets a new
+  key), and the counter is past the last one it painted for that round. So the drawer's pages pass the
+  newest certificate to the page being drawn on (#1516): a page streams only once it has been drawn on
+  in the round; one that hears another of the drawer's pages under a newer certificate goes quiet until
+  it is drawn on again, then asks for a new one; and one that was hidden or lost its channel asks for a
+  new one on its next stroke. A page that misses those frames while visible and connected keeps its
+  older certificate, and its frames are dropped, until it is next hidden or reconnects. Neither
+  signature covers a
+  key added to the frame or its certificate, so a frame carrying any key beside its own is dropped,
+  and the page keeps one counter per round, named and ordered only by fields the server's seal signs:
+  a copy of a frame with an altered certificate can neither open a counter of its own nor push the
+  drawer's out. So a peer can at most re-show one of the drawer's own frames from the last few
+  seconds to a page that opened since and has not painted a later one. Cost:
+  one request per drawing round and page, plus one each time a page is drawn on again after another
+  took the round or after it was hidden or lost its channel; one signature per frame on the drawer's
+  side, where a page checks only a frame claiming a newer certificate than its own; one check per frame
+  on everyone else's; about 500 bytes per frame; nothing per stroke reaches the server or the limiter.
   Chat is not a peer event: Alias guesses, which used to be, go through
   `POST /api/lobby/[code]/alias-guess`. Nor is the players' spectator count, which the spectate page
   reports to `PATCH /api/lobby/[code]/spectator-count` and the server broadcasts signed.

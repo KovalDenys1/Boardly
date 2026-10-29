@@ -1,14 +1,16 @@
 import { readFileSync } from 'node:fs'
 import path from 'node:path'
 import { render, screen, within } from '@testing-library/react'
-import RulesContent from '@/app/rules/RulesContent'
-import { metadata } from '@/app/rules/page'
+import RulesContent from '@/app/(site)/rules/RulesContent'
+import { metadata } from '@/app/(site)/rules/page'
 import { COMMUNITY_RULES_BANNED, COMMUNITY_RULES_KIND, MODERATION_ACTIONS } from '@/lib/community-rules'
 import { SUPPORT_EMAIL } from '@/lib/organization-json-ld'
 import en from '@/locales/en'
 import no from '@/locales/no'
 import ru from '@/locales/ru'
 import uk from '@/locales/uk'
+import de from '@/locales/de'
+import es from '@/locales/es'
 
 // The footer reaches session and router state this page does not need.
 jest.mock('@/components/Footer', () => ({
@@ -38,7 +40,7 @@ jest.mock('@/lib/i18n-helpers', () => {
 })
 
 const root = process.cwd()
-const source = readFileSync(path.join(root, 'app/rules/RulesContent.tsx'), 'utf8')
+const source = readFileSync(path.join(root, 'app/(site)/rules/RulesContent.tsx'), 'utf8')
 
 function localeValue(locale: object, key: string): unknown {
   return key
@@ -62,15 +64,15 @@ describe('/rules page (#1173)', () => {
     mockI18n.locale = 'en'
   })
 
-  it('is indexable and canonical on its own URL', () => {
+  it('is noindex (#1498) and canonical on its own URL', () => {
     expect(metadata.alternates?.canonical).toBe('https://boardly.online/rules')
-    expect(metadata.robots).toMatchObject({ index: true, follow: true })
+    expect(metadata.robots).toMatchObject({ index: false, follow: true })
   })
 
   it('uses only keys that exist in all four locales, and never a fallback string', () => {
     const keys = renderedKeys()
     expect(keys.length).toBeGreaterThanOrEqual(30)
-    for (const [name, locale] of Object.entries({ en, no, ru, uk })) {
+    for (const [name, locale] of Object.entries({ en, no, ru, uk, de, es })) {
       const missing = keys.filter((key) => typeof localeValue(locale, key) !== 'string')
       expect({ locale: name, missing }).toEqual({ locale: name, missing: [] })
     }
@@ -113,7 +115,7 @@ describe('/rules page (#1173)', () => {
   })
 
   it('is linked from the register form, next to the Terms it is part of', () => {
-    const form = readFileSync(path.join(root, 'app/auth/register/RegisterForm.tsx'), 'utf8')
+    const form = readFileSync(path.join(root, 'app/(site)/auth/register/RegisterForm.tsx'), 'utf8')
     const termsCheckbox = form.indexOf("t('auth.register.termsOfService')")
     const rulesLink = form.indexOf('<Link href="/rules"')
     const ageCheckbox = form.indexOf("t('auth.register.ageConfirm')")
@@ -121,13 +123,13 @@ describe('/rules page (#1173)', () => {
     expect(rulesLink).toBeGreaterThan(termsCheckbox)
     expect(rulesLink).toBeLessThan(ageCheckbox)
     expect(form).toContain("{t('auth.register.rulesLink')}")
-    for (const locale of [en, no, ru, uk]) {
+    for (const locale of [en, no, ru, uk, de, es]) {
       expect(typeof locale.auth.register.rulesLink).toBe('string')
     }
   })
 
   it('uses no em dash', () => {
-    for (const locale of [en, no, ru, uk]) {
+    for (const locale of [en, no, ru, uk, de, es]) {
       expect(JSON.stringify(locale.rules)).not.toContain('—')
     }
   })

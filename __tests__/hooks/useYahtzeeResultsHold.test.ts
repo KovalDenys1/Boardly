@@ -4,7 +4,7 @@
 import { createElement } from 'react'
 import { act, renderHook } from '@testing-library/react'
 import { renderToStaticMarkup } from 'react-dom/server'
-import { useYahtzeeResultsHold } from '@/app/lobby/[code]/hooks/useYahtzeeResultsHold'
+import { useYahtzeeResultsHold } from '@/app/(site)/lobby/[code]/hooks/useYahtzeeResultsHold'
 
 /**
  * #1052, the Yahtzee half. The ticket's acceptance box asks for "a test that

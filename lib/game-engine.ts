@@ -53,6 +53,18 @@ export interface RestorableGameState<TGameData = unknown> extends GameState<TGam
   config?: GameConfig;
 }
 
+/** A timeout an engine applied on its own, for the caller's replay record. */
+export interface GameTimeoutRecord {
+  actionType: string
+  actionPayload: Record<string, unknown>
+}
+
+/** What the leave route knows that the saved state does not, and how it hears of a timeout the leave applied. */
+export interface PlayerLeaveContext {
+  turnTimerSeconds?: number | null
+  onTimeoutApplied?: (record: GameTimeoutRecord) => void
+}
+
 export interface GameConfig {
   maxPlayers: number;
   minPlayers: number;
@@ -241,6 +253,9 @@ export abstract class GameEngine {
     if (winner) {
       this.state.status = 'finished';
       this.state.winner = winner.id;
+    } else if (this.checkDraw()) {
+      this.state.status = 'finished';
+      this.state.winner = undefined;
     } else {
       // Move to next player (only if this type of move should advance turn)
       if (this.shouldAdvanceTurn(move)) {
@@ -270,6 +285,11 @@ export abstract class GameEngine {
     this.state.turnStartedAt = previous.turnStartedAtMs;
   }
 
+  /** Whether the game has just ended with no single winner; checked only when checkWinCondition names nobody. */
+  checkDraw(): boolean {
+    return false;
+  }
+
   // Override this in subclasses to control when turn advances
   protected shouldAdvanceTurn(move: Move): boolean {
     // By default, advance turn after every move
@@ -295,7 +315,7 @@ export abstract class GameEngine {
     this.state.turnStartedAt = this.state.lastMoveAt;
   }
 
-  handlePlayerLeave(playerId: string): boolean {
+  handlePlayerLeave(playerId: string, _context: PlayerLeaveContext = {}): boolean {
     const wasCurrentPlayer = this.state.players[this.state.currentPlayerIndex]?.id === playerId
     if (wasCurrentPlayer) {
       this.advanceTurnIndex()

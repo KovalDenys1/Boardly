@@ -74,7 +74,7 @@ function getScoreValue(player: Player): number {
 }
 
 function formatOrdinalPlace(place: number, locale: string): string {
-  if (locale.startsWith('ru') || locale.startsWith('uk') || locale.startsWith('no')) {
+  if (!locale.startsWith('en')) {
     return `#${place}`
   }
 
@@ -279,7 +279,9 @@ export default function GameResultsModal({
       })
     : []
 
-  const winner = rankedPlayers.find((player) => player.isWinner) ?? null
+  // A Yahtzee tie records every leader a winner (#1493): that is a draw, not one of them winning.
+  const recordedWinners = rankedPlayers.filter((player) => player.isWinner)
+  const winner = recordedWinners.length === 1 ? recordedWinners[0] : null
   const winnerLabel = winner
     ? getPlayerLabel(winner, rankedPlayers.indexOf(winner))
     : !game
@@ -417,7 +419,7 @@ export default function GameResultsModal({
             <Link
               href={`/replay/${game.id}`}
               onClick={onClose}
-              className="flex w-full items-center justify-center gap-3 rounded-2xl px-4 py-4 text-sm font-semibold text-white transition-all active:scale-[0.99]"
+              className="flex w-full items-center justify-center gap-3 rounded-2xl px-4 py-4 text-sm font-semibold text-bd-bg transition-all active:scale-[0.99]"
               style={{ background: 'var(--bd-ink)', boxShadow: '0 3px 0 var(--bd-coral)' }}
             >
               <svg viewBox="0 0 24 24" fill="currentColor" className="h-4 w-4 shrink-0">
@@ -482,7 +484,7 @@ export default function GameResultsModal({
                       )}
                     </div>
                     <p className="mt-0.5 text-xs" style={{ color: 'var(--bd-ink-muted)' }}>
-                      {player.isWinner
+                      {player.id === winner?.id
                         ? t('profile.gameResults.winnerBadge')
                         : player.placement
                           ? t('profile.gameResults.placeLabel', { place: formatOrdinalPlace(player.placement, locale) })
@@ -496,7 +498,7 @@ export default function GameResultsModal({
                     <span className="text-xs" style={{ color: 'var(--bd-ink-muted)' }}>
                       {t('profile.gameResults.points')}
                     </span>
-                    {player.isWinner && <Icon name="crown" size={14} />}
+                    {player.id === winner?.id && <Icon name="crown" size={14} />}
                   </div>
                 </div>
               ))}

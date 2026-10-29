@@ -1,0 +1,129 @@
+import type { Metadata } from 'next'
+import { buildGuideMetadata, buildGuideArticleJsonLd, buildGuideBreadcrumbJsonLd } from '@/lib/guide-seo'
+import Link from 'next/link'
+import GuideLayout, { GuideSection, GuideTipList, GuideChecklist, GuideSteps, GuideFaqList, buildGuideFaqJsonLd, type GuideFaqItem } from '../components/GuideLayout'
+
+export const metadata: Metadata = buildGuideMetadata('how-to-play-memory-card-game-online')
+
+const articleJsonLd = buildGuideArticleJsonLd('how-to-play-memory-card-game-online')
+
+const breadcrumbJsonLd = buildGuideBreadcrumbJsonLd('how-to-play-memory-card-game-online')
+
+/**
+ * Rendered by `GuideFaqList` below and fed to the FAQPage schema from the same
+ * array (#964), so the markup can never describe a question the page does not
+ * show.
+ */
+const faq: GuideFaqItem[] = [
+  {
+    question: 'How many players can play Memory online?',
+    answer: 'Two to four. Two is the sharpest version, because every card your opponent turns over is information you get for free. At four the board changes so much between your turns that luck starts to matter more than memory.',
+  },
+  {
+    question: 'What is the difference between the three difficulty levels?',
+    answer: 'Only the size of the board. Easy is a 4×4 grid with 8 pairs, Medium is 5×4 with 10, and Hard is 6×6 with 18. More pairs means more positions to hold in your head, so Hard rewards attention where Easy rewards speed.',
+  },
+  {
+    question: 'How long does a game take?',
+    answer: 'Around five minutes on Easy and ten to fifteen on Hard with a full table. Every turn runs on a clock the host sets at 30, 60, 90 or 120 seconds when creating the lobby; letting it run out turns your cards back over and passes the turn on, so a table that talks between turns loses the odd turn rather than the game.',
+  },
+  {
+    question: 'Can I play Memory against a computer?',
+    answer: 'Yes. Memory has a bot on three difficulty settings, so you can play a full game on your own when nobody else is around. The hard bot recalls a card it has seen about three times in four, which is roughly a very attentive human and a fair test of your own recall.',
+  },
+  {
+    question: 'Does the game always give the same cards?',
+    answer: 'No. The deck is shuffled for every game, so a board you have just cleared is no help in the next one. What carries over is the habit of scanning the whole grid before your first flip.',
+  },
+  {
+    question: 'Do I need an account to play?',
+    answer: 'No. Open a lobby, share the link, and the other players join as guests by typing a name. An account only adds a saved profile and a record of your results.',
+  },
+]
+
+const faqJsonLd = buildGuideFaqJsonLd(faq)
+
+export default function HowToPlayMemoryGuide() {
+  return (
+    <>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(articleJsonLd) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }} />
+
+      <GuideLayout
+        icon={{ game: 'memory' }}
+        slug="how-to-play-memory-card-game-online"
+        title="How to Play Memory Card Game Online"
+        subtitle="5 min read · Free to play on Boardly · 2–4 players"
+        question="How do you play the Memory card game online?"
+        answer="Every card starts face down; on your turn you flip two, keep the pair and go again if they match, and turn them back if they do not – when the last pair is gone the player holding the most pairs wins."
+        accentColor="var(--bd-mint)"
+        cta={{ href: '/games/memory/lobbies', label: 'Play Memory Now', detail: 'Ready to test your memory?' }}
+        related={[
+          { href: '/guides/how-to-play-yahtzee-online', label: 'How to Play Yahtzee Online with Friends' },
+          { href: '/guides/how-to-play-spy-game-online', label: 'How to Play Guess the Spy Online' },
+          { href: '/guides/how-to-play-tic-tac-toe-online', label: 'How to Play Tic Tac Toe Online' },
+          { href: '/guides/best-2-player-games-online', label: 'Best 2 Player Games Online — Free, No Download' },
+        ]}
+      >
+        <GuideSection title="What You Need">
+          <GuideChecklist items={[
+            { mark: 'yes', text: '2–4 players' },
+            { mark: 'yes', text: 'A browser — desktop, tablet, or mobile' },
+            { mark: 'yes', text: 'No account required (guest play available)' },
+            { mark: 'yes', text: 'Free — no download' },
+          ]} />
+        </GuideSection>
+
+        <GuideSection title="How to Play — Step by Step">
+          <GuideSteps steps={[
+            { title: 'Start the game', detail: 'All cards are placed face-down in a grid. The grid size depends on the difficulty level you chose.' },
+            { title: 'Flip two cards', detail: 'On your turn, click any card to reveal it, then click a second card. Both cards are visible to all players for a moment.' },
+            { title: 'Match or miss', detail: "If the two cards match, you score a pair and get another turn. If they don't match, both flip back face-down and it's the next player's turn." },
+            { title: 'Remember positions', detail: 'This is the skill — memorize where unmatched cards are so you can complete pairs on future turns.' },
+            { title: 'Win the game', detail: 'When all pairs are found, the player with the most matches wins.' },
+          ]} />
+        </GuideSection>
+
+        <GuideSection title="Difficulty Levels">
+          <p className="mb-4 text-sm leading-relaxed" style={{ color: 'var(--bd-ink-soft)' }}>
+            <Link href="/games/memory" className="font-semibold underline transition-colors hover:text-bd-coral" style={{ color: 'var(--bd-ink)' }}>Boardly Memory</Link> has three difficulty levels that change the grid size and number of pairs.
+          </p>
+          <div className="space-y-3">
+            {[
+              { level: 'Easy', grid: '4×4', pairs: '8 pairs', best: 'Quick games, playing with younger players, or learning the game' },
+              { level: 'Medium', grid: '5×4', pairs: '10 pairs', best: 'Standard competitive play — the sweet spot for most groups' },
+              { level: 'Hard', grid: '6×6', pairs: '18 pairs', best: 'Serious players who want a longer, more demanding game' },
+            ].map(({ level, grid, pairs, best }) => (
+              <div
+                key={level}
+                className="rounded-2xl border p-4"
+                style={{ borderColor: 'var(--bd-line)', background: 'var(--bd-bg2)' }}
+              >
+                <div className="mb-1 flex items-center justify-between">
+                  <strong className="text-sm" style={{ color: 'var(--bd-ink)' }}>{level}</strong>
+                  <span className="text-xs" style={{ color: 'var(--bd-ink-muted)' }}>{grid} grid · {pairs}</span>
+                </div>
+                <p className="text-xs leading-relaxed" style={{ color: 'var(--bd-ink-muted)' }}>{best}</p>
+              </div>
+            ))}
+          </div>
+        </GuideSection>
+
+        <GuideSection title="Strategy Tips">
+          <GuideTipList items={[
+            { tip: 'Look before you click', detail: "Don't rush your first flip. Take a moment to look at the whole board — a quick scan beats random clicking every time." },
+            { tip: 'Use the grid like a map', detail: 'Mentally divide the grid into sections. Clear one section at a time — easier to track positions.' },
+            { tip: 'Watch your opponents', detail: "When other players flip cards, you see them too. Their misses are hints about where pairs are hiding." },
+            { tip: 'Do not grab a pair the moment you find it', detail: "Once you know where a pair is, you can wait. Flipping a new card first gives you more information — then match the pair on the next turn." },
+            { tip: 'Play it safe when you are on a roll', detail: "Matching cards gives you another turn. When you are on a streak, pick pairs you are sure about rather than taking a guess that might end your turn." },
+          ]} />
+        </GuideSection>
+
+        <GuideSection title="Memory Card Game Questions">
+          <GuideFaqList items={faq} />
+        </GuideSection>
+      </GuideLayout>
+    </>
+  )
+}

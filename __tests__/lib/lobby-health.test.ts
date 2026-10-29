@@ -37,6 +37,7 @@ jest.mock('@/lib/logger', () => ({
     warn: jest.fn(),
     error: jest.fn(),
   },
+  apiLogger: jest.fn(() => ({ debug: jest.fn(), info: jest.fn(), warn: jest.fn(), error: jest.fn() })),
 }))
 
 const mockPrisma = prisma as jest.Mocked<typeof prisma>

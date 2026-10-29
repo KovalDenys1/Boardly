@@ -3,7 +3,15 @@
 import React, { useEffect, useState } from 'react'
 import type { CelebrationEvent } from '@/lib/celebrations'
 import type { YahtzeeCategory } from '@/lib/yahtzee'
-import { useTranslation } from '@/lib/i18n-helpers'
+import { useTranslation, type TranslationKeys } from '@/lib/i18n-helpers'
+
+const TITLE_KEYS: Record<CelebrationEvent['type'], TranslationKeys> = {
+  yahtzee: 'yahtzee.messages.celebrations.yahtzee',
+  largeStraight: 'yahtzee.messages.celebrations.largeStraight',
+  fullHouse: 'yahtzee.messages.celebrations.fullHouse',
+  perfectRoll: 'yahtzee.messages.celebrations.fourOfKind',
+  highScore: 'yahtzee.messages.celebrations.highScore',
+}
 
 interface CelebrationBannerProps {
   event: CelebrationEvent | null
@@ -36,28 +44,28 @@ export default function CelebrationBanner({ event, onComplete }: CelebrationBann
           border: 'rgba(255,196,77,0.34)',
           gradient: 'linear-gradient(135deg,rgba(255,196,77,0.2),var(--bd-bg))',
           icon: 'bg-[rgba(255,196,77,0.24)]',
-          badge: 'bg-[rgba(255,196,77,0.22)] text-(--bd-coral-deep)',
+          badge: 'bg-[rgba(255,196,77,0.22)] text-(--bd-coral-text)',
         }
       case 'largeStraight':
         return {
           border: 'rgba(155,140,255,0.28)',
           gradient: 'linear-gradient(135deg,rgba(155,140,255,0.16),var(--bd-bg))',
           icon: 'bg-[rgba(155,140,255,0.18)]',
-          badge: 'bg-[rgba(155,140,255,0.18)] text-(--bd-lav-deep)',
+          badge: 'bg-[rgba(155,140,255,0.18)] text-(--bd-lav-text)',
         }
       case 'fullHouse':
         return {
           border: 'rgba(79,201,166,0.28)',
           gradient: 'linear-gradient(135deg,rgba(79,201,166,0.18),var(--bd-bg))',
           icon: 'bg-[rgba(79,201,166,0.18)]',
-          badge: 'bg-[rgba(79,201,166,0.18)] text-(--bd-mint-deep)',
+          badge: 'bg-[rgba(79,201,166,0.18)] text-(--bd-mint-text)',
         }
       case 'highScore':
         return {
           border: 'rgba(255,107,91,0.28)',
           gradient: 'linear-gradient(135deg,rgba(255,107,91,0.16),var(--bd-bg))',
           icon: 'bg-[rgba(255,107,91,0.16)]',
-          badge: 'bg-[rgba(255,107,91,0.18)] text-(--bd-coral-deep)',
+          badge: 'bg-[rgba(255,107,91,0.18)] text-(--bd-coral-text)',
         }
       case 'perfectRoll':
         return {
@@ -97,7 +105,7 @@ export default function CelebrationBanner({ event, onComplete }: CelebrationBann
           <div className="min-w-0 flex-1">
             <div className="text-xs font-semibold text-bd-ink-soft">{event.playerName ?? t('yahtzee.ui.hotHand')}</div>
             <h3 className="mt-0.5 text-lg font-semibold leading-tight text-bd-ink sm:text-xl sm:leading-7">
-              {event.title}
+              {t(TITLE_KEYS[event.type])}
             </h3>
             <p className="mt-1 text-sm leading-relaxed text-bd-ink-soft">
               {event.category && (

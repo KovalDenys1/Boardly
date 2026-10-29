@@ -1,27 +1,18 @@
-# Sound Files
+# Sounds
 
-This directory should contain the following sound files for the game:
+Every sound the site plays is in `kenney/`: 60 Kenney CC0 samples, credited per pack and file in
+`CREDITS.txt`, with the packs' licence text in `kenney/LICENSE-kenney-CC0.txt`.
 
-## Required Sound Files
+- **Format:** MP3, mono, 44.1 kHz, 96 kbps CBR, peak-normalised to -1 dBFS, leading silence
+  trimmed. MP3 is the only codec `decodeAudioData` handles on every iOS 17/18 Safari, Chrome
+  and Firefox.
+- **Which sample plays when, and how loud:** `lib/sound-map.ts`. Each cue lists its layers
+  (sample, gain in dB, semitones, offset, pan), round-robin variants, jitter, remote level,
+  min gap and load group. The test `__tests__/lib/sound-map.test.ts` checks every sample there
+  exists here at the recorded size.
+- **Playback:** `lib/sound-engine.ts` (Web Audio, loaded on lobby and game pages only).
+  Settings: `lib/sound-settings.ts` (no audio, safe on every page).
+- **Listen and tune:** run the dev server and open `/dev/sounds`.
 
-1. **dice-roll.mp3** - Played when rolling dice
-2. **click.mp3** - General click/interaction sound
-3. **win.mp3** - Played when a game finishes
-4. **turn-change.mp3** - Played when turn changes to another player
-5. **score.mp3** - Played when selecting a score
-
-## Sound Sources
-
-You can find free sound effects at:
-
-- [Freesound.org](https://freesound.org/)
-- [Mixkit](https://mixkit.co/free-sound-effects/)
-- [Zapsplat](https://www.zapsplat.com/)
-
-## Notes
-
-- All files should be in MP3 format for broad browser compatibility
-- Keep file sizes small, around 100 KiB or less where practical, for fast loading
-- Volume levels should be normalized across all files
-- Sound effects should be short (< 2 seconds)
-- Keep attribution details in `CREDITS.txt` when a source requires credit
+A new sample needs its file here, an entry in `SOUND_SAMPLES` (bytes and RMS dBFS) and a line in
+`CREDITS.txt`.

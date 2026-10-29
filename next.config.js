@@ -1,4 +1,4 @@
-const { withSentryConfig } = require("@sentry/nextjs")
+const { withSentryConfig } = require("@sentry/nextjs/config")
 const { withBotId } = require("botid/next/config")
 const path = require("path")
 const { socialShortLinkRedirects } = require("./lib/social-short-links")
@@ -88,7 +88,8 @@ const nextConfig = {
         permanent: true,
       },
       // Typeable links for social posts (#1096): /tt, /ig, /yt, /fb, /th,
-      // /pin, /x -> the home page with UTM. 307, so they can be retargeted.
+      // /pin, /x -> the home page with UTM, or a game page when the campaign
+      // starts with its slug (#1540). 307, so they can be retargeted.
       ...socialShortLinkRedirects(),
     ]
   },
@@ -110,6 +111,8 @@ const nextConfig = {
   // Experimental features for better performance
   experimental: {
     optimizePackageImports: ['react-hot-toast', 'next-auth', '@phosphor-icons/react'],
+    // There is no app/layout.tsx to draw a 404 for a URL no route matches: app/global-not-found.tsx does.
+    globalNotFound: true,
     // Note: optimizeCss requires critters package, disabled to avoid build issues
     // optimizeCss: true,
   },
@@ -162,8 +165,6 @@ const sentryWebpackOptions = {
   sourcemaps: {
     deleteFilesAfterUpload: ['**/*.js.map', '**/*.css.map'],
   },
-
-  automaticVercelMonitors: true,
 }
 
 // The VAPID public key is inlined into the client bundle at build time, so a

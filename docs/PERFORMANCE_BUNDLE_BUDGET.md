@@ -40,7 +40,7 @@ Optimization set:
 
 - Removed static `game-registry` imports from lobby client path and switched to lazy client engine restore.
 - Moved lobby metadata/bot-support lookups to lightweight `lib/game-catalog.ts`.
-- Removed unused heavy bot-visualization import path from `app/lobby/[code]/page.tsx`.
+- Removed unused heavy bot-visualization import path from `app/(site)/lobby/[code]/page.tsx`.
 - Kept server-side engine registry behavior unchanged.
 
 Measured result from `next build`:
@@ -61,7 +61,7 @@ Measured result from `npm run check:bundle-budget` (`/lobby/[code]/page`):
 Optimization set:
 
 - Kept heavy gameplay page shell and shared modals dynamic-loaded.
-- Split additional non-critical lobby UI blocks in `app/lobby/[code]/page.tsx`:
+- Split additional non-critical lobby UI blocks in `app/(site)/lobby/[code]/page.tsx`:
   - `WaitingRoom`
   - `LobbyInfo`
   - `JoinPrompt`

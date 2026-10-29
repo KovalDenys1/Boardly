@@ -12,10 +12,10 @@
  * bare `NODE_ENV` check would ship this to Preview. The last two cases
  * below pin that distinction directly.
  *
- * RootLayout renders <html>/<head>/<body> itself, which React/jsdom refuse to
+ * RootDocument renders <html>/<head>/<body> itself, which React/jsdom refuse to
  * mount cleanly under an arbitrary test container (document singletons), so
  * this walks the returned React element tree directly instead of rendering
- * it — RootLayout is a plain function with no hooks of its own, so calling it
+ * it — RootDocument is a plain function with no hooks of its own, so calling it
  * and inspecting the element graph it builds is equivalent to reading its JSX
  * output for elements it renders itself (script tags included).
  */
@@ -68,6 +68,20 @@ function findScriptSrc(node: unknown, src: string): boolean {
   return findScriptSrc(props?.children, src)
 }
 
+/** Every `<script>` under `node` in document order: its src, or its inline code. */
+function scriptsInOrder(node: unknown): string[] {
+  if (Array.isArray(node)) return node.flatMap(scriptsInOrder)
+  if (!isReactElement(node)) return []
+
+  const props = node.props as
+    | { src?: string; dangerouslySetInnerHTML?: { __html?: string }; children?: ReactNode }
+    | undefined
+  if (node.type === 'script') {
+    return [props?.src ?? props?.dangerouslySetInnerHTML?.__html ?? '']
+  }
+  return scriptsInOrder(props?.children)
+}
+
 type EnvOverrides = {
   nodeEnv: string
   vercelEnv?: string
@@ -97,8 +111,8 @@ async function elementTreeFor({ nodeEnv, vercelEnv, nextPublicVercelEnv }: EnvOv
   setOrDelete(env, 'VERCEL_ENV', vercelEnv)
   setOrDelete(env, 'NEXT_PUBLIC_VERCEL_ENV', nextPublicVercelEnv)
   jest.resetModules()
-  const { default: RootLayout } = await import('../../app/layout')
-  const tree = RootLayout({ children: null })
+  const { RootDocument } = await import('../../app/root-document')
+  const tree = RootDocument({ lang: 'en', children: null })
   setOrDelete(env, 'NODE_ENV', original.NODE_ENV)
   setOrDelete(env, 'VERCEL_ENV', original.VERCEL_ENV)
   setOrDelete(env, 'NEXT_PUBLIC_VERCEL_ENV', original.NEXT_PUBLIC_VERCEL_ENV)
@@ -128,6 +142,17 @@ describe('AdSense loader — environment gate (#1152)', () => {
       nextPublicVercelEnv: 'production',
     })
     expect(findScriptSrc(tree, ADSENSE_SRC)).toBe(true)
+  })
+
+  // #1468: inside the Play app the head script pauses AdSense ad requests, which has to happen
+  // before adsbygoogle.js can run; an async tag earlier in <head> may execute first.
+  it('runs the app-shell script, which pauses ads in the Play app, before the AdSense tag', async () => {
+    const tree = await elementTreeFor({ nodeEnv: 'production' })
+    const scripts = scriptsInOrder(tree)
+    const appShell = scripts.findIndex((script) => script.includes('pauseAdRequests = 1'))
+
+    expect(appShell).toBeGreaterThanOrEqual(0)
+    expect(appShell).toBeLessThan(scripts.indexOf(ADSENSE_SRC))
   })
 
   it('does NOT load on a Vercel Preview deployment, even though `next build` sets NODE_ENV=production there too', async () => {

@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from '@/lib/i18n-helpers'
 import { readLocal, removeLocal, writeLocal } from '@/lib/safe-storage'
+import { useIsPlayApp } from '@/hooks/useIsPlayApp'
 
 const DISMISS_KEY = 'boardly:pwa-install-dismissed:v1'
 
@@ -24,6 +25,7 @@ function isStandaloneDisplayMode(): boolean {
 
 export default function InstallPrompt() {
   const { t } = useTranslation()
+  const inPlayApp = useIsPlayApp()
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null)
   const [dismissed, setDismissed] = useState(false)
   const [isInstalled, setIsInstalled] = useState(false)
@@ -83,7 +85,7 @@ export default function InstallPrompt() {
     setDismissed(true)
   }
 
-  if (!visible) return null
+  if (inPlayApp || !visible) return null
 
   return (
     <div className="fixed inset-x-3 bottom-[max(0.75rem,calc(0.75rem+env(safe-area-inset-bottom)))] z-70 sm:inset-x-auto sm:right-4 sm:bottom-[max(1rem,calc(1rem+env(safe-area-inset-bottom)))] sm:max-w-sm">
@@ -96,8 +98,8 @@ export default function InstallPrompt() {
       >
         <div className="flex items-start gap-3">
           <div
-            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-white"
-            style={{ background: 'var(--bd-ink)', boxShadow: '3px 3px 0 var(--bd-coral)' }}
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl"
+            style={{ background: 'var(--bd-logo-tile)', boxShadow: '3px 3px 0 var(--bd-coral)' }}
           >
             <span aria-hidden="true" style={{ fontWeight: 900, color: 'var(--bd-sun)', fontSize: 18 }}>B</span>
           </div>
@@ -111,7 +113,7 @@ export default function InstallPrompt() {
                 type="button"
                 onClick={handleInstall}
                 disabled={isPrompting}
-                className="rounded-xl px-3 py-2 text-xs font-semibold text-white transition disabled:opacity-60"
+                className="rounded-xl px-3 py-2 text-xs font-semibold text-bd-bg transition disabled:opacity-60"
                 style={{ background: 'var(--bd-ink)' }}
               >
                 {isPrompting ? t('installPrompt.installing') : t('installPrompt.install')}

@@ -385,6 +385,7 @@ const en = {
     mute: 'Mute',
     unmute: 'Unmute',
     volume: 'Volume',
+    silentSwitchHint: 'On iPhone, the silent switch also mutes game sounds.',
     themeLabel: 'Theme',
     themeLight: 'Light',
     themeDark: 'Dark',
@@ -395,6 +396,10 @@ const en = {
     openUserMenu: 'Account menu',
   },
   home: {
+    seo: {
+      title: 'Boardly – Free Online Board Games with Friends',
+      description: 'Boardly (boardly.online) is a free online board games site. Play Yahtzee, Tic Tac Toe, Connect Four and Guess the Spy with friends in real time, no signup.',
+    },
     welcomeBack: 'Welcome back, {{name}}!',
     browseGames: 'Browse Games',
     guidesTitle: 'Guides & tips',
@@ -408,6 +413,7 @@ const en = {
     keepPlaying: 'Keep playing',
     createFreeAccount: 'Create free account',
     heroSubtitle: 'Pick a game, create a room, and share the link. No download, no account required — guests can join in seconds.',
+    heroSubtitlePlayApp: 'Pick a game, create a room, and share the link. No account required — guests can join in seconds.',
     gamesReadyBadge: '{{count}} games ready to play',
     moreComingLater: '{{count}} more games coming soon',
     statsGamesReady: 'Games ready now',
@@ -443,6 +449,13 @@ const en = {
     ctaVisitorTitle: 'Game night starts here.',
     ctaVisitorAccent: 'No planning needed.',
     ctaVisitorBody: 'Pick a game, open a room, share the link. Your friends are in within seconds — no account, no download.',
+    ctaVisitorBodyPlayApp: 'Pick a game, open a room, share the link. Your friends are in within seconds — no account needed.',
+    promoVideo: {
+      kicker: 'See it in action',
+      title: 'Boardly in one minute',
+      label: 'Boardly video: pick a game, send the link and play together',
+      play: 'Play the video',
+    },
     howItWorks: {
       kicker: 'How it works',
       title: 'Three steps to play',
@@ -457,6 +470,7 @@ const en = {
       step3: {
         title: 'Start playing',
         description: 'Everyone sees the same board, scores, and turns in their browser. No download needed.',
+        descriptionPlayApp: 'Everyone sees the same board, scores, and turns at the same moment.',
       },
     },
     demo: {
@@ -472,6 +486,10 @@ const en = {
     },
   },
   games: {
+    catalogSeo: {
+      title: 'All Free Online Board Games - Multiplayer',
+      description: 'Browse all free online board games on Boardly. Play Yahtzee, Tic Tac Toe, Memory, Guess the Spy and more with friends in real time. No download, no account needed.',
+    },
     title: 'Available Games',
     subtitle: 'Choose your favorite game to play',
     players: 'players',
@@ -544,6 +562,8 @@ const en = {
       description: 'Classic dice game with strategic scoring. Roll five dice to make combinations and score big!',
       difficulty: 'Easy',
       seo: {
+        title: 'Play Yahtzee Online Free with Friends or Bots',
+        description: 'Play Yahtzee online free in your browser. Roll five dice, fill the scorecard and play with up to three friends in real time, or against a bot.',
         question: 'Can you play Yahtzee online for free with friends?',
         answer: 'Yes. Open a lobby, share the four-digit code, and up to four of you play in real time – free, in the browser, with a guest name instead of an account. Short mode runs nine scoring categories, classic runs all fifteen, and a bot can fill an empty seat.',
       },
@@ -578,7 +598,7 @@ const en = {
           oneUsePerRow: 'Each box takes one result per game, zero included, and cannot be changed afterwards.',
           yahtzeeOnce: 'Yahtzee pays 50 once. A second five of a kind earns no bonus and has to go in another row.',
           upperBonus: 'In classic mode, 63 or more in Ones to Sixes adds 35 points. Short mode has no bonus.',
-          gameEnd: 'The game ends when every scorecard is full, and the highest total, bonus included, wins.',
+          gameEnd: 'The game ends when every scorecard is full, and the highest total, bonus included, wins. A shared top total is a tie.',
           timerExpiry: 'If the turn timer runs out, the game plays out your turn and scores it for you.',
         },
         scoring: {
@@ -808,6 +828,8 @@ const en = {
       description: 'Social deduction game where one player is the spy. Find them before time runs out!',
       difficulty: 'Medium',
       seo: {
+        title: 'Play Guess the Spy Online Free – Social Deduction',
+        description: 'Play Guess the Spy online free with 3 to 10 players. Everyone gets the location except the spy: ask questions, catch the bluff and vote. No download needed.',
         question: 'How do you play Guess the Spy online?',
         answer: 'Everyone in the room gets the same secret location and a role in it, except one player who only knows they are the spy. You take turns asking each other questions until the group calls a vote – or the spy names the location and takes 500 points. Three to ten players, free, in the browser.',
       },
@@ -1029,6 +1051,8 @@ const en = {
       description: 'Simple and fast game. Get three in a row to win!',
       difficulty: 'Easy',
       seo: {
+        title: 'Play Tic Tac Toe Online Free with Friends',
+        description: 'Play Tic Tac Toe online free against a friend or a bot, open-ended with a running score or a best of 3, 5 or 10. In the browser, no download, no account.',
         question: 'Can you play Tic Tac Toe online with a friend for free?',
         answer: 'Yes. Share a lobby code and take turns on the 3×3 grid in real time, or add a bot on easy, medium or hard when nobody is around. A lobby keeps playing rounds with a running score unless you set a best of 3, 5 or 10. Free, in the browser, a guest name is enough.',
       },
@@ -1275,6 +1299,8 @@ const en = {
       description: 'Find all the matching pairs. Test your memory skills!',
       difficulty: 'Easy',
       seo: {
+        title: 'Play Memory Game Online Free – Multiplayer',
+        description: 'Play the Memory matching game online free with 2 to 4 players. Flip cards, keep the pairs you match and race on 4×4, 5×4 or 6×6 boards. No download needed.',
         question: 'Can you play the Memory card game online with friends?',
         answer: 'Yes. Two to four of you share one board in the browser: flip two cards on your turn, keep the pair and go again when they match, and whoever holds the most pairs at the end wins. Easy is 4×4 with 8 pairs, medium 5×4 with 10, hard 6×6 with 18.',
       },
@@ -1538,6 +1564,8 @@ const en = {
       description: 'Drop discs and be the first to connect four in a row!',
       difficulty: 'Medium',
       seo: {
+        title: 'Play Connect 4 Online Free with a Friend',
+        description: 'Play Connect 4 online free. Drop discs on a seven by six board and be first to line up four, against a friend or a bot. Real time in the browser, no download.',
         question: 'Can you play Connect 4 online for free with a friend?',
         answer: 'Yes. The board is the standard seven columns by six rows, played live in the browser: send a friend your lobby code, or pick easy, medium or hard and drop discs against a bot. Free, nothing to install, and a guest name is all the account you need.',
       },
@@ -1777,6 +1805,8 @@ const en = {
       description: 'Jump, capture and crown your kings in the classic game of draughts.',
       difficulty: 'Medium',
       seo: {
+        title: 'Play Checkers Online Free with a Friend or Bot',
+        description: 'Play checkers online free. Classic 8×8 English draughts with forced captures, multi-jumps and kings, against a friend or a bot. In the browser, no download.',
         question: 'Can you play checkers online for free with a friend?',
         answer: 'Yes. It is standard English checkers on an 8×8 board in the browser: send a friend your lobby code or play a bot on easy, medium or hard. A guest name is all the account you need.',
       },
@@ -1997,6 +2027,8 @@ const en = {
       description: 'Simultaneous choice game where Rock beats Scissors, Scissors beats Paper, and Paper beats Rock',
       difficulty: 'Easy',
       seo: {
+        title: 'Play Rock Paper Scissors Online Free',
+        description: 'Play Rock Paper Scissors online free against a friend or a bot. Both players pick at the same time and the reveal is instant. In the browser, no download.',
         question: 'Can you play Rock Paper Scissors online against a friend?',
         answer: 'Yes. Both players pick at the same time and the two hands turn over together, so nobody sees the other\'s move first. Play a friend from a shared lobby code or a bot on easy, medium or hard; a match goes to whoever wins two rounds first. Free, in the browser.',
       },
@@ -2192,6 +2224,8 @@ const en = {
       description: 'Roll the die, race your tokens round the board and bring them all home first.',
       difficulty: 'Easy',
       seo: {
+        title: 'Play Ludo Online Free with Friends or Bots',
+        description: 'Play Ludo online free with 2 to 4 players. Roll the die, race your tokens round the board and knock rivals back to the yard, with friends or bots. No download.',
         question: 'Can you play Ludo online for free with friends?',
         answer: 'Yes. Open a lobby and send the code to up to three friends, or fill empty seats with bots on easy, medium or hard. Our server rolls the die, and it is free with nothing to install.',
       },
@@ -2438,6 +2472,8 @@ const en = {
       description: 'Explain words to your team without using the word itself!',
       difficulty: 'Medium',
       seo: {
+        title: 'Play Alias Online Free – Team Word Game',
+        description: 'Play Alias online free with 3 to 16 players. Describe the word without saying it, guess against the clock, and the higher score wins. No download.',
         question: 'Can you play Alias online with a group for free?',
         answer: 'Yes, with three to sixteen people and no bots – Alias is teams talking to each other, so the room needs real players. One teammate describes the word without saying it, the others guess against the clock, a skip costs a point, and the higher score wins.',
       },
@@ -2680,6 +2716,8 @@ const en = {
       description: 'Draw a secret prompt and race to guess each other\'s sketches!',
       difficulty: 'Medium',
       seo: {
+        title: 'Play Sketch & Guess Online Free – Draw and Guess',
+        description: 'Play Sketch & Guess online free with 3 to 10 players. One player draws a secret prompt, everyone else races to guess it. In the browser, no download.',
         question: 'Can you play a drawing and guessing game online with friends?',
         answer: 'Yes, with three to ten people in the browser. Each round one player draws a secret prompt on a shared canvas and everyone else types guesses against the clock. Quick guesses score more, and a guest name is all the account you need.',
       },
@@ -2700,7 +2738,7 @@ const en = {
         step2Title: 'Draw your prompt',
         step2Desc: 'Pick one of three words within 15 seconds. Then draw it in up to 80 seconds.',
         step3Title: 'Guess before the clock runs out',
-        step3Desc: 'The others can guess up to 40 times while you draw, in any site language. Faster right answers score more.',
+        step3Desc: 'The others can guess up to 40 times while you draw, in English, Norwegian, Russian or Ukrainian. Faster right answers score more.',
         step4Title: 'Reveal and pass the pen',
         step4Desc: 'The word is revealed; points landed with each guess. The next player draws, or once everyone has drawn the game ends.',
         benefitsTitle: 'Why play Sketch & Guess on Boardly?',
@@ -2865,6 +2903,8 @@ const en = {
         time: '15 min',
       },
       seo: {
+        title: 'Play Liar\'s Party Online Free – Bluffing Game',
+        description: 'Play Liar\'s Party online free with 4 to 12 players. Make a claim, decide who is bluffing and let the vote settle it. In the browser, no download needed.',
         question: "Can you play Liar's Party online with a group?",
         answer: 'Yes, with four to twelve people. One player makes a claim, true or bluffed, and it only counts as caught when a strict majority challenges it – collect enough caught bluffs and you are out. There are no bots: reading the people in the room is the whole game.',
       },
@@ -3259,6 +3299,7 @@ const en = {
         largeStraight: 'Large Straight! Five in a row!',
         fullHouse: 'Full House! Three of a kind + pair!',
         fourOfKind: 'Four of a Kind! Four matching dice!',
+        highScore: 'Great Score!',
       },
     },
     results: {
@@ -3283,9 +3324,13 @@ const en = {
       matchComplete: 'Match Complete',
       winnerLabel: 'Winner',
       winnerBadge: 'WINNER',
+      tieLabel: 'Shared first place',
+      tie: 'It\'s a Tie!',
+      tieBadge: 'TIE',
       upperSectionShort: 'Upper',
       lowerSectionShort: 'Lower',
       winnerScore: 'Winner {{score}}',
+      tieScore: 'Tied at {{score}}',
       marginScore: 'Margin +{{margin}}',
       nextStep: 'Next Step',
       nextStepHint: 'Start another round, ask for a rematch, or head back to the lobbies.',
@@ -3391,9 +3436,19 @@ const en = {
     sendHelp: 'Press Enter to send • Shift+Enter for new line',
     rules: 'Rules',
     rulesNewTab: 'Rules of the Boardly community (opens in a new tab)',
-    mutePlayer: 'Hide messages from {{player}} on this device',
-    unmuteAll: 'Show {{count}} hidden player again',
-    unmuteAll_other: 'Show {{count}} hidden players again',
+    blockPlayer: 'Block {{player}}',
+    blockConfirm: "Block {{player}}? You won't see their messages in any game. You can unblock them later from Blocked players.",
+    blockAction: 'Block',
+    blockFailed: 'Could not block {{player}}. Try again.',
+    cancel: 'Cancel',
+    termsPrompt: 'Before your first message, accept the Terms of Use and the Community Rules.',
+    termsTerms: 'Terms of Use',
+    termsRules: 'Community Rules',
+    termsAccept: 'Accept and chat',
+    termsPromptPlay: 'Before other players see what you type, accept the Terms of Use and the Community Rules.',
+    termsAcceptPlay: 'Accept',
+    termsCompactLead: 'Needed before you type:',
+    termsFailed: 'Could not save that. Try again.',
   },
   auth: {
     signedInProvidersHidden: 'You are already signed in. To sign in with Google, GitHub or Discord, sign out first.',
@@ -3584,6 +3639,8 @@ const en = {
       favourite: 'Favourite:',
       requestSent: 'Request sent',
       requestReceived: 'Friend request received',
+      block: 'Block',
+      unblock: 'Unblock',
     },
     premiumCard: {
       level: 'Level',
@@ -4613,6 +4670,7 @@ const en = {
     rules: 'Rules',
     voteBreakdown: 'Vote Breakdown',
     scoreDelta: 'Points this round',
+    strikeAdded: '+1 strike',
     totalScores: 'Total Scores',
     eliminatedThisRound: 'Eliminated this round',
     claimingNow: 'Making a claim now',
@@ -4695,6 +4753,7 @@ const en = {
     allDiceHeld: 'All dice are held — release one or score your roll!',
     notYourTurn: 'It\'s not your turn!',
     gameOver: 'Game Over! {{player}} wins!',
+    gameTie: 'Game Over! It\'s a tie!',
     rollFailed: 'Failed to roll dice',
     scoreFailed: 'Failed to score',
     linkCopied: 'Invite link copied to clipboard!',
@@ -4801,6 +4860,68 @@ const en = {
   celebration: {
     scorePoints: '+{{count}} points',
   },
+  botNames: {
+    yahtzee: {
+      easy: 'Dice Rookie',
+      medium: 'Dice Strategist',
+      hard: 'Dice Oracle',
+    },
+    tic_tac_toe: {
+      easy: 'Grid Rookie',
+      medium: 'Grid Tactician',
+      hard: 'Grid Grandmaster',
+    },
+    rock_paper_scissors: {
+      easy: 'Tempo Rookie',
+      medium: 'Pattern Reader',
+      hard: 'Mind Gambit',
+    },
+    guess_the_spy: {
+      easy: 'Spy Cadet',
+      medium: 'Intel Analyst',
+      hard: 'Shadow Director',
+    },
+    memory: {
+      easy: 'Memory Scout',
+      medium: 'Pattern Seeker',
+      hard: 'Recall Master',
+    },
+    connect_four: {
+      easy: 'Drop Rookie',
+      medium: 'Column Tactician',
+      hard: 'Gravity Grandmaster',
+    },
+    checkers: {
+      easy: 'Checkers Rookie',
+      medium: 'Diagonal Tactician',
+      hard: 'Kingmaker',
+    },
+    alias: {
+      easy: 'Word Rookie',
+      medium: 'Word Tactician',
+      hard: 'Word Oracle',
+    },
+    liars_party: {
+      easy: 'Honest Rookie',
+      medium: 'Bluff Tactician',
+      hard: 'Deception Master',
+    },
+    sketch_and_guess: {
+      easy: 'Sketch Rookie',
+      medium: 'Line Tactician',
+      hard: 'Ink Master',
+    },
+    ludo: {
+      easy: 'Token Rookie',
+      medium: 'Token Tactician',
+      hard: 'Ludo Grandmaster',
+    },
+    fallback: {
+      easy: 'AI Rookie',
+      medium: 'AI Strategist',
+      hard: 'AI Mastermind',
+    },
+  },
   faq: {
     kicker: 'FAQ',
     title: 'Frequently Asked Questions',
@@ -4848,6 +4969,7 @@ const en = {
     brandLine: 'online board games',
     about: 'About',
     tagline: 'Play board games online with friends in real-time. Free, no download required.',
+    taglinePlayApp: 'Play board games online with friends in real time. Free to play.',
     games: 'Games',
     play: 'Play',
     quickPlay: 'Quick Play',
@@ -4870,10 +4992,21 @@ const en = {
   about: {
     breadcrumb: 'About',
     title: 'About Boardly',
-    entity: 'Boardly (boardly.online) is a free real-time multiplayer board games website: Yahtzee, Guess the Spy, Tic-Tac-Toe, Connect Four, Checkers, Ludo, Memory, Alias, Liar\'s Party, Sketch & Guess and Rock Paper Scissors, played in the browser with friends via a shared link, no signup, in English, Norwegian, Russian and Ukrainian.',
+    entity: 'Boardly (boardly.online) is a free real-time multiplayer board games website: Yahtzee, Guess the Spy, Tic-Tac-Toe, Connect Four, Checkers, Ludo, Memory, Alias, Liar\'s Party, Sketch & Guess and Rock Paper Scissors, played in the browser with friends via a shared link, no signup, in English, Norwegian, Russian, Ukrainian, German and Spanish.',
     originTitle: 'Where it came from',
     origin1: 'Boardly started as an idea its developer had carried around for a long time: a place to play board games with friends online, no downloads, no accounts required.',
     origin2: 'The push to build it came from a school assignment to implement Yahtzee. With the assignment finished, that became the moment to start the site. Yahtzee was the first game on Boardly, and everything else grew from there.',
+    howTitle: 'How a game works',
+    how1: 'One player picks a game and creates a lobby. The lobby gets a link and a short code, and everyone who opens the link joins the same room while a seat is free and the game has not started. Nobody needs an account. A visitor plays as a guest under a name they choose, and can register later to keep a profile, friends and statistics.',
+    how2: 'The host chooses the settings before the start, and a lobby can be given a password when it is created, so only people who know it can join. Every game except Alias has a chat beside the board – in Alias the guessers type their guesses into a feed instead – and in a lobby without a password, a host with Premium can also let other people watch as spectators.',
+    botsTitle: 'Bots and people',
+    bots: 'Seven games have bots with three difficulty levels: Yahtzee, Tic-Tac-Toe, Connect Four, Checkers, Ludo, Memory and Rock Paper Scissors, so one person can play at any hour. Guess the Spy, Alias, Liar\'s Party and Sketch & Guess have no bots, on purpose. Those games are made of conversation – pointed questions, bluffs and guesses – and a bot has nothing to add to that, so they need three or more people, and Liar\'s Party four.',
+    fairTitle: 'Fair play',
+    fair: 'Every move goes to the server, which checks it against the rules of the game before it counts, so an edited page cannot get an illegal move accepted. Each player receives only what their seat may know, so the spy in Guess the Spy does not receive the location while the round runs. A chat message, a drawing, or a player\'s name or picture that breaks the community rules can be reported from the game screen in most games, and a bio from the player\'s profile. Every report reaches the Boardly team.',
+    dataTitle: 'Accounts and data',
+    data: 'A guest needs no email address. A guest who has never played is deleted after three days without activity, and one who has played after 90 days. Replays of finished games are kept for 90 days. The privacy policy lists everything Boardly stores, why, and for how long.',
+    builtTitle: 'How it is built',
+    built: 'Boardly is a web app built with Next.js and React, with its data in PostgreSQL and every move delivered to the other players in real time. It runs in any modern browser on a phone, tablet or computer, with nothing to install. The source code is public on GitHub under the MIT licence, and the automated test suite runs on every change.',
     notTitle: 'What Boardly is not',
     not: 'Boardly is not boardly.co, boardly.ai or joinboardly.com – those are unrelated products that share the name; the board games website lives only at boardly.online.',
     fundingTitle: 'How it is funded',
@@ -4910,15 +5043,15 @@ const en = {
       },
       guest: {
         title: 'Playing as a guest',
-        data: 'A guest name, a random guest id, when you were last active, and your seats in games. No email address and no password.',
+        data: 'A guest name, a random guest id, when you were last active, your seats in games, and when you accepted the Terms, which you do before your first chat message or Alias guess. No email address and no password.',
         basis: 'Contract: we need this to let you play without an account.',
         retention: 'A guest who never played is deleted after {{guestIdle}} days without activity, a guest who played after {{guestPlayed}} days. The name is then replaced with "Deleted player" in other players\' game records and replays.',
       },
       games: {
         title: 'Games, lobbies, chat and friends',
-        data: 'The lobbies you create or join, your moves, scores and results, game replays, lobby chat messages, friends, friend requests, lobby invites, notifications and achievements.',
+        data: 'The lobbies you create or join, your moves, scores and results, game replays, lobby chat messages, friends, friend requests, the players you blocked, lobby invites, notifications and achievements.',
         basis: 'Contract: this is the service itself.',
-        retention: 'Games: {{gamesMonths}} months after the game ends, we remove the names, questions, answers, guesses and drawings from the game record; the scores and results stay, tied to a player id instead of a name, for your statistics, the leaderboard and achievements. Lobbies: {{lobbiesMonths}} months after creation, an inactive lobby in which no game ever started is deleted together with those games; a lobby in which a game was played gets a neutral name, and its code is released for new lobbies, once its games have been through the step above. Replays: {{replayDays}} days. Lobby chat: {{chatHours}} hours, except a message someone reports: the report keeps a copy of it (see "Reports of chat, drawings and profiles"). Notifications: {{notificationsMonths}} months. Friends and achievements: until the account is deleted.',
+        retention: 'Games: {{gamesMonths}} months after the game ends, we remove the names, questions, answers, guesses and drawings from the game record; the scores and results stay, tied to a player id instead of a name, for your statistics, the leaderboard and achievements. Lobbies: {{lobbiesMonths}} months after creation, an inactive lobby in which no game ever started is deleted together with those games; a lobby in which a game was played gets a neutral name, and its code is released for new lobbies, once its games have been through the step above. Replays: {{replayDays}} days. Lobby chat: {{chatHours}} hours, except a message someone reports: the report keeps a copy of it (see "Reports of chat, drawings and profiles"). Notifications: {{notificationsMonths}} months. Friends, blocked players and achievements: until the account is deleted.',
       },
       signIn: {
         title: 'Signing in with Google, GitHub or Discord',
@@ -5010,7 +5143,7 @@ const en = {
         where: 'USA. Discord is certified under the EU-US Data Privacy Framework and uses Standard Contractual Clauses.',
       },
       google: {
-        purpose: 'Sign-in with Google, and the AdSense script with its consent message (on its own account)',
+        purpose: 'Sign-in with Google, and the AdSense script with its consent message (on its own account). Google Play, which distributes our Android app, processes its own install and crash data on its own account; the app runs this same site and collects nothing more.',
         where: 'USA. Google is certified under the EU-US Data Privacy Framework and also uses Standard Contractual Clauses.',
       },
       github: {
@@ -5040,8 +5173,8 @@ const en = {
     storage: {
       title: '6. Cookies and storage on your device',
       lead: 'We store only what the site needs to work, plus the items listed here:',
-      session: 'A sign-in cookie that keeps you logged in.',
-      guest: 'For guests: the guest id, name and identity token that keep you attached to your games. The token lasts {{guestTokenDays}} days from your last visit, and "Forget me" removes all of them.',
+      session: 'A sign-in cookie that keeps you logged in and, while you are signed in, a copy of the list of players you blocked, so chat can hide them before the list has loaded. Signing out removes the copy.',
+      guest: 'For guests: the guest id, name and identity token that keep you attached to your games, and the list of players you blocked. The token lasts {{guestTokenDays}} days from your last visit, and "Forget me" removes all of them.',
       preferences: 'Your language, theme, sound and similar choices, and which notices you have dismissed.',
       lastAccount: 'Only if you tick "Remember me" when you sign in with an email address and password: that address, so the login page can offer it next time. It stays on the device after you sign out; signing in with "Remember me" unticked, or clearing this site\'s data in your browser, removes it.',
       google: 'Google\'s consent cookie described in section 5.',
@@ -5051,9 +5184,9 @@ const en = {
     rights: {
       title: '7. Your rights',
       lead: 'You have the right to access your data, to have it corrected or erased, to restrict its processing, to receive it in a machine-readable format, and to object to processing based on our legitimate interest. Where we rely on consent, you can withdraw it at any time; that does not affect what we did before.',
-      export: 'Download your data: the "Download my data" button in the "Your data" section of your profile page gives you a JSON file with your profile, preferences, linked providers, games, lobbies you created, purchases and checkout records, friends, friend requests, invites, notifications, feedback, reports you filed, achievements and push subscriptions.',
+      export: 'Download your data: the "Download my data" button in the "Your data" section of your profile page gives you a JSON file with your profile, preferences, linked providers, games, lobbies you created, purchases and checkout records, friends, friend requests, players you blocked, invites, notifications, feedback, reports you filed, achievements and push subscriptions.',
       correct: 'Correct your data: edit your profile, including your email address, on your profile page.',
-      delete: 'Delete your account from your profile page; we confirm by email. This also removes your profile picture, replaces your name with "Deleted player" in other players\' game records and replays, keeps feedback you sent but removes your email address and account from it and deletes its copy in our Discord feedback channel, and cancels any subscription and deletes your customer record at Stripe. Reports you filed, and reports about you, lose their link to your account; the copy of reported content stays for the report\'s period.',
+      delete: 'Delete your account on your profile page, in the browser or in the Android app: choose "Delete Account" under "Danger Zone" and confirm with the link we email you. This also removes your profile picture, replaces your name with "Deleted player" in other players\' game records and replays, keeps feedback you sent but removes your email address and account from it and deletes its copy in our Discord feedback channel, and cancels any subscription and deletes your customer record at Stripe. Reports you filed, and reports about you, lose their link to your account; the copy of reported content stays for the report\'s period. If you can no longer sign in, write to {{email}} from the address on the account and we delete it for you.',
       forget: 'Guests: "Forget me" in the guest menu deletes your guest record and your seats in games, replaces your name with "Deleted player" in other players\' records, and clears the guest data on this device. If you are seated in a running game, finish or leave it first.',
       email: 'Anything else, including data the download does not contain, goes to {{email}}. We answer within one month and may ask you to confirm that the account is yours.',
       required: 'You need an email address and a password, or a sign-in provider, to create an account; you can play as a guest without either. We make no decisions about you based solely on automated processing.',
@@ -5094,6 +5227,7 @@ const en = {
     ctaManage: 'Manage subscription',
     ctaLoading: 'Opening checkout...',
     ctaNote: 'Cancel anytime. Have a promo code? Enter it on the payment page.',
+    playAppNotice: 'Premium can be bought on boardly.online in your browser.',
     withdrawalTitle: 'Your right of withdrawal',
     withdrawalBody: 'You have 14 days from the day you buy Premium to withdraw, without giving a reason. If you withdraw, we refund everything you paid for that purchase within 14 days of your notice, by the same payment method and with no fee.',
     withdrawalHow: 'To withdraw, send an email to support@boardly.online or use the withdrawal form on our withdrawal page.',
@@ -5169,6 +5303,7 @@ const en = {
       q2: {
         question: 'What happens if I cancel?',
         answer: 'Premium stays active until the end of the period you already paid for, and renews stop from then on. Cancelling is done from the billing portal on your profile page.',
+        answerApp: 'Premium stays active until the end of the period you already paid for, and renews stop from then on. You can cancel from the Premium tab on your profile page.',
       },
       q3: {
         question: 'Which currency am I charged in?',
@@ -5177,6 +5312,7 @@ const en = {
       q4: {
         question: 'Can I switch between monthly and yearly?',
         answer: 'Yes. Open the billing portal from your profile page and change the plan there; Link handles the difference for the time already paid.',
+        answerApp: 'Yes, on boardly.online in your browser: open the billing portal from your profile page and change the plan there. Link handles the difference for the time already paid.',
       },
       q5: {
         question: 'Do you take promo codes?',
@@ -5195,6 +5331,7 @@ const en = {
     soldThroughLink: 'Premium is sold through Link: Stripe\'s affiliate Sold through Link, LLC is the merchant of record for the purchase. Link takes the payment and emails your receipt, your invoice and any refund notice. You withdraw with us as described below, and we make the refund through Link.',
     laterTitle: 'After the 14 days',
     later: 'You can cancel at any time from the billing portal on your profile page. A monthly plan then runs to the end of the month you paid for. If you cancel a yearly plan early, we refund the unused whole months. Cancelling in your Link account at link.com, or deleting that account, follows Link\'s terms instead.',
+    laterApp: 'You can cancel at any time from the Premium tab on your profile page. A monthly plan then runs to the end of the month you paid for. If you cancel a yearly plan early, we refund the unused whole months. Cancelling in your Link account at link.com, or deleting that account, follows Link\'s terms instead.',
     howTitle: 'How to withdraw',
     howIntro: 'Tell us clearly that you want to withdraw from the contract before the 14 days are over. You can use the form below, but you do not have to.',
     howEmailLabel: 'By email to',
@@ -5236,7 +5373,7 @@ const en = {
       title: '1. About these Terms',
       scope: 'These Terms are the agreement between you and us for using boardly.online: when you play as a guest, when you have an account, and when you buy Boardly Premium. Our privacy policy explains how we handle personal data.',
       accept: 'You accept the Terms when you create an account or buy Premium. If you play as a guest, the same rules apply to you.',
-      languages: 'The Terms are published in Norwegian, English, Russian and Ukrainian, with the same content in each language. If the versions ever say different things, or a term is unclear, it is read in the way that is best for you as a consumer.',
+      languages: 'The Terms are published in Norwegian, English, Russian and Ukrainian, with the same content in each language. They are also available in German and Spanish, as translations. If the versions ever say different things, or a term is unclear, it is read in the way that is best for you as a consumer.',
       version: 'The date at the bottom shows when this version took effect, and it changes only when the text changes. You can save or print this page to keep a copy.',
     },
     accounts: {
@@ -5324,7 +5461,7 @@ const en = {
       body: 'Questions about these Terms, notices about content and complaints go to',
     },
     updated: 'Last updated: {{date}}',
-    changeNote: 'New in this version: the rule in section 2 on accounts that are not used, which applies from {{inactiveFrom}}. Nothing else has changed.',
+    changeNote: 'New in this version: section 1 names the German and Spanish translations. The rule in section 2 on accounts that are not used, added in the previous version, applies from {{inactiveFrom}}. Nothing else has changed.',
     premium: {
       title: '3. Boardly Premium: subscription and right of withdrawal',
       price: 'Boardly Premium is a paid subscription, billed monthly or yearly. The price is shown on the Premium page in US dollars and is the full price: any VAT or sales tax due in your country is included in it, and Link collects it at checkout. If you pay in another currency, the exchange rate includes a conversion fee of 2 to 4 %, and you can choose to pay in US dollars on the payment page without it.',
@@ -5520,6 +5657,16 @@ const en = {
       notFound: 'This can no longer be reported.',
       self: 'You cannot report yourself.',
     },
+  },
+  blockedPlayers: {
+    title: 'Blocked players',
+    empty: "You haven't blocked anyone.",
+    unblock: 'Unblock',
+    blockedOn: 'Blocked {{date}}',
+    loadFailed: 'Could not load your blocked players.',
+    retry: 'Try again',
+    hiddenText: 'From a player you blocked',
+    show: 'Show',
   },
   discordLink: {
     title: 'Link Boardly to Discord',

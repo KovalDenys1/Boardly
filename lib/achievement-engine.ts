@@ -1,5 +1,6 @@
 import { prisma } from './db'
 import { Prisma } from '@/prisma/client'
+import { soleWinnerSql } from './server/sole-wins'
 import { getUserStatsDashboard } from './user-stats-dashboard'
 import { ACHIEVEMENTS, type AchievementDefinition } from './achievements'
 import { createInAppNotification } from './in-app-notifications'
@@ -44,7 +45,7 @@ async function hasWinUnderSeconds(userId: string, maxSeconds: number): Promise<b
       FROM "Players" p
       JOIN "Games" g ON g.id = p."gameId"
       WHERE p."userId" = ${userId}
-        AND p."isWinner" = true
+        AND ${soleWinnerSql('p')}
         AND g.status = 'finished'
         AND EXTRACT(EPOCH FROM (g."updatedAt" - g."createdAt")) < ${maxSeconds}
     ) AS exists

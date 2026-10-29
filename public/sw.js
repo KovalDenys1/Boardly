@@ -1,6 +1,6 @@
 /* global self, caches, Response, URL, fetch */
 
-const CACHE_VERSION = 'boardly-pwa-v1'
+const CACHE_VERSION = 'boardly-pwa-v4'
 const STATIC_CACHE = `${CACHE_VERSION}-static`
 const RUNTIME_CACHE = `${CACHE_VERSION}-runtime`
 const OFFLINE_URL = '/offline.html'
@@ -85,8 +85,10 @@ self.addEventListener('fetch', (event) => {
         if (cached) return cached
 
         const response = await fetch(request)
-        const cache = await caches.open(RUNTIME_CACHE)
-        cache.put(request, response.clone())
+        if (response.ok && response.type === 'basic') {
+          const cache = await caches.open(RUNTIME_CACHE)
+          cache.put(request, response.clone())
+        }
         return response
       })()
     )
@@ -102,8 +104,9 @@ self.addEventListener('push', (event) => {
   event.waitUntil(
     self.registration.showNotification(data.title || 'Boardly', {
       body: data.body || '',
-      icon: '/icons/icon-192.svg',
-      badge: '/icons/icon-maskable-192.svg',
+      icon: '/icons/icon-192.png?v=3',
+      // Android draws the badge as a mask: it needs transparency, and an opaque square renders blank.
+      badge: '/icons/icon-monochrome-512.png?v=1',
       data: { url: data.url || '/' },
       tag: data.tag || 'boardly',
       renotify: true,

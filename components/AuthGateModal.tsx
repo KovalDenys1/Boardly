@@ -104,7 +104,7 @@ export function AuthGateModal({ dest, onClose, onGuestReady, onDismiss }: AuthGa
           <div style={{
             marginBottom: 12, padding: '10px 14px', borderRadius: 12,
             background: 'rgba(255,80,60,0.08)', border: '1.5px solid rgba(255,80,60,0.25)',
-            fontSize: 13, color: 'var(--bd-coral-deep)', fontWeight: 500,
+            fontSize: 13, color: 'var(--bd-coral-text)', fontWeight: 500,
           }}>
             {error}
           </div>

@@ -1,11 +1,12 @@
 import { readFileSync } from 'node:fs'
 import path from 'node:path'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
-import { metadata } from '@/app/premium/page'
-import { PREMIUM_DESCRIPTION, PREMIUM_URL, premiumProductJsonLd } from '@/app/premium/premium-json-ld'
-import PremiumContent from '@/app/premium/PremiumContent'
+import { metadata } from '@/app/(site)/premium/page'
+import { PREMIUM_DESCRIPTION, PREMIUM_URL, premiumProductJsonLd } from '@/app/(site)/premium/premium-json-ld'
+import PremiumContent from '@/app/(site)/premium/PremiumContent'
 import { trackPremiumCta } from '@/lib/analytics'
 import { toPlanPrice, type PremiumPricing } from '@/lib/premium-plans'
+import en from '@/locales/en'
 
 // The page itself only asks Stripe for the two prices; the test supplies them
 // so nothing here reaches the network or needs a Stripe key.
@@ -39,8 +40,13 @@ jest.mock('@/lib/i18n-helpers', () => {
   }
 })
 
+const mockSession = { signedIn: true }
+
 jest.mock('next-auth/react', () => ({
-  useSession: () => ({ data: { user: { id: 'user-1' } }, status: 'authenticated' }),
+  useSession: () =>
+    mockSession.signedIn
+      ? { data: { user: { id: 'user-1' } }, status: 'authenticated' }
+      : { data: null, status: 'unauthenticated' },
 }))
 
 const root = process.cwd()
@@ -117,7 +123,7 @@ describe('/premium prices', () => {
   it('shows only amounts that came off a Stripe price', () => {
     // No price literal in the page or its entity nodes: every figure on screen
     // is the one the checkout would charge.
-    for (const file of ['app/premium/PremiumContent.tsx', 'app/premium/premium-json-ld.ts']) {
+    for (const file of ['app/(site)/premium/PremiumContent.tsx', 'app/(site)/premium/premium-json-ld.ts']) {
       expect(read(file)).not.toMatch(/[$€£]\s?\d/)
       expect(read(file)).not.toMatch(/\d+([.,]\d+)?\s?(kr|NOK|USD|EUR)\b/)
     }
@@ -226,5 +232,109 @@ describe('/premium checkout', () => {
     fireEvent.click(screen.getAllByRole('button', { name: /Get Premium/ })[0])
 
     expect(await screen.findByRole('alert')).toHaveTextContent(/Could not open checkout/)
+  })
+})
+
+describe('/premium in the Play app (#1465)', () => {
+  const notice = 'Premium can be bought on boardly.online in your browser.'
+
+  beforeEach(() => {
+    jest.clearAllMocks()
+    mockSession.signedIn = true
+    global.fetch = fetchMock as unknown as typeof fetch
+  })
+
+  afterEach(() => {
+    delete document.documentElement.dataset.appShell
+  })
+
+  it('shows the notice where the checkout buttons and the consent boxes were', () => {
+    document.documentElement.dataset.appShell = 'play'
+    render(<PremiumContent pricing={BOTH_PLANS} />)
+
+    expect(screen.queryByRole('button', { name: /Get Premium/ })).not.toBeInTheDocument()
+    expect(screen.queryByRole('checkbox')).not.toBeInTheDocument()
+    expect(screen.getAllByText(notice)).toHaveLength(2)
+  })
+
+  it('offers no sign-in-to-buy link to a signed-out visitor', () => {
+    mockSession.signedIn = false
+    document.documentElement.dataset.appShell = 'play'
+    render(<PremiumContent pricing={BOTH_PLANS} />)
+
+    expect(screen.queryByRole('link', { name: /Sign in to get Premium/ })).not.toBeInTheDocument()
+    expect(screen.getAllByText(notice)).toHaveLength(2)
+  })
+
+  it('keeps both checkout buttons and the sign-in link on the web, without the notice', () => {
+    const { unmount } = render(<PremiumContent pricing={BOTH_PLANS} />)
+    expect(screen.getAllByRole('button', { name: /Get Premium/ })).toHaveLength(2)
+    expect(screen.queryByText(notice)).not.toBeInTheDocument()
+    unmount()
+
+    mockSession.signedIn = false
+    render(<PremiumContent pricing={BOTH_PLANS} />)
+    expect(screen.getAllByRole('link', { name: /Sign in to get Premium/ })).toHaveLength(2)
+  })
+
+  it('drops the payment notes, the withdrawal block and the checkout-only FAQ in the app', () => {
+    document.documentElement.dataset.appShell = 'play'
+    render(<PremiumContent pricing={BOTH_PLANS} />)
+
+    expect(screen.queryByTestId('premium-withdrawal')).not.toBeInTheDocument()
+    expect(screen.queryByText(en.premium.currencyNote)).not.toBeInTheDocument()
+    expect(screen.queryByText(en.premium.yearlyRefundNote)).not.toBeInTheDocument()
+    expect(screen.queryByText(/Link's exchange rate/)).not.toBeInTheDocument()
+    expect(screen.queryByText(en.premium.faq.q3.question)).not.toBeInTheDocument()
+    expect(screen.queryByText(en.premium.faq.q5.question)).not.toBeInTheDocument()
+    expect(screen.getByText(en.premium.faq.q1.question)).toBeInTheDocument()
+  })
+
+  it('keeps the payment notes, the withdrawal block and the whole FAQ on the web', () => {
+    render(<PremiumContent pricing={BOTH_PLANS} />)
+
+    expect(screen.getByTestId('premium-withdrawal')).toBeInTheDocument()
+    expect(screen.getByText(en.premium.currencyNote)).toBeInTheDocument()
+    expect(screen.getByText(en.premium.yearlyRefundNote)).toBeInTheDocument()
+    expect(screen.getByText(en.premium.faq.q3.question)).toBeInTheDocument()
+    expect(screen.getByText(en.premium.faq.q5.question)).toBeInTheDocument()
+  })
+
+  it('answers cancelling and switching plans with the app texts in the app', () => {
+    document.documentElement.dataset.appShell = 'play'
+    render(<PremiumContent pricing={BOTH_PLANS} />)
+
+    expect(screen.getByText(en.premium.faq.q2.answerApp)).toBeInTheDocument()
+    expect(screen.getByText(en.premium.faq.q4.answerApp)).toBeInTheDocument()
+    expect(screen.queryByText(en.premium.faq.q2.answer)).not.toBeInTheDocument()
+    expect(screen.queryByText(en.premium.faq.q4.answer)).not.toBeInTheDocument()
+  })
+
+  it('answers cancelling and switching plans with the web texts on the web', () => {
+    render(<PremiumContent pricing={BOTH_PLANS} />)
+
+    expect(screen.getByText(en.premium.faq.q2.answer)).toBeInTheDocument()
+    expect(screen.getByText(en.premium.faq.q4.answer)).toBeInTheDocument()
+    expect(screen.queryByText(en.premium.faq.q2.answerApp)).not.toBeInTheDocument()
+    expect(screen.queryByText(en.premium.faq.q4.answerApp)).not.toBeInTheDocument()
+  })
+
+  it('still says the yearly plan is unavailable in the app when Stripe has no yearly price', () => {
+    document.documentElement.dataset.appShell = 'play'
+    render(<PremiumContent pricing={{ monthly: BOTH_PLANS.monthly, yearly: null }} />)
+
+    expect(screen.getByText(en.premium.monthlyOnlyNote)).toBeInTheDocument()
+    expect(screen.queryByText(en.premium.currencyNote, { exact: false })).not.toBeInTheDocument()
+  })
+
+  it('never opens checkout once the page is known to be in the app', async () => {
+    render(<PremiumContent pricing={BOTH_PLANS} />)
+    tickConsent()
+    document.documentElement.dataset.appShell = 'play'
+    fireEvent.click(screen.getAllByRole('button', { name: /Get Premium/ })[0])
+
+    await Promise.resolve()
+    expect(fetchMock).not.toHaveBeenCalled()
+    expect(trackPremiumCta).not.toHaveBeenCalled()
   })
 })

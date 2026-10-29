@@ -2,7 +2,6 @@
 
 import React from 'react'
 import { useTranslation } from '@/lib/i18n-helpers'
-import { sounds } from '@/lib/sounds'
 import { Icon } from '@/components/icons'
 import ScorePop from '@/components/game-chrome/ScorePop'
 
@@ -50,10 +49,7 @@ export default function YahtzeeScorePills({
                 className={className}
                 aria-label={`${label}. ${t('report.openPlayerCard', { name })}`}
                 aria-haspopup="dialog"
-                onClick={() => {
-                  sounds.play('click', { force: true })
-                  onOpenProfile(profileId)
-                }}
+                onClick={() => onOpenProfile(profileId)}
               >
                 {content}
               </button>

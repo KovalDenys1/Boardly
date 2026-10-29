@@ -1,4 +1,4 @@
-export {}
+import { visibleText } from '../fixtures/email-visible-text'
 
 const mockSend = jest.fn()
 
@@ -29,16 +29,6 @@ function loadEmailModule(): EmailModule {
 }
 
 type SentMail = { to: string; replyTo: string; subject: string; html: string; text: string }
-
-function visibleText(html: string): string {
-  return html
-    .replace(/<\/(?:p|h\d|div)>|<br\s*\/?>/gi, ' ')
-    .replace(/<[^>]+>/g, '')
-    .replace(/&amp;/g, '&')
-    .replace(/&quot;/g, '"')
-    .replace(/&#039;/g, "'")
-    .replace(/\s+/g, ' ')
-}
 
 describe('Terms change notice email (#1224)', () => {
   const originalKey = process.env.RESEND_API_KEY
@@ -72,7 +62,7 @@ describe('Terms change notice email (#1224)', () => {
       expect(body).toContain('Hi Ola,')
       expect(body).toContain('One thing changes, and it applies from January 1, 2027.')
       expect(body).toContain(
-        'From January 1, 2027, an account that has not been used for 24 months is deleted. We email the address on the account 30 days before, and signing in once before that day keeps the account. Nothing else in the Terms has changed.'
+        'From January 1, 2027, an account that has not been used for 24 months is deleted. We email the address on the account 30 days before, and signing in once before that day keeps the account. Nothing else in the Terms changes what you agreed to.'
       )
       expect(body).toContain('has or has had Premium or has ever started a Premium purchase, or to an account that is suspended')
       expect(body).toContain('you can delete your account from your profile page before January 1, 2027: https://boardly.online/profile')

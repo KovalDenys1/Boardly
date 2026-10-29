@@ -3,10 +3,11 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useSession } from 'next-auth/react'
 import { useTranslation } from '@/lib/i18n-helpers'
+import { useIsPlayApp } from '@/hooks/useIsPlayApp'
 
 // One AdSense display slot, shown to free readers only.
 //
-// Three gates, all of which must open before an <ins> reaches the DOM:
+// Four gates, all of which must open before an <ins> reaches the DOM:
 //   1. NEXT_PUBLIC_ADS_ENABLED — the master switch. AdSense has not approved
 //      boardly.online yet, so this stays unset until it does (Vercel Pro, which
 //      allows commercial use, is in place). Nothing ships to production until it is.
@@ -14,8 +15,9 @@ import { useTranslation } from '@/lib/i18n-helpers'
 //      slot renders nothing during SSR and decides on the client instead.
 //   3. Premium — a paying account never sees an ad. Signed-out visitors and
 //      guests are free by definition and skip the lookup entirely.
+//   4. Not the Play app — its Google Play listing declares that it contains no ads.
 //
-// The AdSense loader itself lives in app/layout.tsx and is site verification,
+// The AdSense loader itself lives in app/root-document.tsx and is site verification,
 // not an ad; it can stay on regardless of this switch. It only loads in
 // production (#1152) — preview and development never carry it.
 
@@ -37,7 +39,8 @@ interface AdSlotProps {
 }
 
 export default function AdSlot({ slot, className }: AdSlotProps) {
-  const enabled = adsEnabled()
+  const inPlayApp = useIsPlayApp()
+  const enabled = adsEnabled() && !inPlayApp
   const { status } = useSession()
   const { t } = useTranslation()
   const [premium, setPremium] = useState<PremiumState>('unknown')

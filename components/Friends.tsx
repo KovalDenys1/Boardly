@@ -68,7 +68,7 @@ const primaryButtonClassName =
 const secondaryButtonClassName =
   'inline-flex items-center justify-center gap-2 rounded-2xl border-[1.5px] border-bd-line bg-bd-card-warm px-4 py-3 text-sm font-semibold text-bd-ink shadow-[0_3px_0_var(--bd-line)] transition-all hover:-translate-y-0.5 hover:bg-bd-bg2'
 const dangerButtonClassName =
-  'inline-flex items-center justify-center gap-2 rounded-2xl border border-bd-coral/40 bg-bd-card-warm px-4 py-3 text-sm font-semibold text-bd-coral-deep transition-colors hover:bg-bd-coral/10 dark:border-red-500/30 dark:text-red-300 dark:hover:bg-red-500/10'
+  'inline-flex items-center justify-center gap-2 rounded-2xl border border-bd-coral/40 bg-bd-card-warm px-4 py-3 text-sm font-semibold text-bd-coral-text transition-colors hover:bg-bd-coral/10 dark:border-red-500/30 dark:text-red-300 dark:hover:bg-red-500/10'
 const inputClassName =
   'w-full rounded-2xl border border-(--bd-input-border) bg-(--bd-input-bg) px-4 py-3 text-base font-medium desk:text-sm text-bd-ink shadow-xs outline-hidden transition-all placeholder:text-bd-ink-muted focus:border-bd-lav-deep focus:ring-4 focus:ring-inset focus:ring-bd-lav-deep'
 const eyebrowClassName =
@@ -772,10 +772,10 @@ export default function Friends() {
                           label: presenceBadgeLabel,
                           className:
                             presence === 'in_game'
-                              ? 'bg-bd-lav/20 text-bd-lav-deep dark:bg-bd-lav/15 dark:text-bd-lav'
+                              ? 'bg-bd-lav/20 text-bd-lav-text dark:bg-bd-lav/15 dark:text-bd-lav'
                               : presence === 'in_lobby'
                                 ? 'bg-bd-sun/25 text-bd-ink-soft dark:bg-bd-sun/15 dark:text-bd-sun'
-                                : 'bg-bd-mint/20 text-bd-mint-deep dark:bg-bd-mint/15 dark:text-bd-mint',
+                                : 'bg-bd-mint/20 text-bd-mint-text dark:bg-bd-mint/15 dark:text-bd-mint',
                         }
                   const presenceStripClassName =
                     presence === 'in_game'
@@ -840,7 +840,7 @@ export default function Friends() {
                                 {formatDate(friend.friendsSince)}
                               </span>
                               {friend.publicProfileId ? (
-                                <span className="inline-flex items-center gap-1.5 rounded-full bg-bd-card-warm px-3 py-1 text-xs font-semibold text-bd-lav-deep dark:text-bd-lav">
+                                <span className="inline-flex items-center gap-1.5 rounded-full bg-bd-card-warm px-3 py-1 text-xs font-semibold text-bd-lav-text dark:text-bd-lav">
                                   {t('leaderboard.viewProfile')}
                                   <ArrowRightIcon />
                                 </span>
@@ -852,10 +852,10 @@ export default function Friends() {
                                 <span className="rounded-full bg-bd-bg2 px-2.5 py-1 font-semibold text-bd-ink-soft">
                                   {t('header.games')} {friend.statistics.totalGames}
                                 </span>
-                                <span className="rounded-full bg-bd-mint/20 px-2.5 py-1 font-semibold text-bd-mint-deep dark:bg-bd-mint/15 dark:text-bd-mint">
+                                <span className="rounded-full bg-bd-mint/20 px-2.5 py-1 font-semibold text-bd-mint-text dark:bg-bd-mint/15 dark:text-bd-mint">
                                   {t('profile.stats.dashboard.summary.wins')} {friend.statistics.totalWins}
                                 </span>
-                                <span className="rounded-full bg-bd-lav/20 px-2.5 py-1 font-semibold text-bd-lav-deep dark:bg-bd-lav/15 dark:text-bd-lav">
+                                <span className="rounded-full bg-bd-lav/20 px-2.5 py-1 font-semibold text-bd-lav-text dark:bg-bd-lav/15 dark:text-bd-lav">
                                   {t('profile.stats.dashboard.summary.winRate')} {Math.round(friend.statistics.winRate)}%
                                 </span>
                               </div>
@@ -869,7 +869,7 @@ export default function Friends() {
                             event.stopPropagation()
                             void handleRemoveFriend(friend.friendshipId, friend.username)
                           }}
-                          className="shrink-0 rounded-2xl p-3 text-bd-coral-deep transition-colors hover:bg-bd-coral/10 dark:text-red-300 dark:hover:bg-red-500/10"
+                          className="shrink-0 rounded-2xl p-3 text-bd-coral-text transition-colors hover:bg-bd-coral/10 dark:text-red-300 dark:hover:bg-red-500/10"
                           title={t('profile.friends.remove')}
                         >
                           <TrashIcon />

@@ -4,12 +4,14 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useSession } from 'next-auth/react'
 import { useTranslation } from '@/lib/i18n-helpers'
+import { useLocalizedHref } from '@/lib/page-locale'
 import { Icon } from '@/components/icons'
 import { useGuest } from '@/contexts/GuestContext'
 import { buildCurrentAuthUrl } from '@/lib/auth-redirect'
 import { showToast } from '@/lib/i18n-toast'
 import QuickPlayButton from './QuickPlayButton'
 import HeroBoard from './HeroBoard'
+import { useIsPlayApp } from '@/hooks/useIsPlayApp'
 
 export type HomeHeroFacts = {
   availableGameCount: number
@@ -26,6 +28,8 @@ export default function HeroSectionRedesign({ facts }: HeroSectionRedesignProps)
   const router = useRouter()
   const { data: session, status } = useSession()
   const { t } = useTranslation()
+  const localize = useLocalizedHref()
+  const isPlayApp = useIsPlayApp()
   const { isGuest, guestName, setGuestMode, clearGuestMode } = useGuest()
   const [showGuestForm, setShowGuestForm] = useState(false)
   const [name, setName] = useState('')
@@ -66,7 +70,7 @@ export default function HeroSectionRedesign({ facts }: HeroSectionRedesignProps)
       await setGuestMode(name.trim())
       showToast.success('guest.welcome', undefined, { name: name.trim() })
       // Quick play was asked for: stay on the hero, whose guest branch opens the picker.
-      if (!quickRequested) router.push('/games')
+      if (!quickRequested) router.push(localize('/games'))
     } catch (error) {
       const err = error as Error & { translationKey?: string; statusCode?: number }
       if (err.translationKey) {
@@ -131,7 +135,7 @@ export default function HeroSectionRedesign({ facts }: HeroSectionRedesignProps)
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12, width: '100%', maxWidth: 400 }}>
           <QuickPlayButton autoOpen={quickRequested} />
           <button
-            onClick={() => router.push('/games')}
+            onClick={() => router.push(localize('/games'))}
             style={{
               padding: '14px 28px',
               background: 'var(--bd-ink)',
@@ -340,8 +344,8 @@ export default function HeroSectionRedesign({ facts }: HeroSectionRedesignProps)
             Boardly.<br />
             {/* bd-coral was 2.6:1 here — this text is large (extrabold,
                 ≥48px) so it only needs the 3:1 large-text AA minimum, and
-                bd-coral-deep clears that at 3.73:1 (#1171 axe pass). */}
-            <span style={{ color: 'var(--bd-coral-deep)' }}>{t('home.heroTagline')}</span>
+                bd-coral-text clears that at 3.73:1 (#1171 axe pass). */}
+            <span style={{ color: 'var(--bd-coral-text)' }}>{t('home.heroTagline')}</span>
           </h1>
 
           <p
@@ -353,7 +357,7 @@ export default function HeroSectionRedesign({ facts }: HeroSectionRedesignProps)
               maxWidth: 480,
             }}
           >
-            {t('home.heroSubtitle')}
+            {t(isPlayApp ? 'home.heroSubtitlePlayApp' : 'home.heroSubtitle')}
           </p>
 
           <div className="home-cta-row">
@@ -361,7 +365,7 @@ export default function HeroSectionRedesign({ facts }: HeroSectionRedesignProps)
               <>
                 <QuickPlayButton className="home-cta-button home-cta-button-primary" autoOpen={quickRequested} />
                 <button
-                  onClick={() => router.push('/games')}
+                  onClick={() => router.push(localize('/games'))}
                   className="home-cta-button home-cta-button-outline"
                 >
                   {t('home.browseGames')}
@@ -376,7 +380,7 @@ export default function HeroSectionRedesign({ facts }: HeroSectionRedesignProps)
             ) : (
               <>
                 <button
-                  onClick={() => router.push('/games')}
+                  onClick={() => router.push(localize('/games'))}
                   className="home-cta-button home-cta-button-primary"
                 >
                   {t('home.browseGamesArrow')}
@@ -405,7 +409,7 @@ export default function HeroSectionRedesign({ facts }: HeroSectionRedesignProps)
               { label: t('home.statsGamesReady'), value: String(facts.availableGameCount) },
               { label: t('home.statsBotsAvailable'), value: String(facts.quickPlayGameCount) },
               { label: t('home.statsInCollection'), value: String(facts.catalogGameCount) },
-              { label: t('home.statsBrowserNative'), value: '0' },
+              ...(isPlayApp ? [] : [{ label: t('home.statsBrowserNative'), value: '0' }]),
             ].map((s) => (
               <div key={s.label}>
                 <div

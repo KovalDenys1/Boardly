@@ -126,6 +126,6 @@ describe('narrow scoreboard header (#1180)', () => {
       expect(el.style.textAlign).toBe('')
       expect(el.style.justifyContent).toBe('')
     }
-    expect(container.querySelector('.game-player-name')?.textContent).toBe('Gravity Grandmaster')
+    expect(container.querySelector('.game-player-name')?.textContent).toBe('botNames.connect_four.hard')
   })
 })

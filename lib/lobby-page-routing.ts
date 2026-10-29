@@ -35,3 +35,7 @@ export function resolveDedicatedLobbyPageGameType(
 
   return gameType as DedicatedLobbyPageGameType
 }
+
+export function rendersInLobbyShell(gameType: string | null | undefined): boolean {
+  return !!gameType && !DEDICATED_LOBBY_PAGE_GAME_TYPES.has(gameType)
+}

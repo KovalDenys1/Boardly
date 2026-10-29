@@ -1,5 +1,5 @@
 import { act, renderHook, waitFor } from '@testing-library/react'
-import { useLobbyActions } from '@/app/lobby/[code]/hooks/useLobbyActions'
+import { useLobbyActions } from '@/app/(site)/lobby/[code]/hooks/useLobbyActions'
 import { restoreGameEngineClient } from '@/lib/restore-game-engine-client'
 import { showToast } from '@/lib/i18n-toast'
 import { createFreshnessWatermark } from '@/lib/game-state-freshness'
@@ -49,7 +49,10 @@ jest.mock('@/lib/lobby-create-metrics', () => ({
 // message from the server's English prose (#967).
 jest.mock('@/i18n', () => ({
   __esModule: true,
-  default: { t: (key: string) => `translated:${key}` },
+  default: {
+    t: (key: string, opts?: Record<string, unknown>) =>
+      opts ? `translated:${key}:${JSON.stringify(opts)}` : `translated:${key}`,
+  },
 }))
 
 const mockRestoreGameEngineClient = restoreGameEngineClient as jest.MockedFunction<
@@ -427,5 +430,131 @@ describe('useLobbyActions', () => {
     expect(setGame).toHaveBeenCalledWith(startedGame)
     expect(mockedShowToast.error).not.toHaveBeenCalledWith('toast.botAddFailed')
     expect(mockedShowToast.errorFrom).not.toHaveBeenCalled()
+  })
+  it('writes the game-start chat line in the site language (#1481)', async () => {
+    const players = [createPlayer('creator-123', 'Host'), createPlayer('user-456', 'Mia')]
+    const waitingGame = createWaitingGame(players)
+    mockRestoreGameEngineClient.mockResolvedValue({ getCurrentPlayer: () => ({ id: 'user-456', name: 'Mia' }) } as never)
+    mockFetch.mockImplementation(async (input: RequestInfo | URL) => {
+      if (input === '/api/lobby/ABCD?includeFinished=true') {
+        return {
+          ok: true,
+          json: async () => ({
+            lobby: { id: 'lobby-123', code: 'ABCD', gameType: 'yahtzee', maxPlayers: 4, turnTimer: 60 },
+            activeGame: waitingGame,
+          }),
+        } as Response
+      }
+      if (input === '/api/game/create') {
+        return { ok: true, json: async () => ({ game: createStartedGame(players) }) } as Response
+      }
+      throw new Error(`Unexpected fetch call: ${String(input)}`)
+    })
+
+    const setChatMessages = jest.fn()
+    const { result } = renderHook(() =>
+      useLobbyActions({
+        code: 'ABCD',
+        lobby: {
+          id: 'lobby-123',
+          code: 'ABCD',
+          gameType: 'yahtzee',
+          maxPlayers: 4,
+          turnTimer: 60,
+          creatorId: 'creator-123',
+        },
+        game: waitingGame as any,
+        freshnessRef: { current: createFreshnessWatermark() },
+        setGame: jest.fn(),
+        setLobby: jest.fn(),
+        setGameEngine: jest.fn(),
+        setTimerActive: jest.fn(),
+        setTimeLeft: jest.fn(),
+        setRollHistory: jest.fn(),
+        setCelebrationEvent: jest.fn(),
+        setChatMessages,
+        isGuest: false,
+        guestId: null,
+        guestName: null,
+        guestToken: null,
+        userId: 'creator-123',
+        username: 'Host',
+        setGuestMode: jest.fn().mockResolvedValue(undefined),
+        setError: jest.fn(),
+        setLoading: jest.fn(),
+        setStartingGame: jest.fn(),
+        selectedBotDifficulty: 'medium',
+      })
+    )
+
+    await act(async () => {
+      await result.current.handleStartGame()
+    })
+
+    expect(setChatMessages).toHaveBeenCalled()
+    const update = setChatMessages.mock.calls[0][0] as (prev: unknown[]) => Array<{ message: string; type: string }>
+    const [line] = update([])
+    expect(line.type).toBe('system')
+    expect(line.message).toBe('translated:toast.gameStarted:{"player":"Mia"}')
+  })
+
+  it('names a bot that moves first in the site language (#1491)', async () => {
+    const players = [createPlayer('creator-123', 'Host'), createPlayer('bot-1', 'Dice Rookie', { isBot: true })]
+    const waitingGame = createWaitingGame(players)
+    mockRestoreGameEngineClient.mockResolvedValue({ getCurrentPlayer: () => ({ id: 'bot-1', name: 'Dice Rookie' }) } as never)
+    mockFetch.mockImplementation(async (input: RequestInfo | URL) => {
+      if (input === '/api/lobby/ABCD?includeFinished=true') {
+        return {
+          ok: true,
+          json: async () => ({
+            lobby: { id: 'lobby-123', code: 'ABCD', gameType: 'yahtzee', maxPlayers: 4, turnTimer: 60 },
+            activeGame: waitingGame,
+          }),
+        } as Response
+      }
+      if (input === '/api/game/create') {
+        return { ok: true, json: async () => ({ game: createStartedGame(players) }) } as Response
+      }
+      throw new Error(`Unexpected fetch call: ${String(input)}`)
+    })
+
+    const { result } = renderHook(() =>
+      useLobbyActions({
+        code: 'ABCD',
+        lobby: { id: 'lobby-123', code: 'ABCD', gameType: 'yahtzee', maxPlayers: 4, turnTimer: 60, creatorId: 'creator-123' },
+        game: waitingGame as any,
+        freshnessRef: { current: createFreshnessWatermark() },
+        setGame: jest.fn(),
+        setLobby: jest.fn(),
+        setGameEngine: jest.fn(),
+        setTimerActive: jest.fn(),
+        setTimeLeft: jest.fn(),
+        setRollHistory: jest.fn(),
+        setCelebrationEvent: jest.fn(),
+        setChatMessages: jest.fn(),
+        isGuest: false,
+        guestId: null,
+        guestName: null,
+        guestToken: null,
+        userId: 'creator-123',
+        username: 'Host',
+        setGuestMode: jest.fn().mockResolvedValue(undefined),
+        setError: jest.fn(),
+        setLoading: jest.fn(),
+        setStartingGame: jest.fn(),
+        selectedBotDifficulty: 'medium',
+      })
+    )
+
+    await act(async () => {
+      await result.current.handleStartGame()
+    })
+
+    expect(mockedShowToast.success).toHaveBeenCalledWith(
+      'toast.gameStarted',
+      undefined,
+      { player: 'translated:botNames.yahtzee.easy' },
+      expect.anything()
+    )
   })
 })

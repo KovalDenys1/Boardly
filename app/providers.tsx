@@ -7,6 +7,7 @@ import { ToastProvider } from '@/contexts/ToastContext'
 import { GuestProvider } from '@/contexts/GuestContext'
 import { SignupAttribution } from '@/components/SignupAttribution'
 import { AccountLanguageSync } from '@/components/AccountLanguageSync'
+import { BlockListCacheSync } from '@/components/BlockListCacheSync'
 import { OnboardingProvider } from '@/contexts/OnboardingContext'
 import { TourProvider } from '@/contexts/TourContext'
 import DeferredGlobalEffects from '@/components/DeferredGlobalEffects'
@@ -14,6 +15,7 @@ import i18n, { changeLanguageLazy, type Locale } from '@/i18n'
 import { getStoredAppearanceLocale, normalizeAppearanceLocale } from '@/lib/appearance-preferences'
 import { getSafeLocalStorage } from '@/lib/safe-storage'
 import { pruneUnrememberedLastAccount } from '@/lib/last-account'
+import type { PrefixedLocale } from '@/lib/seo-locales'
 
 const OnboardingModal = dynamic(
   () => import('@/components/Onboarding/OnboardingModal').then((mod) => mod.OnboardingModal),
@@ -28,14 +30,22 @@ const GlobalToaster = dynamic(
   { ssr: false }
 )
 
-export default function Providers({ children }: { children: React.ReactNode }) {
+export default function Providers({
+  children,
+  pathLocale,
+}: {
+  children: React.ReactNode
+  /** Set on /ru and /uk pages, whose language is the URL's and not the visitor's stored choice (#1394). */
+  pathLocale?: PrefixedLocale
+}) {
   useEffect(() => {
+    if (pathLocale) return
     const nextLanguage = getStoredAppearanceLocale(getSafeLocalStorage() ?? undefined) as Locale
 
     if (i18n.language !== nextLanguage) {
       void changeLanguageLazy(nextLanguage)
     }
-  }, [])
+  }, [pathLocale])
 
   // A last-account email saved before "Remember me" decided it (#1133) is removed on
   // the first page load, whether or not the person ever opens the login page again.
@@ -46,18 +56,17 @@ export default function Providers({ children }: { children: React.ReactNode }) {
   /**
    * Keep `<html lang>` on the language actually being rendered.
    *
-   * `app/layout.tsx` hardcodes `lang="en"` because it is a server component
-   * that cannot know the viewer's stored preference, and nothing updated it
-   * afterwards - so a Russian-speaking player read a fully Russian site that
-   * claimed, permanently, to be English. That is not cosmetic: a screen reader
-   * pronounces Russian with English rules, the browser offers to translate a
-   * page already in the reader's language, and hyphenation and font selection
-   * follow the wrong locale.
+   * An unprefixed page is served with `lang="en"`, because the server cannot know
+   * the viewer's stored preference, and nothing updated it afterwards - so a
+   * Russian-speaking player read a fully Russian site that claimed, permanently,
+   * to be English. That is not cosmetic: a screen reader pronounces Russian with
+   * English rules, the browser offers to translate a page already in the reader's
+   * language, and hyphenation and font selection follow the wrong locale.
    *
-   * Path-based locales (#928) will move this decision to the server, where it
-   * belongs. Until then the client is the only place that knows.
+   * A /ru or /uk page gets its `lang` from the server and keeps it (#1394).
    */
   useEffect(() => {
+    if (pathLocale) return
     const applyLanguageToDocument = (language: string) => {
       document.documentElement.lang = normalizeAppearanceLocale(language)
     }
@@ -68,13 +77,14 @@ export default function Providers({ children }: { children: React.ReactNode }) {
     return () => {
       i18n.off('languageChanged', applyLanguageToDocument)
     }
-  }, [])
+  }, [pathLocale])
 
   return (
     <SessionProvider basePath="/api/auth">
       <GuestProvider>
         <SignupAttribution />
         <AccountLanguageSync />
+        <BlockListCacheSync />
         <OnboardingProvider>
           <TourProvider>
             <ToastProvider>

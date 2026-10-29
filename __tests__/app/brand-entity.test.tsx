@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs'
 import path from 'node:path'
 import { render } from '@testing-library/react'
-import { metadata } from '@/app/layout'
+import { metadata } from '@/app/(site)/layout'
 import FaqSection from '@/components/HomePage/FaqSection'
 import { buildFaqFacts } from '@/lib/faq-facts'
 import {
@@ -18,6 +18,8 @@ import en from '@/locales/en'
 import no from '@/locales/no'
 import ru from '@/locales/ru'
 import uk from '@/locales/uk'
+import de from '@/locales/de'
+import es from '@/locales/es'
 
 // The layout is imported for its `metadata` only. Its announcement banner
 // reaches Prisma at module load, which needs a database this test does not.
@@ -77,7 +79,7 @@ describe('home metadata (#886)', () => {
 
   it('claims no X handle, because none of them is ours', () => {
     expect((metadata.twitter as { creator?: string })?.creator).toBeUndefined()
-    expect(readFileSync(path.join(process.cwd(), 'app/layout.tsx'), 'utf8')).not.toContain("'@boardly'")
+    expect(readFileSync(path.join(process.cwd(), 'app/root-document.tsx'), 'utf8')).not.toContain("'@boardly'")
   })
 })
 
@@ -105,8 +107,8 @@ describe('site JSON-LD graph (#886)', () => {
     expect(website?.name).toBe('Boardly')
   })
 
-  it('declares the four languages the site is actually served in', () => {
-    expect(website?.inLanguage).toEqual(['en', 'no', 'ru', 'uk'])
+  it('declares the languages the site is actually served in', () => {
+    expect(website?.inLanguage).toEqual(['en', 'uk', 'no', 'ru', 'de', 'es'])
   })
 
   it('has no SearchAction – Google retired the sitelinks search box', () => {
@@ -140,7 +142,7 @@ describe('site JSON-LD graph (#886)', () => {
 
 describe('home FAQ entity answer (#886)', () => {
   it('asks what Boardly is first, in all four locales', () => {
-    for (const locale of [en, no, ru, uk]) {
+    for (const locale of [en, no, ru, uk, de, es]) {
       expect(locale.faq.q0.question).toContain('Boardly')
       expect(locale.faq.q0.answer).toContain('boardly.online')
       expect(Object.keys(locale.faq)[Object.keys(locale.faq).indexOf('q0')]).toBe('q0')
@@ -165,7 +167,7 @@ describe('home FAQ entity answer (#886)', () => {
   })
 
   it('does not put brand misspellings on the page', () => {
-    for (const locale of [en, no, ru, uk]) {
+    for (const locale of [en, no, ru, uk, de, es]) {
       const text = JSON.stringify(locale.faq).toLowerCase()
       for (const misspelling of ['boordly', 'borderly', 'boardle ', 'boardlify']) {
         expect(text).not.toContain(misspelling)

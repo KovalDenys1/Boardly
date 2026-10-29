@@ -1,0 +1,54 @@
+import type { Metadata } from 'next'
+import PremiumContent from './PremiumContent'
+import { getPremiumPricing } from '@/lib/server/premium-pricing'
+import { PREMIUM_DESCRIPTION, PREMIUM_TITLE, PREMIUM_URL, premiumProductJsonLd } from './premium-json-ld'
+import { OG_SITE_DEFAULTS, socialImages } from '@/lib/social-preview'
+
+export const metadata: Metadata = {
+  // absolute: the layout template would append "| Boardly" a second time.
+  title: { absolute: PREMIUM_TITLE },
+  description: PREMIUM_DESCRIPTION,
+  openGraph: {
+    ...OG_SITE_DEFAULTS,
+    images: socialImages('premium'),
+    title: 'Boardly Premium',
+    description: PREMIUM_DESCRIPTION,
+    url: PREMIUM_URL,
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    images: socialImages('premium'),
+    title: 'Boardly Premium',
+    description: PREMIUM_DESCRIPTION,
+  },
+  alternates: {
+    canonical: 'https://boardly.online/premium',
+  },
+  robots: {
+    index: true,
+    follow: true,
+  },
+}
+
+/**
+ * The prices come off Stripe, so the page is regenerated rather than frozen at
+ * build time: a change in the Stripe dashboard reaches visitors without a
+ * deploy, and nobody waits on a Stripe round trip during their own request. The
+ * hour matches app/page.tsx.
+ */
+export const revalidate = 3600
+
+export default async function PremiumPage() {
+  const pricing = await getPremiumPricing()
+
+  return (
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(premiumProductJsonLd(pricing)) }}
+      />
+      <PremiumContent pricing={pricing} />
+    </>
+  )
+}

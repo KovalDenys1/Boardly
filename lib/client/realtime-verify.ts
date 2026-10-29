@@ -3,6 +3,7 @@ import {
   isLobbyPeerEvent,
   isRealtimeEnvelope,
   realtimeSigningInput,
+  type RealtimeEnvelope,
 } from '@/lib/shared/realtime-envelope'
 
 /**
@@ -67,7 +68,7 @@ function getSubtle(): SubtleCrypto | null {
   return webCrypto?.subtle ?? null
 }
 
-function base64UrlToBytes(value: string): Uint8Array<ArrayBuffer> | null {
+export function base64UrlToBytes(value: string): Uint8Array<ArrayBuffer> | null {
   if (!/^[A-Za-z0-9_-]*$/.test(value)) return null
   const base64 = value.replace(/-/g, '+').replace(/_/g, '/') + '==='.slice((value.length + 3) % 4)
   try {
@@ -166,6 +167,11 @@ export function prefetchRealtimeVerifierKey(): void {
   })
 }
 
+/** The server's clock as this page reckons it, once the key (which carries it) has been fetched. */
+export function realtimeServerNow(): number | null {
+  return resolvedKey ? Date.now() + resolvedKey.offsetMs : null
+}
+
 /**
  * A topic was rejoined after a drop. The replay window restarts from now, so
  * the offset it is measured with should be current too – a laptop that slept
@@ -209,6 +215,63 @@ function rememberNonce(guard: RealtimeReplayGuard, nonce: string) {
     const evicted = guard.order.shift()
     if (evicted !== undefined) guard.nonces.delete(evicted)
   }
+}
+
+/** The server key named `kid`, refetched once if this page does not know it (a rotated secret). */
+async function keyFor(kid: string): Promise<{ ok: true; key: VerifierKey } | { ok: false; reason: 'unknown-key' | 'unverifiable' }> {
+  let key: VerifierKey
+  try {
+    key = await currentKey()
+  } catch {
+    return { ok: false, reason: 'unverifiable' }
+  }
+
+  if (key.kid !== kid) {
+    const refreshed = await refreshKey()
+    if (!refreshed || refreshed.kid !== kid) return { ok: false, reason: 'unknown-key' }
+    key = refreshed
+  }
+  return { ok: true, key }
+}
+
+async function hasServerSignature(
+  subtle: SubtleCrypto,
+  key: CryptoKey,
+  topic: string,
+  event: string,
+  envelope: RealtimeEnvelope
+): Promise<boolean> {
+  const signature = base64UrlToBytes(envelope.sig)
+  if (!signature || signature.length !== SIGNATURE_BYTES) return false
+  try {
+    return await subtle.verify(
+      { name: 'ECDSA', hash: 'SHA-256' },
+      key,
+      signature,
+      new TextEncoder().encode(realtimeSigningInput(topic, event, envelope))
+    )
+  } catch {
+    return false
+  }
+}
+
+/**
+ * The payload of an envelope the server sealed for `topic` and `event`, or
+ * null. There is no replay or age check: this is for a credential a page keeps
+ * and checks again – a Sketch & Guess drawer's key certificate
+ * (lib/sketch-live.ts) – not for a message to act on once.
+ */
+export async function verifyRealtimeSeal(
+  topic: string,
+  event: string,
+  raw: unknown
+): Promise<Record<string, unknown> | null> {
+  if (!isRealtimeEnvelope(raw)) return null
+  const subtle = getSubtle()
+  if (!subtle) return null
+  const resolved = await keyFor(raw.kid)
+  if (!resolved.ok) return null
+  return (await hasServerSignature(subtle, resolved.key.key, topic, event, raw)) ? raw.p : null
 }
 
 export type RealtimeRejectReason =
@@ -260,18 +323,9 @@ export async function openRealtimeMessage(
     return { ok: false, reason: 'unverifiable' }
   }
 
-  let key: VerifierKey
-  try {
-    key = await currentKey()
-  } catch {
-    return { ok: false, reason: 'unverifiable' }
-  }
-
-  if (key.kid !== raw.kid) {
-    const refreshed = await refreshKey()
-    if (!refreshed || refreshed.kid !== raw.kid) return { ok: false, reason: 'unknown-key' }
-    key = refreshed
-  }
+  const resolved = await keyFor(raw.kid)
+  if (!resolved.ok) return resolved
+  const key = resolved.key
 
   if (raw.iat < guard.windowStartedAt + key.offsetMs - REPLAY_TOLERANCE_MS) {
     return { ok: false, reason: 'stale' }
@@ -280,21 +334,7 @@ export async function openRealtimeMessage(
     return { ok: false, reason: 'stale' }
   }
 
-  const signature = base64UrlToBytes(raw.sig)
-  if (!signature || signature.length !== SIGNATURE_BYTES) return { ok: false, reason: 'bad-signature' }
-
-  let valid = false
-  try {
-    valid = await subtle.verify(
-      { name: 'ECDSA', hash: 'SHA-256' },
-      key.key,
-      signature,
-      new TextEncoder().encode(realtimeSigningInput(topic, event, raw))
-    )
-  } catch {
-    valid = false
-  }
-  if (!valid) return { ok: false, reason: 'bad-signature' }
+  if (!(await hasServerSignature(subtle, key.key, topic, event, raw))) return { ok: false, reason: 'bad-signature' }
 
   // Two copies of one message can be verified side by side; only the first counts.
   if (guard.nonces.has(raw.n)) return { ok: false, reason: 'replayed' }

@@ -14,6 +14,7 @@ import {
   isAvailableGameType,
   isAvailableCatalogEntry,
 } from '@/lib/game-catalog'
+import { getGameMetadata as getRegistryMetadata } from '@/lib/game-registry'
 
 const FEATURE_ENV_KEYS = [
   'ENABLE_TELEPHONE_DOODLE',
@@ -85,6 +86,16 @@ describe('game catalog availability', () => {
     }
   })
 
+  it('never offers a smallest lobby above the game\'s own minimum (#1491)', () => {
+    for (const entry of getCatalogAvailableGames()) {
+      if (!entry.gameType || !entry.lobbyCreateConfig) continue
+      const smallest = entry.lobbyCreateConfig.allowedPlayers[0]
+      const { minPlayers } = getRegistryMetadata(entry.gameType)
+      // A bot game seats at least two even when one human may start it alone.
+      expect({ game: entry.gameType, smallest }).toEqual({ game: entry.gameType, smallest: Math.max(2, minPlayers) })
+    }
+  })
+
   it('every catalog route points at a page that exists (#975)', () => {
     // fake-artist and telephone-doodle carried routes under app/games/ that were
     // never built, so flipping either flag promoted the entry and put a link to a
@@ -93,7 +104,7 @@ describe('game catalog availability', () => {
 
     expect(routed.length).toBeGreaterThan(0)
     for (const game of routed) {
-      const page = path.join(process.cwd(), 'app', `${game.route}/page.tsx`)
+      const page = path.join(process.cwd(), 'app', '(site)', `${game.route}/page.tsx`)
       expect({ id: game.id, hasPage: existsSync(page) }).toEqual({ id: game.id, hasPage: true })
     }
   })

@@ -4,6 +4,13 @@ import path from 'node:path'
 import type { Metadata } from 'next'
 
 jest.mock('@vercel/analytics', () => ({ track: jest.fn() }))
+// The root layouts render the whole document; their metadata is all this suite reads.
+jest.mock('next/font/google', () => ({
+  Bricolage_Grotesque: () => ({ variable: '--bd-font-display', className: '' }),
+  Inter: () => ({ className: '' }),
+}))
+jest.mock('@/app/providers', () => ({ __esModule: true, default: () => null }))
+jest.mock('@/components/AnnouncementBanner', () => ({ AnnouncementBanner: () => null }))
 // app/leaderboard/page.tsx reads the viewer since #1226; its metadata does not, and the real
 // module pulls in next-auth and its ESM-only jose, which this suite has no transform for.
 jest.mock('@/lib/session-user', () => ({ getOptionalViewerId: jest.fn(async () => null) }))
@@ -74,23 +81,40 @@ describe('link previews (#1091)', () => {
   })
 
   it.each([
-    ['app/games/page.tsx', 'games'],
-    ['app/games/layout.tsx', 'games'],
-    ['app/guides/page.tsx', 'guides'],
-    ['app/about/page.tsx', 'about'],
-    ['app/premium/page.tsx', 'premium'],
-    ['app/leaderboard/page.tsx', 'leaderboard'],
+    ['app/(site)/games/page.tsx', 'games'],
+    ['app/(site)/games/layout.tsx', 'games'],
+    ['app/(site)/guides/page.tsx', 'guides'],
+    ['app/(site)/about/page.tsx', 'about'],
+    ['app/(site)/premium/page.tsx', 'premium'],
+    ['app/(site)/leaderboard/page.tsx', 'leaderboard'],
   ])('%s names its card', async (file, key) => {
     const mod = (await import(`@/${file.replace(/\.tsx$/, '')}`)) as { metadata: Metadata }
     expectFullPreview(mod.metadata, key)
   })
 
   it('does not hand the /games url to every lobbies list under it', async () => {
-    const mod = (await import('@/app/games/layout')) as { metadata: Metadata }
+    const mod = (await import('@/app/(site)/games/layout')) as { metadata: Metadata }
     expect((mod.metadata.openGraph as { url?: string }).url).toBeUndefined()
   })
 
-  it('names a card in every page that sets its own openGraph', () => {
+  it('gives every root layout the site card, in openGraph and twitter alike', async () => {
+    // A file-based opengraph-image only reaches metadata set in its own segment, so a root
+    // layout that sets openGraph without images left ~20 pages and /ru, /uk without a card (#1394).
+    const roots = ['@/app/(site)/layout', '@/app/ru/layout', '@/app/uk/layout', '@/app/global-not-found']
+    for (const root of roots) {
+      const { metadata } = (await import(root)) as { metadata: Metadata }
+      expect({ root, og: metadata.openGraph?.images }).toEqual({
+        root,
+        og: [expect.objectContaining({ url: '/opengraph-image', width: SOCIAL_IMAGE_WIDTH, height: SOCIAL_IMAGE_HEIGHT })],
+      })
+      expect({ root, twitter: metadata.twitter?.images }).toEqual({
+        root,
+        twitter: [expect.objectContaining({ url: '/twitter-image', width: SOCIAL_IMAGE_WIDTH, height: SOCIAL_IMAGE_HEIGHT })],
+      })
+    }
+  })
+
+  it('names a card in every page and root document that sets its own openGraph', () => {
     // A page-level openGraph replaces the root one and drops its image, which is
     // how every page but / lost its preview. New pages must not repeat that.
     const offenders: string[] = []
@@ -100,9 +124,9 @@ describe('link previews (#1091)', () => {
         if (entry.isDirectory()) {
           if (entry.name === 'api' || entry.name === 'dev') continue
           walk(full)
-        } else if (/^(page|layout)\.tsx$/.test(entry.name)) {
+        } else if (/^(page|layout|root-document|global-not-found)\.tsx$/.test(entry.name)) {
           const source = readFileSync(full, 'utf8')
-          if (/openGraph:\s*{/.test(source) && !/images/.test(source) && full !== path.join('app', 'layout.tsx')) {
+          if (/openGraph:\s*{/.test(source) && !/images/.test(source)) {
             offenders.push(full)
           }
         }

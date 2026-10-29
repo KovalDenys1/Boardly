@@ -4,7 +4,7 @@ import type { SocialCard } from './social-preview'
 
 /**
  * The 1200×630 link-preview card (#1091), in the same paper-and-ink style as the
- * root `app/opengraph-image.tsx`. Satori renders it, so every element with more
+ * site card in `lib/site-card.tsx`. Satori renders it, so every element with more
  * than one child is `display: flex` and nothing depends on a CSS variable.
  *
  * Text is set large on purpose: a WhatsApp or Messenger preview shows this image

@@ -1,5 +1,5 @@
 import { fireEvent, render, screen } from '@testing-library/react'
-import SketchCustomWords from '@/app/lobby/[code]/components/SketchCustomWords'
+import SketchCustomWords from '@/app/(site)/lobby/[code]/components/SketchCustomWords'
 
 jest.mock('@/lib/i18n-helpers', () => ({
   useTranslation: () => ({ t: (key: string, opts?: Record<string, unknown>) => (opts ? `${key}:${JSON.stringify(opts)}` : key) }),

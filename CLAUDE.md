@@ -103,6 +103,24 @@ gh release create vX.Y.Z --generate-notes --title "Boardly vX.Y.Z"
 
 Release notes are auto-drafted by `.github/workflows/release-drafter.yml` based on PR labels.
 
+**At most one release a day; hotfixes excepted.** Vercel deploys only `main`, `release/*` and
+`hotfix/*` (`git.deploymentEnabled` in `vercel.json`, the Ignored Build Step behind it), so every
+release is two paid builds and pushes to `develop` create no deployment – `boardly-kappa.vercel.app`
+stays on its last develop build. The team has a $5 on-demand cap that pauses every project when
+reached; batch the day's work into one release.
+
+**Whatever the root layout caches sets every static page's ISR period (#1511).** `unstable_cache`
+hands its `revalidate` to the page that calls it, so a 30 s cache in `AnnouncementBanner` made all
+static routes rebuild every 30 s, and Sentry's one-a-minute uptime check rebuilt `/` ~1 400 times a
+day. Read the build's route table after touching anything the layout reads: static rows say `1h`.
+
+**There are three root layouts since #1394: `app/(site)/layout.tsx`, `app/ru/layout.tsx` and
+`app/uk/layout.tsx`, all rendering `app/root-document.tsx`.** Next attaches a file-based
+`opengraph-image` only to metadata set at its own segment level, so when the layouts moved, `/`
+and 20 static pages lost their share image while every test stayed green. The site card is now a
+route handler named in `siteMetadata` (`lib/site-card.tsx`). After touching layouts or metadata,
+compare `og:image` across the prerendered HTML of a develop build and yours: no route may lose it.
+
 ---
 
 ## Plans, costs and accounts: read the vault before answering
@@ -198,7 +216,7 @@ plus 844×390 landscape). Check before calling it done:
      - `transform` and `opacity` only (see "Animations — never animate height");
      - roughly 200–450 ms;
      - `prefers-reduced-motion` respected;
-     - a `lib/sounds` cue alongside, where one exists.
+     - a sound-map cue (`lib/sound-map.ts`) alongside, where one exists.
 
 ## Adding a new game — checklist
 
@@ -240,15 +258,17 @@ plus 844×390 landscape). Check before calling it done:
       slots, pre-translated titles) — a hand-rolled player card, result
       overlay, status banner, tab strip, or chat in a game page is a review
       blocker.
-- [ ] `app/games/<game>/page.tsx` — detail page with SEO metadata + JSON-LD
-- [ ] `app/games/<game>/ConnectFourDetailContent.tsx` (or similar) — client content component
-- [ ] `app/games/<game>/lobbies/page.tsx` — lobbies list page (use `GameLobbiesPage`)
-- [ ] `app/lobby/[code]/<game>-page.tsx` — full game UI (dedicated lobby page)
-- [ ] `app/lobby/[code]/LobbyPageClient.tsx` — add dynamic import + route check
+- [ ] `app/(site)/games/<game>/page.tsx` — detail page with SEO metadata + JSON-LD
+- [ ] `app/(site)/games/<game>/ConnectFourDetailContent.tsx` (or similar) — client content component
+- [ ] `app/(site)/games/<game>/lobbies/page.tsx` — lobbies list page (use `GameLobbiesPage`)
+- [ ] `app/(site)/lobby/[code]/<game>-page.tsx` — full game UI (dedicated lobby page)
+- [ ] `app/(site)/lobby/[code]/LobbyPageClient.tsx` — add dynamic import + route check
+- [ ] `app/localized-game-page.tsx` — add the detail component to `DETAIL_CONTENT`, so `/ru/games/<game>` and `/uk/games/<game>` exist (#1394); `localized-pages.test.tsx` fails without it
+- [ ] Every new page goes under `app/(site)/`: outside every root layout, Next writes a bare layout for it
 - [ ] `components/HomePage/GameRibbon.tsx` – add to `translatedDetails` and `getIllustration`; the accent colour and the detail href are derived from the catalog entry, so there is nothing else to add
 
 ### Locales
-- [ ] `locales/en.ts`, `ru.ts`, `no.ts`, `uk.ts` — add complete `games.<game>` namespace (parity enforced by pre-commit hook)
+- [ ] `locales/en.ts`, `ru.ts`, `no.ts`, `uk.ts`, `de.ts`, `es.ts` — add complete `games.<game>` namespace, `seo.title` and `seo.description` included – they are the /ru and /uk page titles (parity enforced by pre-commit hook)
 
 ### Verify
 ```bash
@@ -290,12 +310,12 @@ read at the start of every session, whatever the session is about.*
 ## i18n — never hardcode a user-visible string
 
 Every label, message and piece of copy goes through the `t()` helper with a key defined in
-**all four** locale files (`locales/en.ts`, `ru.ts`, `no.ts`, `uk.ts`). Parity is enforced
+**all six** locale files (`locales/en.ts`, `ru.ts`, `no.ts`, `uk.ts`, `de.ts`, `es.ts`). Parity is enforced
 by the pre-commit hook.
 
-Add the key to all four files first, then use `t('namespace.key')`. Never write
+Add the key to all six files first, then use `t('namespace.key')`. Never write
 `t('key', 'fallback text')` — the fallback masks a missing translation and passes the
-parity check while leaving three languages broken.
+parity check while leaving five languages broken.
 
 ## Animations — never animate height
 
@@ -480,7 +500,7 @@ sentence it must state below in `details`.
   `Cross-Origin-Resource-Policy: same-site` would stop a mail client from showing the image.
 - **Language (#1331).** Every mail is in one language: the site locale stored on the account in
   `Users.language`, which `components/AccountLanguageSync.tsx` writes through `PUT /api/user/language`
-  after sign-in and on every language switch. `no` gets Norwegian; `en`, `ru`, `uk` and none get
+  after sign-in and on every language switch. `no` gets Norwegian; `en`, `ru`, `uk`, `de`, `es` and none get
   English, because mail copy exists only in English and Norwegian. A mail sent while answering a
   request takes `emailLanguageFor(user.language, request)`, which falls back to Accept-Language only
   when nothing is stored (no account yet, or the browser has not written it). A cron, webhook or
@@ -526,7 +546,9 @@ comes. On 2026-09-20 one agent sat blocked behind three stacked prompts for over
 and had to be killed; the transcript had reached 3.6 MB.
 
 - **Launch with `--use-mock-keychain`.** Chromium then never asks. There is nothing in a
-  throwaway automation profile worth encrypting anyway.
+  throwaway automation profile worth encrypting anyway. The Playwright MCP gets it from
+  `~/.config/playwright-mcp/config.json` (`--config` in its user-scope entry, since 2026-10-27);
+  before that it launched without the flag.
 - A fresh `--user-data-dir` does not avoid this on its own - the prompt is about the
   keychain, not the profile.
 - If it happens anyway, the automation instance is safe to kill: its command line carries
@@ -563,8 +585,9 @@ agent concluded exactly that on 2026-09-20. It is real, it is populated, and it 
 Control-Panel-only bookkeeping. Query it through the `supabase-prod` MCP.
 
 **And the guest purge erases the evidence.** `scripts/cleanup-old-guests.ts` deletes
-guests inactive for 3 days and their `Players` rows go with them, so anything older than
-that has lost the majority of its players — guests are most of the audience. Retention
+guests inactive for 3 days who never played, and guests who played after 90 idle days
+(`lib/retention-periods.ts`); their `Players` rows go with them, so older games have lost
+many of their players — guests are most of the audience. Retention
 has to be read from `AnalyticsUserFacts`, which keeps a row after the user is gone and
 marks it `missingSince`.
 
@@ -624,7 +647,7 @@ type `Secret` for a `NEXT_PUBLIC_*` key, correctly: those values are inlined int
 
 ## Ads — what is already true, and the one place they must not go
 
-`app/layout.tsx` loads `adsbygoogle.js` for publisher `ca-pub-9471518400402044`, **in
+`app/root-document.tsx` (the document every root layout renders) loads `adsbygoogle.js` for publisher `ca-pub-9471518400402044`, **in
 production only** (#1152 — a fresh-profile measurement of boardly.online showed the loader
 firing a request to `fundingchoicesmessages.google.com` and writing a first-party `FCCDCF`
 cookie before any consent existed; preview and development gained nothing from carrying it,
@@ -632,8 +655,8 @@ so it no longer loads there). That script is **three things at once**, which is 
 stays on in production even with no ad showing: site verification, the ad loader, and
 **Google's EEA/UK consent message**. The consent message has been published for
 boardly.online in 32 languages since 2026-09-02 and is delivered by that loader. So the
-privacy notice's promise of consent-gated personalised ads (`app/privacy/PrivacyNotice.tsx`,
-rewritten in #1126 — `app/privacy/page.tsx` is now a thin wrapper, not the line to cite) is
+privacy notice's promise of consent-gated personalised ads (`app/(site)/privacy/PrivacyNotice.tsx`,
+rewritten in #1126 — `app/(site)/privacy/page.tsx` is now a thin wrapper, not the line to cite) is
 backed.
 
 **The absence of a CMP, TCF shim or cookie banner in the tree is conditional, not settled
@@ -649,7 +672,7 @@ message via the `googlefc` revocation API for anyone who wants to change their c
 Google is the holder of the consent record itself (its CMP, its TC string), and the
 2026-09-24 privacy notice rewrite (#1126) names it: the AdSense/Funding Choices script, the
 `FCCDCF` cookie, and Google as an independent controller for that data are in
-`app/privacy/PrivacyNotice.tsx` / `locales/*.ts` `privacyPolicy.recipients`.
+`app/(site)/privacy/PrivacyNotice.tsx` / `locales/*.ts` `privacyPolicy.recipients`.
 
 Ad units live in `components/AdSlot.tsx`, ids in `lib/ad-slots.ts`. Three gates must all
 open before an `<ins>` reaches the DOM: `NEXT_PUBLIC_ADS_ENABLED`, client mount, premium.
@@ -755,8 +778,8 @@ A routine created without `mcp_connections` gets every account connector — pas
 
 - **Bots are ordinary `Users` rows** (`isGuest = false`, matching `Bots` row). Every user
   metric needs the `Bots` anti-join or it counts 24 bots as users.
-- **Guests are hard-deleted after three idle days and `Players` cascades**, so most games
-  have no `Players` rows; the surviving roster is `Games.state->'players'`.
+- **Guests are hard-deleted (3 idle days if they never played, 90 if they did) and `Players`
+  cascades**, so many older games have missing `Players` rows; the surviving roster is `Games.state->'players'`.
 - **`status = 'cancelled'` means nobody ever joined** (`startedAt IS NULL`). Dropping it from
   a completion rate hides the product's largest leak.
 

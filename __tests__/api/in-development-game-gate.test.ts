@@ -106,6 +106,7 @@ jest.mock('@/lib/db', () => ({
 jest.mock('@/lib/request-auth', () => ({
   getRequestAuthUser: jest.fn(),
 }))
+jest.mock('@/lib/terms-gate', () => ({ requiresTermsAcceptance: jest.fn().mockResolvedValue(false) }))
 
 jest.mock('@/lib/logger', () => ({
   apiLogger: jest.fn(() => ({
@@ -362,10 +363,10 @@ describe('#1054 ENABLE_IN_DEVELOPMENT_GAMES', () => {
    * interchangeable. `ENABLE_IN_DEVELOPMENT_GAMES` is the one a server route sees;
    * `NEXT_PUBLIC_ENABLE_IN_DEVELOPMENT_GAMES` is the only one Next inlines into a client
    * bundle. Seven `'use client'` files read the catalog through this same chokepoint, five of
-   * them on surfaces a visitor sees - `app/lobby/create/page.tsx`,
+   * them on surfaces a visitor sees - `app/(site)/lobby/create/page.tsx`,
    * `components/HomePage/GameRibbon.tsx`, `components/HomePage/QuickPlayButton.tsx`,
-   * `components/PlayerStatsDashboard.tsx` and `app/lobby/[code]/components/TryBotGamesBanner.tsx`
-   * (the other two are under `app/dev/`). A gate that only opened server-side would answer 200
+   * `components/PlayerStatsDashboard.tsx` and `app/(site)/lobby/[code]/components/TryBotGamesBanner.tsx`
+   * (the other two are under `app/(site)/dev/`). A gate that only opened server-side would answer 200
    * for a game no picker on the site ever lists - confirmed in a real browser on 2026-09-20:
    * with only the server variable set the server-rendered home page carried
    * `href="/games/liars-party"` and the hydrated page did not.

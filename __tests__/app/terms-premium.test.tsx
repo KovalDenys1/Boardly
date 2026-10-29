@@ -1,13 +1,15 @@
 import { readFileSync } from 'node:fs'
 import path from 'node:path'
 import { render, screen } from '@testing-library/react'
-import PremiumTerms from '@/app/terms/PremiumTerms'
+import PremiumTerms from '@/app/(site)/terms/PremiumTerms'
 import { SUPPORT_EMAIL } from '@/lib/organization-json-ld'
 import { LINK_SUPPORT_URL, LINK_TERMS_URL } from '@/lib/sold-through-link'
 import en from '@/locales/en'
 import no from '@/locales/no'
 import ru from '@/locales/ru'
 import uk from '@/locales/uk'
+import de from '@/locales/de'
+import es from '@/locales/es'
 
 // Resolve keys against a real bundle, switchable per test, as the withdrawal
 // page test does, so the section is rendered in English and in Norwegian.
@@ -31,9 +33,9 @@ jest.mock('@/lib/i18n-helpers', () => {
 })
 
 const root = process.cwd()
-const source = readFileSync(path.join(root, 'app/terms/PremiumTerms.tsx'), 'utf8')
+const source = readFileSync(path.join(root, 'app/(site)/terms/PremiumTerms.tsx'), 'utf8')
 // The page is a thin server wrapper since #1166; the sections live in TermsContent.
-const page = readFileSync(path.join(root, 'app/terms/TermsContent.tsx'), 'utf8')
+const page = readFileSync(path.join(root, 'app/(site)/terms/TermsContent.tsx'), 'utf8')
 
 function localeValue(locale: object, key: string): unknown {
   return key
@@ -49,7 +51,7 @@ describe('/terms, section 3: Premium sold through Link (#1179)', () => {
   it('uses only translation keys that exist in all four locales, and never a fallback', () => {
     const keys = [...source.matchAll(/\bt\('([^']+)'/g)].map((match) => match[1])
     expect(keys.length).toBeGreaterThanOrEqual(10)
-    for (const [name, locale] of Object.entries({ en, no, ru, uk })) {
+    for (const [name, locale] of Object.entries({ en, no, ru, uk, de, es })) {
       const missing = keys.filter((key) => typeof localeValue(locale, key) !== 'string')
       expect({ locale: name, missing }).toEqual({ locale: name, missing: [] })
     }
@@ -89,7 +91,7 @@ describe('/terms, section 3: Premium sold through Link (#1179)', () => {
   })
 
   it('no longer says that no VAT is added, anywhere Premium is priced', () => {
-    for (const [name, locale] of Object.entries({ en, no, ru, uk })) {
+    for (const [name, locale] of Object.entries({ en, no, ru, uk, de, es })) {
       const copy = [locale.premium.priceNoteTax, ...Object.values(locale.terms.premium)].join(' ')
       expect({ locale: name, mentionsLink: copy.includes('Link') }).toEqual({ locale: name, mentionsLink: true })
       expect(copy).not.toMatch(/no VAT|ikke til merverdiavgift|НДС сверху не|ПДВ зверху не/)
@@ -110,7 +112,7 @@ describe('/terms, section 3: Premium sold through Link (#1179)', () => {
   })
 
   it('keeps the 14-day right and uses no em dash', () => {
-    for (const locale of [en, no, ru, uk]) {
+    for (const locale of [en, no, ru, uk, de, es]) {
       expect(locale.terms.premium.withdrawal).toContain('14')
       expect(JSON.stringify(locale.terms)).not.toContain('—')
     }

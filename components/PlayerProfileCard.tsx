@@ -8,6 +8,8 @@ import Modal from './Modal'
 import GameIcon from '@/components/GameIcon'
 import { ReportForm } from '@/components/ReportDialog'
 import { useTranslation } from '@/lib/i18n-helpers'
+import { showToast } from '@/lib/i18n-toast'
+import { useBlockedPlayers } from '@/hooks/useBlockedPlayers'
 import { getGameMetadata } from '@/lib/game-catalog'
 import { fetchWithGuest, getGuestData } from '@/lib/client/fetch-with-guest'
 import type { ReportTarget } from '@/lib/content-reports'
@@ -37,6 +39,34 @@ export interface PlayerReportContext {
   lobbyCode?: string
   /** Sketch & Guess: the round this player is drawing, offered as a report target. */
   drawing?: { gameId: string; round: number } | null
+}
+
+// Its own component so the block list loads when a card opens, not wherever a closed card is mounted.
+function BlockToggle({ playerId, username }: { playerId: string; username: string }) {
+  const { t } = useTranslation()
+  const { blockedIds, block, unblock, ready } = useBlockedPlayers()
+  const isBlocked = blockedIds.has(playerId)
+
+  const toggle = async () => {
+    if (isBlocked) {
+      if (!(await unblock(playerId))) showToast.error('errors.generic')
+      return
+    }
+    if (!(await block({ id: playerId, username }))) showToast.error('chat.blockFailed', undefined, { player: username })
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={() => void toggle()}
+      disabled={!ready}
+      className="inline-flex items-center gap-1.5 rounded-lg px-2 py-1 text-xs font-semibold transition-colors hover:bg-(--bd-bg2) focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-bd-lav-deep disabled:cursor-not-allowed disabled:opacity-50"
+      style={{ color: 'var(--bd-ink-muted)' }}
+    >
+      <Icon name="prohibit" size={13} />
+      {isBlocked ? t('profile.playerCard.unblock') : t('profile.playerCard.block')}
+    </button>
+  )
 }
 
 interface PlayerProfileCardProps {
@@ -122,6 +152,8 @@ export default function PlayerProfileCard({ userId, onClose, reportContext }: Pl
     return targets
   }, [data, viewerId, reportContext?.lobbyCode, reportContext?.drawing])
 
+  const canBlock = !!data && data.relation !== 'self' && data.userId !== viewerId
+
   const initials = data?.username?.slice(0, 2).toUpperCase() ?? '?'
   const favouriteMeta = data?.favouriteGame ? getGameMetadata(data.favouriteGame) : null
   const gameLabel = favouriteMeta
@@ -175,7 +207,7 @@ export default function PlayerProfileCard({ userId, onClose, reportContext }: Pl
               ) : (
                 <div
                   className="w-14 h-14 rounded-full flex items-center justify-center font-bold text-xl shrink-0"
-                  style={{ background: 'var(--bd-ink)', color: 'var(--bd-sun)' }}
+                  style={{ background: 'var(--bd-logo-tile)', color: 'var(--bd-sun)' }}
                 >
                   {initials}
                 </div>
@@ -276,7 +308,7 @@ export default function PlayerProfileCard({ userId, onClose, reportContext }: Pl
                   <button
                     onClick={handleAddFriend}
                     disabled={friendState === 'loading'}
-                    className="w-full py-2 px-4 text-white rounded-xl text-sm font-semibold transition-opacity disabled:opacity-60 hover:opacity-80"
+                    className="w-full py-2 px-4 text-bd-bg rounded-xl text-sm font-semibold transition-opacity disabled:opacity-60 hover:opacity-80"
                     style={{ background: 'var(--bd-ink)', boxShadow: '0 3px 0 var(--bd-coral)' }}
                   >
                     {friendState === 'loading' ? t('profile.sending') : `+ ${t('profile.friends.addFriend')}`}
@@ -285,18 +317,23 @@ export default function PlayerProfileCard({ userId, onClose, reportContext }: Pl
               </div>
             )}
 
-            {/* Report (#1172): quiet, at the foot of the card, never the first thing. */}
-            {reportTargets.length > 0 && (
-              <div className="flex justify-end">
-                <button
-                  type="button"
-                  onClick={() => setView('report')}
-                  className="inline-flex items-center gap-1.5 rounded-lg px-2 py-1 text-xs font-semibold transition-colors hover:bg-(--bd-bg2) focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-bd-lav-deep"
-                  style={{ color: 'var(--bd-ink-muted)' }}
-                >
-                  <Icon name="flag" size={13} />
-                  {t('report.reportPlayer')}
-                </button>
+            {/* Block (#1466) and Report (#1172): quiet, at the foot of the card, never the first thing. */}
+            {(canBlock || reportTargets.length > 0) && (
+              <div className="flex justify-end gap-1">
+                {canBlock && (
+                  <BlockToggle playerId={data.userId} username={data.username ?? t('game.ui.playerFallback')} />
+                )}
+                {reportTargets.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setView('report')}
+                    className="inline-flex items-center gap-1.5 rounded-lg px-2 py-1 text-xs font-semibold transition-colors hover:bg-(--bd-bg2) focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-bd-lav-deep"
+                    style={{ color: 'var(--bd-ink-muted)' }}
+                  >
+                    <Icon name="flag" size={13} />
+                    {t('report.reportPlayer')}
+                  </button>
+                )}
               </div>
             )}
           </>

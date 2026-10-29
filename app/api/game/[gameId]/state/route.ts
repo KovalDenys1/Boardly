@@ -18,6 +18,10 @@ import { checkAchievementsOnStatusChange } from '@/lib/achievement-engine'
 import { gameStateRequestSchema, type AutoActionContextRequest } from '@/lib/validation/game-state'
 import { runAfterResponse } from '@/lib/after-response'
 import { buildBotTurnHeaders, getInternalAppOrigin, postBotTurn } from '@/lib/bot-turn-trigger'
+import { requiresTermsAcceptance } from '@/lib/terms-gate'
+import { applySpyAction, spyActionSchema } from '@/lib/spy-action'
+import { LiarsPartyGame, liarsPartyTimeoutRecord } from '@/lib/games/liars-party-game'
+import { commitTimeoutFallback } from '@/lib/party-timeout-commit'
 
 type AutoActionContext = AutoActionContextRequest
 
@@ -322,6 +326,11 @@ export async function POST(
       return NextResponse.json({ error: 'Game not found' }, { status: 404 })
     }
 
+    // A leave abandons the row without touching the saved state, which still says playing.
+    if (game.status === 'abandoned' || game.status === 'cancelled') {
+      return NextResponse.json({ error: 'Game is no longer active', code: 'GAME_NOT_ACTIVE' }, { status: 400 })
+    }
+
     // Sketch & Guess has its own move route, which applies the game's phase
     // clock, checks who the host is, and redacts the answer per viewer. This
     // generic one did none of that and passed the client's move data straight
@@ -332,7 +341,22 @@ export async function POST(
         { status: 400 }
       )
     }
-    
+
+    if (game.lobby.gameType === 'guess_the_spy') {
+      const spyMove = spyActionSchema.safeParse({ action: move.type, data: move.data })
+      if (!spyMove.success) {
+        return NextResponse.json({ error: 'Invalid action', details: spyMove.error.flatten() }, { status: 400 })
+      }
+      return applySpyAction({
+        gameId,
+        userId,
+        username: requestUser.username || 'Guest',
+        action: spyMove.data.action,
+        data: spyMove.data.data,
+        log,
+      })
+    }
+
     log.debug('Game fetched successfully', { gameId, status: game.status })
 
     interface GamePlayer {
@@ -363,6 +387,13 @@ export async function POST(
     // here against the lobby row. The host passes to another player when they
     // leave (lib/lobby-leave.ts); a lobby with no host at all (its creator's
     // account deleted) lets anyone seated go on rather than end the series.
+    if (game.lobby.gameType === 'liars_party' && move.type === 'submit-claim' && (await requiresTermsAcceptance(userId))) {
+      return NextResponse.json(
+        { error: 'Accept the terms before posting', code: 'TERMS_REQUIRED' },
+        { status: 403 }
+      )
+    }
+
     if (move.type === 'next-round' && game.lobby.creatorId && game.lobby.creatorId !== userId) {
       return NextResponse.json(
         { error: 'Only the host can start the next round', code: 'HOST_ONLY_MOVE' },
@@ -402,6 +433,28 @@ export async function POST(
         { error: 'This move is only made by the turn timer', code: 'TIMER_ONLY_MOVE' },
         { status: 400 }
       )
+    }
+
+    // The lobby read applies a lapsed Liar's Party clock only when it next runs; a move landing first must not reopen the round it closed.
+    if (gameEngine instanceof LiarsPartyGame && game.status === 'playing') {
+      const turnTimerSeconds = resolveTurnTimerMs(game.lobby?.turnTimer) / 1000
+      const lapsed = turnTimerSeconds > 0 ? gameEngine.closeLapsedPhase(turnTimerSeconds) : null
+      if (lapsed?.changed) {
+        const record = liarsPartyTimeoutRecord(lapsed)
+        const committed = await commitTimeoutFallback({
+          activeGame: game,
+          nextState: gameEngine.getState(),
+          ...record,
+          lobbyCode: game.lobby.code,
+          gameType: 'liars_party',
+          gameSocketEvent: 'liars-party-action',
+          gameSocketData: record.actionPayload,
+          source: 'move',
+        })
+        return committed
+          ? NextResponse.json({ error: 'Turn already ended', code: 'TURN_ALREADY_ENDED', skipped: true }, { status: 409 })
+          : NextResponse.json({ error: 'Game state changed, please retry', code: 'STATE_CONFLICT', skipped: false }, { status: 409 })
+      }
     }
 
     if (isAutoAction) {
@@ -590,6 +643,7 @@ export async function POST(
       enginePlayers: enginePlayers as Player[],
       dbPlayersByUserId,
       getScorecard,
+      sharedTopWins: game.lobby.gameType === 'yahtzee',
     })
 
     const gameUpdateResult = await prisma.$transaction(async (tx) => {

@@ -2,7 +2,9 @@
 
 import React, { useEffect, useState } from 'react'
 import { useTranslation, type TranslationKeys } from '@/lib/i18n-helpers'
+import { noteLiveFinish } from '@/lib/live-finish'
 import { Icon } from '@/components/icons'
+import { useTurnTimerSounds } from '@/hooks/useTurnTimerSounds'
 
 /**
  * Shared turn/result status banner (#736 phase 4) — replaces
@@ -66,7 +68,7 @@ const DANGER_SECONDS = 10
  */
 function formatSeconds(secs: number): string {
   const safe = Math.max(0, Math.floor(secs))
-  if (safe < 100) return `:${String(safe).padStart(2, '0')}`
+  if (safe < 60) return `:${String(safe).padStart(2, '0')}`
   return `${Math.floor(safe / 60)}:${String(safe % 60).padStart(2, '0')}`
 }
 
@@ -96,10 +98,17 @@ export default function GameStatusBanner({
   showTimer = true,
 }: GameStatusBannerProps) {
   const { t } = useTranslation()
+  // Every result overlay sits under this banner, and only the banner is mounted before the finish.
+  const finishedRef = React.useRef(isFinished)
+  useEffect(() => {
+    if (isFinished && !finishedRef.current) noteLiveFinish()
+    finishedRef.current = isFinished
+  }, [isFinished])
   // A live region announces changes, not what it mounted with: it starts empty
   // and gets the hint after mount.
   const [mounted, setMounted] = useState(false)
   useEffect(() => setMounted(true), [])
+  useTurnTimerSounds(secs, !isFinished && !isSpectator && isYourTurn && showTimer && turnTimerLimit > 0)
 
   if (isFinished) {
     const result: GameOutcome | 'over' =
@@ -113,12 +122,12 @@ export default function GameStatusBanner({
     const badge = BADGE[result]
     const badgeStyle: React.CSSProperties = {
       display: 'inline-flex', padding: '4px 10px', borderRadius: 999, fontSize: 11, fontWeight: 700,
-      border: '2px solid var(--bd-ink)', boxShadow: '2px 2px 0 var(--bd-ink)', fontFamily: 'var(--bd-font-display)',
+      border: '2px solid var(--bd-ink-on-accent)', boxShadow: '2px 2px 0 var(--bd-ink-on-accent)', fontFamily: 'var(--bd-font-display)',
       whiteSpace: 'nowrap', flexShrink: 0, background: badge.background, color: badge.color,
     }
     return (
       <div key={finishedMessage ?? 'finished'} className="game-status-cue" data-testid="game-status-title" data-outcome={result} style={{
-        padding: '10px 16px', borderRadius: 14, background: 'var(--bd-ink)', color: 'var(--bd-bg)',
+        padding: '10px 16px', borderRadius: 14, background: 'var(--bd-inverse)', color: 'var(--bd-ink-on-inverse)',
         display: 'flex', alignItems: 'center', gap: 12,
         boxShadow: `0 4px 0 ${badge.plate}`,
       }}>
@@ -185,7 +194,7 @@ export default function GameStatusBanner({
       {showTimer && (
         <div style={{
           fontFamily: 'ui-monospace, monospace', fontSize: 18, fontWeight: 700, minWidth: 44, textAlign: 'right',
-          color: danger ? 'var(--bd-coral-deep)' : 'var(--bd-ink)',
+          color: danger ? 'var(--bd-coral-text)' : 'var(--bd-ink)',
         }}>
           {formatSeconds(secs)}
         </div>

@@ -12,6 +12,7 @@ const mockUseSession = useSession as jest.MockedFunction<typeof useSession>
 const GUEST_ID_KEY = 'boardly_guest_id'
 const GUEST_NAME_KEY = 'boardly_guest_name'
 const GUEST_TOKEN_KEY = 'boardly_guest_token'
+const BLOCKED_PLAYERS_KEY = 'boardly_blocked_players'
 
 describe('GuestContext', () => {
   const originalFetch = global.fetch
@@ -150,6 +151,18 @@ describe('GuestContext', () => {
     expect(window.localStorage.getItem(GUEST_ID_KEY)).toBeNull()
     expect(window.localStorage.getItem(GUEST_NAME_KEY)).toBeNull()
     expect(window.localStorage.getItem(GUEST_TOKEN_KEY)).toBeNull()
+  })
+
+  it('exiting guest mode keeps the blocked players, as it keeps the identity (#818)', async () => {
+    const blocked = JSON.stringify([{ id: 'u2', username: 'Rival', blockedAt: 'x' }])
+    window.localStorage.setItem(BLOCKED_PLAYERS_KEY, blocked)
+    const { result } = renderHook(() => useGuest(), { wrapper })
+
+    act(() => {
+      result.current.clearGuestMode()
+    })
+
+    expect(window.localStorage.getItem(BLOCKED_PLAYERS_KEY)).toBe(blocked)
   })
 
   it('throws when useGuest is called outside provider', () => {
@@ -315,6 +328,7 @@ describe('a guest the server no longer has (#1155, #1129)', () => {
     window.localStorage.setItem(GUEST_NAME_KEY, 'Stored Guest')
     window.localStorage.setItem(GUEST_TOKEN_KEY, 'stored.jwt.token')
     window.localStorage.setItem(GUEST_IDENTITY_KEY, 'stored.identity.token')
+    window.localStorage.setItem(BLOCKED_PLAYERS_KEY, JSON.stringify([{ id: 'u2', username: 'Rival', blockedAt: 'x' }]))
   }
 
   const expectDeviceCleared = () => {
@@ -322,6 +336,7 @@ describe('a guest the server no longer has (#1155, #1129)', () => {
     expect(window.localStorage.getItem(GUEST_NAME_KEY)).toBeNull()
     expect(window.localStorage.getItem(GUEST_TOKEN_KEY)).toBeNull()
     expect(window.localStorage.getItem(GUEST_IDENTITY_KEY)).toBeNull()
+    expect(window.localStorage.getItem(BLOCKED_PLAYERS_KEY)).toBeNull()
   }
 
   const serveSessionAnd = (forgetResponse: object) => {
@@ -398,6 +413,37 @@ describe('a guest the server no longer has (#1155, #1129)', () => {
     expect(result.current.isGuest).toBe(false)
   })
 
+  it('forgetGuest tells mounted block lists to drop what they held', async () => {
+    seedGuest()
+    serveSessionAnd({ ok: true, status: 200, json: async () => ({ success: true }) })
+    const changed = jest.fn()
+    window.addEventListener('boardly:blocked-players-changed', changed)
+
+    const { result } = renderHook(() => useGuest(), { wrapper })
+    await waitFor(() => expect(result.current.isGuest).toBe(true))
+    changed.mockClear()
+
+    await act(async () => {
+      await result.current.forgetGuest()
+    })
+    window.removeEventListener('boardly:blocked-players-changed', changed)
+
+    expect(window.localStorage.getItem(BLOCKED_PLAYERS_KEY)).toBeNull()
+    expect(changed).toHaveBeenCalledTimes(1)
+  })
+
+  it('forgetGuest on a device with no guest session still clears the blocked players', async () => {
+    window.localStorage.setItem(BLOCKED_PLAYERS_KEY, JSON.stringify([{ id: 'u2', username: 'Rival', blockedAt: 'x' }]))
+
+    const { result } = renderHook(() => useGuest(), { wrapper })
+    await act(async () => {
+      await result.current.forgetGuest()
+    })
+
+    expect(window.localStorage.getItem(BLOCKED_PLAYERS_KEY)).toBeNull()
+    expect(mockFetch).not.toHaveBeenCalled()
+  })
+
   it('forgetGuest treats "already gone" as done', async () => {
     seedGuest()
     serveSessionAnd({ ok: false, status: 404, json: async () => ({ code: 'GUEST_NOT_FOUND' }) })
@@ -429,5 +475,6 @@ describe('a guest the server no longer has (#1155, #1129)', () => {
     expect((caught as { code?: string }).code).toBe('GUEST_IN_ACTIVE_GAME')
     expect(window.localStorage.getItem(GUEST_ID_KEY)).toBe('guest-stored')
     expect(window.localStorage.getItem(GUEST_IDENTITY_KEY)).toBe('stored.identity.token')
+    expect(window.localStorage.getItem(BLOCKED_PLAYERS_KEY)).not.toBeNull()
   })
 })

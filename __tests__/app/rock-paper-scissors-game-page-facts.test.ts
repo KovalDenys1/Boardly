@@ -147,7 +147,7 @@ describe('the RPS bots against lib/bots and lib/bot-profiles.ts (#1238)', () => 
 
 describe('best of five is gone from every RPS surface (#1238 review)', () => {
   const BEST_OF_FIVE = /best[- ]of[- ](5|five)|best[- ]av[- ]5|до 5 побед|Best-of-5/i
-  const localeFiles = ['en', 'no', 'ru', 'uk'].map((loc) => source(`locales/${loc}.ts`))
+  const localeFiles = ['en', 'no', 'ru', 'uk', 'de', 'es'].map((loc) => source(`locales/${loc}.ts`))
 
   it('never appears in the rock_paper_scissors namespace of any locale', () => {
     for (const file of localeFiles) {
@@ -169,13 +169,13 @@ describe('the RPS round clock against the routes (#1238)', () => {
   it('quotes the lobby default, the host range and the Play vs Bot value', () => {
     expect(source('app/api/lobby/route.ts')).toMatch(/turnTimer: z\.number\(\)\.int\(\)\.min\(30\)\.max\(180\)\.default\(60\)/)
     expect(source('app/api/quick-play/route.ts')).toMatch(/QUICK_PLAY_TURN_TIMER_SECONDS = 45\b/)
-    expect(source('app/lobby/[code]/components/LobbySettingsPanel.tsx')).toMatch(/\[30, 60, 90, 120, 150, 180\]/)
+    expect(source('app/(site)/lobby/[code]/components/LobbySettingsPanel.tsx')).toMatch(/\[30, 60, 90, 120, 150, 180\]/)
     expect(rps.detail.modes.roundClock.desc).toMatch(/60 seconds a round by default; before the match starts, the host can choose 30 to 180\. Play vs Bot uses 45\./)
   })
 
   it('submits a random pick at timeout from the open page, rather than forfeiting the round', () => {
     // The pick is made by the player's own client; there is no server fallback.
-    expect(source('app/lobby/[code]/rock-paper-scissors-page.tsx')).toMatch(/submitChoice\(randomChoice, \{ isAutoAction: true \}\)/)
+    expect(source('app/(site)/lobby/[code]/rock-paper-scissors-page.tsx')).toMatch(/submitChoice\(randomChoice, \{ isAutoAction: true \}\)/)
     expect(rps.detail.rules.timeoutRandomPick).toMatch(/while the game is open, a random move is locked in for you/)
   })
 

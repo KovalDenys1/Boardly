@@ -1,0 +1,948 @@
+'use client'
+
+import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useParams, useRouter } from 'next/navigation'
+import { useSession } from 'next-auth/react'
+import type { RealtimeChannel } from '@supabase/supabase-js'
+import dynamic from 'next/dynamic'
+import { useGuest } from '@/contexts/GuestContext'
+import { fetchWithGuest } from '@/lib/fetch-with-guest'
+import { useTranslation } from '@/lib/i18n-helpers'
+import { Icon } from '@/components/icons'
+import { getSupabaseClient } from '@/lib/supabase-client'
+import { acquireLobbyChannel } from '@/lib/lobby-channel-registry'
+import { spectatorTopicFor } from '@/lib/lobby-realtime-topic'
+import { readSpectatorChatMessage, type SpectatorChatMessage } from '@/lib/spectator-chat'
+import { acceptTerms } from '@/lib/client/terms-consent'
+import { useBlockedPlayers } from '@/hooks/useBlockedPlayers'
+import TermsConsentPanel from '@/components/TermsConsentPanel'
+import BlockedText from '@/components/BlockedText'
+import { restoreGameEngineClient } from '@/lib/restore-game-engine-client'
+import LoadingSpinner from '@/components/LoadingSpinner'
+import { LobbyPageLoadingFallback } from '@/app/(site)/lobby/[code]/components/LobbyPageFallbacks'
+import type { Lobby, Game, GamePlayer } from '@/types/game'
+import type { GameState } from '@/lib/game-engine'
+import type { YahtzeeGame } from '@/lib/games/yahtzee-game'
+import { isBotSeat } from '@/lib/bots/core/bot-helpers'
+import { lobbySoundCues } from '@/lib/lobby-sound-cues'
+import { useSoundConsumer } from '@/hooks/useSoundConsumer'
+import { useSpectatorResultCue } from '@/hooks/useSpectatorResultCue'
+import { beginLobbyRead, createFreshnessWatermark, decideFreshness } from '@/lib/game-state-freshness'
+
+const ConnectFourLobbyPage = dynamic(() => import('../connect-four-page'), { ssr: false, loading: () => <LobbyPageLoadingFallback /> })
+const LudoLobbyPage = dynamic(() => import('../ludo-page'), { ssr: false, loading: () => <LobbyPageLoadingFallback /> })
+const TicTacToeLobbyPage = dynamic(() => import('../tic-tac-toe-page'), { ssr: false, loading: () => <LobbyPageLoadingFallback /> })
+const RockPaperScissorsLobbyPage = dynamic(() => import('../rock-paper-scissors-page'), { ssr: false, loading: () => <LobbyPageLoadingFallback /> })
+const AliasPage = dynamic(() => import('../alias-page'), { ssr: false, loading: () => <LobbyPageLoadingFallback /> })
+const LiarsPartyPage = dynamic(() => import('../liars-party-page'), { ssr: false, loading: () => <LobbyPageLoadingFallback /> })
+const SketchAndGuessLobbyPage = dynamic(() => import('../sketch-and-guess-page'), { ssr: false, loading: () => <LobbyPageLoadingFallback /> })
+const CheckersLobbyPage = dynamic(() => import('../checkers-page'), { ssr: false, loading: () => <LobbyPageLoadingFallback /> })
+const MemoryGameBoard = dynamic(() => import('../components/MemoryGameBoard'), { ssr: false })
+const SpyGameBoard = dynamic(() => import('../components/SpyGameBoard'), { ssr: false })
+const YahtzeeDiceBar = dynamic(() => import('@/components/yahtzee/YahtzeeDiceBar'), { ssr: false })
+const YahtzeeScoreTable = dynamic(() => import('@/components/yahtzee/YahtzeeScoreTable'), { ssr: false })
+
+const DEDICATED_SPECTATOR_GAMES = new Set(['connect_four', 'tic_tac_toe', 'rock_paper_scissors', 'alias', 'liars_party', 'sketch_and_guess', 'checkers', 'ludo'])
+
+type SpectatorUser = {
+  userId: string
+  username: string
+}
+
+type SpectatorLobbyResponse = {
+  lobby: Lobby
+  activeGame: Game | null
+  canJoinAsPlayer: boolean
+  // The broadcast topic to subscribe to. It carries a per-lobby secret, and the
+  // snapshot request is what earns it: a lobby with spectators switched off
+  // never returns one, so its state is no longer readable by guessing the
+  // four-digit code (#845).
+  realtimeTopic?: string
+  viewer?: { termsAccepted?: boolean }
+}
+
+function SpectatorTopBar({
+  spectatorCount,
+  canJoinAsPlayer,
+  joiningAsPlayer,
+  onJoinAsPlayer,
+  lobbyCode,
+  isAdminView,
+  isMidMatch,
+}: {
+  spectatorCount: number
+  canJoinAsPlayer: boolean
+  joiningAsPlayer: boolean
+  onJoinAsPlayer: () => void
+  lobbyCode: string
+  isAdminView?: boolean
+  isMidMatch?: boolean
+}) {
+  const { t } = useTranslation()
+  return (
+    <div style={{
+      position: 'sticky',
+      top: 0,
+      zIndex: 50,
+      background: isAdminView ? 'rgba(124,58,237,0.92)' : 'rgba(31,27,22,0.92)',
+      backdropFilter: 'blur(8px)',
+      borderBottom: '1px solid rgba(255,255,255,0.12)',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      padding: '8px 16px',
+      gap: 12,
+      flexWrap: 'wrap',
+    }}>
+      <span style={{
+        color: 'white', fontSize: 13, fontWeight: 600,
+        display: 'flex', alignItems: 'center', gap: 6,
+      }}>
+        <Icon name={isAdminView ? 'shield' : 'eye'} size={14} />
+        {isAdminView ? t('spectate.adminViewBanner') : t('spectate.watchingCount', { count: spectatorCount })}
+      </span>
+      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+        {canJoinAsPlayer && (
+          <button
+            type="button"
+            onClick={onJoinAsPlayer}
+            disabled={joiningAsPlayer}
+            style={{
+              padding: '6px 14px', borderRadius: 12, fontSize: 13, fontWeight: 700,
+              background: 'var(--bd-coral)', color: 'var(--bd-ink-on-accent)', border: 'none',
+              cursor: joiningAsPlayer ? 'not-allowed' : 'pointer',
+              opacity: joiningAsPlayer ? 0.65 : 1,
+              fontFamily: 'inherit',
+            }}
+          >
+            {joiningAsPlayer ? t('spectate.joining') : isMidMatch ? t('spectate.joinNextGame') : t('spectate.joinAsPlayer')}
+          </button>
+        )}
+        <a
+          href={`/lobby/${lobbyCode}`}
+          style={{
+            padding: '6px 14px', borderRadius: 12, fontSize: 13, fontWeight: 600,
+            background: 'rgba(255,255,255,0.12)', color: 'rgba(255,255,255,0.85)',
+            border: '1px solid rgba(255,255,255,0.18)', textDecoration: 'none',
+            fontFamily: 'inherit',
+          }}
+        >
+          {t('spectate.backToLobbies')}
+        </a>
+      </div>
+    </div>
+  )
+}
+
+function SpectatorChatLog({
+  chatMessages,
+  blockedIds,
+}: {
+  chatMessages: SpectatorChatMessage[]
+  blockedIds: ReadonlySet<string>
+}) {
+  const { t } = useTranslation()
+  return (
+    <div className="mb-3 max-h-48 min-h-[80px] space-y-2 overflow-auto rounded-xl border border-bd-line bg-bd-card-warm p-3">
+      {chatMessages.length === 0 && (
+        <p className="text-sm text-bd-ink-muted">{t('chat.noMessages')}</p>
+      )}
+      {chatMessages.map((message) => (
+        <div key={message.id} className="text-sm">
+          <span className="font-semibold text-bd-ink">{message.username}: </span>
+          <span className="text-bd-ink-soft">
+            <BlockedText blocked={blockedIds.has(message.userId)} from={message.userId}>{message.message}</BlockedText>
+          </span>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+/** Spectator chat goes browser to browser with no server check, so the composer itself waits for the terms. */
+function SpectatorChatComposer({
+  termsAccepted,
+  onAcceptTerms,
+  chatInput,
+  onChatInputChange,
+  onSendMessage,
+}: {
+  termsAccepted: boolean
+  onAcceptTerms: () => Promise<boolean>
+  chatInput: string
+  onChatInputChange: (value: string) => void
+  onSendMessage: (e: React.FormEvent) => void
+}) {
+  const { t } = useTranslation()
+  if (!termsAccepted) return <TermsConsentPanel onAccept={onAcceptTerms} />
+  return (
+    <form onSubmit={onSendMessage} className="flex gap-2">
+      <input
+        type="text"
+        value={chatInput}
+        onChange={(e) => onChatInputChange(e.target.value)}
+        placeholder={t('spectate.chatPlaceholder')}
+        maxLength={500}
+        className="bd-input min-w-0 flex-1"
+      />
+      <button
+        type="submit"
+        disabled={!chatInput.trim()}
+        className="bd-btn bd-btn-primary px-3 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-50"
+      >
+        {t('chat.send')}
+      </button>
+    </form>
+  )
+}
+
+/**
+ * Chat for spectate paths that render a real game board full-page (the 6
+ * DEDICATED_SPECTATOR_GAMES plus memory/yahtzee/guess_the_spy since #672
+ * moved them onto the same real-board pattern) — those pages own their own
+ * layout, so chat can't be docked in a sidebar like the generic fallback
+ * shell below. A floating collapsible widget avoids touching 9 separate page
+ * layouts just to add one shared feature (#653).
+ */
+function FloatingSpectatorChat({
+  isAuthenticated,
+  isAdminView,
+  chatMessages,
+  blockedIds,
+  termsAccepted,
+  onAcceptTerms,
+  chatInput,
+  onChatInputChange,
+  onSendMessage,
+}: {
+  isAuthenticated: boolean
+  isAdminView: boolean
+  chatMessages: SpectatorChatMessage[]
+  blockedIds: ReadonlySet<string>
+  termsAccepted: boolean
+  onAcceptTerms: () => Promise<boolean>
+  chatInput: string
+  onChatInputChange: (value: string) => void
+  onSendMessage: (e: React.FormEvent) => void
+}) {
+  const { t } = useTranslation()
+  const [isOpen, setIsOpen] = useState(false)
+
+  if (!isAuthenticated) return null
+
+  return (
+    <>
+      <button
+        type="button"
+        onClick={() => setIsOpen((open) => !open)}
+        aria-label={t('spectate.chatTitle')}
+        style={{
+          position: 'fixed', bottom: 16, right: 16, zIndex: 60,
+          width: 48, height: 48, borderRadius: 999,
+          background: 'var(--bd-ink)', color: 'var(--bd-bg)',
+          border: 'none', cursor: 'pointer', fontSize: 20,
+          display: 'grid', placeItems: 'center',
+          boxShadow: '0 6px 16px -4px rgba(31,27,22,0.4)',
+        }}
+      >
+        <Icon name={isOpen ? 'close' : 'chat'} size={18} />
+        {!isOpen && chatMessages.length > 0 && (
+          <span aria-hidden style={{
+            position: 'absolute', top: -2, right: -2,
+            width: 12, height: 12, borderRadius: 999,
+            background: 'var(--bd-coral)', border: '2px solid var(--bd-bg)',
+          }} />
+        )}
+      </button>
+      {isOpen && (
+        <div
+          className="bd-card"
+          style={{
+            position: 'fixed', bottom: 72, right: 16, zIndex: 60,
+            width: 300, maxWidth: 'calc(100vw - 32px)',
+            display: 'flex', flexDirection: 'column', padding: 16,
+          }}
+        >
+          <h2 className="mb-3 text-sm font-bold uppercase tracking-wide text-bd-ink-muted">{t('spectate.chatTitle')}</h2>
+          <SpectatorChatLog chatMessages={chatMessages} blockedIds={blockedIds} />
+          {!isAdminView && (
+            <SpectatorChatComposer
+              termsAccepted={termsAccepted}
+              onAcceptTerms={onAcceptTerms}
+              chatInput={chatInput}
+              onChatInputChange={onChatInputChange}
+              onSendMessage={onSendMessage}
+            />
+          )}
+        </div>
+      )}
+    </>
+  )
+}
+
+function ReadOnlySpectatorBoard({
+  parsedState,
+}: {
+  parsedState: Record<string, any> | null
+}) {
+  const { t } = useTranslation()
+  if (!parsedState) {
+    return <div className="rounded-2xl border border-bd-line bg-bd-card-warm p-4 text-sm font-medium text-bd-ink-muted">{t('spectate.gameUnavailable')}</div>
+  }
+  return <div className="rounded-2xl border border-bd-line bg-bd-card-warm p-4 text-sm font-medium text-bd-ink-muted">{t('spectate.noViewForGame')}</div>
+}
+
+export default function SpectatorLobbyPage() {
+  const params = useParams()
+  const router = useRouter()
+  const { data: session } = useSession()
+  const { isGuest, guestToken, guestName, guestId } = useGuest()
+  const { t } = useTranslation()
+  const code = String(params.code || '').toUpperCase()
+
+  const [data, setData] = useState<SpectatorLobbyResponse | null>(null)
+  useSoundConsumer(lobbySoundCues(data?.lobby.gameType))
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+  const [spectators, setSpectators] = useState<SpectatorUser[]>([])
+  const [spectatorCount, setSpectatorCount] = useState(0)
+  const [joiningAsPlayer, setJoiningAsPlayer] = useState(false)
+  const [chatMessages, setChatMessages] = useState<SpectatorChatMessage[]>([])
+  const [chatInput, setChatInput] = useState('')
+  const [termsAccepted, setTermsAccepted] = useState(false)
+  const { blockedIds } = useBlockedPlayers()
+  const channelRef = useRef<RealtimeChannel | null>(null)
+  const spectatorCountDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const [isPlayerInGame, setIsPlayerInGame] = useState(false)
+  const [isLimitReached, setIsLimitReached] = useState(false)
+  const [isAdminView, setIsAdminView] = useState(false)
+  const [yahtzeeEngine, setYahtzeeEngine] = useState<YahtzeeGame | null>(null)
+  const [departedIds, setDepartedIds] = useState<ReadonlySet<string>>(new Set())
+  // The game on screen: once it finishes, the route is asked for finished games so the final board stays up.
+  const watchedGameIdRef = useRef<string | null>(null)
+  // Every update is answered with a read; one placed behind a read already shown is dropped (#1528).
+  const readsRef = useRef(createFreshnessWatermark())
+
+  const parsedState = useMemo(() => {
+    const raw = data?.activeGame?.state
+    if (typeof raw !== 'string') return null
+    try {
+      return JSON.parse(raw)
+    } catch {
+      return null
+    }
+  }, [data?.activeGame?.state])
+
+  const loadSnapshot = useCallback(async () => {
+    if (!code) return
+    const read = beginLobbyRead(readsRef.current)
+    try {
+      // Read at call time (not render time) — on a client-side transition,
+      // window.location.search may not reflect the new URL yet during the
+      // synchronous render pass, but is always settled by the time effects run.
+      const adminViewRequested = new URLSearchParams(window.location.search).get('admin') === '1'
+
+      const request = (asAdmin: boolean) => {
+        const query = new URLSearchParams()
+        if (asAdmin) query.set('adminView', 'true')
+        if (watchedGameIdRef.current) query.set('includeFinished', 'true')
+        const search = query.toString()
+        return fetchWithGuest(`/api/lobby/${code}/spectate${search ? `?${search}` : ''}`, {
+          cache: 'no-store',
+        })
+      }
+
+      let res = await request(adminViewRequested)
+      let json = await res.json()
+
+      // An admin reaching this page from an ordinary Watch button never asked
+      // for admin view, so a lobby with spectating disabled or full used to
+      // dead-end them. Retry once as admin instead of maintaining two separate
+      // Watch buttons; the API re-checks the role against the database, so a
+      // stale client-side role only costs one wasted request.
+      const isAdmin = session?.user?.role === 'admin'
+      const retryableAsAdmin =
+        json?.code === 'SPECTATOR_LIMIT_REACHED' || res.status === 403
+      if (!res.ok && !adminViewRequested && isAdmin && retryableAsAdmin) {
+        res = await request(true)
+        json = await res.json()
+      }
+
+      if (!res.ok) {
+        if (json?.code === 'PLAYER_IN_GAME') {
+          setIsPlayerInGame(true)
+          setLoading(false)
+          return
+        }
+        if (json?.code === 'SPECTATOR_LIMIT_REACHED') {
+          setIsLimitReached(true)
+          setLoading(false)
+          return
+        }
+        throw new Error(json?.error || `HTTP ${res.status}`)
+      }
+      const rawState = json?.activeGame?.state
+      let incoming: unknown = null
+      try {
+        incoming = typeof rawState === 'string' ? JSON.parse(rawState) : rawState ?? null
+      } catch {
+        incoming = null
+      }
+      if (!decideFreshness(readsRef.current, incoming, { snapshot: true, read }).accept) return
+      // A finished game is only ever the end of the one being watched, never an old game to open on.
+      const finishedElsewhere = json?.activeGame?.status === 'finished' && json.activeGame.id !== watchedGameIdRef.current
+      const snapshot: SpectatorLobbyResponse = finishedElsewhere
+        ? { ...json, activeGame: null, canJoinAsPlayer: false, lobby: { ...json.lobby, activeGame: null, games: [] } }
+        : json
+      watchedGameIdRef.current = snapshot.activeGame?.id ?? null
+      setData(snapshot)
+      setSpectatorCount(json?.lobby?.spectatorCount ?? 0)
+      setIsAdminView(json?.isAdminView === true)
+      setTermsAccepted((accepted) => accepted || json?.viewer?.termsAccepted === true)
+      setError('')
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load spectator view')
+    } finally {
+      setLoading(false)
+    }
+  }, [code, session?.user?.role])
+
+  useEffect(() => {
+    void loadSnapshot()
+  }, [loadSnapshot])
+
+  // Polling fallback — safety net for network glitches; realtime handles normal updates
+  useEffect(() => {
+    const id = setInterval(() => void loadSnapshot(), 30000)
+    return () => clearInterval(id)
+  }, [loadSnapshot])
+
+  // Subscribe to lobby broadcast for realtime game state updates (legacy games: memory, yahtzee, spy)
+  const realtimeTopic = data?.realtimeTopic
+  useEffect(() => {
+    if (!code || !realtimeTopic) return
+    // Shared with the game component this page mounts for the dedicated game
+    // types — one subscribe, one teardown, whoever gets there first (#1000).
+    const reload = () => void loadSnapshot()
+    const lobbyChannel = acquireLobbyChannel(realtimeTopic, {
+      events: {
+        'game-update': reload,
+        'game-started': reload,
+        'player-left': (payload: unknown) => {
+          const userId = (payload as { userId?: unknown } | null)?.userId
+          if (typeof userId === 'string') setDepartedIds((current) => new Set(current).add(userId))
+          reload()
+        },
+      },
+    })
+    return () => {
+      lobbyChannel.release()
+    }
+  }, [code, realtimeTopic, loadSnapshot])
+
+  // Memory and Spy play theirs from their boards, the dedicated pages from their own.
+  useSpectatorResultCue({
+    isSpectator: data?.lobby.gameType === 'yahtzee',
+    isFinished: data?.activeGame?.status === 'finished',
+    gameId: data?.activeGame?.id,
+  })
+
+  // Supabase Realtime: Presence for spectator list, Broadcast for spectator chat.
+  // The topic carries the lobby secret (audit S3-07): it is derived from the
+  // lobby topic the spectate route handed over, so nobody reaches it by
+  // guessing the four-digit code.
+  const spectatorTopic = realtimeTopic ? spectatorTopicFor(realtimeTopic) : null
+  useEffect(() => {
+    if (!code || !spectatorTopic) return
+
+    const userId = session?.user?.id ?? (isGuest ? guestId : null)
+    const username = session?.user?.name ?? (isGuest ? (guestName ?? 'Guest') : null)
+
+    const supabase = getSupabaseClient()
+    const channel = supabase.channel(spectatorTopic, {
+      config: {
+        presence: { key: userId ?? 'anon' },
+        broadcast: { self: false },
+      },
+    })
+    channelRef.current = channel
+
+    channel
+      .on('presence', { event: 'sync' }, () => {
+        const state = channel.presenceState<{ userId: string; username: string }>()
+        const all = Object.values(state).flat()
+        const newCount = all.length
+        setSpectators(all.map((s) => ({ userId: s.userId, username: s.username })))
+        setSpectatorCount(newCount)
+
+        // Debounced report to the server, which stores it for the lobby list and
+        // broadcasts it, signed, to the players (GHSA-g868-9224-wr3p). A client
+        // can no longer put the count on the lobby topic itself: receivers
+        // drop every lobby frame the server did not sign.
+        if (spectatorCountDebounceRef.current !== null) {
+          clearTimeout(spectatorCountDebounceRef.current)
+        }
+        spectatorCountDebounceRef.current = setTimeout(() => {
+          spectatorCountDebounceRef.current = null
+          void fetchWithGuest(`/api/lobby/${code}/spectator-count`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ count: newCount }),
+          })
+        }, 2000)
+      })
+      .on('broadcast', { event: 'spectator-chat' }, ({ payload }: { payload: unknown }) => {
+        // Sent by another spectator, not the server: shape and size are checked.
+        const message = readSpectatorChatMessage(payload, code)
+        if (!message) return
+        setChatMessages((prev) => {
+          if (prev.some((m) => m.id === message.id)) return prev
+          return [...prev, message].slice(-100)
+        })
+      })
+      .subscribe(async (status) => {
+        // Admin-view never tracks presence — stays invisible to the spectator
+        // count/list while still receiving sync updates for everyone else.
+        if (status === 'SUBSCRIBED' && userId && username && !isAdminView) {
+          await channel.track({ userId, username })
+        }
+      })
+
+    return () => {
+      void supabase.removeChannel(channel)
+      channelRef.current = null
+    }
+  }, [code, spectatorTopic, session?.user?.id, session?.user?.name, isGuest, guestId, guestName, isAdminView])
+
+  const sendSpectatorChatMessage = useCallback(
+    (e: FormEvent) => {
+      e.preventDefault()
+      const message = chatInput.trim()
+      if (!message || isAdminView || !termsAccepted) return
+      const channel = channelRef.current
+      if (!channel) {
+        setError('Spectator chat is unavailable while disconnected')
+        return
+      }
+      const userId = session?.user?.id ?? (isGuest ? guestId : null) ?? 'anon'
+      const username = session?.user?.name ?? (isGuest ? (guestName ?? 'Guest') : 'Viewer')
+      void channel.send({
+        type: 'broadcast',
+        event: 'spectator-chat',
+        payload: {
+          id: `spectator-chat-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+          userId,
+          username,
+          lobbyCode: code,
+          message,
+          timestamp: Date.now(),
+        } satisfies SpectatorChatMessage,
+      })
+      setChatInput('')
+    },
+    [chatInput, code, session?.user?.id, session?.user?.name, isGuest, guestId, guestName, isAdminView, termsAccepted]
+  )
+
+  const acceptSpectatorTerms = useCallback(async () => {
+    const accepted = await acceptTerms()
+    if (accepted) setTermsAccepted(true)
+    return accepted
+  }, [])
+
+  // Restore Yahtzee engine whenever game state updates (for spectator board display)
+  useEffect(() => {
+    if (data?.lobby.gameType !== 'yahtzee' || !parsedState || !data?.activeGame?.id) {
+      setYahtzeeEngine(null)
+      return
+    }
+    let cancelled = false
+    void restoreGameEngineClient('yahtzee', data.activeGame.id, parsedState).then((engine) => {
+      if (!cancelled) setYahtzeeEngine(engine as YahtzeeGame)
+    })
+    return () => { cancelled = true }
+  }, [data?.lobby.gameType, data?.activeGame?.id, parsedState])
+
+  const joinAsPlayer = useCallback(async () => {
+    if (!data?.canJoinAsPlayer || joiningAsPlayer) return
+    setJoiningAsPlayer(true)
+    try {
+      const res = await fetchWithGuest(`/api/lobby/${code}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({}),
+      })
+      const json = await res.json()
+      if (!res.ok) {
+        throw new Error(json?.error || `HTTP ${res.status}`)
+      }
+      router.push(`/lobby/${code}`)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to join as player')
+    } finally {
+      setJoiningAsPlayer(false)
+    }
+  }, [code, data?.canJoinAsPlayer, joiningAsPlayer, router])
+
+  if (isPlayerInGame) {
+    return (
+      <div className="bd-page bd-screen page-shell items-center justify-center p-6">
+        <div className="bd-card w-full max-w-xl p-6 text-center sm:p-8">
+          <div className="mx-auto mb-4 grid h-14 w-14 place-items-center rounded-2xl border-[1.5px] border-bd-line bg-bd-card-warm text-2xl shadow-[0_3px_0_var(--bd-line)]">
+            <Icon name="gamepad" size={24} />
+          </div>
+          <h1 className="font-display text-2xl font-black text-bd-ink">{t('spectate.youArePlayer')}</h1>
+          <p className="mt-2 text-sm text-bd-ink-muted">{t('spectate.youArePlayerDesc')}</p>
+          <a
+            href={`/lobby/${code}`}
+            className="bd-btn bd-btn-primary mx-auto mt-5 inline-flex"
+          >
+            {t('spectate.goToGame')}
+          </a>
+        </div>
+      </div>
+    )
+  }
+
+  if (isLimitReached) {
+    return (
+      <div className="bd-page bd-screen page-shell items-center justify-center p-6">
+        <div className="bd-card w-full max-w-xl p-6 text-center sm:p-8">
+          <div className="mx-auto mb-4 grid h-14 w-14 place-items-center rounded-2xl border-[1.5px] border-bd-line bg-bd-card-warm text-2xl shadow-[0_3px_0_var(--bd-line)]">
+            <Icon name="users" size={24} />
+          </div>
+          <h1 className="font-display text-2xl font-black text-bd-ink">{t('spectate.limitReached')}</h1>
+          <p className="mt-2 text-sm text-bd-ink-muted">{t('spectate.limitReachedDesc')}</p>
+          <button
+            type="button"
+            onClick={() => router.push('/lobby')}
+            className="bd-btn bd-btn-primary mx-auto mt-5"
+          >
+            {t('spectate.backToLobbiesBtn')}
+          </button>
+        </div>
+      </div>
+    )
+  }
+
+  if (loading) {
+    return <LobbyPageLoadingFallback />
+  }
+
+  if (!data) {
+    return (
+      <div className="bd-page bd-screen page-shell items-center justify-center p-6">
+        <div className="bd-card w-full max-w-xl p-6 text-center sm:p-8">
+          <div className="mx-auto mb-4 grid h-14 w-14 place-items-center rounded-2xl border-[1.5px] border-bd-line bg-bd-card-warm text-2xl shadow-[0_3px_0_var(--bd-line)]">
+            <Icon name="eye" size={24} />
+          </div>
+          <h1 className="font-display text-2xl font-black text-bd-ink">{t('spectate.unavailableTitle')}</h1>
+          <p className="mt-2 text-sm text-bd-ink-muted">{error || 'No data'}</p>
+          <button
+            type="button"
+            onClick={() => router.push('/lobby')}
+            className="bd-btn bd-btn-primary mx-auto mt-5"
+          >
+            {t('spectate.backToLobbiesBtn')}
+          </button>
+        </div>
+      </div>
+    )
+  }
+
+  const isAuthenticated = Boolean(session?.user?.id) || Boolean(isGuest && guestToken)
+  const floatingChat = (
+    <FloatingSpectatorChat
+      isAuthenticated={isAuthenticated}
+      isAdminView={isAdminView}
+      chatMessages={chatMessages}
+      blockedIds={blockedIds}
+      termsAccepted={termsAccepted}
+      onAcceptTerms={acceptSpectatorTerms}
+      chatInput={chatInput}
+      onChatInputChange={setChatInput}
+      onSendMessage={sendSpectatorChatMessage}
+    />
+  )
+
+  // ── Dedicated game types: render real game component with isSpectator prop ──
+  if (DEDICATED_SPECTATOR_GAMES.has(data.lobby.gameType)) {
+    const gameType = data.lobby.gameType
+    return (
+      <>
+        <SpectatorTopBar
+          spectatorCount={spectatorCount}
+          canJoinAsPlayer={data.canJoinAsPlayer}
+          joiningAsPlayer={joiningAsPlayer}
+          onJoinAsPlayer={joinAsPlayer}
+          lobbyCode={code}
+          isAdminView={isAdminView}
+          isMidMatch={data.activeGame?.status === 'playing'}
+        />
+        {gameType === 'connect_four' && <ConnectFourLobbyPage code={code} isSpectator />}
+        {gameType === 'ludo' && <LudoLobbyPage code={code} isSpectator />}
+        {gameType === 'tic_tac_toe' && <TicTacToeLobbyPage code={code} isSpectator />}
+        {gameType === 'rock_paper_scissors' && <RockPaperScissorsLobbyPage code={code} isSpectator />}
+        {gameType === 'alias' && <AliasPage code={code} isSpectator />}
+        {gameType === 'liars_party' && <LiarsPartyPage code={code} isSpectator />}
+        {gameType === 'sketch_and_guess' && <SketchAndGuessLobbyPage code={code} isSpectator />}
+        {gameType === 'checkers' && <CheckersLobbyPage code={code} isSpectator />}
+        {floatingChat}
+      </>
+    )
+  }
+
+  const spectatorUserId = session?.user?.id ?? (isGuest ? guestId : null)
+  const activeGamePlayers = (Array.isArray(data.activeGame?.players) ? data.activeGame.players : []) as GamePlayer[]
+
+  // ── Memory: real board component, same UI as players ────────────────────────
+  if (data.lobby.gameType === 'memory') {
+    return (
+      <>
+        <SpectatorTopBar
+          spectatorCount={spectatorCount}
+          canJoinAsPlayer={data.canJoinAsPlayer}
+          joiningAsPlayer={joiningAsPlayer}
+          onJoinAsPlayer={joinAsPlayer}
+          lobbyCode={code}
+          isAdminView={isAdminView}
+          isMidMatch={data.activeGame?.status === 'playing'}
+        />
+        <MemoryGameBoard
+          gameId={data.activeGame?.id ?? ''}
+          lobbyCode={code}
+          players={activeGamePlayers}
+          state={parsedState}
+          currentUserId={spectatorUserId}
+          turnTimerLimit={data.lobby.turnTimer ?? undefined}
+          isSpectator
+        />
+        {floatingChat}
+      </>
+    )
+  }
+
+  // ── Guess the Spy: real board component, same UI as players ─────────────────
+  if (data.lobby.gameType === 'guess_the_spy') {
+    return (
+      <>
+        <SpectatorTopBar
+          spectatorCount={spectatorCount}
+          canJoinAsPlayer={data.canJoinAsPlayer}
+          joiningAsPlayer={joiningAsPlayer}
+          onJoinAsPlayer={joinAsPlayer}
+          lobbyCode={code}
+          isAdminView={isAdminView}
+          isMidMatch={data.activeGame?.status === 'playing'}
+        />
+        <SpyGameBoard
+          gameId={data.activeGame?.id ?? ''}
+          lobbyCode={code}
+          lobbyCreatorId={data.lobby.creatorId ?? null}
+          players={activeGamePlayers}
+          state={(parsedState ?? { id: '', gameType: 'guess_the_spy', players: [], currentPlayerIndex: 0, status: 'playing', data: {}, createdAt: new Date(), updatedAt: new Date() }) as GameState<unknown>}
+          currentUserId={spectatorUserId}
+          isGuest={false}
+          guestId={null}
+          guestName={null}
+          guestToken={null}
+          onRefresh={loadSnapshot}
+          isSpectator
+        />
+        {floatingChat}
+      </>
+    )
+  }
+
+  // ── Yahtzee: real board + scorecard, same UI as players ─────────────────────
+  if (data.lobby.gameType === 'yahtzee') {
+    const yahtzeeCurrentPlayerId = yahtzeeEngine?.getCurrentPlayer()?.id ?? null
+    const yahtzeeNameOf = (playerId: string) => {
+      const p = activeGamePlayers.find((pl) => pl.userId === playerId)
+      return p?.user?.username || p?.name || yahtzeeEngine?.getPlayers().find((pl) => pl.id === playerId)?.name || t('game.ui.playerFallback')
+    }
+
+    return (
+      <>
+        <SpectatorTopBar
+          spectatorCount={spectatorCount}
+          canJoinAsPlayer={data.canJoinAsPlayer}
+          joiningAsPlayer={joiningAsPlayer}
+          onJoinAsPlayer={joinAsPlayer}
+          lobbyCode={code}
+          isAdminView={isAdminView}
+          isMidMatch={data.activeGame?.status === 'playing'}
+        />
+        {yahtzeeEngine ? (
+          <div className="yz-spectate">
+            <div className="yz-board-card">
+              <div className="yz-panel yz-panel--board">
+                <YahtzeeDiceBar
+                  dice={yahtzeeEngine.getDice()}
+                  held={yahtzeeEngine.getHeld()}
+                  rollsLeft={yahtzeeEngine.getRollsLeft()}
+                  placeholder={yahtzeeEngine.getRollsLeft() === 3}
+                  isRolling={false}
+                  canHold={false}
+                  canRoll={false}
+                  onToggleHold={() => undefined}
+                  onRoll={() => undefined}
+                  showRollButton={false}
+                />
+                <YahtzeeScoreTable
+                  players={yahtzeeEngine.getPlayers().map((player) => ({
+                    id: player.id,
+                    name: yahtzeeNameOf(player.id),
+                    isBot: isBotSeat(activeGamePlayers.find((pl) => pl.userId === player.id)),
+                    scorecard: yahtzeeEngine.getScorecard(player.id) ?? {},
+                  }))}
+                  viewerId={null}
+                  currentPlayerId={yahtzeeCurrentPlayerId}
+                  mode={yahtzeeEngine.getMode()}
+                  dice={yahtzeeEngine.getDice()}
+                  canScore={false}
+                  rollsLeft={yahtzeeEngine.getRollsLeft()}
+                  departedIds={departedIds}
+                />
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="flex items-center justify-center h-48">
+            <LoadingSpinner size="lg" />
+          </div>
+        )}
+        {floatingChat}
+      </>
+    )
+  }
+
+  // ── Fallback: game types with no dedicated spectator board (e.g. experimental/in-development games) ──
+  const players = activeGamePlayers
+
+  return (
+    <div className="bd-page bd-screen min-h-(--game-h) text-bd-ink">
+      <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
+
+        {isAdminView && (
+          <div className="mb-4 flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold text-white" style={{ background: 'rgba(124,58,237,0.92)' }}>
+            <Icon name="shield" size={15} />
+            {t('spectate.adminViewBanner')}
+          </div>
+        )}
+
+        {/* Header */}
+        <div className="mb-5 flex flex-wrap items-start justify-between gap-3">
+          <div className="min-w-0">
+            <p className="bd-kicker mb-1">{t('spectate.modeKicker')}</p>
+            <h1 className="font-display text-2xl font-black leading-tight text-bd-ink sm:text-3xl sm:leading-9">{data.lobby.name}</h1>
+            <p className="mt-1 text-sm font-medium text-bd-ink-muted">
+              {t('game.ui.code')} <span className="font-mono font-bold text-bd-ink">{data.lobby.code}</span>
+              {data.activeGame?.status && (
+                <span className="ml-2 inline-flex items-center rounded-full bg-bd-mint/20 px-2 py-0.5 text-xs font-semibold text-bd-mint-text">
+                  {data.activeGame.status}
+                </span>
+              )}
+            </p>
+          </div>
+          <div className="flex shrink-0 flex-col gap-2 sm:flex-row">
+            {data.canJoinAsPlayer && (
+              <button
+                type="button"
+                onClick={joinAsPlayer}
+                disabled={joiningAsPlayer}
+                className="bd-btn bd-btn-coral justify-center disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {joiningAsPlayer
+                  ? t('spectate.joining')
+                  : data.activeGame?.status === 'playing'
+                    ? t('spectate.joinNextGame')
+                    : t('spectate.joinAsPlayer')}
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={() => router.push(`/lobby/${code}`)}
+              className="bd-btn bd-btn-soft justify-center"
+            >
+              {t('spectate.openLobby')}
+            </button>
+          </div>
+        </div>
+
+        {error && (
+          <p className="mb-4 rounded-2xl border border-bd-coral/30 bg-bd-coral/10 px-4 py-3 text-sm font-medium text-bd-coral-text">
+            {error}
+          </p>
+        )}
+
+        {/* Main layout: game board + sidebar */}
+        <div className="grid grid-cols-1 gap-5 lg:grid-cols-[1fr_280px]">
+
+          {/* Game board */}
+          <section className="bd-card overflow-hidden p-4 sm:p-6">
+            <ReadOnlySpectatorBoard parsedState={parsedState} />
+          </section>
+
+          {/* Sidebar */}
+          <div className="flex flex-col gap-4">
+
+            {/* Players */}
+            <section className="bd-card p-4">
+              <h2 className="mb-3 text-sm font-bold uppercase tracking-wide text-bd-ink-muted">
+                {t('spectate.playersHeading', { count: players.length, max: data.lobby.maxPlayers })}
+              </h2>
+              <div className="space-y-2">
+                {players.map((player: GamePlayer) => (
+                  <div key={player.id} className="flex items-center gap-2 rounded-xl border border-bd-line bg-bd-card-warm px-3 py-2">
+                    <span role="img" aria-label={player.user?.username || 'Player'} className="bd-avatar bd-avatar-lav h-7 w-7 text-xs">
+                      {(player.user?.username || 'P').charAt(0).toUpperCase()}
+                    </span>
+                    <span className="truncate text-sm font-semibold text-bd-ink">
+                      {player.user?.username || player.name || 'Player'}
+                    </span>
+                  </div>
+                ))}
+                {players.length === 0 && <p className="text-sm text-bd-ink-muted">{t('spectate.noPlayersYet')}</p>}
+              </div>
+            </section>
+
+            {/* Spectators */}
+            <section className="bd-card p-4">
+              <h2 className="mb-3 text-sm font-bold uppercase tracking-wide text-bd-ink-muted">
+                {t('spectate.spectatorsHeading', { count: spectatorCount })}
+              </h2>
+              <div className="space-y-2">
+                {spectators.map((spectator) => (
+                  <div key={spectator.userId} className="flex items-center gap-2 rounded-xl border border-bd-line bg-bd-card-warm px-3 py-2">
+                    <span role="img" aria-label={spectator.username} className="bd-avatar bd-avatar-coral h-7 w-7 text-xs">
+                      {spectator.username.charAt(0).toUpperCase()}
+                    </span>
+                    <span className="truncate text-sm font-semibold text-bd-ink">{spectator.username}</span>
+                  </div>
+                ))}
+                {spectators.length === 0 && <p className="text-sm text-bd-ink-muted">{t('spectate.noSpectatorsConnected')}</p>}
+              </div>
+            </section>
+
+            {/* Chat — only for authenticated / guest users */}
+            {isAuthenticated && (
+              <section className="bd-card flex flex-col p-4">
+                <h2 className="mb-3 text-sm font-bold uppercase tracking-wide text-bd-ink-muted">{t('spectate.chatTitle')}</h2>
+                <SpectatorChatLog chatMessages={chatMessages} blockedIds={blockedIds} />
+                {!isAdminView && (
+                  <SpectatorChatComposer
+                    termsAccepted={termsAccepted}
+                    onAcceptTerms={acceptSpectatorTerms}
+                    chatInput={chatInput}
+                    onChatInputChange={setChatInput}
+                    onSendMessage={sendSpectatorChatMessage}
+                  />
+                )}
+              </section>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}

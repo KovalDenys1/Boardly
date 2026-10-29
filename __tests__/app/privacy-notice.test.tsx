@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react'
-import PrivacyNotice from '@/app/privacy/PrivacyNotice'
-import { metadata } from '@/app/privacy/page'
+import PrivacyNotice from '@/app/(site)/privacy/PrivacyNotice'
+import { metadata } from '@/app/(site)/privacy/page'
 import { SUPPORT_EMAIL } from '@/lib/organization-json-ld'
 import { RETENTION_RULES } from '@/lib/data-retention'
 import { CHAT_RETENTION_HOURS, RETENTION_DAYS } from '@/lib/retention-periods'
@@ -227,6 +227,34 @@ describe('privacy notice (#1126)', () => {
     }
   })
 
+  // #1468: Google Play's Data safety form links to /privacy#delete-account as the web page for
+  // deleting an account, so the anchor has to hold the whole route in every language.
+  it('gives account deletion a stable anchor with the in-app path, the guest route and the email route', () => {
+    const { container } = render(<PrivacyNotice controller={null} />)
+    const item = container.querySelector('#delete-account')
+    expect(item?.tagName).toBe('LI')
+    const text = item?.textContent ?? ''
+    expect(text).toContain('in the browser or in the Android app: choose "Delete Account" under "Danger Zone"')
+    expect(text).toContain(`If you can no longer sign in, write to ${SUPPORT_EMAIL}`)
+    expect(item?.nextElementSibling?.textContent).toContain('"Forget me" in the guest menu')
+
+    const locales = {
+      en: require('@/locales/en').default,
+      no: require('@/locales/no').default,
+      ru: require('@/locales/ru').default,
+      uk: require('@/locales/uk').default,
+      de: require('@/locales/de').default,
+      es: require('@/locales/es').default,
+    }
+    for (const [name, locale] of Object.entries(locales)) {
+      const { delete: deletion, forget } = locale.privacyPolicy.rights
+      for (const needle of [locale.profile.dangerZone.title, locale.profile.dangerZone.deleteAccount, '{{email}}', 'Android']) {
+        expect({ name, needle, found: deletion.includes(needle) }).toEqual({ name, needle, found: true })
+      }
+      expect({ name, found: forget.includes(locale.guest.forgetMe) }).toEqual({ name, found: true })
+    }
+  })
+
   it('names every processor the code uses, and Discord Linked Roles', () => {
     const { container } = render(<PrivacyNotice controller={null} />)
     const text = container.textContent ?? ''
@@ -234,6 +262,29 @@ describe('privacy notice (#1126)', () => {
       expect(text).toContain(name)
     }
     expect(text).toContain('Linked Roles')
+  })
+
+  // #1468: the Android app is distributed through Google Play, which keeps its own install and
+  // crash data; the app is the same site, so nothing else changes.
+  it('names Google Play as the Android app\'s distributor, on its own account, in every language', () => {
+    const { container } = render(<PrivacyNotice controller={null} />)
+    expect(container.textContent).toContain(
+      'Google Play, which distributes our Android app, processes its own install and crash data on its own account; the app runs this same site and collects nothing more.'
+    )
+
+    const locales = {
+      no: require('@/locales/no').default,
+      ru: require('@/locales/ru').default,
+      uk: require('@/locales/uk').default,
+      de: require('@/locales/de').default,
+      es: require('@/locales/es').default,
+    }
+    for (const [name, locale] of Object.entries(locales)) {
+      const { purpose } = locale.privacyPolicy.recipients.google
+      for (const needle of ['Google Play', 'Android']) {
+        expect({ name, needle, found: purpose.includes(needle) }).toEqual({ name, needle, found: true })
+      }
+    }
   })
 })
 

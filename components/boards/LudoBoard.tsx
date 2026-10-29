@@ -1,5 +1,5 @@
 import { useLayoutEffect, useMemo, useRef, useState } from 'react'
-import type { ActiveLudoMotion } from '@/app/lobby/[code]/hooks/useLudoMotion'
+import type { ActiveLudoMotion } from '@/app/(site)/lobby/[code]/hooks/useLudoMotion'
 import {
     LudoColor,
     LUDO_COLORS,

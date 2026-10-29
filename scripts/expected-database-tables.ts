@@ -204,6 +204,12 @@ export const EXPECTED_TABLES: ExpectedTable[] = [
     purpose: 'one copy of a reported Sketch & Guess drawing per game and round, shared by its reports (#1172)',
     policyMode: 'required',
   },
+  {
+    name: 'UserBlocks',
+    domain: 'moderation',
+    purpose: 'players a signed-in account has blocked in chat (#1466)',
+    policyMode: 'required',
+  },
 ]
 
 /**

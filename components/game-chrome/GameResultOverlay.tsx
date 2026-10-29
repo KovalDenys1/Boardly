@@ -7,6 +7,10 @@ import AfterGameActions from '@/components/game-chrome/AfterGameActions'
 import type { AnalyticsGameType } from '@/lib/analytics'
 import { prefersReducedMotion } from '@/lib/motion'
 import { useRematchSignal } from '@/hooks/useRematchSignal'
+import { playCue } from '@/lib/sound-engine'
+import { resultCue } from '@/lib/game-outcome'
+import { liveFinishWithin, RESULT_REVEAL_DELAY_MS } from '@/lib/live-finish'
+import type { GameOutcome } from '@/components/game-chrome/GameStatusBanner'
 
 /**
  * Shared end-of-game overlay (#736 phase 2) — one component for what used to
@@ -56,7 +60,6 @@ export interface GameResultOverlayProps {
   /** Replaces the host/non-host action block entirely (e.g. TTT's "Returning to lobby…" plate when a series completes). */
   actionsReplacement?: React.ReactNode
   isGuest?: boolean
-  registerUrl?: string
   /**
    * Lobby code for "Play again with friends" (#927). The end of a game is the highest-intent
    * moment in the product and used to be a dead end; the button shares the same
@@ -86,10 +89,11 @@ export interface GameResultOverlayProps {
   isSpectator?: boolean
   /** False where the end screen already has its own rematch ask (Guess the Spy's results). */
   canAskRematch?: boolean
+  /** The viewer's `viewerOutcome`; undefined plays `result.over`. */
+  outcome?: GameOutcome
 }
 
-/** Long enough for a drop, a slide or a winning-line draw to finish (#1111). */
-export const RESULT_REVEAL_DELAY_MS = 700
+export { RESULT_REVEAL_DELAY_MS }
 
 /**
  * "View board" unmounts the overlay in every adopter, and coming back mounts it
@@ -102,6 +106,12 @@ export const RESULT_REVEAL_DELAY_MS = 700
  */
 let inspectedResultKey: string | null = null
 
+// Tried, not heard: a cue the engine dropped must not sound late on the way back from View board.
+const soundedResultKeys = new Set<string>()
+
+/** How long after a finish the banner saw the overlay may still announce it, on top of its reveal delay. */
+const LIVE_FINISH_WINDOW_MS = 3000
+
 function isReturnFromInspect(resultKey: string | undefined): boolean {
   return !!resultKey && inspectedResultKey === resultKey
 }
@@ -109,6 +119,7 @@ function isReturnFromInspect(resultKey: string | undefined): boolean {
 /** Test seam: forget any pending "View board" note. */
 export function resetResultOverlayRevealState(): void {
   inspectedResultKey = null
+  soundedResultKeys.clear()
 }
 
 export default function GameResultOverlay({
@@ -126,7 +137,6 @@ export default function GameResultOverlay({
   onLeave,
   actionsReplacement,
   isGuest = false,
-  registerUrl,
   inviteCode,
   gameType,
   isRegistered = false,
@@ -135,6 +145,7 @@ export default function GameResultOverlay({
   canAskRematch = true,
   revealDelayMs = RESULT_REVEAL_DELAY_MS,
   resultKey,
+  outcome,
 }: GameResultOverlayProps) {
   const { t } = useTranslation()
   const canAsk = canAskRematch && !isSpectator && (isGuest || isRegistered) && !!inviteCode
@@ -152,6 +163,31 @@ export default function GameResultOverlay({
     return () => clearTimeout(timer)
     // eslint-disable-next-line react-hooks/exhaustive-deps -- mount-only by design
   }, [])
+
+  // Not resultKey: its lastMoveAt changes when the server answers the winning move.
+  const finishGameId = gameId ?? resultKey?.split(':')[0] ?? ''
+  useEffect(() => {
+    if (!revealed) return
+    // A macrotask, so the banner's effect from the same commit has noted the finish.
+    const timer = setTimeout(() => {
+      const finish = liveFinishWithin(revealDelayMs + LIVE_FINISH_WINDOW_MS)
+      if (finish === null) return
+      // The finish's sequence tells a tic-tac-toe series' rounds apart: they share one game id.
+      const soundKey = `${finishGameId}#${finish}`
+      if (soundedResultKeys.has(soundKey)) return
+      soundedResultKeys.add(soundKey)
+      playCue(resultCue(outcome, isSpectator), { gameId: soundKey })
+    }, 0)
+    return () => clearTimeout(timer)
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- once, when the overlay is first seen
+  }, [revealed])
+
+  const rematchWantedBy = isHost ? rematch.requestedBy : null
+  const heardRematchRef = useRef(rematchWantedBy)
+  useEffect(() => {
+    if (rematchWantedBy && rematchWantedBy !== heardRematchRef.current) playCue('social.ask')
+    heardRematchRef.current = rematchWantedBy
+  }, [rematchWantedBy])
 
   // Whether content sits below the fold: drives the bottom fade (#1341).
   const scrollRef = useRef<HTMLDivElement>(null)
@@ -234,7 +270,10 @@ export default function GameResultOverlay({
               onPlayAgain && (
                 <button
                   type="button"
-                  onClick={onPlayAgain}
+                  onClick={() => {
+                    playCue('ui.confirm')
+                    onPlayAgain()
+                  }}
                   disabled={isLoading}
                   className="game-result-overlay__primary"
                   style={{ background: accentColor, boxShadow: `0 4px 0 ${accentShadowColor}` }}
@@ -245,7 +284,10 @@ export default function GameResultOverlay({
             ) : canAsk && rematch.askState !== 'sent' ? (
               <button
                 type="button"
-                onClick={() => void rematch.ask()}
+                onClick={() => {
+                  playCue('ui.confirm')
+                  void rematch.ask()
+                }}
                 disabled={rematch.askState === 'sending'}
                 className="game-result-overlay__primary"
                 style={{ background: accentColor, boxShadow: `0 4px 0 ${accentShadowColor}` }}
@@ -288,7 +330,6 @@ export default function GameResultOverlay({
                 gameType={gameType}
                 isGuest={isGuest}
                 isRegistered={isRegistered}
-                registerUrl={registerUrl}
                 gameId={gameId}
               />
             </div>

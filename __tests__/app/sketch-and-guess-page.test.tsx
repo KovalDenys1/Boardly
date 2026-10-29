@@ -1,9 +1,11 @@
 // @ts-nocheck
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
-import SketchAndGuessLobbyPage from '@/app/lobby/[code]/sketch-and-guess-page'
+import SketchAndGuessLobbyPage from '@/app/(site)/lobby/[code]/sketch-and-guess-page'
 import { fetchWithGuest } from '@/lib/fetch-with-guest'
 import { showToast } from '@/lib/i18n-toast'
-import { frameFor, installSignedRealtime } from '@/__tests__/fixtures/signed-realtime'
+import { frameFor, installSignedRealtime, settleRealtime, signBroadcast } from '@/__tests__/fixtures/signed-realtime'
+import { createSketchLiveReceiver, createSketchLiveSender } from '@/lib/client/sketch-live-signing'
+import { SKETCH_LIVE_KEY_EVENT, type SketchLiveMessage } from '@/lib/sketch-live'
 
 const mockReplace = jest.fn()
 const mockPush = jest.fn()
@@ -483,7 +485,7 @@ describe('SketchAndGuessLobbyPage shared chrome', () => {
       response.activeGame.state.data.phase = 'drawing'
     })
 
-    await waitFor(() => expect(screen.getAllByText(':80').length).toBeGreaterThan(0))
+    await waitFor(() => expect(screen.getAllByText('1:20').length).toBeGreaterThan(0))
   })
 
   it('shows the choosing phase clock counting from 15 seconds', async () => {
@@ -499,7 +501,7 @@ describe('SketchAndGuessLobbyPage shared chrome', () => {
       response.activeGame.state.data.phase = 'guessing'
     })
 
-    await waitFor(() => expect(screen.getAllByText(':80').length).toBeGreaterThan(0))
+    await waitFor(() => expect(screen.getAllByText('1:20').length).toBeGreaterThan(0))
   })
 
   it('measures the phase from phaseStartedAt, not lastMoveAt, which every guess moves', async () => {
@@ -549,58 +551,202 @@ describe('SketchAndGuessLobbyPage shared chrome', () => {
     const stroke = { color: '#1F1B16', width: 3, points: [{ x: 1, y: 2 }, { x: 3, y: 4 }] }
     const liveSends = () =>
       mockChannel.send.mock.calls.map(([msg]) => msg).filter((msg) => msg.event === 'sketch-live')
+    const liveBoards = () => screen.getAllByTestId('sketch-board').map((board) => board.getAttribute('data-live-strokes'))
+
+    /** Frames from a real sender whose key the server certified for `drawerId` in `round`. */
+    async function framesFrom(drawerId: string, round: number, messages: SketchLiveMessage[]) {
+      const frames: unknown[] = []
+      const sender = createSketchLiveSender({
+        requestCert: async (gameId, key) => signBroadcast(REALTIME_TOPIC, SKETCH_LIVE_KEY_EVENT, { gameId, round, drawerId, ...key }),
+        emit: (frame) => frames.push(JSON.parse(JSON.stringify(frame))),
+      })
+      for (const [index, message] of messages.entries()) {
+        sender.send('game-1', message)
+        await waitFor(() => expect(frames).toHaveLength(index + 1))
+      }
+      return frames
+    }
 
     it('paints what the drawer streams for this round onto the guesser board', async () => {
       await renderPage((response) => {
         response.activeGame.state.data.phase = 'drawing'
       })
+      const frames = await framesFrom('user-2', 1, [
+        { kind: 'strokes', round: 1, drawerId: 'user-2', strokes: [stroke, stroke] },
+        { kind: 'live', round: 1, drawerId: 'user-2', live: stroke },
+      ])
 
       await act(async () => {
-        broadcastHandlers['sketch-live']({ payload: { kind: 'strokes', round: 1, drawerId: 'user-2', strokes: [stroke, stroke] } })
+        for (const frame of frames) broadcastHandlers['sketch-live']({ payload: frame })
+      })
+
+      await waitFor(() => {
+        for (const board of screen.getAllByTestId('sketch-board')) {
+          expect(board.getAttribute('data-live-strokes')).toBe('2')
+          expect(board.getAttribute('data-live-stroke')).toBe('yes')
+        }
+      })
+    })
+
+    it('paints the drawer stream for a spectator too', async () => {
+      await renderPage((response) => {
+        response.activeGame.state.data.phase = 'drawing'
+      }, { isSpectator: true })
+      const [frame] = await framesFrom('user-2', 1, [{ kind: 'strokes', round: 1, drawerId: 'user-2', strokes: [stroke] }])
+
+      await act(async () => {
+        broadcastHandlers['sketch-live']({ payload: frame })
+      })
+
+      await waitFor(() => expect(liveBoards().every((count) => count === '1')).toBe(true))
+    })
+
+    // #1503: the receiver used to check only the drawer id the sender wrote itself.
+    it('drops a stroke from another player or a spectator that names the current drawer', async () => {
+      await renderPage((response) => {
+        response.activeGame.state.data.phase = 'drawing'
+      })
+
+      await act(async () => {
+        broadcastHandlers['sketch-live']({ payload: { kind: 'strokes', round: 1, drawerId: 'user-2', strokes: [stroke] } })
         broadcastHandlers['sketch-live']({ payload: { kind: 'live', round: 1, drawerId: 'user-2', live: stroke } })
       })
+      await settleRealtime()
 
-      for (const board of screen.getAllByTestId('sketch-board')) {
-        expect(board.getAttribute('data-live-strokes')).toBe('2')
-        expect(board.getAttribute('data-live-stroke')).toBe('yes')
-      }
+      expect(liveBoards().every((count) => count === 'none')).toBe(true)
     })
 
-    it('ignores a stream from anyone but the current drawer, or from another round', async () => {
+    it('drops a stream certified for another player or for another round', async () => {
       await renderPage((response) => {
         response.activeGame.state.data.phase = 'drawing'
       })
+      const fromGuesser = await framesFrom('user-3', 1, [{ kind: 'strokes', round: 1, drawerId: 'user-3', strokes: [stroke] }])
+      const nextRound = await framesFrom('user-2', 2, [{ kind: 'strokes', round: 2, drawerId: 'user-2', strokes: [stroke] }])
 
       await act(async () => {
-        broadcastHandlers['sketch-live']({ payload: { kind: 'strokes', round: 1, drawerId: 'user-3', strokes: [stroke] } })
-        broadcastHandlers['sketch-live']({ payload: { kind: 'strokes', round: 2, drawerId: 'user-2', strokes: [stroke] } })
+        for (const frame of [...fromGuesser, ...nextRound]) broadcastHandlers['sketch-live']({ payload: frame })
       })
+      await settleRealtime()
 
-      for (const board of screen.getAllByTestId('sketch-board')) {
-        expect(board.getAttribute('data-live-strokes')).toBe('none')
-      }
+      expect(liveBoards().every((count) => count === 'none')).toBe(true)
     })
 
-    it('streams the drawer canvas: finished strokes at once, the stroke in progress throttled', async () => {
-      await renderPage((response) => {
-        response.activeGame.state.data.currentDrawerId = 'user-1'
-        response.activeGame.state.data.phase = 'drawing'
+    const certRequests = () => mockFetchWithGuest.mock.calls.filter((call) => String(call[0]).includes('/sketch-live-key'))
+
+    async function renderDrawerPage() {
+      const response = buildLobbyResponse()
+      response.activeGame.state.data.currentDrawerId = 'user-1'
+      response.activeGame.state.data.phase = 'drawing'
+      mockFetchWithGuest.mockImplementation(async (url: string, init?: RequestInit) => {
+        if (String(url) === '/api/game/game-1/sketch-live-key') {
+          const key = JSON.parse(String(init?.body))
+          return okResponse({ cert: signBroadcast(REALTIME_TOPIC, SKETCH_LIVE_KEY_EVENT, { gameId: 'game-1', round: 1, drawerId: 'user-1', x: key.x, y: key.y }) })
+        }
+        return okResponse(response)
       })
+      render(<SketchAndGuessLobbyPage code="ABCD" />)
+      await waitFor(() => expect(certRequests()).toHaveLength(1))
+    }
 
-      expect(liveSends()[0]?.payload).toEqual({ kind: 'strokes', round: 1, drawerId: 'user-1', strokes: [] })
+    it('streams the drawer canvas signed once it is drawn on: finished strokes at once, the stroke in progress throttled', async () => {
+      await renderDrawerPage()
+      await new Promise((resolve) => setTimeout(resolve, 50))
+      expect(liveSends()).toHaveLength(0)
 
+      fireEvent.click(screen.getAllByText('stroke')[0])
+      await waitFor(() => expect(liveSends().length).toBeGreaterThan(0))
+      const receiver = createSketchLiveReceiver()
+      const expected = { gameId: 'game-1', round: 1, drawerId: 'user-1' }
+      expect(await receiver.open(REALTIME_TOPIC, liveSends()[0].payload, expected))
+        .toEqual({ kind: 'strokes', round: 1, drawerId: 'user-1', strokes: [{ color: '#000', width: 3, points: [{ x: 1, y: 1 }] }] })
+
+      const inProgress = () => liveSends().filter((msg) => msg.payload.p?.kind === 'live')
       jest.useFakeTimers()
       try {
         fireEvent.click(screen.getAllByText('draw')[0])
         fireEvent.click(screen.getAllByText('draw')[0])
-        expect(liveSends().filter((msg) => msg.payload.kind === 'live')).toHaveLength(0)
         act(() => { jest.advanceTimersByTime(150) })
-        const live = liveSends().filter((msg) => msg.payload.kind === 'live')
-        expect(live).toHaveLength(1)
-        expect(live[0].payload).toMatchObject({ round: 1, drawerId: 'user-1', live: { points: [{ x: 1, y: 2 }] } })
       } finally {
         jest.useRealTimers()
       }
+      await waitFor(() => expect(inProgress()).toHaveLength(1))
+      await new Promise((resolve) => setTimeout(resolve, 50))
+      expect(inProgress()).toHaveLength(1)
+      expect(await receiver.open(REALTIME_TOPIC, inProgress()[0].payload, expected))
+        .toMatchObject({ kind: 'live', round: 1, drawerId: 'user-1', live: { points: [{ x: 1, y: 2 }] } })
+    })
+
+    it("asks for a new certificate when drawn on again after another of the drawer's pages streamed under a newer one", async () => {
+      await renderDrawerPage()
+      fireEvent.click(screen.getAllByText('stroke')[0])
+      await waitFor(() => expect(liveSends()).toHaveLength(1))
+
+      const startedAt = Date.now()
+      const clock = jest.spyOn(Date, 'now').mockReturnValue(startedAt + 1_000)
+      try {
+        const [fromOtherPage] = await framesFrom('user-1', 1, [{ kind: 'strokes', round: 1, drawerId: 'user-1', strokes: [stroke] }])
+        // The page checks the frame with real ECDSA, which a loaded CI runner can take longer for than settleRealtime's ticks.
+        const subtle = globalThis.crypto.subtle
+        const verify = subtle.verify.bind(subtle)
+        const checks: Promise<boolean>[] = []
+        const verifySpy = jest.spyOn(subtle, 'verify').mockImplementation((...args: Parameters<SubtleCrypto['verify']>) => {
+          const check = verify(...args)
+          checks.push(check)
+          return check
+        })
+        try {
+          await act(async () => {
+            broadcastHandlers['sketch-live']({ payload: fromOtherPage })
+          })
+          await waitFor(() => expect(checks.length).toBeGreaterThan(0))
+          await act(async () => {
+            await Promise.all(checks)
+          })
+          await settleRealtime()
+        } finally {
+          verifySpy.mockRestore()
+        }
+
+        clock.mockReturnValue(startedAt + 4_000)
+        fireEvent.click(screen.getAllByText('stroke')[0])
+        await waitFor(() => expect(liveSends()).toHaveLength(2))
+        expect(certRequests()).toHaveLength(2)
+        const receiver = createSketchLiveReceiver()
+        const expected = { gameId: 'game-1', round: 1, drawerId: 'user-1' }
+        expect(await receiver.open(REALTIME_TOPIC, fromOtherPage, expected)).not.toBeNull()
+        expect(await receiver.open(REALTIME_TOPIC, liveSends()[1].payload, expected)).not.toBeNull()
+      } finally {
+        clock.mockRestore()
+      }
+    })
+
+    async function strokeAfter(...drops: Array<() => void>) {
+      fireEvent.click(screen.getAllByText('stroke')[0])
+      await waitFor(() => expect(liveSends()).toHaveLength(1))
+      const clock = jest.spyOn(Date, 'now').mockReturnValue(Date.now() + 4_000)
+      try {
+        for (const drop of drops) act(drop)
+        fireEvent.click(screen.getAllByText('stroke')[0])
+        await waitFor(() => expect(liveSends()).toHaveLength(2))
+      } finally {
+        clock.mockRestore()
+      }
+    }
+
+    it('asks for a new certificate on the first stroke after the drawer page was hidden', async () => {
+      await renderDrawerPage()
+      await strokeAfter(() => {
+        document.dispatchEvent(new Event('visibilitychange'))
+      })
+      expect(certRequests()).toHaveLength(2)
+    })
+
+    it('asks for a new certificate on the first stroke after the drawer page lost its channel', async () => {
+      await renderDrawerPage()
+      const onStatus = mockChannel.subscribe.mock.calls.map(([callback]) => callback).find((callback) => typeof callback === 'function')
+      act(() => onStatus('SUBSCRIBED'))
+      await strokeAfter(() => onStatus('CLOSED'), () => onStatus('SUBSCRIBED'))
+      expect(certRequests()).toHaveLength(2)
     })
 
     it('sends nothing from a guesser', async () => {
@@ -610,6 +756,7 @@ describe('SketchAndGuessLobbyPage shared chrome', () => {
       fireEvent.click(screen.getAllByText('draw')[0])
       await new Promise((resolve) => setTimeout(resolve, 150))
       expect(liveSends()).toHaveLength(0)
+      expect(mockFetchWithGuest.mock.calls.filter((call) => String(call[0]).includes('/sketch-live-key'))).toHaveLength(0)
     })
   })
 })
@@ -801,5 +948,84 @@ describe('SketchAndGuessLobbyPage #1082 moves', () => {
     })
     await new Promise((resolve) => setTimeout(resolve, 50))
     expect(actionBodies()).toHaveLength(0)
+  })
+})
+
+// #1528: Sketch & Guess applied every lobby read it got, in the order the answers landed, so a
+// read that left before the board on screen, or before the host moved, put the older one back.
+describe('SketchAndGuessLobbyPage lobby reads that land out of order (#1528)', () => {
+  const mockFetchWithGuest = fetchWithGuest as jest.MockedFunction<typeof fetchWithGuest>
+  const T0 = Date.now() - 20_000
+
+  beforeEach(() => {
+    jest.clearAllMocks()
+    Object.keys(broadcastHandlers).forEach((key) => delete broadcastHandlers[key])
+  })
+
+  async function renderHoldingReads(response: ReturnType<typeof buildLobbyResponse>, onAction: () => unknown = () => ({})) {
+    mockFetchWithGuest.mockResolvedValue(okResponse(response))
+    render(<SketchAndGuessLobbyPage code="ABCD" />)
+    await waitFor(() => expect(screen.getAllByTestId('sketch-board').length).toBeGreaterThan(0))
+    await waitFor(() => expect(broadcastHandlers['game-update']).toBeDefined())
+    const reads: Array<(r: Response) => void> = []
+    mockFetchWithGuest.mockImplementation(async (url: string) => {
+      if (String(url).startsWith('/api/lobby/ABCD?')) return new Promise<Response>((resolve) => { reads.push(resolve) })
+      if (String(url).includes('/sketch-and-guess-action')) return okResponse(onAction())
+      return okResponse({})
+    })
+    return reads
+  }
+
+  const chatsReadOnly = () => screen.getAllByTestId('sketch-chat').map((chat) => chat.getAttribute('data-readonly'))
+
+  it('drops a refetch older than the board on screen', async () => {
+    const before = buildLobbyResponse()
+    before.activeGame.state.lastMoveAt = T0
+    const afterGuess = { ...before.activeGame.state, lastMoveAt: T0 + 1_000, status: 'playing', data: { ...before.activeGame.state.data, submittedPlayerIds: ['user-1'] } }
+    const reads = await renderHoldingReads(before, () => ({ success: true, state: afterGuess, guessResult: { correct: true, close: false } }))
+
+    // A read leaves, then Alice's correct guess is answered: she has the word, so her composer closes.
+    await act(async () => {
+      broadcastHandlers['game-update']?.({ payload: { action: 'state-change', gameId: 'game-1' } })
+    })
+    await waitFor(() => expect(reads.length).toBe(1))
+    await act(async () => {
+      fireEvent.click(screen.getAllByRole('button', { name: 'guess' })[0])
+    })
+    await waitFor(() => expect(chatsReadOnly().every((value) => value === 'true')).toBe(true))
+
+    // The read lands now with the board from before the guess.
+    await act(async () => reads[0](okResponse(before)))
+    await act(async () => { await settleRealtime() })
+
+    expect(chatsReadOnly().every((value) => value === 'true')).toBe(true)
+  })
+
+  it('keeps the host on the player who inherited it when a read sent before the host left lands last', async () => {
+    const seated = buildLobbyResponse()
+    seated.lobby.creatorId = 'user-2'
+    seated.activeGame.state.lastMoveAt = T0
+    seated.activeGame.players.push({ id: 'player-4', userId: 'user-4', name: 'Dan', user: { username: 'Dan' } })
+    const reads = await renderHoldingReads(seated)
+    for (const board of screen.getAllByTestId('sketch-board')) expect(board.getAttribute('data-host')).toBe('false')
+
+    await act(async () => {
+      broadcastHandlers['game-update']?.({ payload: { action: 'state-change', gameId: 'game-1' } })
+    })
+    await waitFor(() => expect(reads.length).toBe(1))
+    // Bob, the host, leaves; Alice inherits it. The page reads again.
+    await act(async () => {
+      broadcastHandlers['player-left']?.({ payload: { userId: 'user-2', username: 'Bob', remainingPlayers: 3, nextCreatorId: 'user-1', nextCreatorName: 'Alice' } })
+    })
+    await waitFor(() => expect(reads.length).toBe(2))
+
+    const afterLeave = JSON.parse(JSON.stringify(seated))
+    afterLeave.lobby.creatorId = 'user-1'
+    afterLeave.activeGame.players = afterLeave.activeGame.players.filter((p: { userId: string }) => p.userId !== 'user-2')
+    await act(async () => reads[1](okResponse(afterLeave)))
+    await act(async () => reads[0](okResponse(seated)))
+    await act(async () => { await settleRealtime() })
+
+    for (const board of screen.getAllByTestId('sketch-board')) expect(board.getAttribute('data-host')).toBe('true')
   })
 })

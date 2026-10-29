@@ -50,6 +50,7 @@ jest.mock('@/lib/db', () => ({
 jest.mock('@/lib/request-auth', () => ({
   getRequestAuthUser: jest.fn(),
 }))
+jest.mock('@/lib/terms-gate', () => ({ requiresTermsAcceptance: jest.fn().mockResolvedValue(false) }))
 
 jest.mock('@/lib/logger', () => ({
   apiLogger: jest.fn(() => ({

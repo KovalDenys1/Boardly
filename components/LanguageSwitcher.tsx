@@ -1,32 +1,30 @@
 'use client'
 
 import { Fragment, useMemo } from 'react'
+import { usePathname } from 'next/navigation'
 import { Menu, MenuButton, MenuItem, MenuItems, Transition } from '@headlessui/react'
 import { useTranslation } from '@/lib/i18n-helpers'
-import { availableLocales, type Locale } from '@/locales/meta'
+import { availableLocales, localeNames, type Locale } from '@/locales/meta'
 import { setStoredAppearanceLocale } from '@/lib/appearance-preferences'
 import { changeLanguageLazy } from '@/i18n'
 import { getSafeLocalStorage } from '@/lib/safe-storage'
 import { headerControl } from '@/components/Header/headerControlStyles'
+import { localeSwitchHref, pathLocale } from '@/lib/seo-locales'
 
 interface LanguageSwitcherProps {
   /** Portals the list and pins it to the button, for a parent that clips overflow. */
   anchor?: 'top end' | 'bottom end'
 }
 
-// Each language's own self-name (endonym), not translated — a Russian
-// speaker who can't read the current locale still needs to recognize
-// "Русский" in the list, so these stay constant across all 4 locales.
 const LANGUAGE_OPTIONS: Array<{
   code: Locale
   shortLabel: string
   name: string
-}> = [
-  { code: 'en', shortLabel: 'EN', name: 'English' },
-  { code: 'uk', shortLabel: 'UA', name: 'Українська' },
-  { code: 'no', shortLabel: 'NO', name: 'Norsk' },
-  { code: 'ru', shortLabel: 'RU', name: 'Русский' },
-]
+}> = availableLocales.map((code) => ({
+  code,
+  shortLabel: localeNames[code].badge,
+  name: localeNames[code].name,
+}))
 
 function GlobeIcon() {
   return (
@@ -57,6 +55,7 @@ function CheckIcon() {
 
 export default function LanguageSwitcher({ anchor }: LanguageSwitcherProps) {
   const { t, i18n } = useTranslation()
+  const pathname = usePathname() ?? '/'
 
   const currentLocale = useMemo<Locale>(() => {
     const normalizedLanguage = i18n.language.toLowerCase()
@@ -77,7 +76,13 @@ export default function LanguageSwitcher({ anchor }: LanguageSwitcherProps) {
       return
     }
 
-    void changeLanguageLazy(setStoredAppearanceLocale(getSafeLocalStorage(), nextLanguage) as Locale)
+    const stored = setStoredAppearanceLocale(getSafeLocalStorage(), nextLanguage) as Locale
+    // A /ru or /uk page is in its URL's language, so another language is another URL.
+    if (pathLocale(pathname)) {
+      window.location.assign(localeSwitchHref(pathname, stored))
+      return
+    }
+    void changeLanguageLazy(stored)
   }
 
   return (
@@ -86,7 +91,7 @@ export default function LanguageSwitcher({ anchor }: LanguageSwitcherProps) {
         className={`${headerControl()} gap-1.5 pl-1.5 pr-2 text-left`}
         aria-label={t('header.language')}
       >
-        <span className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-bd-bg2 text-bd-lav-deep dark:text-bd-lav">
+        <span className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-bd-bg2 text-bd-lav-text dark:text-bd-lav">
           <GlobeIcon />
         </span>
 
@@ -125,7 +130,7 @@ export default function LanguageSwitcher({ anchor }: LanguageSwitcherProps) {
                     onClick={() => handleLocaleChange(option.code)}
                     className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left transition-colors ${
                       isSelected
-                        ? 'bg-bd-lav/15 text-bd-lav-deep dark:bg-bd-lav/15 dark:text-bd-lav'
+                        ? 'bg-bd-lav/15 text-bd-lav-text dark:bg-bd-lav/15 dark:text-bd-lav'
                         : focus
                           ? 'bg-bd-card-warm text-bd-ink'
                           : 'text-bd-ink-soft'

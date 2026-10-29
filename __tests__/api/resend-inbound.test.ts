@@ -159,6 +159,37 @@ describe('POST /api/resend/inbound', () => {
     expect(sent.attachments).toHaveLength(1)
   })
 
+  it('decodes an escaped entity once, so &amp;lt; stays &lt;', async () => {
+    global.fetch = jest
+      .fn()
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          from: 'player@example.com',
+          to: ['support@boardly.online'],
+          subject: 'Entities',
+          html: '<p>Type &amp;lt;b&amp;gt; &amp; 1 &lt; 2</p>',
+          text: null,
+        }),
+      })
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ id: 'sent_3' }) })
+
+    await POST(signedRequest(receivedEvent))
+
+    expect(JSON.parse(global.fetch.mock.calls[1][1].body).text).toBe('Type &lt;b&gt; & 1 < 2')
+  })
+
+  it.each([['../../domains'], ['email_1/../x'], ['a?b=1'], [42]])(
+    'never fetches a malformed email_id (%p)',
+    async (emailId) => {
+      const body = JSON.stringify({ type: 'email.received', data: { email_id: emailId } })
+      const res = await POST(signedRequest(body))
+      expect(res.status).toBe(200)
+      await expect(res.json()).resolves.toEqual({ received: true, ignored: true })
+      expect(global.fetch).not.toHaveBeenCalled()
+    }
+  )
+
   it('still delivers a repeated signed request when no Redis is configured (fail open)', async () => {
     global.fetch = jest
       .fn()

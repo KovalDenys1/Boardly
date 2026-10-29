@@ -2,21 +2,25 @@
 
 import Link from 'next/link'
 import { useTranslation } from '@/lib/i18n-helpers'
+import { useLocalizedHref } from '@/lib/page-locale'
 import type { TranslationKeys } from '@/lib/i18n-helpers'
 import { getCatalogAvailableGames } from '@/lib/game-catalog'
 import { SOCIAL_PLATFORM_LABELS, SOCIAL_PROFILES } from '@/lib/social-profiles'
 import { reopenGoogleConsentMessage } from '@/lib/consent'
 import { isProductionDeployment } from '@/lib/feature-flags'
+import { useIsPlayApp } from '@/hooks/useIsPlayApp'
 
 export default function Footer({ listingBadge = false }: { listingBadge?: boolean }) {
   const { t } = useTranslation()
+  const localize = useLocalizedHref()
+  const inPlayApp = useIsPlayApp()
   const currentYear = new Date().getFullYear()
   // The adsbygoogle loader — which is also what delivers Google's consent
   // message — only runs in production (#1152), so the control that reopens
   // it would do nothing anywhere else. `NODE_ENV === 'production'` alone
   // can't tell a Vercel Preview build from Production (Next.js builds both
   // with NODE_ENV=production), so this goes through the VERCEL_ENV-aware
-  // helper that app/layout.tsx's loader gate uses.
+  // helper that app/root-document.tsx's loader gate uses.
   const canReopenConsentMessage = isProductionDeployment()
 
   return (
@@ -63,7 +67,7 @@ export default function Footer({ listingBadge = false }: { listingBadge?: boolea
               </span>
             </div>
             <p className="text-sm leading-relaxed max-w-xs" style={{ color: 'var(--bd-ink-soft)' }}>
-              {t('footer.tagline')}
+              {t(inPlayApp ? 'footer.taglinePlayApp' : 'footer.tagline')}
             </p>
             {listingBadge && (
               // Launchstag publishes the listing once it finds this link on the home page; the image is a local copy, so no visitor request reaches them.
@@ -105,7 +109,7 @@ export default function Footer({ listingBadge = false }: { listingBadge?: boolea
               {getCatalogAvailableGames().map((game) => (
                 <li key={game.id}>
                   <Link
-                    href={(game.route ?? '').replace(/\/lobbies$/, '')}
+                    href={localize((game.route ?? '').replace(/\/lobbies$/, ''))}
                     className="text-sm transition-colors hover:opacity-100"
                     style={{ color: 'var(--bd-ink-soft)' }}
                     onMouseEnter={e => (e.currentTarget.style.color = 'var(--bd-ink)')}
@@ -134,20 +138,22 @@ export default function Footer({ listingBadge = false }: { listingBadge?: boolea
                 { labelKey: 'footer.leaderboard', href: '/leaderboard' },
                 { labelKey: 'footer.guides', href: '/guides' },
                 // The only crawlable link to /premium on the site.
-                { labelKey: 'common.premium', href: '/premium' },
-              ] as { labelKey: TranslationKeys; href: string }[]).map((link) => (
-                <li key={link.href}>
-                  <Link
-                    href={link.href}
-                    className="text-sm transition-colors"
-                    style={{ color: 'var(--bd-ink-soft)' }}
-                    onMouseEnter={e => (e.currentTarget.style.color = 'var(--bd-ink)')}
-                    onMouseLeave={e => (e.currentTarget.style.color = 'var(--bd-ink-soft)')}
-                  >
-                    {t(link.labelKey)}
-                  </Link>
-                </li>
-              ))}
+                { labelKey: 'common.premium', href: '/premium', purchase: true },
+              ] as { labelKey: TranslationKeys; href: string; purchase?: boolean }[])
+                .filter((link) => !(inPlayApp && link.purchase))
+                .map((link) => (
+                  <li key={link.href} data-purchase-ui={link.purchase || undefined}>
+                    <Link
+                      href={localize(link.href)}
+                      className="text-sm transition-colors"
+                      style={{ color: 'var(--bd-ink-soft)' }}
+                      onMouseEnter={e => (e.currentTarget.style.color = 'var(--bd-ink)')}
+                      onMouseLeave={e => (e.currentTarget.style.color = 'var(--bd-ink-soft)')}
+                    >
+                      {t(link.labelKey)}
+                    </Link>
+                  </li>
+                ))}
             </ul>
           </div>
 

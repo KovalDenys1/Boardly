@@ -1,5 +1,5 @@
 import { act, renderHook } from '@testing-library/react'
-import { useBotTurn } from '@/app/lobby/[code]/hooks/useBotTurn'
+import { useBotTurn } from '@/app/(site)/lobby/[code]/hooks/useBotTurn'
 
 jest.mock('@/lib/client-logger', () => ({
   clientLogger: {

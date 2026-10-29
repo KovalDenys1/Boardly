@@ -72,7 +72,7 @@ function Badge({
         <p className="mt-1 text-xs leading-snug text-bd-ink-soft">{item.description}</p>
         {item.unlockedOnLabel && (
           <p className="mt-1.5 flex items-center gap-1 text-[11px] font-semibold text-bd-ink-soft">
-            <span className="text-bd-mint-deep"><Icon name="check" size={12} /></span> {item.unlockedOnLabel}
+            <span className="text-bd-mint-text"><Icon name="check" size={12} /></span> {item.unlockedOnLabel}
           </p>
         )}
       </div>

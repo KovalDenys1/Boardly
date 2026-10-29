@@ -45,6 +45,9 @@ describe('<html lang> follows the active locale', () => {
     await i18n.changeLanguage('uk')
     expect(document.documentElement.lang).toBe('uk')
 
+    await i18n.changeLanguage('de')
+    expect(document.documentElement.lang).toBe('de')
+
     await i18n.changeLanguage('en')
   })
 

@@ -5,6 +5,7 @@ import { useSession } from 'next-auth/react'
 import { readLocal, removeLocal, writeLocal } from '@/lib/safe-storage'
 import { signupSourceHeaders } from '@/lib/signup-source-client'
 import { clearSignupFrom, peekSignupFrom } from '@/lib/signup-attribution'
+import { BLOCKED_PLAYERS_CHANGED_EVENT, BLOCKED_PLAYERS_STORAGE_KEY } from '@/lib/user-blocks'
 
 interface SetGuestModeOptions {
     guestId?: string
@@ -149,6 +150,8 @@ export function GuestProvider({ children }: { children: ReactNode }) {
     const eraseGuestIdentity = useCallback(() => {
         clearGuestMode()
         removeLocal(GUEST_IDENTITY_KEY)
+        removeLocal(BLOCKED_PLAYERS_STORAGE_KEY)
+        window.dispatchEvent(new CustomEvent(BLOCKED_PLAYERS_CHANGED_EVENT))
     }, [clearGuestMode])
 
     // Load guest data from localStorage on mount

@@ -621,3 +621,44 @@ describe('holdTurnClock (#1007)', () => {
     expect(game.getState().turnStartedAt).toBe(afterMove)
   })
 })
+
+class DrawAtThreeGame extends TestGame {
+  checkDraw(): boolean {
+    return (this.state.data as { value: number }).value >= 3
+  }
+}
+
+describe('checkDraw (#1493)', () => {
+  const increment = (game: GameEngine, playerId: string) =>
+    game.makeMove({ playerId, type: 'increment', data: {}, timestamp: new Date() })
+
+  function startedDrawGame() {
+    const game = new DrawAtThreeGame('draw-game')
+    game.addPlayer({ id: 'a', name: 'A' })
+    game.addPlayer({ id: 'b', name: 'B' })
+    game.startGame()
+    return game
+  }
+
+  it('finishes the game with no winner, and the turn left on the seat that made the move', () => {
+    const game = startedDrawGame()
+    increment(game, 'a')
+    increment(game, 'b')
+    increment(game, 'a')
+
+    expect(game.getState().status).toBe('finished')
+    expect(game.getState().winner).toBeUndefined()
+    expect(game.getState().currentPlayerIndex).toBe(0)
+  })
+
+  it('never ends a game on its own: an engine that does not override it plays on', () => {
+    const game = new TestGame('plain')
+    game.addPlayer({ id: 'a', name: 'A' })
+    game.addPlayer({ id: 'b', name: 'B' })
+    game.startGame()
+    for (let i = 0; i < 5; i++) increment(game, i % 2 === 0 ? 'a' : 'b')
+
+    expect(game.checkDraw()).toBe(false)
+    expect(game.getState().status).toBe('playing')
+  })
+})

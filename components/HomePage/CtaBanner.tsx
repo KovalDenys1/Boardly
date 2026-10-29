@@ -5,11 +5,15 @@ import { useSession } from 'next-auth/react'
 import { useGuest } from '@/contexts/GuestContext'
 import BoardlyAvatar from '@/components/ui/BoardlyAvatar'
 import { useTranslation } from '@/lib/i18n-helpers'
+import { useLocalizedHref } from '@/lib/page-locale'
+import { useIsPlayApp } from '@/hooks/useIsPlayApp'
 
 export default function CtaBanner() {
   const { data: session, status } = useSession()
   const { isGuest, guestName } = useGuest()
   const { t } = useTranslation()
+  const localize = useLocalizedHref()
+  const isPlayApp = useIsPlayApp()
   const isLoggedIn = status === 'authenticated'
   const displayName = session?.user?.name || session?.user?.email?.split('@')[0] || 'friend'
 
@@ -36,7 +40,7 @@ export default function CtaBanner() {
       : {
           title: t('home.ctaVisitorTitle'),
           accent: t('home.ctaVisitorAccent'),
-          body: t('home.ctaVisitorBody'),
+          body: t(isPlayApp ? 'home.ctaVisitorBodyPlayApp' : 'home.ctaVisitorBody'),
           primaryHref: '/games',
           primaryLabel: t('home.browseGames'),
           secondaryHref: '/auth/register',
@@ -68,7 +72,7 @@ export default function CtaBanner() {
     <section className="home-cta-section">
       <div
         style={{
-          color: 'var(--bd-bg)',
+          color: 'var(--bd-ink-on-inverse)',
           maxWidth: 1280,
           margin: '0 auto',
           padding: 'clamp(36px, 6vw, 56px) clamp(28px, 5vw, 64px)',
@@ -96,7 +100,7 @@ export default function CtaBanner() {
           <p
             style={{
               fontSize: 17,
-              color: 'var(--bd-bg)',
+              color: 'var(--bd-ink-on-inverse)',
               opacity: 0.7,
               marginBottom: 28,
               maxWidth: 420,
@@ -107,13 +111,13 @@ export default function CtaBanner() {
           </p>
           <div className="home-cta-row">
             <Link
-              href={content.primaryHref}
+              href={localize(content.primaryHref)}
               className="home-cta-button home-cta-button-primary"
             >
               {content.primaryLabel}
             </Link>
             <Link
-              href={content.secondaryHref}
+              href={localize(content.secondaryHref)}
               className="home-cta-button home-cta-button-outline home-cta-button-on-dark"
             >
               {content.secondaryLabel}

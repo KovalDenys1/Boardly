@@ -24,8 +24,9 @@ export function maskEmail(email: string): string {
 
 // Deliberately loose: a false positive masks a harmless string, a false negative
 // logs an address. `*` is not in the local-part class, so an already masked
-// address never matches again.
-const EMAIL_IN_TEXT = /[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)*\.[A-Za-z]{2,}/g
+// address never matches again. The bounds are RFC 5321's lengths and keep the
+// scan linear on a long run of local-part characters.
+const EMAIL_IN_TEXT = /[A-Za-z0-9._%+-]{1,64}@[A-Za-z0-9-]{1,63}(?:\.[A-Za-z0-9-]{1,63}){0,8}\.[A-Za-z]{2,63}/g
 
 export function redactEmailsInText(text: string): string {
   return text.includes('@') ? text.replace(EMAIL_IN_TEXT, (match) => maskEmail(match)) : text

@@ -205,7 +205,7 @@ export default function FeedbackWidget() {
 
                 <div>
                   <label className="mb-2 block font-mono text-xs font-semibold uppercase tracking-[0.18em] text-bd-ink-muted">
-                    {t('feedback.messageLabel')} <span className="text-bd-coral-deep">*</span>
+                    {t('feedback.messageLabel')} <span className="text-bd-coral-text">*</span>
                   </label>
                   <textarea
                     ref={textareaRef}
@@ -239,7 +239,7 @@ export default function FeedbackWidget() {
                 </div>
 
                 {error && (
-                  <p className="rounded-2xl border border-bd-coral/40 bg-bd-coral/10 px-3 py-2 text-sm font-semibold text-bd-coral-deep dark:text-red-300">
+                  <p className="rounded-2xl border border-bd-coral/40 bg-bd-coral/10 px-3 py-2 text-sm font-semibold text-bd-coral-text dark:text-red-300">
                     {error}
                   </p>
                 )}

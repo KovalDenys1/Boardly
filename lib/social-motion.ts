@@ -23,6 +23,18 @@ export function latestEntryKey<T>(
   return keyOf(items[index], index)
 }
 
+/** Liar's Party's reveal steps: the verdict stamped on the claim, the claimant's points, then the vote rows, then who is out. */
+export const LIARS_VERDICT_STEP = 3
+export const LIARS_CLAIMANT_STEP = 4
+export const LIARS_BREAKDOWN_FIRST_STEP = 6
+
+/** Long enough for the last staggered row and the eliminated card to land; the standings move after it. */
+export const LIARS_REVEAL_MS = 1600
+
+export function liarsRevealLastStep(voteCount: number): number {
+  return LIARS_BREAKDOWN_FIRST_STEP + voteCount
+}
+
 /** Default step between staggered rows, and the longest a whole reveal may take to start its last step. */
 export const STAGGER_STEP_MS = 70
 export const STAGGER_MAX_TOTAL_MS = 840

@@ -7,7 +7,7 @@
 // row carries the internal user id.
 
 import { fetchLeaderboardPage } from '@/lib/server/leaderboard'
-import LeaderboardPage from '@/app/leaderboard/page'
+import LeaderboardPage from '@/app/(site)/leaderboard/page'
 import { prisma } from '@/lib/db'
 import { getOptionalViewerId } from '@/lib/session-user'
 
@@ -29,7 +29,7 @@ jest.mock('@/lib/session-user', () => ({
 
 // The page hands its rows to this client component; its props are what the RSC
 // payload carries to the browser, so the test reads them rather than the markup.
-jest.mock('@/app/leaderboard/LeaderboardClient', () => ({
+jest.mock('@/app/(site)/leaderboard/LeaderboardClient', () => ({
   __esModule: true,
   default: function LeaderboardClientMock() {
     return null

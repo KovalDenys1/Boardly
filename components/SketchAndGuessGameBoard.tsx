@@ -12,6 +12,8 @@ import type {
 } from '@/lib/games/sketch-and-guess-game'
 import { sketchWordDisplay, type SketchWord } from '@/lib/games/sketch-and-guess-word-display'
 import LoadingButton from '@/components/LoadingButton'
+import TermsConsentPanel from '@/components/TermsConsentPanel'
+import BlockedText from '@/components/BlockedText'
 import ScorePop from '@/components/game-chrome/ScorePop'
 import { useFreshKey } from '@/hooks/useFreshKey'
 import { useFreshFor } from '@/hooks/useFreshFor'
@@ -32,8 +34,16 @@ interface SketchAndGuessGameBoardProps {
   playerId: string
   players: SketchAndGuessPlayer[]
   onSubmitDrawing?: (content: string) => Promise<void>
-  /** Resolves with the private result of the guess, when the server gave one. */
-  onSubmitGuess: (guess: string) => Promise<SketchGuessResult | void>
+  /**
+   * Resolves with the private result of the guess, when the server gave one, or
+   * `'terms-required'` when the server wants the terms accepted first: the box then keeps the guess.
+   */
+  onSubmitGuess: (guess: string) => Promise<SketchGuessResult | 'terms-required' | void>
+  /** The viewer has not accepted the Terms of Use and the Community Rules: the consent panel stands in for the guess box. */
+  termsRequired?: boolean
+  onAcceptTerms?: () => Promise<boolean>
+  /** Players the viewer blocked: what they typed into the feed folds to one line. */
+  blockedIds?: ReadonlySet<string>
   onAdvanceRound: () => Promise<void>
   /** Drawer, `choosing` phase: the word they picked from the three (#1082). */
   onChooseWord?: (wordId: string) => Promise<void>
@@ -352,6 +362,8 @@ function roundWord(round: SketchAndGuessRound): Pick<SketchWord, 'en' | 'no' | '
 // its text reaches only its author and the drawer until the reveal, and the
 // server has already blanked it for everyone else.
 
+const NO_BLOCKED_IDS: ReadonlySet<string> = new Set()
+
 function GuessFeed({
   guesses,
   nameOf,
@@ -359,6 +371,7 @@ function GuessFeed({
   canAccept,
   onAcceptGuess,
   isSubmitting,
+  blockedIds,
   t,
 }: {
   guesses: SketchAndGuessGuess[]
@@ -367,6 +380,7 @@ function GuessFeed({
   canAccept: (guess: SketchAndGuessGuess) => boolean
   onAcceptGuess?: (guessId: string) => Promise<void>
   isSubmitting: boolean
+  blockedIds: ReadonlySet<string>
   t: TFn
 }) {
   // Newest first in the DOM, laid out bottom-up (`column-reverse`), so the list
@@ -404,7 +418,12 @@ function GuessFeed({
                   <Icon name="check" size={13} />
                   <span className="sketch-feed__text">
                     <strong>{t('games.guess_my_drawing.game.guessedIt', { name })}</strong>
-                    {g.guess ? <span className="sketch-feed__guess"> “{g.guess}”</span> : null}
+                    {g.guess ? (
+                      <span className="sketch-feed__guess">
+                        {' '}
+                        <BlockedText blocked={blockedIds.has(g.playerId)} from={g.playerId}>“{g.guess}”</BlockedText>
+                      </span>
+                    ) : null}
                     {g.acceptedByHost ? <span className="sketch-feed__tag"> {t('games.guess_my_drawing.game.acceptedByHost')}</span> : null}
                   </span>
                 </>
@@ -415,7 +434,10 @@ function GuessFeed({
                 <>
                   <span className="sketch-feed__text">
                     <strong>{name}</strong>
-                    <span className="sketch-feed__guess"> {g.guess}</span>
+                    <span className="sketch-feed__guess">
+                      {' '}
+                      <BlockedText blocked={blockedIds.has(g.playerId)} from={g.playerId}>{g.guess}</BlockedText>
+                    </span>
                     {g.nearMiss ? <span className="sketch-feed__tag"> {t('games.guess_my_drawing.game.closeGuess')}</span> : null}
                   </span>
                   {onAcceptGuess && canAccept(g) && (
@@ -639,6 +661,8 @@ function GuesserDrawingView({
   guess,
   onGuessChange,
   onSubmitGuess,
+  termsRequired,
+  onAcceptTerms,
   isSubmitting,
   feed,
   mask,
@@ -651,13 +675,34 @@ function GuesserDrawingView({
   hasGuessedCorrectly: boolean
   guess: string
   onGuessChange: (next: string) => void
-  onSubmitGuess: (guess: string) => Promise<SketchGuessResult | void>
+  onSubmitGuess: (guess: string) => Promise<SketchGuessResult | 'terms-required' | void>
+  termsRequired: boolean
+  onAcceptTerms?: () => Promise<boolean>
   isSubmitting: boolean
   feed: ReactNode
   t: TFn
 }) {
   const [validationError, setValidationError] = useState<string | null>(null)
   const [closeHint, setCloseHint] = useState(false)
+  const inputRef = useRef<HTMLInputElement>(null)
+  const showTermsConsent = termsRequired && !!onAcceptTerms
+  const [focusTermsConsent, setFocusTermsConsent] = useState(false)
+  const focusInputAfterConsent = useRef(false)
+
+  useEffect(() => {
+    if (showTermsConsent || !focusInputAfterConsent.current) return
+    focusInputAfterConsent.current = false
+    inputRef.current?.focus()
+  }, [showTermsConsent])
+
+  const handleAcceptTerms = async () => {
+    if (!onAcceptTerms) return false
+    focusInputAfterConsent.current = true
+    const accepted = await onAcceptTerms()
+    if (accepted) setFocusTermsConsent(false)
+    else focusInputAfterConsent.current = false
+    return accepted
+  }
 
   const handleSubmit = useCallback(async () => {
     // The box is only cleared after the round trip, so the guess is still on
@@ -671,6 +716,10 @@ function GuesserDrawingView({
     }
     setValidationError(null)
     const result = await onSubmitGuess(trimmed)
+    if (result === 'terms-required') {
+      setFocusTermsConsent(true)
+      return
+    }
     setCloseHint(!!result && result.close)
     onGuessChange('')
   }, [guess, isSubmitting, onGuessChange, onSubmitGuess, t])
@@ -690,6 +739,14 @@ function GuesserDrawingView({
         <p className="text-center text-sm text-bd-ink-muted">{t('games.guess_my_drawing.game.spectatorNotice')}</p>
       ) : hasGuessedCorrectly ? (
         <p className="text-center text-sm font-semibold text-emerald-600">{t('games.guess_my_drawing.game.alreadyGuessed')}</p>
+      ) : showTermsConsent ? (
+        <TermsConsentPanel
+          onAccept={handleAcceptTerms}
+          autoFocus={focusTermsConsent}
+          context="play"
+          compact
+          className="rounded-xl border border-(--bd-line) bg-(--bd-bg2) px-3 py-2"
+        />
       ) : (
         <div className="sketch-guess-form">
           <div className="sketch-guess-row">
@@ -697,6 +754,7 @@ function GuesserDrawingView({
                 input drops focus, and on a phone that folds the keyboard away
                 between every guess of a round that is all guesses (#1082). */}
             <input
+              ref={inputRef}
               type="text"
               value={guess}
               onChange={(e) => {
@@ -884,6 +942,9 @@ export default function SketchAndGuessGameBoard({
   playerId,
   players,
   onSubmitGuess,
+  termsRequired = false,
+  onAcceptTerms,
+  blockedIds = NO_BLOCKED_IDS,
   onAdvanceRound,
   onChooseWord,
   onAcceptGuess,
@@ -993,6 +1054,7 @@ export default function SketchAndGuessGameBoard({
       canAccept={canAccept}
       onAcceptGuess={onAcceptGuess}
       isSubmitting={isSubmitting}
+      blockedIds={blockedIds}
       t={t}
     />
   )
@@ -1061,6 +1123,8 @@ export default function SketchAndGuessGameBoard({
       guess={activeDraft.guess}
       onGuessChange={setGuess}
       onSubmitGuess={onSubmitGuess}
+      termsRequired={termsRequired}
+      onAcceptTerms={onAcceptTerms}
       isSubmitting={isSubmitting}
       feed={feed}
       mask={mask}

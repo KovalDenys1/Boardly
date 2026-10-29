@@ -434,7 +434,7 @@ describe('Discord Linked Roles linking is server-side and keeps the session (#12
   })
 
   it('the page no longer hands the link to next-auth', () => {
-    const page = readFileSync(path.join(process.cwd(), 'app/discord/link/page.tsx'), 'utf8')
+    const page = readFileSync(path.join(process.cwd(), 'app/(site)/discord/link/page.tsx'), 'utf8')
     // Comments may still name the old call; code may not.
     const code = page.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '')
     expect(code).not.toMatch(/\bsignIn\b/)

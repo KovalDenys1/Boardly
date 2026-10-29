@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { useTranslation, type TranslationKeys } from '@/lib/i18n-helpers'
 import GameIcon from '@/components/GameIcon'
 import { Icon, type IconName } from '@/components/icons'
+import { useIsPlayApp } from '@/hooks/useIsPlayApp'
 
 /**
  * A marquee row is either a game (drawn with its own GameIcon, bare so it sits
@@ -25,6 +26,9 @@ const ITEM_ICONS: readonly MarqueeItemSpec[] = [
   { key: 'home.marquee.noDownload',     icon: 'bolt',        color: 'var(--bd-sky)'   },
   { key: 'home.marquee.playInBrowser',  icon: 'globe',       color: 'var(--bd-sun)'   },
 ] as const
+
+// Claims that are false inside the installed Play app.
+const WEB_ONLY_KEYS: ReadonlySet<TranslationKeys> = new Set(['home.marquee.noDownload', 'home.marquee.playInBrowser'])
 
 function MarqueeItem({
   spec,
@@ -51,9 +55,9 @@ function MarqueeItem({
       }}
     >
       {'game' in spec
-        ? <GameIcon gameId={spec.game} accentColor={color} size={26} variant="bare" />
+        ? <GameIcon gameId={spec.game} accentColor={color} detailColor="var(--bd-inverse)" size={26} variant="bare" />
         : <Icon name={spec.icon} size={26} />}
-      <span style={{ color: index % 3 === 0 ? color : 'var(--bd-bg)' }}>{txt}</span>
+      <span style={{ color: index % 3 === 0 ? color : 'var(--bd-ink-on-inverse)' }}>{txt}</span>
     </span>
   )
 }
@@ -64,6 +68,8 @@ interface MarqueeStripProps {
 
 export default function MarqueeStrip({ variant = 'section' }: MarqueeStripProps) {
   const { t } = useTranslation()
+  const isPlayApp = useIsPlayApp()
+  const items = isPlayApp ? ITEM_ICONS.filter((spec) => !WEB_ONLY_KEYS.has(spec.key)) : ITEM_ICONS
   const [canAnimate, setCanAnimate] = useState(false)
   const isHero = variant === 'hero'
 
@@ -97,10 +103,10 @@ export default function MarqueeStrip({ variant = 'section' }: MarqueeStripProps)
       style={{
         margin: isHero ? 0 : '24px 0',
         padding: isHero ? '20px 0' : '20px 0',
-        background: 'var(--bd-ink)',
-        color: 'var(--bd-bg)',
-        borderTop: '3px solid var(--bd-ink)',
-        borderBottom: '3px solid var(--bd-ink)',
+        background: 'var(--bd-inverse)',
+        color: 'var(--bd-ink-on-inverse)',
+        borderTop: '3px solid var(--bd-inverse)',
+        borderBottom: '3px solid var(--bd-inverse)',
         overflow: 'hidden',
         position: 'relative',
         boxShadow: isHero ? '0 16px 0 rgba(31,27,22,0.08)' : 'none',
@@ -135,7 +141,7 @@ export default function MarqueeStrip({ variant = 'section' }: MarqueeStripProps)
       <div className={`bd-marquee-track ${canAnimate ? 'is-ready' : ''}`}>
         {[0, 1, 2].map((groupIndex) => (
           <div key={groupIndex} className="bd-marquee-group">
-            {ITEM_ICONS.map((spec, itemIndex) => (
+            {items.map((spec, itemIndex) => (
               <MarqueeItem
                 key={`${groupIndex}-${spec.key}`}
                 spec={spec}

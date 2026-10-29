@@ -1,8 +1,11 @@
 // @ts-nocheck
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
-import RockPaperScissorsLobbyPage from '@/app/lobby/[code]/rock-paper-scissors-page'
+import RockPaperScissorsLobbyPage from '@/app/(site)/lobby/[code]/rock-paper-scissors-page'
 import { fetchWithGuest } from '@/lib/fetch-with-guest'
+import { clientLogger } from '@/lib/client-logger'
 import { showToast } from '@/lib/i18n-toast'
+import { playCue } from '@/lib/sound-engine'
+import { RPS_RESULT_REVEAL_DELAY_MS } from '@/lib/rps-motion'
 import { frameFor, installSignedRealtime } from '@/__tests__/fixtures/signed-realtime'
 
 const mockReplace = jest.fn()
@@ -109,9 +112,11 @@ jest.mock('@/components/RockPaperScissorsGameBoard', () => ({
   getChoiceEmoji: () => '❔',
   getChoiceIcon: () => 'rock',
   CHOICE_LABEL_KEY: { rock: 'lobby.choice.rock', paper: 'lobby.choice.paper', scissors: 'lobby.choice.scissors' },
-  // Without these the page's reveal holds were `undefined` ms, i.e. off, in this suite.
-  RPS_REVEAL_MS: 1100,
-  RPS_RESULT_REVEAL_DELAY_MS: 2000,
+}))
+
+jest.mock('@/lib/sound-engine', () => ({
+  ...jest.requireActual('@/lib/sound-engine'),
+  playCue: jest.fn(() => true),
 }))
 
 jest.mock('@/components/LoadingSpinner', () => ({
@@ -329,6 +334,56 @@ describe('RockPaperScissorsLobbyPage', () => {
     })
   })
 
+  describe('a spectator hears the end of the match (#1464)', () => {
+    const resultCues = () => (playCue as jest.Mock).mock.calls.filter(([cue]) => String(cue).startsWith('result.'))
+    const finishedResponse = () => {
+      const response = buildLobbyResponse({
+        status: 'finished',
+        currentPlayerIndex: 0,
+        lastMoveAt: Date.now(),
+        players: [
+          { id: 'user-1', name: 'Alice' },
+          { id: 'user-2', name: 'Bob' },
+        ],
+        data: {
+          mode: 'best-of-3',
+          rounds: [
+            { choices: { 'user-1': 'rock', 'user-2': 'scissors' }, winner: 'user-1' },
+            { choices: { 'user-1': 'paper', 'user-2': 'rock' }, winner: 'user-1' },
+          ],
+          playerChoices: {},
+          scores: { 'user-1': 2 },
+          playersReady: [],
+          gameWinner: 'user-1',
+        },
+      })
+      response.activeGame.status = 'finished'
+      return response
+    }
+
+    it('plays result.over once when the match finishes while they watch', async () => {
+      render(<RockPaperScissorsLobbyPage code="ABCD" isSpectator />)
+      await waitFor(() => expect(screen.getAllByTestId('rps-board').length).toBeGreaterThan(0))
+
+      mockFetchWithGuest.mockResolvedValue({ ok: true, json: async () => finishedResponse() } as Response)
+      await act(async () => {
+        broadcastHandlers['game-update']?.({ payload: {} })
+      })
+      await waitFor(() => expect(mockBoardProps.current.gameData.gameWinner).toBe('user-1'))
+
+      expect(screen.queryByTestId('game-result-overlay')).toBeNull()
+      expect(resultCues()).toEqual([['result.over', { gameId: 'game-1#end', delayMs: RPS_RESULT_REVEAL_DELAY_MS }]])
+    })
+
+    it('stays silent for a spectator who opens a match that has already finished', async () => {
+      mockFetchWithGuest.mockResolvedValue({ ok: true, json: async () => finishedResponse() } as Response)
+      render(<RockPaperScissorsLobbyPage code="ABCD" isSpectator />)
+      await waitFor(() => expect(mockBoardProps.current?.gameData.gameWinner).toBe('user-1'))
+
+      expect(resultCues()).toEqual([])
+    })
+  })
+
   describe("the finished banner names the viewer's result (#1340)", () => {
     const finishedState = (gameWinner: string) => ({
       status: 'finished',
@@ -367,6 +422,50 @@ describe('RockPaperScissorsLobbyPage', () => {
         expect(titles.every((el) => el.getAttribute('data-outcome') === outcome)).toBe(true)
         expect(titles[0].textContent).toContain(badge)
       }, { timeout: 3000 })
+    })
+  })
+
+  // #1522: picking second put "Waiting for Bob to pick 2/2" next to Bob's LOCKED IN badge.
+  describe('the header with both picks in (#1522)', () => {
+    const withReady = (playersReady: string[]) => ({
+      id: 'game-1',
+      status: 'playing',
+      currentPlayerIndex: 0,
+      lastMoveAt: Date.now(),
+      players: [
+        { id: 'user-1', name: 'Alice' },
+        { id: 'user-2', name: 'Bob' },
+      ],
+      data: { mode: 'best-of-3', rounds: [], playerChoices: {}, scores: {}, playersReady, gameWinner: null },
+    })
+    const waitingTitles = () => screen.queryAllByText('games.rock_paper_scissors.waitingForPick')
+    const revealingTitles = () => screen.queryAllByText('games.rock_paper_scissors.revealing')
+
+    it('says the round is being revealed once this player picks second', async () => {
+      mockFetchWithGuest.mockResolvedValue({ ok: true, json: async () => buildLobbyResponse(withReady(['user-2'])) } as Response)
+      render(<RockPaperScissorsLobbyPage code="ABCD" />)
+      await waitFor(() => expect(screen.getAllByTestId('rps-board').length).toBeGreaterThan(0))
+      expect(screen.getAllByText('games.rock_paper_scissors.pickPrompt').length).toBeGreaterThan(0)
+
+      mockFetchWithGuest.mockImplementation(async (_url: string, init?: RequestInit) => {
+        if (init?.method === 'POST') return new Promise<Response>(() => {})
+        return { ok: true, json: async () => buildLobbyResponse(withReady(['user-2'])) } as Response
+      })
+      await act(async () => {
+        fireEvent.click(screen.getAllByTestId('rps-pick-rock')[0])
+      })
+
+      await waitFor(() => expect(revealingTitles().length).toBeGreaterThan(0))
+      expect(waitingTitles()).toHaveLength(0)
+    })
+
+    it('never says it waits for a player the state already has locked in', async () => {
+      mockFetchWithGuest.mockResolvedValue({ ok: true, json: async () => buildLobbyResponse(withReady(['user-1', 'user-2'])) } as Response)
+      render(<RockPaperScissorsLobbyPage code="ABCD" />)
+      await waitFor(() => expect(screen.getAllByTestId('rps-board').length).toBeGreaterThan(0))
+
+      expect(waitingTitles()).toHaveLength(0)
+      expect(revealingTitles().length).toBeGreaterThan(0)
     })
   })
 
@@ -511,6 +610,47 @@ describe('RockPaperScissorsLobbyPage', () => {
           json: async () => ({ game: { state: resolvedRoundState(), status: 'playing' } }),
         })
       })
+    })
+  })
+
+  // #1521: the opponent's pick resolves the round while this player's own pick is still out. Its
+  // broadcast is dropped for the move in flight and the answer to the pick is older than it.
+  describe('a round resolved by the opponent while this pick is out (#1521)', () => {
+    it('shows the resolved round once the answer to this pick lands after the opponent broadcast', async () => {
+      const T0 = Date.now() - 3_000
+      const players = [{ id: 'user-1', name: 'Alice' }, { id: 'user-2', name: 'Bob' }]
+      const open = { id: 'game-1', status: 'playing', currentPlayerIndex: 0, lastMoveAt: T0, players,
+        data: { mode: 'best-of-3', rounds: [], playerChoices: {}, scores: {}, playersReady: [], gameWinner: null } }
+      mockFetchWithGuest.mockResolvedValue({ ok: true, json: async () => buildLobbyResponse(open) } as Response)
+      render(<RockPaperScissorsLobbyPage code="ABCD" />)
+      await waitFor(() => expect(screen.getAllByTestId('rps-board').length).toBeGreaterThan(0))
+      await waitFor(() => expect(broadcastHandlers['game-update']).toBeDefined())
+
+      // Server truth: this pick commits at T0+1000, Bob's pick resolves the round at T0+2000.
+      const myPickOnly = { ...open, lastMoveAt: T0 + 1_000, data: { ...open.data, playerChoices: { 'user-1': 'rock' }, playersReady: ['user-1'] } }
+      const resolved = { ...open, lastMoveAt: T0 + 2_000, data: { ...open.data, rounds: [{ choices: { 'user-1': 'rock', 'user-2': 'scissors' }, winner: 'user-1' }], playerChoices: { 'user-1': null, 'user-2': null }, scores: { 'user-1': 1, 'user-2': 0 }, playersReady: [] } }
+      let answerPick: ((r: Response) => void) | null = null
+      mockFetchWithGuest.mockImplementation(async (_url: string, init?: RequestInit) => {
+        if (init?.method === 'POST') return new Promise<Response>((resolve) => { answerPick = resolve })
+        return { ok: true, json: async () => buildLobbyResponse(resolved) } as Response
+      })
+
+      await act(async () => { fireEvent.click(screen.getAllByTestId('rps-pick-rock')[0]) })
+      await waitFor(() => expect(answerPick).not.toBeNull())
+
+      // Bob's request resolves the round; its broadcast reaches this client first and waits behind the pick.
+      await act(async () => {
+        broadcastHandlers['game-update']?.({ payload: { action: 'state-change', gameId: 'game-1', payload: resolved } })
+      })
+      // Signed frames are verified asynchronously, so wait until the page has turned this one away.
+      await waitFor(() => expect((clientLogger.debug as jest.Mock).mock.calls.some(([message]) => message === 'Ignoring stale RPS state')).toBe(true))
+      expect(mockBoardProps.current.gameData.rounds).toHaveLength(0)
+
+      await act(async () => {
+        answerPick!({ ok: true, status: 200, json: async () => ({ game: { state: myPickOnly, status: 'playing' } }) } as Response)
+      })
+      await waitFor(() => expect(mockBoardProps.current.gameData.rounds).toHaveLength(1))
+      expect(mockBoardProps.current.gameData.scores['user-1']).toBe(1)
     })
   })
 })

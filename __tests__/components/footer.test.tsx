@@ -76,3 +76,36 @@ describe('Footer legal links', () => {
     expect(screen.getByRole('link', { name: 'Community rules' })).toHaveAttribute('href', '/rules')
   })
 })
+
+describe('Footer in the Play app (#1465)', () => {
+  afterEach(() => {
+    delete document.documentElement.dataset.appShell
+  })
+
+  it('drops the /premium link in the app and keeps the rest of the Play column', () => {
+    document.documentElement.dataset.appShell = 'play'
+    const { container } = render(<Footer />)
+    const hrefs = Array.from(container.querySelectorAll('a')).map((a) => a.getAttribute('href'))
+
+    expect(hrefs).not.toContain('/premium')
+    expect(hrefs).toContain('/guides')
+  })
+
+  it('drops the no-download tagline in the app and keeps it on the web (#1491)', () => {
+    document.documentElement.dataset.appShell = 'play'
+    const { unmount } = render(<Footer />)
+    expect(screen.queryByText('Play board games online with friends in real-time. Free, no download required.')).toBeNull()
+    expect(screen.getByText('Play board games online with friends in real time. Free to play.')).toBeTruthy()
+    unmount()
+
+    delete document.documentElement.dataset.appShell
+    render(<Footer />)
+    expect(screen.getByText('Play board games online with friends in real-time. Free, no download required.')).toBeTruthy()
+  })
+
+  it('marks the /premium item on the web so the app hides it before hydration', () => {
+    const { container } = render(<Footer />)
+
+    expect(container.querySelector('a[href="/premium"]')?.closest('li')).toHaveAttribute('data-purchase-ui')
+  })
+})

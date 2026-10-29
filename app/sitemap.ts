@@ -2,6 +2,7 @@ import { MetadataRoute } from 'next'
 
 import { ALL_GUIDES } from '@/lib/guides-catalog'
 import { getRouteUpdated, type DatedRoute } from '@/lib/route-dates'
+import { isLocalizedPage, languageAlternates } from '@/lib/seo-locales'
 
 const BASE = 'https://boardly.online'
 
@@ -21,8 +22,16 @@ function page(
   }
 }
 
+// A page with /ru and /uk versions is listed three times, each entry naming all three (#1394).
+function withLanguageVersions(entry: MetadataRoute.Sitemap[number]): MetadataRoute.Sitemap {
+  const path = entry.url.slice(BASE.length) || '/'
+  if (!isLocalizedPage(path)) return [entry]
+  const languages = languageAlternates(path)
+  return [languages.en, languages.ru, languages.uk].map((url) => ({ ...entry, url, alternates: { languages } }))
+}
+
 export default function sitemap(): MetadataRoute.Sitemap {
-  return [
+  const pages: MetadataRoute.Sitemap = [
     // Core pages
     page('/', { changeFrequency: 'daily', priority: 1.0 }),
     page('/games', { changeFrequency: 'weekly', priority: 0.9 }),
@@ -56,10 +65,9 @@ export default function sitemap(): MetadataRoute.Sitemap {
       priority: 0.8,
     })),
 
-    // Legal
     // /privacy and /terms are noindex (#1227): they carry the owner's name and home address,
-    // which the law requires on the site but not in search results.
-    page('/withdrawal', { changeFrequency: 'yearly', priority: 0.3 }),
-    page('/rules', { changeFrequency: 'yearly', priority: 0.3 }),
+    // which the law requires on the site but not in search results. /withdrawal and /rules
+    // are noindex too (#1498): a legal form and a copy of two sections of /terms.
   ]
+  return pages.flatMap(withLanguageVersions)
 }

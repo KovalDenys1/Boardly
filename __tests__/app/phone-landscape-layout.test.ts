@@ -110,7 +110,7 @@ describe('phone-landscape layout family', () => {
 describe("the landscape header card of a game whose header shares a row", () => {
   const landscape = mediaBlocks(PHONE_LANDSCAPE_MEDIA_QUERY).join('\n')
   const page = readFileSync(
-    path.join(process.cwd(), 'app', 'lobby', '[code]', 'liars-party-page.tsx'),
+    path.join(process.cwd(), 'app', '(site)', 'lobby', '[code]', 'liars-party-page.tsx'),
     'utf8',
   )
 

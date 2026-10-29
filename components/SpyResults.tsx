@@ -37,7 +37,6 @@ interface SpyResultsProps {
   onReturnToWaiting?: () => void
   isReturningToWaiting?: boolean
   isGuest?: boolean
-  registerUrl?: string
   /** Lobby code for the after-game share button (#982). Omit it and only the Discord line shows. */
   lobbyCode?: string
   /** Decided by the caller — a spectator is neither registered here nor a guest (#982). */
@@ -49,6 +48,13 @@ interface SpyResultsProps {
    */
   reveal?: boolean
   onRevealEnd?: () => void
+}
+
+/** The line saying who the vote put out, or how the spy's guess went: the third step of the reveal. */
+export const SPY_OUTCOME_LINE_STEP = 2
+
+export function spyResultsLastStep(playerCount: number): number {
+  return 4 + Math.max(0, playerCount - 1)
 }
 
 export default function SpyResults({
@@ -71,7 +77,6 @@ export default function SpyResults({
   onReturnToWaiting,
   isReturningToWaiting = false,
   isGuest = false,
-  registerUrl = '/auth/register',
   lobbyCode,
   isRegistered = false,
   reveal = false,
@@ -82,7 +87,7 @@ export default function SpyResults({
   // Class and delay for the `step`-th element of the reveal, or nothing.
   // The last step is the last vote/score row; the spacing shrinks to fit a
   // long table rather than letting the later rows start together.
-  const lastStep = 4 + Math.max(0, players.length - 1)
+  const lastStep = spyResultsLastStep(players.length)
   const rise = (step: number, className = 'social-rise') =>
     reveal ? { className, style: staggerStyle(step, lastStep) } : { className: '', style: undefined }
 
@@ -124,25 +129,25 @@ export default function SpyResults({
         <div className="text-center">
           <p className="bd-kicker">{t('spy.phases.results')}</p>
           <h2
-            className={`mt-1 text-3xl font-black sm:text-4xl ${spyWon ? 'text-(--bd-coral-deep)' : 'text-(--bd-mint-deep)'} ${rise(0, 'social-reveal').className}`}
+            className={`mt-1 text-3xl font-black sm:text-4xl ${spyWon ? 'text-(--bd-coral-text)' : 'text-(--bd-mint-text)'} ${rise(0, 'social-reveal').className}`}
             style={rise(0, 'social-reveal').style}
           >
             {spyWon ? t('spy.spyWins') : t('spy.regularsWin')}
           </h2>
           {wasGuessRound ? (
-            <p className={`mt-2 text-base font-semibold text-(--bd-ink-soft) ${rise(2).className}`} style={rise(2).style}>
+            <p className={`mt-2 text-base font-semibold text-(--bd-ink-soft) ${rise(SPY_OUTCOME_LINE_STEP).className}`} style={rise(SPY_OUTCOME_LINE_STEP).style}>
               {guessWasCorrect
                 ? t('spy.guessCorrect', { player: spyPlayer?.name })
                 : t('spy.guessWrong', { player: spyPlayer?.name, guess: spyGuessedLocation })}
             </p>
           ) : !noElimination ? (
-            <p className={`mt-2 text-base font-semibold text-(--bd-ink-soft) ${rise(2).className}`} style={rise(2).style}>
+            <p className={`mt-2 text-base font-semibold text-(--bd-ink-soft) ${rise(SPY_OUTCOME_LINE_STEP).className}`} style={rise(SPY_OUTCOME_LINE_STEP).style}>
               {spyWon
                 ? t('spy.wasInnocent', { player: eliminatedPlayer?.name })
                 : t('spy.wasSpy', { player: spyPlayer?.name })}
             </p>
           ) : (
-            <p className={`mt-2 text-base font-semibold text-(--bd-ink-soft) ${rise(2).className}`} style={rise(2).style}>{t('spy.tieNoElimination')}</p>
+            <p className={`mt-2 text-base font-semibold text-(--bd-ink-soft) ${rise(SPY_OUTCOME_LINE_STEP).className}`} style={rise(SPY_OUTCOME_LINE_STEP).style}>{t('spy.tieNoElimination')}</p>
           )}
           <div style={rise(3).style} className={`mx-auto mt-4 inline-flex ${rise(3).className} rounded-xl border border-(--bd-line) bg-(--bd-card-warm) px-4 py-2 text-sm font-bold text-(--bd-ink)`}>
             {t('spy.locationRevealed', { location })}
@@ -209,7 +214,7 @@ export default function SpyResults({
                       {player.isPremium && <Icon name="crown" size={13} tone="premium" label="Premium" className="shrink-0" />}
                     </span>
                   </div>
-                  <span className="text-lg font-black text-(--bd-mint-deep)">
+                  <span className="text-lg font-black text-(--bd-mint-text)">
                     {scores[player.id] || 0} {t('profile.gameResults.points')}
                   </span>
                 </div>
@@ -295,7 +300,6 @@ export default function SpyResults({
               gameType="guess_the_spy"
               isGuest={isGuest}
               isRegistered={isRegistered}
-              registerUrl={registerUrl}
             />
           </div>
         )}

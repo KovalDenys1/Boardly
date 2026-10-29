@@ -1,5 +1,5 @@
 import { render, screen } from '@testing-library/react'
-import GamesClient from '@/app/games/GamesClient'
+import GamesClient from '@/app/(site)/games/GamesClient'
 import { getCatalogGames, isAvailableCatalogEntry } from '@/lib/game-catalog'
 import {
   HELD_BACK_DETAIL_HREF,

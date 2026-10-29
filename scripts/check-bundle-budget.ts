@@ -13,7 +13,7 @@ import {
   normalizeManifestFilePath,
 } from '../lib/bundle-budget'
 
-const DEFAULT_ROUTE = '/lobby/[code]/page'
+const DEFAULT_ROUTE = '/(site)/lobby/[code]/page'
 
 const DEFAULT_BUDGETS_KIB = {
   // Calibrated from 2026-03-10 production build baseline after Next.js 16/Turbopack manifest migration.

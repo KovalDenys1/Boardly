@@ -17,6 +17,15 @@
   --color-bd-bg: var(--bd-bg);
   --color-bd-bg2: var(--bd-bg2);
   --color-bd-card-warm: var(--bd-card-warm);
+  --color-bd-coral-deep: var(--bd-coral-deep);
+  --color-bd-mint-deep: var(--bd-mint-deep);
+  --color-bd-lav-deep: var(--bd-lav-deep);
+  --color-bd-coral-text: var(--bd-coral-text);
+  --color-bd-mint-text: var(--bd-mint-text);
+  --color-bd-lav-text: var(--bd-lav-text);
+  --color-bd-sun-text: var(--bd-sun-text);
+  --color-bd-inverse: var(--bd-inverse);
+  --color-bd-ink-on-inverse: var(--bd-ink-on-inverse);
   --font-display: var(--bd-font-display), Georgia, serif;
 }
 
@@ -32,14 +41,11 @@
   --color-primary: #3b82f6;
   --color-secondary: #8b5cf6;
   --color-bd-coral: #FF6B5B;
-  --color-bd-coral-deep: #E04B3B;
   --color-bd-mint: #4FC9A6;
-  --color-bd-mint-deep: #2FA787;
   --color-bd-sun: #FFC44D;
   --color-bd-sun-deep: #E5A82E;
   --color-bd-lav: #9B8CFF;
   --color-bd-lav-mid: #8B7DFF;
-  --color-bd-lav-deep: var(--bd-lav-deep);
   --color-bd-sky: #6BC1F0;
   --color-bd-danger-border: #F0B3AC;
   --color-bd-danger-bg: #FFF2EF;
@@ -232,7 +238,16 @@
      darker fills on 2026-09-28 so the brand colours stay as they are (#1171). */
   --bd-ink-on-accent: #1F1B16;
   --bd-ink-soft: #4A3F33;
-  --bd-ink-muted: #8A7A66;
+  /* 4.5:1 or more on the page, the cards and the inputs, in both themes. */
+  --bd-ink-muted: #736451;
+  /* A slab that stays dark in dark, where --bd-ink turns cream; text on it is --bd-ink-on-inverse. */
+  --bd-inverse: #1F1B16;
+  --bd-ink-on-inverse: #FBF6EE;
+  /* Accent-coloured text. The -deep shades are the border and shadow of a fill and do not flip. */
+  --bd-coral-text: #E04B3B;
+  --bd-mint-text: #2FA787;
+  --bd-lav-text: #7867E8;
+  --bd-sun-text: #8A5F00;
   --bd-btn-ink: var(--bd-ink);
   --bd-line: #E8DDC8;
   /* A plate raised above whatever is behind it - a player pill on a team card,
@@ -281,7 +296,13 @@ html.dark {
   --bd-bg2:       #2B2720;
   --bd-ink:       #F0E8DB;
   --bd-ink-soft:  #B5A494;
-  --bd-ink-muted: #7A6E62;
+  --bd-ink-muted: #9C8E7E;
+  --bd-coral-text: #FF8273;
+  --bd-mint-text: #45BF9C;
+  --bd-lav-text:  #A99BFF;
+  --bd-inverse:   #35302A;
+  --bd-ink-on-inverse: #F0E8DB;
+  --bd-sun-text:  #FFC44D;
   --bd-line:      #3A3530;
   --bd-card-warm: #242018;
   --bd-card:      #242018;
@@ -415,6 +436,24 @@ html.dark {
     border-left: 1px solid var(--bd-line);
     overflow-y: auto;
   }
+}
+
+/* Waiting-room Chat tab on a short phone (#1466): at 320x568 the card left the chat ~150px,
+   which held neither the composer nor the terms panel whole. The tab above already names the
+   chat, so its title strip goes, as in the landscape game column. */
+/* The composer's Rules link stands in for the title strip's where the strip is hidden. */
+.chat-composer-rules { display: none; }
+
+@media (max-height: 720px) {
+  .waiting-room-chat .chat-titlebar { display: none; }
+  .waiting-room-chat .chat-composer-rules { display: inline-flex; }
+  .waiting-room-chat .chat-messages { padding: 8px 10px; }
+  .waiting-room-chat .chat-composer { padding: 8px 10px; }
+  .waiting-room-chat .chat-composer-hint { display: none; }
+  /* The terms panel is taller than the composer: the list may shrink to nothing under it, and a
+     longer translation scrolls inside the panel. */
+  .waiting-room-chat .bd-card:has(> .terms-consent) > .chat-messages { padding-block: 0 4px; }
+  .waiting-room-chat .terms-consent { min-height: 0; flex-shrink: 1; overflow-y: auto; }
 }
 
 /* Homepage viewport shells: fill the first view, but let content grow naturally. */
@@ -588,7 +627,7 @@ html.dark {
 }
 
 .home-cta-button-on-dark {
-  color: var(--bd-bg);
+  color: var(--bd-ink-on-inverse);
   border-color: rgba(251,246,238,0.55);
 }
 
@@ -641,8 +680,66 @@ html.dark {
   padding-top: clamp(48px, 6vw, 72px);
 }
 
+.home-section-video {
+  padding-bottom: clamp(64px, 8vw, 96px);
+}
+
+.home-video-frame {
+  aspect-ratio: 16 / 9;
+  background: var(--bd-card-warm);
+  border: 1.5px solid var(--bd-line);
+  border-radius: 24px;
+  box-shadow: 0 6px 0 rgba(31, 27, 22, 0.08);
+  margin: 0 auto;
+  max-width: 960px;
+  overflow: hidden;
+  position: relative;
+}
+
+.home-video-play {
+  align-items: center;
+  background: var(--bd-inverse);
+  border: 0;
+  border-radius: 999px;
+  bottom: clamp(10px, 2.4vw, 20px);
+  box-shadow: 0 4px 0 rgba(31, 27, 22, 0.16);
+  color: var(--bd-ink-on-inverse);
+  cursor: pointer;
+  display: flex;
+  font-family: var(--bd-font-display);
+  font-size: clamp(13px, 1.6vw, 16px);
+  font-weight: 700;
+  gap: 8px;
+  left: clamp(10px, 2.4vw, 20px);
+  padding: clamp(8px, 1.2vw, 12px) clamp(14px, 2vw, 20px) clamp(8px, 1.2vw, 12px) clamp(10px, 1.6vw, 16px);
+  position: absolute;
+  transition: transform 200ms ease;
+}
+
+.home-video-play:hover {
+  transform: scale(1.04);
+}
+
+.home-video-play:focus-visible {
+  outline: 3px solid var(--bd-lav-deep);
+  outline-offset: -3px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .home-video-play {
+    transition: none;
+  }
+}
+
+.home-video-frame video {
+  display: block;
+  height: 100%;
+  object-fit: cover;
+  width: 100%;
+}
+
 .home-cta-section {
-  background: var(--bd-ink);
+  background: var(--bd-inverse);
   padding: clamp(64px, 8vw, 90px) clamp(16px, 4vw, 48px);
 }
 
@@ -2658,6 +2755,10 @@ input[type="range"].slider-thumb::-moz-range-track {
   from { opacity: 0; transform: translateY(8px); }
   to { opacity: 1; transform: none; }
 }
+/* A blocked player's text, opened with Show (#1482). */
+.blocked-text-reveal {
+  animation: fade-in-plain var(--bd-dur) var(--bd-ease-out) both;
+}
 /* A new entry that matters (a correct guess): lands with a small overshoot. */
 .social-entry-hit {
   animation: social-entry-hit var(--bd-dur-slow) var(--bd-ease-spring) both;
@@ -2909,7 +3010,7 @@ input[type="range"].slider-thumb::-moz-range-track {
   left: 50%;
   bottom: -9px;
   translate: -50% 0;
-  padding: 1px 6px;
+  padding: 1px 4px;
   border-radius: 999px;
   border: 1.5px solid var(--bd-ink);
   background: var(--bd-sun);
@@ -3083,7 +3184,7 @@ input[type="range"].slider-thumb::-moz-range-track {
   color: var(--bd-ink);
   text-align: center;
 }
-.yz-sheet__ph-marks { display: flex; align-items: center; justify-content: center; gap: 4px; height: 12px; color: var(--bd-lav-deep); }
+.yz-sheet__ph-marks { display: flex; align-items: center; justify-content: center; gap: 4px; height: 12px; color: var(--bd-lav-text); }
 /* Three or four players: the marks go above the name, which gets the column's whole width. */
 .yz-sheet:is([data-players='3'], [data-players='4']) .yz-sheet__ph { flex-direction: column; }
 .yz-sheet__ph.is-current { background-color: color-mix(in srgb, var(--bd-sun) 26%, var(--bd-card-warm)); }
@@ -3514,7 +3615,7 @@ button.yz-pill:focus-visible { outline: 3px solid var(--bd-lav-deep); outline-of
   background: var(--bd-card-warm); font-size: 12px; overflow: hidden;
 }
 .yz-event__icon { flex-shrink: 0; display: inline-flex; color: var(--bd-ink-soft); }
-.yz-event--bot .yz-event__icon { color: var(--bd-lav-deep); }
+.yz-event--bot .yz-event__icon { color: var(--bd-lav-text); }
 .yz-event__name {
   flex: 0 1 auto; max-width: 40%; min-width: 0;
   font-weight: 700; color: var(--bd-ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
@@ -3542,8 +3643,9 @@ button.yz-pill:focus-visible { outline: 3px solid var(--bd-lav-deep); outline-of
      exempt it (axe still checks visually-rendered contrast for anyone with
      low vision, hidden from AT or not). bd-ink-soft at full opacity clears
      4.5:1; the cell already carries aria-label="cell A1" etc. for the
-     accessible name, so this stays a purely visual hint either way. */
-  color: var(--bd-ink-soft);
+     accessible name, so this stays a purely visual hint either way.
+     Fixed like the cell under it: --bd-ink-soft turns light in dark. */
+  color: #4A3F33;
   font-family: ui-monospace, monospace;
   pointer-events: none;
   user-select: none;
@@ -3670,6 +3772,7 @@ button.yz-pill:focus-visible { outline: 3px solid var(--bd-lav-deep); outline-of
      announced chat to someone already looking at it while taking a third of
      the room the messages needed. */
   .game-landscape-side .chat-titlebar { display: none; }
+  .game-landscape-side .chat-composer-rules { display: inline-flex; }
   .game-landscape-side .chat-messages { padding: 8px 10px; }
   .game-landscape-side .chat-composer { padding: 8px 10px; }
   .game-landscape-side .chat-composer-hint { display: none; }
@@ -4200,6 +4303,58 @@ html.dark .liars-seat { background: var(--bd-bg2); }
   display: inline-block;
   transform-origin: left center;
 }
+/* A round's points beside a name: the reveal's rows and the standings. */
+.liars-delta {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+/* The claimant's line under the verdict: who claimed, their strike, their points. */
+.liars-reveal-claimant {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+  font-size: 14px;
+  color: var(--bd-ink-soft);
+}
+.liars-strike-chip {
+  flex-shrink: 0;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+  background: color-mix(in srgb, var(--bd-coral) 18%, var(--bd-card));
+  color: var(--bd-coral-text);
+}
+/* Next Round during the reveal's hold: a countdown, and a bar that fills to
+   the moment it opens. Transform only; under reduced motion the bar is simply
+   full and the countdown carries the wait. */
+.liars-next { position: relative; }
+.liars-next__count {
+  margin-left: 6px;
+  font-variant-numeric: tabular-nums;
+}
+.liars-next__fill {
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: 5px;
+  height: 3px;
+  border-radius: 2px;
+  background: currentColor;
+  opacity: 0.6;
+  transform-origin: left center;
+  animation-name: liars-hold-fill;
+  animation-timing-function: linear;
+  animation-fill-mode: both;
+  pointer-events: none;
+}
+@keyframes liars-hold-fill {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
 
 /* Truth / Bluff and Challenge / Believe: two equal buttons that stay on one
    row at 320px rather than wrapping to a single-button row. */
@@ -4303,7 +4458,7 @@ html.dark .liars-seat { background: var(--bd-bg2); }
   place-items: center;
   font-size: 11px;
   font-weight: 800;
-  color: #fff;
+  color: var(--bd-ink-on-accent);
 }
 .rps-hand__name {
   font-weight: 700;
@@ -4347,7 +4502,7 @@ html.dark .liars-seat { background: var(--bd-bg2); }
 }
 .rps-hand--win .rps-hand__state { color: var(--hand-accent); }
 .rps-hand--loss { animation: rps-loss-dim 0.35s ease 1s both; }
-.rps-hand--loss .rps-hand__state { color: var(--bd-coral-deep); }
+.rps-hand--loss .rps-hand__state { color: var(--bd-coral-text); }
 .rps-hand--draw .rps-hand__state { color: var(--bd-ink-soft); }
 
 .rps-stage__center {
@@ -4592,7 +4747,7 @@ html.dark .liars-seat { background: var(--bd-bg2); }
   font-family: var(--bd-font-display);
   font-size: 34px;
   font-weight: 800;
-  color: #fff;
+  color: var(--bd-ink-on-accent);
 }
 
 .spy-role-mark-alert { background: var(--bd-coral); }
@@ -4844,7 +4999,7 @@ html.dark .liars-seat { background: var(--bd-bg2); }
   width: 44%;
   height: 44%;
   border-radius: 50%;
-  background: #fff;
+  background: var(--bd-card);
   color: var(--bd-ink);
   font-family: var(--bd-font-display);
   font-size: clamp(12px, 3vw, 28px);
@@ -5093,11 +5248,7 @@ html.dark .btn-social-unlink {
 }
 html.dark .btn-social-unlink:hover {
   background: rgba(255,107,91,0.15);
-  color: var(--bd-coral-deep);
-}
-
-html.dark .ttt-cell:not(:disabled):hover {
-  background: var(--bd-bg2);
+  color: var(--bd-coral-text);
 }
 
 html.dark .game-tabs {
@@ -5348,7 +5499,7 @@ html.dark .spy-secret-tile {
   color: var(--bd-ink);
   min-width: 0;
 }
-.sketch-feed__item--correct { background: rgba(93, 211, 158, 0.18); color: var(--bd-mint-deep); }
+.sketch-feed__item--correct { background: rgba(93, 211, 158, 0.18); color: var(--bd-mint-text); }
 .sketch-feed__text { flex: 1 1 auto; min-width: 0; overflow-wrap: anywhere; }
 .sketch-feed__guess { color: var(--bd-ink-soft); }
 .sketch-feed__text--close { color: var(--bd-ink-muted); font-style: italic; }
@@ -5702,6 +5853,11 @@ html.dark .sketch-score-row { background: var(--bd-bg2); }
   .game-landscape-side .alias-header-card { padding: 6px 10px; }
   .game-landscape-side .alias-header-card > [aria-hidden] { display: none; }
   .game-landscape-side .alias-guess-panel { width: 100%; max-width: none; }
+  /* The terms panel (#1466) needs the column's whole slot; the feed comes back once it is accepted.
+     !important: the feed sets its display inline. */
+  .game-landscape-side .alias-guess-panel:has(> .terms-consent) { justify-content: center; }
+  .game-landscape-side .alias-guess-panel:has(> .terms-consent) > :not(.terms-consent) { display: none !important; }
+  .game-landscape-side .alias-guess-panel > .terms-consent { min-height: 0; flex-shrink: 1; overflow-y: auto; }
 }
 
 /* ── Ludo (#1084) ─────────────────────────────────────────────────────────
@@ -5919,4 +6075,8 @@ html.dark .sketch-score-row { background: var(--bd-bg2); }
   .replay-transport { grid-area: transport; }
   .replay-extra { grid-area: extra; }
   .replay-head .replay-back-label { display: none; }
+}
+
+html[data-app-shell='play'] [data-purchase-ui] {
+  display: none !important;
 }

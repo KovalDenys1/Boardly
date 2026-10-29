@@ -36,4 +36,19 @@ describe('useRemoteRoll', () => {
     rerender({ r: roll('me', 1, 3) })
     expect(result.current).toBe(false)
   })
+
+  it('calls onArrival once per remote roll, with the animation, never for the snapshot or my own (#1464)', () => {
+    const onArrival = jest.fn()
+    type P = { r: ReturnType<typeof roll> | undefined }
+    const { rerender } = renderHook(({ r }: P) => useRemoteRoll(r, 'me', true, onArrival), {
+      initialProps: { r: roll('bot', 1, 1) } as P,
+    })
+    rerender({ r: roll('bot', 1, 1) })
+    expect(onArrival).not.toHaveBeenCalled()
+    rerender({ r: roll('bot', 2, 2) })
+    rerender({ r: roll('bot', 2, 2) })
+    expect(onArrival).toHaveBeenCalledTimes(1)
+    rerender({ r: roll('me', 1, 3) })
+    expect(onArrival).toHaveBeenCalledTimes(1)
+  })
 })

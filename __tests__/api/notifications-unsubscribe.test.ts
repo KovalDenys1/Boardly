@@ -5,6 +5,7 @@
 
 import { NextRequest } from 'next/server'
 import { GET, POST } from '@/app/api/notifications/unsubscribe/route'
+import { getAppShellInitScript } from '@/lib/app-shell-script'
 import {
   upsertNotificationPreferences,
   verifyNotificationUnsubscribeToken,
@@ -53,6 +54,19 @@ describe('GET /api/notifications/unsubscribe', () => {
     const body = await (await GET(request)).text()
 
     expect(body).toContain('e-post om spillinvitasjoner')
+  })
+
+  // #1465: opened from a mail inside the Play app, this can be the tab's first document.
+  it('runs the app-shell script in the head of every page it serves', async () => {
+    mockVerify.mockReturnValue({ userId: 'user-1', type: 'gameInvites' })
+    const asking = await (await GET(unsubscribeRequest('GET', 'good-token'))).text()
+    mockVerify.mockReturnValue(null)
+    const invalid = await (await GET(unsubscribeRequest('GET', 'bad-token'))).text()
+
+    for (const body of [asking, invalid]) {
+      const head = body.slice(0, body.indexOf('</head>'))
+      expect(head).toContain(`<script>${getAppShellInitScript()}</script>`)
+    }
   })
 
   it('serves an HTML error page for an invalid token, never a JSON body', async () => {

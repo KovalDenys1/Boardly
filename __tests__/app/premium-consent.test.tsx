@@ -1,13 +1,15 @@
 import { readFileSync } from 'node:fs'
 import path from 'node:path'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
-import PremiumContent from '@/app/premium/PremiumContent'
+import PremiumContent from '@/app/(site)/premium/PremiumContent'
 import { toPlanPrice, type PremiumPricing } from '@/lib/premium-plans'
 import { TERMS_VERSION, WITHDRAWAL_INFO_VERSION } from '@/lib/terms-version'
 import en from '@/locales/en'
 import no from '@/locales/no'
 import ru from '@/locales/ru'
 import uk from '@/locales/uk'
+import de from '@/locales/de'
+import es from '@/locales/es'
 
 jest.mock('@/lib/analytics', () => ({
   trackPremiumCta: jest.fn(),
@@ -55,7 +57,7 @@ jest.mock('next-auth/react', () => ({
 }))
 
 const root = process.cwd()
-const source = readFileSync(path.join(root, 'app/premium/PremiumContent.tsx'), 'utf8')
+const source = readFileSync(path.join(root, 'app/(site)/premium/PremiumContent.tsx'), 'utf8')
 
 const BOTH_PLANS: PremiumPricing = {
   monthly: toPlanPrice('monthly', 299, 'usd'),
@@ -99,7 +101,7 @@ describe('/premium consent and withdrawal information (#1162)', () => {
         'premium.yearlyRefundNote',
       ])
     )
-    for (const [name, locale] of Object.entries({ en, no, ru, uk })) {
+    for (const [name, locale] of Object.entries({ en, no, ru, uk, de, es })) {
       const missing = keys.filter((key) => typeof localeValue(locale, key) !== 'string')
       expect({ locale: name, missing }).toEqual({ locale: name, missing: [] })
     }
@@ -116,7 +118,7 @@ describe('/premium consent and withdrawal information (#1162)', () => {
     expect(block).toHaveTextContent(en.premium.withdrawalHow)
     expect(screen.getByRole('link', { name: en.premium.withdrawalFormLink })).toHaveAttribute('href', '/withdrawal')
 
-    expect(screen.getByText(new RegExp(en.premium.priceNoteTax.replace(/[.;]/g, '\\$&')))).toBeInTheDocument()
+    expect(screen.getByText(new RegExp(en.premium.priceNoteTax.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')))).toBeInTheDocument()
     expect(screen.getByText(/conversion fee of 2 to 4%/)).toBeInTheDocument()
 
     // The information comes before the purchase, in document order.

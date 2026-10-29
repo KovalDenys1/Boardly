@@ -37,7 +37,7 @@ const clientOnlyImportPatterns = [
   /^@\/lib\/i18n-toast$/,
   /^@\/lib\/last-account$/,
   /^@\/lib\/profile-navigation$/,
-  /^@\/lib\/sounds$/,
+  /^@\/lib\/sound-engine$/,
 ]
 
 function toPosixPath(value: string) {

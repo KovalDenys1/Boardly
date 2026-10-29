@@ -1,0 +1,522 @@
+'use client'
+
+import { useState, useRef, useEffect, useId } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
+import { getProviders, signIn, useSession } from 'next-auth/react'
+import Die from '@/components/ui/Die'
+import Link from 'next/link'
+import { useTranslation } from '@/lib/i18n-helpers'
+import { loginSchema } from '@/lib/validation/auth'
+import PasswordInput from '@/components/PasswordInput'
+import LoadingSpinner from '@/components/LoadingSpinner'
+import { Icon } from '@/components/icons'
+import { showToast } from '@/lib/i18n-toast'
+import { trackAuth, trackError } from '@/lib/analytics'
+import { Checkbox } from '@/components/ui/checkbox'
+import { Label } from '@/components/ui/label'
+import {
+  buildAuthUrl,
+  resolveReturnUrlFromSearchParams,
+} from '@/lib/auth-redirect'
+import { getLastAccount, rememberLastAccount, type LastAccount } from '@/lib/last-account'
+import { UserAvatar } from '@/components/Header/UserAvatar'
+import { getCatalogAvailableGames } from '@/lib/game-catalog'
+import InAppBrowserNotice from '@/components/InAppBrowserNotice'
+import { withSignupSourceParam } from '@/lib/signup-source-client'
+
+// The hero chip used to say "6 games ready to play" in all four locales, which
+// went stale the moment a game was released (#878).
+const AVAILABLE_GAME_COUNT = getCatalogAvailableGames().length
+
+export default function LoginForm() {
+  const router = useRouter()
+  const searchParams = useSearchParams()
+  const { t } = useTranslation()
+  // A provider sign-in while signed in is refused by the server (#1223), so a signed-in
+  // visitor is not offered one.
+  const { status: sessionStatus } = useSession()
+  const isSignedIn = sessionStatus === 'authenticated'
+  const [formData, setFormData] = useState({
+    email: '',
+    password: '',
+  })
+  const [error, setError] = useState('')
+  const [fieldErrors, setFieldErrors] = useState<{ email?: string; password?: string }>({})
+  const [loading, setLoading] = useState(false)
+  const [rememberMe, setRememberMe] = useState(false)
+  const [lastAccount, setLastAccount] = useState<LastAccount | null>(null)
+  const [showChip, setShowChip] = useState(false)
+  const [oauthProviderIds, setOauthProviderIds] = useState<string[]>([])
+  const passwordRef = useRef<HTMLInputElement>(null)
+  const emailInputId = useId()
+
+  useEffect(() => {
+    const saved = getLastAccount()
+    if (saved) {
+      setLastAccount(saved)
+      setShowChip(true)
+    }
+  }, [])
+
+  useEffect(() => {
+    let isMounted = true
+
+    getProviders()
+      .then((providers) => {
+        if (!isMounted || !providers) return
+
+        setOauthProviderIds(
+          ['google', 'github', 'discord'].filter((providerId) => {
+            const provider = providers[providerId]
+            return provider && provider.type !== 'credentials'
+          })
+        )
+      })
+      .catch(() => {
+        if (isMounted) {
+          setOauthProviderIds([])
+        }
+      })
+
+    return () => {
+      isMounted = false
+    }
+  }, [])
+
+  const returnUrl = resolveReturnUrlFromSearchParams(searchParams)
+  const isLobbyInviteFlow =
+    returnUrl.startsWith('/lobby/') && !returnUrl.startsWith('/lobby/create')
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setError('')
+    setLoading(true)
+    setFieldErrors({})
+
+    try {
+      // client-side validate
+      const parsed = loginSchema.safeParse(formData)
+      if (!parsed.success) {
+        const errs: Record<string, string> = {}
+        parsed.error.issues.forEach((i) => {
+          const k = String(i.path[0] ?? 'form')
+          if (!errs[k]) errs[k] = i.message
+        })
+        setFieldErrors(errs)
+        throw new Error('Please fix the highlighted fields')
+      }
+
+      const normalizedEmail = parsed.data.email
+
+      const result = await signIn('credentials', {
+        email: normalizedEmail,
+        password: parsed.data.password,
+        rememberMe: rememberMe ? 'true' : 'false',
+        redirect: false,
+      })
+
+      if (result?.error) {
+        showToast.error('auth.login.error')
+        // Track failed login
+        trackAuth({
+          event: 'login',
+          method: 'email',
+          success: false,
+        })
+        trackError({
+          errorType: 'auth',
+          errorMessage: 'Login failed',
+          component: 'LoginForm',
+          severity: 'low',
+        })
+      } else {
+        showToast.success('auth.login.success')
+        
+        // Track successful login
+        trackAuth({
+          event: 'login',
+          method: 'email',
+          success: true,
+        })
+        
+        // Only with "Remember me" ticked; unticked clears an earlier entry (#1133).
+        rememberLastAccount(rememberMe, {
+          email: normalizedEmail,
+          name: null,
+          image: null,
+        })
+
+        router.push(returnUrl)
+        router.refresh()
+      }
+    } catch (err: unknown) {
+      showToast.errorFrom(err, 'auth.login.error')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleOAuthSignIn = async (provider: string) => {
+    setLoading(true)
+    try {
+      // Track OAuth attempt
+      trackAuth({
+        event: 'login',
+        method: provider === 'google' ? 'google' : 'email', // Type-safe provider
+        success: true, // We track attempt here, actual success is on callback
+      })
+      
+      await signIn(provider, { callbackUrl: withSignupSourceParam(returnUrl) })
+    } catch (err: unknown) {
+      setError((err as Error).message)
+      showToast.errorFrom(err, 'auth.login.oauthError')
+      
+      trackError({
+        errorType: 'auth',
+        errorMessage: `OAuth ${provider} failed: ${(err as Error).message}`,
+        component: 'LoginForm',
+        severity: 'medium',
+      })
+      
+      setLoading(false)
+    }
+  }
+
+  const renderInviteBanner = () => (
+    <div className="rounded-2xl p-4 shadow-xs" style={{ border: '1.5px solid #22C55E60', background: '#22C55E10' }}>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+        <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl shadow-xs" style={{ background: 'var(--bd-bg2)' }}>
+          <Icon name="gamepad" size={26} />
+        </span>
+        <div className="min-w-0">
+          <p className="font-semibold" style={{ color: '#16A34A' }}>
+            {t('auth.login.invited', "You've been invited to a game!")}
+          </p>
+          <p className="mt-1 text-sm leading-6" style={{ color: '#15803D' }}>
+            {t('auth.login.loginToJoin', 'Login to join the lobby')}
+          </p>
+        </div>
+      </div>
+    </div>
+  )
+
+  const renderProviderButtons = () => (
+    <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+      {oauthProviderIds.includes('google') && (
+        <button
+          onClick={() => handleOAuthSignIn('google')}
+          disabled={loading}
+          className="oauth-btn oauth-btn-google min-h-[44px] rounded-2xl text-sm"
+        >
+          <svg className="w-5 h-5" viewBox="0 0 24 24">
+            <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+            <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+            <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+            <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+          </svg>
+          {/* i18n-allow: brand name, spelled the same in every locale */}
+          Google
+        </button>
+      )}
+
+      {oauthProviderIds.includes('github') && (
+        <button
+          onClick={() => handleOAuthSignIn('github')}
+          disabled={loading}
+          className="oauth-btn oauth-btn-github min-h-[44px] rounded-2xl text-sm"
+        >
+          <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
+          </svg>
+          {/* i18n-allow: brand name, spelled the same in every locale */}
+          GitHub
+        </button>
+      )}
+
+      {oauthProviderIds.includes('discord') && (
+        <button
+          onClick={() => handleOAuthSignIn('discord')}
+          disabled={loading}
+          className="oauth-btn oauth-btn-discord min-h-[44px] rounded-2xl text-sm"
+        >
+          <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515a.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0a12.64 12.64 0 0 0-.617-1.25a.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057a19.9 19.9 0 0 0 5.993 3.03a.078.078 0 0 0 .084-.028a14.09 14.09 0 0 0 1.226-1.994a.076.076 0 0 0-.041-.106a13.107 13.107 0 0 1-1.872-.892a.077.077 0 0 1-.008-.128a10.2 10.2 0 0 0 .372-.292a.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127a12.299 12.299 0 0 1-1.873.892a.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028a19.839 19.839 0 0 0 6.002-3.03a.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419c0-1.333.956-2.419 2.157-2.419c1.21 0 2.176 1.096 2.157 2.42c0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419c0-1.333.955-2.419 2.157-2.419c1.21 0 2.176 1.096 2.157 2.42c0 1.333-.946 2.418-2.157 2.418z"/>
+          </svg>
+          {/* i18n-allow: brand name, spelled the same in every locale */}
+          Discord
+        </button>
+      )}
+    </div>
+  )
+
+  const renderLastAccountChip = (tone: 'light' | 'dark' = 'light') => {
+    if (!showChip || !lastAccount) return null
+
+    const chipClassName = tone === 'dark'
+      ? 'border-white/15 hover:border-white/25'
+      : ''
+
+    const chipStyle = tone === 'light'
+      ? { border: '1.5px solid var(--bd-line)', background: 'var(--bd-bg2)' }
+      : undefined
+
+    const primaryTextClassName = tone === 'dark'
+      ? 'text-white'
+      : ''
+    const primaryTextStyle = tone === 'light' ? { color: 'var(--bd-ink)' } : undefined
+
+    const secondaryTextClassName = tone === 'dark'
+      ? 'text-white/70'
+      : ''
+    const secondaryTextStyle = tone === 'light' ? { color: 'var(--bd-ink-soft)' } : undefined
+
+    const dismissClassName = tone === 'dark'
+      ? 'text-white/65 hover:text-white'
+      : ''
+    const dismissStyle = tone === 'light' ? { color: 'var(--bd-ink-muted)' } : undefined
+
+    const avatarClassName = tone === 'dark'
+      ? 'h-10 w-10 shrink-0 bg-white/15 text-white'
+      : 'h-10 w-10 shrink-0 text-white'
+    const avatarStyle = tone === 'light' ? { background: 'var(--bd-logo-tile)', color: 'var(--bd-sun)' } : undefined
+
+    return (
+      <div>
+        <button
+          type="button"
+          onClick={() => {
+            setFormData((prev) => ({ ...prev, email: lastAccount.email }))
+            setShowChip(false)
+            setTimeout(() => passwordRef.current?.focus(), 0)
+          }}
+          className={`flex w-full items-center gap-3 rounded-2xl border px-4 py-3 text-left shadow-xs transition-colors ${chipClassName}`}
+          style={chipStyle}
+        >
+          <UserAvatar
+            image={lastAccount.image}
+            userName={lastAccount.name}
+            userEmail={lastAccount.email}
+            className={avatarClassName}
+            style={avatarStyle}
+            textClassName="text-sm font-bold"
+          />
+          <div className="min-w-0 flex-1">
+            {lastAccount.name && (
+              <p className={`truncate text-sm font-semibold ${primaryTextClassName}`} style={primaryTextStyle}>{lastAccount.name}</p>
+            )}
+            <p className={`truncate text-sm ${secondaryTextClassName}`} style={secondaryTextStyle}>{lastAccount.email}</p>
+          </div>
+          <span className={`shrink-0 ${secondaryTextClassName}`} style={secondaryTextStyle}>→</span>
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            setShowChip(false)
+            setFormData((prev) => ({ ...prev, email: '' }))
+          }}
+          className={`mt-2 w-full text-center text-xs transition-colors ${dismissClassName}`}
+          style={dismissStyle}
+        >
+          {t('auth.login.differentAccount')}
+        </button>
+      </div>
+    )
+  }
+
+  return (
+    <div className="bd-screen" style={{
+      minHeight: '100svh', overflowX: 'hidden', overflowY: 'auto',
+      background: 'radial-gradient(circle at 12% 8%, rgba(255,196,77,0.18), transparent 35%), radial-gradient(circle at 88% 14%, rgba(155,140,255,0.16), transparent 40%), radial-gradient(circle at 50% 100%, rgba(79,201,166,0.14), transparent 50%), var(--bd-bg)',
+    }}>
+      <div className="grid grid-cols-1 lg:grid-cols-2" style={{ maxWidth: 1280, margin: '0 auto', gap: 40, alignItems: 'center', padding: 'clamp(24px, 5vw, 40px) clamp(20px, 4vw, 32px)', minHeight: '100svh', boxSizing: 'border-box' }}>
+
+        {/* LEFT: form */}
+        <div style={{ maxWidth: 460, justifySelf: 'center', width: '100%' }}>
+          <span className="bd-kicker">{t('auth.login.title')}</span>
+          <h1 style={{ fontFamily: 'var(--bd-font-display)', fontWeight: 800, fontSize: 52, lineHeight: 1, marginTop: 8, marginBottom: 12, letterSpacing: '-0.02em', color: 'var(--bd-ink)' }}>
+            {t('auth.login.welcomeBack')}
+          </h1>
+          <p style={{ color: 'var(--bd-ink-soft)', fontSize: 16, marginBottom: 28 }}>
+            {t('auth.login.noAccount')}{' '}
+            <Link href={buildAuthUrl('register', returnUrl)} style={{ color: 'var(--bd-coral)', fontWeight: 600, textDecoration: 'underline' }}>
+              {t('auth.login.register')}
+            </Link>
+          </p>
+
+          {isLobbyInviteFlow && (
+            <div style={{ marginBottom: 20, padding: 16, background: 'rgba(79,201,166,0.12)', border: '1.5px solid rgba(79,201,166,0.3)', borderRadius: 16, display: 'flex', gap: 12, alignItems: 'center' }}>
+              <Icon name="gamepad" size={24} style={{ color: 'var(--bd-mint-text)' }} />
+              <div>
+                <div style={{ fontWeight: 600, color: 'var(--bd-mint-text)', fontSize: 14 }}>{t('auth.login.invited', "You've been invited to a game!")}</div>
+                <div style={{ fontSize: 13, color: 'var(--bd-ink-soft)', marginTop: 2 }}>{t('auth.login.loginToJoin', 'Login to join the lobby')}</div>
+              </div>
+            </div>
+          )}
+
+          <div className="bd-card" style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 14 }}>
+            {showChip && lastAccount && (
+              <div style={{ marginBottom: 4 }}>
+                {renderLastAccountChip()}
+              </div>
+            )}
+
+            {isSignedIn ? (
+              <p style={{ fontSize: 13, color: 'var(--bd-ink-soft)', margin: 0 }}>
+                {t('auth.signedInProvidersHidden')}
+              </p>
+            ) : oauthProviderIds.length > 0 && (
+              <>
+                {oauthProviderIds.includes('google') && <InAppBrowserNotice />}
+                {renderProviderButtons()}
+                {/* bd-ink-muted was 3.93:1 here — AA large-text only
+                    (DESIGN.md "Contrast"), and this "or" divider is
+                    normal-size (#1171). */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12, color: 'var(--bd-ink-soft)', fontSize: 13 }}>
+                  <div style={{ flex: 1, height: 1, background: 'var(--bd-line)' }} />
+                  {t('common.or')}
+                  <div style={{ flex: 1, height: 1, background: 'var(--bd-line)' }} />
+                </div>
+              </>
+            )}
+
+            <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                <label htmlFor={emailInputId} style={{ fontSize: 13, fontWeight: 600, color: 'var(--bd-ink-soft)' }}>{t('auth.login.email')}</label>
+                <input
+                  id={emailInputId}
+                  type="email"
+                  required
+                  disabled={loading}
+                  className="bd-input"
+                  value={formData.email}
+                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  placeholder={t('auth.login.emailPlaceholder')}
+                  autoComplete="email"
+                />
+                {fieldErrors.email && <p style={{ fontSize: 13, color: 'var(--bd-coral-text)', marginTop: 2 }}>{fieldErrors.email}</p>}
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                <div ref={(el) => {
+                  if (el) {
+                    const input = el.querySelector('input')
+                    if (input) (passwordRef as React.MutableRefObject<HTMLInputElement>).current = input
+                  }
+                }}>
+                  <PasswordInput
+                    value={formData.password}
+                    onChange={(value) => setFormData({ ...formData, password: value })}
+                    placeholder={t('auth.login.passwordPlaceholder')}
+                    autoComplete="current-password"
+                    showStrength={false}
+                  />
+                </div>
+                {fieldErrors.password && <p style={{ fontSize: 13, color: 'var(--bd-coral-text)', marginTop: 2 }}>{fieldErrors.password}</p>}
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+                <Label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 14, color: 'var(--bd-ink-soft)' }}>
+                  <Checkbox checked={rememberMe} onCheckedChange={setRememberMe} disabled={loading} />
+                  {t('auth.login.rememberMe', 'Remember me')}
+                </Label>
+                <Link
+                  href={returnUrl === '/' ? '/auth/forgot-password' : `/auth/forgot-password?returnUrl=${encodeURIComponent(returnUrl)}`}
+                  // bd-coral text was 2.64:1 here, below the 4.5:1 AA minimum
+                  // (#1171 axe pass) — bd-ink keeps it readable without
+                  // touching the brand palette.
+                  style={{ fontSize: 14, fontWeight: 500, color: 'var(--bd-ink)', textDecoration: 'underline' }}
+                >
+                  {t('auth.login.forgotPassword')}
+                </Link>
+              </div>
+
+              {error && (
+                <div style={{ padding: '12px 16px', background: 'rgba(255,107,91,0.1)', border: '1.5px solid rgba(255,107,91,0.3)', borderRadius: 12, fontSize: 14, color: 'var(--bd-coral-text)' }}>
+                  {error}
+                </div>
+              )}
+
+              <button type="submit" disabled={loading} className="bd-btn bd-btn-coral bd-btn-lg" style={{ justifyContent: 'center', marginTop: 4 }}>
+                {loading ? (
+                  <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <LoadingSpinner size="sm" />
+                    {t('auth.login.loggingIn', 'Logging in...')}
+                  </span>
+                ) : t('auth.login.submit')}
+              </button>
+            </form>
+          </div>
+        </div>
+
+        {/* RIGHT: illustrated panel — height tracks the viewport (capped) so
+            the page never scrolls just because of decoration; the old
+            aspect-ratio sizing made it width-driven and taller than the
+            screen on wide windows. */}
+        <div style={{
+          position: 'relative',
+          background: 'linear-gradient(135deg, var(--bd-coral) 0%, var(--bd-sun) 100%)',
+          borderRadius: 36, padding: 40, overflow: 'hidden',
+          height: 'clamp(480px, calc(100svh - 2 * clamp(24px, 5vw, 40px) - 12px), 640px)',
+          border: '3px solid var(--bd-ink)',
+          boxShadow: '10px 10px 0 var(--bd-ink)',
+        }} className="hidden lg:block">
+          <div className="bd-dot-grid" style={{ position: 'absolute', inset: 0, opacity: 0.3 }} />
+          <div style={{ position: 'relative', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+            <div>
+              <div style={{ fontFamily: 'var(--bd-font-display)', fontWeight: 800, fontSize: 40, color: 'var(--bd-ink-on-accent)', lineHeight: 0.95, marginBottom: 12, whiteSpace: 'pre-line' }}>
+                {t('auth.login.heroQuote')}
+              </div>
+              <div style={{ fontSize: 14, color: 'rgba(31,27,22,0.7)', maxWidth: 200 }}>
+                {t('auth.login.heroQuoteBy')}
+              </div>
+            </div>
+            {/* floating dice */}
+            <div style={{ position: 'absolute', top: '26%', right: '8%' }} className="bd-float">
+              <Die value={6} size={72} rotate="-4deg" />
+            </div>
+            <div style={{ position: 'absolute', top: '46%', right: '34%' }} className="bd-float">
+              <Die value={3} size={56} rotate="-8deg" animationDelay="0.4s" />
+            </div>
+            <div style={{ position: 'absolute', top: '58%', right: '10%' }} className="bd-float">
+              <Die value={5} size={64} rotate="10deg" animationDelay="0.8s" />
+            </div>
+            <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', gap: 16 }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8, alignItems: 'flex-start' }}>
+                {[
+                  { icon: 'dice' as const, label: t('auth.login.heroChipGames', { games: AVAILABLE_GAME_COUNT }) },
+                  { icon: 'bolt' as const, label: t('auth.login.heroChipInstant') },
+                  { icon: 'users' as const, label: t('auth.login.heroChipGuests') },
+                ].map(({ icon, label }) => (
+                  <div
+                    key={label}
+                    style={{
+                      display: 'inline-flex', alignItems: 'center', gap: 8,
+                      padding: '7px 14px', borderRadius: 999,
+                      // The chip keeps its cream ground in both themes because
+                      // the panel behind it is a coral/sun gradient that does
+                      // not flip — so the ink on it must not flip either.
+                      background: 'rgba(255,248,235,0.85)',
+                      border: '1.5px solid var(--bd-ink-on-accent)',
+                      fontSize: 13, fontWeight: 600, color: 'var(--bd-ink-on-accent)',
+                    }}
+                  >
+                    <Icon name={icon} size={16} tone="on-accent" />
+                    <span>{label}</span>
+                  </div>
+                ))}
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <div style={{ display: 'flex' }}>
+                  {[['A','bd-avatar-mint'],['L','bd-avatar-lav'],['M','bd-avatar-sky']].map(([l, cls], i) => (
+                    <div key={l} className={`bd-avatar ${cls}`} style={{ width: 36, height: 36, marginLeft: i > 0 ? -10 : 0 }}>{l}</div>
+                  ))}
+                </div>
+                <div style={{ fontSize: 13, color: 'var(--bd-ink-on-accent)', fontWeight: 500 }}>{t('auth.login.heroPlayers')}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}

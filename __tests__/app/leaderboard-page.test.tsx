@@ -1,6 +1,6 @@
 import React from 'react'
 import { render, screen, waitFor } from '@testing-library/react'
-import LeaderboardPage, { metadata } from '@/app/leaderboard/page'
+import LeaderboardPage, { metadata } from '@/app/(site)/leaderboard/page'
 import { fetchLeaderboardPage } from '@/lib/server/leaderboard'
 import { apiLogger } from '@/lib/logger'
 import type { LeaderboardEntry } from '@/lib/leaderboard'

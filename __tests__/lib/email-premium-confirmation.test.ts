@@ -5,9 +5,7 @@
  * RESEND_API_KEY once at import.
  */
 
-// A module, not a script: without an export the file's top-level names would
-// share one global scope with email-seller-footer.test.ts under tsc.
-export {}
+import { visibleText } from '../fixtures/email-visible-text'
 
 const mockSend = jest.fn()
 
@@ -64,21 +62,6 @@ async function sendEach(overrides: Partial<Details> = {}) {
   const en = await send({ ...overrides, language: 'en' })
   const nb = await send({ ...overrides, language: 'nb' })
   return { en, nb, html: en.html + nb.html, text: `${en.text}\n\n${nb.text}` }
-}
-
-// The text a reader sees, without the markup: tags gone, entities decoded,
-// whitespace collapsed. Sentences are asserted on this so an anchor inside
-// one does not break the match.
-function visibleText(html: string): string {
-  return html
-    .replace(/<\/(?:p|h\d|div)>|<br\s*\/?>/gi, ' ')
-    .replace(/<[^>]+>/g, '')
-    .replace(/&amp;/g, '&')
-    .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>')
-    .replace(/&quot;/g, '"')
-    .replace(/&#039;/g, "'")
-    .replace(/\s+/g, ' ')
 }
 
 describe('sendPremiumConfirmationEmail', () => {

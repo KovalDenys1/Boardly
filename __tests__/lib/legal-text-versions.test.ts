@@ -3,7 +3,10 @@ import en from '@/locales/en'
 import no from '@/locales/no'
 import ru from '@/locales/ru'
 import uk from '@/locales/uk'
+import de from '@/locales/de'
+import es from '@/locales/es'
 import { INACTIVITY_RULE_STARTS, TERMS_FIGURES, TERMS_VERSION, WITHDRAWAL_INFO_VERSION } from '@/lib/terms-version'
+import type { Locale as SiteLocale } from '@/locales/meta'
 
 /**
  * TERMS_VERSION and WITHDRAWAL_INFO_VERSION are bumped by hand, and the
@@ -12,7 +15,7 @@ import { INACTIVITY_RULE_STARTS, TERMS_FIGURES, TERMS_VERSION, WITHDRAWAL_INFO_V
  * 2026-09-24 the text changed twice in one day under the same version (#1179),
  * so a tab opened in the morning could still consent to the old "no VAT is
  * added" wording. This test ties each version to a digest of the text it
- * stands for, in all four locales: a buyer agrees in the language the site is
+ * stands for, in every locale: a buyer agrees in the language the site is
  * shown in, and a Norwegian consumer is owed the information in Norwegian
  * (angrerettloven § 8 second paragraph), so a Norwegian-only edit is a change
  * of terms too.
@@ -30,17 +33,14 @@ function digest(value: unknown): string {
   return createHash('sha256').update(JSON.stringify(value)).digest('hex').slice(0, 16)
 }
 
-const LOCALES = { en, no, ru, uk }
+const LOCALES = { en, no, ru, uk, de, es } satisfies Record<SiteLocale, unknown>
 type Locale = typeof en
 
 /** The same slice of every locale, keyed by locale code. */
 function everyLocale<T>(pick: (locale: Locale) => T): Record<keyof typeof LOCALES, T> {
-  return {
-    en: pick(LOCALES.en),
-    no: pick(LOCALES.no as unknown as Locale),
-    ru: pick(LOCALES.ru as unknown as Locale),
-    uk: pick(LOCALES.uk as unknown as Locale),
-  }
+  return Object.fromEntries(
+    Object.entries(LOCALES).map(([code, locale]) => [code, pick(locale as unknown as Locale)])
+  ) as Record<keyof typeof LOCALES, T>
 }
 
 /**
@@ -96,6 +96,9 @@ const TERMS_DIGESTS: Record<string, string> = {
   '2026-09-27': '0653967b2bfde28a',
   // Section 2: accounts not used for 24 months, from INACTIVITY_RULE_STARTS (#1224).
   '2026-10-05': 'd1cb3214d28d9538',
+  // Section 1 names the German and Spanish translations (#1472). The first digest over all
+  // six locales.
+  '2026-10-18': '29ab2c105834aef9',
 }
 
 const WITHDRAWAL_DIGESTS: Record<string, string> = {
@@ -106,6 +109,10 @@ const WITHDRAWAL_DIGESTS: Record<string, string> = {
   // four locale files give the same value, so no withdrawal or consent text has
   // changed in any locale since it shipped.
   '2026-09-27': '3a405553ea3088b9',
+  // German and Spanish added to the digest (#1472), and withdrawal.laterApp, the Play app's
+  // wording for cancelling (#1465). Neither had been released when the other landed, so one
+  // digest covers both.
+  '2026-10-18': 'f6b5953de783a1e9',
 }
 
 describe('legal text versions move with the text (#1179)', () => {

@@ -74,6 +74,7 @@ export const ICON_NAMES = [
   'eraser',
   'trash',
   'flag',
+  'prohibit',
   'point',
   'chart',
   'gear',

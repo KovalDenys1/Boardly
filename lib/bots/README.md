@@ -570,7 +570,7 @@ const diceToHold = YahtzeeBotAI.decideDiceToHold(dice, held, rollsLeft, scorecar
 - **Example implementation**: `lib/bots/yahtzee/` (complete reference)
 - **Database schema**: `prisma/schema.prisma` (Users → Bots relation)
 - **API integration**: `app/api/game/[gameId]/bot-turn/route.ts`
-- **Frontend hook**: `app/lobby/[code]/hooks/useBotTurn.ts`
+- **Frontend hook**: `app/(site)/lobby/[code]/hooks/useBotTurn.ts`
 
 ## Questions?
 

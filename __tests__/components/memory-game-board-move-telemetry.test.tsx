@@ -2,7 +2,7 @@
  * @jest-environment jsdom
  */
 import { act, fireEvent, render } from '@testing-library/react'
-import MemoryGameBoard from '@/app/lobby/[code]/components/MemoryGameBoard'
+import MemoryGameBoard from '@/app/(site)/lobby/[code]/components/MemoryGameBoard'
 import { MemoryGame } from '@/lib/games/memory-game'
 import { fetchWithGuest } from '@/lib/fetch-with-guest'
 import { trackMoveSubmitApplied } from '@/lib/analytics'
@@ -19,10 +19,6 @@ jest.mock('@/lib/i18n-toast', () => ({
 
 jest.mock('@/lib/fetch-with-guest', () => ({
   fetchWithGuest: jest.fn(),
-}))
-
-jest.mock('@/lib/sounds', () => ({
-  sounds: { play: jest.fn() },
 }))
 
 jest.mock('@/lib/analytics', () => ({

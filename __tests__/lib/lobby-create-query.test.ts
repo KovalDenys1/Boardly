@@ -6,7 +6,7 @@ import { getCatalogGames } from '@/lib/game-catalog'
 
 // Alias is the game the Discord /play deep link is written against, and its seat
 // counts are deliberately not contiguous.
-const ALIAS_PLAYERS = [4, 6, 8, 10, 12, 16]
+const ALIAS_PLAYERS = [3, 4, 6, 8, 10, 12, 16]
 
 describe('resolveRequestedMaxPlayers (#943)', () => {
   it('keeps the catalog as the source of truth for Alias seat counts', () => {

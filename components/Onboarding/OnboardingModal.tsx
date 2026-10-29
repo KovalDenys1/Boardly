@@ -7,6 +7,7 @@ import { signOut } from 'next-auth/react'
 import { needsAccountStep, useOnboarding } from '@/contexts/OnboardingContext'
 import { useTour } from '@/contexts/TourContext'
 import { useTranslation } from '@/lib/i18n-helpers'
+import { usePageLocale } from '@/lib/page-locale'
 import { Icon } from '@/components/icons'
 import { showToast } from '@/lib/i18n-toast'
 import { fetchWithGuest } from '@/lib/fetch-with-guest'
@@ -27,6 +28,8 @@ export function OnboardingModal() {
   const { t } = useTranslation()
   const { showModal, accountSetup, saveAccountSetup, completeOnboarding, skipOnboarding, hideModal } = useOnboarding()
   const { isActive: isTourActive, startTour } = useTour()
+  // The tour walks /games, /lobby and /profile; past /games those are English pages behind a reload that ends it.
+  const canTour = usePageLocale() === null
   const [step, setStep] = useState<OnboardingStep>('choice')
   const [selectedGame, setSelectedGame] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
@@ -352,6 +355,7 @@ export function OnboardingModal() {
               >
                 {t('onboarding.quickStart')}
               </button>
+              {canTour && (
               <button
                 onClick={handleShowMeAround}
                 style={{
@@ -370,6 +374,7 @@ export function OnboardingModal() {
               >
                 {t('onboarding.showMeAround')}
               </button>
+              )}
             </div>
 
             <button
