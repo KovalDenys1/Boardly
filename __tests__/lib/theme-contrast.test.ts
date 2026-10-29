@@ -17,32 +17,34 @@ function hexTokens(startMarker: string): Record<string, string> {
 const light = hexTokens(':root {\n  --bd-bg:')
 const THEMES = { light, dark: { ...light, ...hexTokens('\nhtml.dark {\n  --bd-bg:') } }
 
-function rgb(hex: string): number[] {
-  const h = hex.replace('#', '')
+type Colour = string | number[]
+function rgb(colour: Colour): number[] {
+  if (Array.isArray(colour)) return colour
+  const h = colour.replace('#', '')
   return [0, 2, 4].map((i) => parseInt(h.slice(i, i + 2), 16))
 }
-function luminance(hex: string): number {
-  const [r, g, b] = rgb(hex).map((c) => {
+function luminance(colour: Colour): number {
+  const [r, g, b] = rgb(colour).map((c) => {
     const s = c / 255
     return s <= 0.03928 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4
   })
   return 0.2126 * r + 0.7152 * g + 0.0722 * b
 }
-function ratio(a: string, b: string): number {
+function ratio(a: Colour, b: Colour): number {
   const [hi, lo] = [luminance(a), luminance(b)].sort((x, y) => y - x)
   return (hi + 0.05) / (lo + 0.05)
 }
-/** `fg` at `alpha` over `bg`, the way a Tailwind `bg-bd-sun/25` tint renders. */
-function tint(fg: string, alpha: number, bg: string): string {
+/** `fg` at `alpha` over `bg`, the way a Tailwind `bg-bd-sun/25` tint renders, unrounded so a pair cannot pass on rounding. */
+function tint(fg: string, alpha: number, bg: string): number[] {
   const f = rgb(fg)
   const b = rgb(bg)
-  return '#' + f.map((c, i) => Math.round(c * alpha + b[i] * (1 - alpha)).toString(16).padStart(2, '0')).join('')
+  return f.map((c, i) => c * alpha + b[i] * (1 - alpha))
 }
 
 const AA = 4.5
 
 /** Every pair below 4.5:1, labelled, so a failure names the pair and its ratio. */
-function below(pairs: Array<[label: string, fg: string, bg: string]>): string[] {
+function below(pairs: Array<[label: string, fg: Colour, bg: Colour]>): string[] {
   return pairs.filter(([, fg, bg]) => ratio(fg, bg) < AA).map(([label, fg, bg]) => `${label}: ${ratio(fg, bg).toFixed(2)}:1`)
 }
 
@@ -88,7 +90,7 @@ describe.each(Object.entries(THEMES))('%s accent text', (_name, tokens) => {
   // Chips, badges and hover plates put the text on its own accent at 10-20 %.
   it.each(['coral', 'mint', 'lav', 'sun', 'sky'])('%s-text reads on every surface and on its own tint', (accent) => {
     const text = v(`${accent}-text`)
-    const pairs: Array<[string, string, string]> = []
+    const pairs: Array<[string, Colour, Colour]> = []
     for (const s of TEXT_SURFACES) {
       pairs.push([`on ${s}`, text, v(s)])
       for (const alpha of [0.1, 0.15, 0.2]) pairs.push([`on ${accent}/${alpha * 100} over ${s}`, text, tint(v(accent), alpha, v(s))])
@@ -151,6 +153,27 @@ describe('lobby themes', () => {
     for (const surface of [style['--bd-input-bg'], theme.bg, theme.bg2]) {
       expect(ratio(style['--bd-input-border'], surface)).toBeGreaterThanOrEqual(3)
     }
+  })
+})
+
+describe('hover fills under ink-on-accent text', () => {
+  it('hold 4.5:1 in both themes', () => {
+    const root = path.join(__dirname, '..', '..')
+    const walk = (dir: string): string[] =>
+      fs.readdirSync(dir).flatMap((n) => (fs.statSync(path.join(dir, n)).isDirectory() ? walk(path.join(dir, n)) : n.endsWith('.tsx') ? [path.join(dir, n)] : []))
+    const fills = new Set<string>()
+    for (const file of [...walk(path.join(root, 'app')), ...walk(path.join(root, 'components'))]) {
+      for (const line of fs.readFileSync(file, 'utf8').split('\n')) {
+        if (!line.includes('text-bd-ink-on-accent')) continue
+        for (const m of line.matchAll(/hover:bg-bd-((?:coral|mint|lav|sun|sky)(?:-[a-z]+)?)\b/g)) fills.add(m[1])
+      }
+    }
+    expect(fills.size).toBeGreaterThan(0)
+    const pairs: Array<[string, Colour, Colour]> = []
+    for (const [name, tokens] of Object.entries(THEMES)) {
+      for (const fill of fills) pairs.push([`${name} ink-on-accent on hover ${fill}`, tokens['--bd-ink-on-accent'], tokens[`--bd-${fill}`]])
+    }
+    expect(below(pairs)).toEqual([])
   })
 })
 

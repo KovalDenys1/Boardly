@@ -52,7 +52,7 @@ All tokens are defined in `app/globals.css` (`:root`) and mirrored in its `@them
 | Sun text (on a sun tint) | `var(--bd-sun-text)` | `bd-sun-text` | `#875D01` |
 
 Dark values (`html.dark`) that are not obvious from the light ones: `--bd-ink-muted` `#9C8E7E`,
-`--bd-coral-text` `#FF8475`, `--bd-mint-text` `#4AC3A0`, `--bd-lav-text` `#A99BFF`, `--bd-inverse`
+`--bd-coral-text` `#FF8475`, `--bd-mint-text` `#4AC3A0`, `--bd-lav-text` `#AA9DFF`, `--bd-inverse`
 `#35302A`, `--bd-ink-on-inverse` `#F0E8DB`, `--bd-sun-text` `#FFC44D`.
 
 **Accent text is `-text`; `-deep` is a shade.** `--bd-*-deep` draws what belongs to a fill: the border
@@ -93,7 +93,8 @@ Ratios below are computed straight from the hex values in the Color tokens table
 | `bd-ink-on-inverse` on `bd-inverse` (marquee, CTA band, finished banner) | 15.9:1 (dark 10.7:1) | AA text + large |
 | accents on `bd-inverse` in dark (coral, lav, mint, sky, sun) | 4.67-8.25:1 | AA text + large |
 | `bd-sun-text` on a `bd-sun/25` tint | 5.0:1 (dark 5.5:1) | AA text + large |
-| `bd-coral/mint/lav/sun-text` on every surface and on its own 10-20 % tint | 4.56:1 or more (light and dark) | AA text + large |
+| `bd-coral/mint/lav/sun/sky-text` on every surface and on its own 10-20 % tint | 4.54:1 or more in light (coral on a 20 % tint over `bd-bg2`), 4.55:1 in dark (mint, the same) | AA text + large |
+| `bd-ink-on-accent` on a hover fill (`bd-coral`, `bd-lav-mid`); never on a `-deep` shade, 4.27:1 on coral-deep | 5.27:1 or more | AA text + large |
 | `bd-bg` text on `bd-ink` (primary button) | 15.9:1 | AA text + large |
 | `bd-ink` text on `bd-sun` (badges) | 10.8:1 | AA text + large |
 | `bd-ink` text on `bd-mint` | 8.3:1 | AA text + large |
@@ -243,7 +244,7 @@ Spelled out, for a one-off size:
 ### Lav (feedback/lav actions)
 ```jsx
 <button
-  className="px-6 py-3 rounded-bd-md font-bold text-bd-ink-on-accent bg-bd-lav border-2 border-bd-lav-deep shadow-[0_4px_0_var(--bd-lav-deep)] hover:bg-bd-lav-mid hover:-translate-y-0.5 transition-all"
+  className="px-6 py-3 rounded-bd-md font-bold text-bd-ink-on-accent bg-bd-lav border-2 border-bd-lav-deep shadow-[0_4px_0_var(--bd-lav-deep)] hover:bg-bd-lav-mid hover:-translate-y-0.5 transition"
 >
   Send
 </button>
