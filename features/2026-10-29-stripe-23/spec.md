@@ -92,4 +92,5 @@ None.
 ## Rounds
 | Round | Stage | Result | Week % | Time |
 |---|---|---|---|---|
-| 1 | implement | | 1 | 2026-10-29 14:55 (5 other Boardly workers running) |
+| 1 | implement | in-audit @ dc089074, 1 deviation | 1 | 2026-10-29 14:55 (5 other Boardly workers running) |
+| 1 | audit | | 3 | 2026-10-29 14:52 (4 Boardly workers + 1 refuter running) |
