@@ -2141,24 +2141,101 @@ input[type="range"].slider-thumb::-moz-range-track {
   from { opacity: 0; transform: translateY(6px); }
   to { opacity: 1; transform: none; }
 }
-/* Idle turn (#1343): a ring on the banner's own box pulses, so the nudge adds
-   no block and the board never moves. */
-.game-status-banner { position: relative; }
-.game-status-banner--idle::after {
+/* Low time (#1580) lives in the timer, never on the banner's box. The bar and the
+   clock carry data-level from useGameTimer's thresholds. The seat colours include
+   coral and sun, so neither level is told by hue: low stripes the seat's own colour,
+   critical fills the bar with neutral ink and the clock turns into a solid pill.
+   Only opacity changes; under five seconds the clock also beats once a second. */
+.game-status-timer-track {
+  margin-top: 6px;
+  height: 5px;
+  background: var(--bd-bg2);
+  border-radius: 999px;
+  overflow: hidden;
+}
+.game-status-timer-fill { position: relative; }
+.game-status-timer-fill__layer {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  transition: opacity var(--bd-dur) var(--bd-ease-out);
+}
+.game-status-timer-fill__layer--low {
+  background-image: repeating-linear-gradient(-45deg, transparent 0 3px, color-mix(in srgb, var(--bd-ink-on-accent) 55%, transparent) 3px 6px);
+}
+.game-status-timer-fill__layer--critical { background: var(--bd-ink); }
+.game-status-timer-fill[data-level="low"] > .game-status-timer-fill__layer--low,
+.game-status-timer-fill[data-level="critical"] > .game-status-timer-fill__layer--critical { opacity: 1; }
+.game-status-clock {
+  position: relative;
+  isolation: isolate;
+  display: inline-grid;
+  place-items: center;
+  flex-shrink: 0;
+  min-width: 56px;
+  height: 30px;
+  padding: 0 8px;
+  box-sizing: border-box;
+  border-radius: 999px;
+  font-family: ui-monospace, monospace;
+  font-size: 18px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--bd-ink);
+}
+.game-status-clock::before,
+.game-status-clock::after {
   content: '';
   position: absolute;
-  inset: -3px;
-  border-radius: 16px;
-  border: 2px solid var(--bd-sun);
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  opacity: 0;
+  transition: opacity var(--bd-dur) var(--bd-ease-out);
   pointer-events: none;
-  animation: status-idle-pulse 1.4s var(--bd-ease-out) infinite;
+}
+.game-status-clock::before {
+  background: color-mix(in srgb, var(--bd-sun) 24%, transparent);
+  box-shadow: inset 0 0 0 1.5px var(--bd-sun);
+}
+.game-status-clock::after {
+  background: var(--bd-coral);
+  box-shadow: inset 0 0 0 1.5px var(--bd-coral-deep);
+}
+.game-status-clock__digits { display: inline-block; }
+.game-status-clock[data-level="low"] { color: var(--bd-sun-text); }
+.game-status-clock[data-level="low"]::before { opacity: 1; }
+.game-status-clock[data-level="critical"] { color: var(--bd-ink-on-accent); }
+.game-status-clock[data-level="critical"]::after { opacity: 1; }
+@media (prefers-reduced-motion: no-preference) {
+  .game-status-clock[data-level="critical"] .game-status-clock__digits {
+    animation: status-clock-beat 1s var(--bd-ease-out) infinite;
+  }
+}
+@keyframes status-clock-beat {
+  0% { transform: scale(1); }
+  18% { transform: scale(1.12); }
+  50%, 100% { transform: scale(1); }
+}
+/* Idle turn (#1343): a ring in the player's colour on the banner's own edge. The
+   -1.5px inset covers the banner's border, so the ring never leaves its box. */
+.game-status-banner { position: relative; }
+.game-status-banner[data-idle="true"]::after {
+  content: '';
+  position: absolute;
+  inset: -1.5px;
+  border-radius: inherit;
+  box-shadow: inset 0 0 0 2px var(--game-status-accent, var(--bd-ink));
+  pointer-events: none;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .game-status-banner[data-idle="true"]::after {
+    animation: status-idle-pulse 1.4s var(--bd-ease-out) infinite;
+  }
 }
 @keyframes status-idle-pulse {
-  0%, 100% { opacity: 0; transform: scale(1); }
-  50% { opacity: 1; transform: scale(1.012); }
-}
-@media (prefers-reduced-motion: reduce) {
-  .game-status-banner--idle::after { animation: none; opacity: 1; }
+  0%, 100% { opacity: 0.35; }
+  50% { opacity: 1; }
 }
 /* Score-change pop (components/game-chrome/ScorePop, #1111). Transform only,
    so the scoreboard never relays. */
