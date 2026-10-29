@@ -14,6 +14,7 @@
 @custom-variant hover (&:hover);
 @custom-variant group-hover (&:is(:where(.group):hover *));
 @custom-variant short (@media (max-height: 30rem) and (orientation: landscape));
+@custom-variant short-portrait (@media (max-height: 40rem) and (orientation: portrait));
 
 /* inline: a lobby theme overrides --bd-* on a container, and a theme variable resolved on :root would not follow it. */
 @theme inline {

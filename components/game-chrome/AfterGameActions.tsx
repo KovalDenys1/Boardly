@@ -108,11 +108,6 @@ export default function AfterGameActions({
           <Icon name="chat" size={18} />
           <span className="min-w-0">{t('game.ui.discordAfterGame')}</span>
         </a>
-        {canAskForPush && (
-          <div className="col-span-full">
-            <PushOptInNudge source="after_game" gameType={gameType} />
-          </div>
-        )}
       </div>
     )
   }

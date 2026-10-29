@@ -25,6 +25,12 @@ jest.mock('@/components/game-chrome/AfterGameActions', () => {
   }
 })
 
+jest.mock('@/components/PushOptInNudge', () => {
+  return function MockPushOptInNudge(props: { variant?: string }) {
+    return <p data-testid="push-nudge" data-variant={props.variant}>game.ui.pushAskHeadline</p>
+  }
+})
+
 jest.mock('@/hooks/useRematchSignal', () => ({
   useRematchSignal: () => ({ requestedBy: null, askState: 'idle', ask: jest.fn() }),
 }))
@@ -173,6 +179,38 @@ describe('one clear next step (#1564)', () => {
     fireEvent.click(within(more).getByRole('button', { name: 'game.ui.resultBack' }))
     expect(screen.queryByTestId('game-result-more')).toBeNull()
     expect(screen.getByRole('button', { name: 'game.ui.resultMore' })).toHaveFocus()
+  })
+
+  it('a signed-in player gets the push ask as one quiet line under the actions, not as an action', () => {
+    render(<GameResultOverlay {...base} isRegistered inviteCode="AB12" standings={versus} />)
+    const nudge = within(dialog()).getByTestId('push-nudge')
+    expect(nudge).toHaveAttribute('data-variant', 'line')
+    const actions = screen.getByTestId('game-result-actions')
+    expect(actions.contains(nudge)).toBe(false)
+    expect(actions.compareDocumentPosition(nudge) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    expect(within(actions).getAllByRole('button')).toHaveLength(3)
+
+    fireEvent.click(screen.getByRole('button', { name: 'game.ui.resultMore' }))
+    expect(screen.queryByTestId('push-nudge')).toBeNull()
+  })
+
+  it('a guest is not asked for push, as before', () => {
+    render(<GameResultOverlay {...base} isGuest inviteCode="AB12" />)
+    expect(screen.queryByTestId('push-nudge')).toBeNull()
+  })
+
+  it('Leave steps back to the board first, so its confirm is not hidden under the result', () => {
+    const calls: string[] = []
+    render(
+      <GameResultOverlay
+        {...base}
+        onInspect={() => calls.push('inspect')}
+        onLeave={() => calls.push('leave')}
+      />
+    )
+    fireEvent.click(screen.getByRole('button', { name: 'game.ui.resultMore' }))
+    fireEvent.click(screen.getByRole('button', { name: 'game.ui.leave' }))
+    expect(calls).toEqual(['inspect', 'leave'])
   })
 
   it('a non-host still gets three at most: the rematch ask, View board, More', () => {

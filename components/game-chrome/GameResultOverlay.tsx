@@ -7,6 +7,7 @@ import { Icon } from '@/components/icons'
 import LeaveIcon from '@/components/LeaveIcon'
 import type { IconName } from '@/components/icons/names'
 import AfterGameActions from '@/components/game-chrome/AfterGameActions'
+import PushOptInNudge from '@/components/PushOptInNudge'
 import { RESULT_MENU_ROW_CLASS } from '@/components/game-chrome/result-styles'
 import type { AnalyticsGameType } from '@/lib/analytics'
 import { prefersReducedMotion } from '@/lib/motion'
@@ -267,10 +268,10 @@ const SECONDARY_BUTTON_CLASS =
   'inline-flex min-h-11 min-w-0 items-center justify-center gap-1.5 rounded-bd-md border-[1.5px] border-bd-line bg-bd-bg px-3 py-1.5 text-center text-sm font-semibold leading-tight text-balance text-bd-ink transition-[transform,background-color] duration-150 ease-out hover:bg-bd-bg2 enabled:active:scale-[0.96] disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-bd-lav-deep'
 
 const PRIMARY_BUTTON_CLASS =
-  'inline-flex h-[3.25rem] w-full items-center justify-center gap-2 rounded-bd-md border-0 px-5 font-display text-lg font-bold text-bd-ink-on-accent transition-transform duration-150 ease-out enabled:active:scale-[0.96] disabled:cursor-not-allowed disabled:opacity-70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-bd-lav-deep'
+  'inline-flex h-[3.25rem] w-full items-center justify-center gap-2 rounded-bd-md border-0 px-5 font-display text-lg font-bold text-bd-ink-on-accent transition-transform duration-150 ease-out enabled:active:scale-[0.96] disabled:cursor-not-allowed disabled:opacity-70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-bd-lav-deep short-portrait:h-12'
 
 const PLATE_CLASS =
-  'grid min-h-[3.25rem] place-items-center rounded-bd-md bg-bd-bg2 px-4 py-2 text-center text-sm font-semibold text-bd-ink-muted'
+  'grid min-h-[3.25rem] place-items-center rounded-bd-md bg-bd-bg2 px-4 py-2 text-center text-sm font-semibold text-bd-ink-muted short-portrait:min-h-12'
 
 export default function GameResultOverlay({
   title,
@@ -502,13 +503,13 @@ export default function GameResultOverlay({
   )
 
   const mainView = (
-    <div className="flex flex-col gap-5 p-5 pt-6 short:grid short:grid-cols-2 short:items-center short:gap-6 short:p-5">
-      <div data-entrance="result" className="flex min-w-0 flex-col items-center text-center">
-        <div className="relative mb-4 grid size-[4.5rem] shrink-0 place-items-center short:mb-3">
+    <div className="flex flex-col gap-5 p-5 pt-6 short-portrait:gap-4 short-portrait:pt-4 short-portrait:pb-4 short:grid short:grid-cols-2 short:items-center short:gap-x-6 short:gap-y-0 short:p-5">
+      <div data-entrance="result" className="flex min-w-0 flex-col items-center text-center short:col-start-1 short:row-start-1">
+        <div className="relative mb-4 grid size-[4.5rem] shrink-0 place-items-center short:mb-3 short-portrait:mb-2 short-portrait:size-14">
           {celebrate && <Celebration />}
           <div
             data-entrance="emblem"
-            className="grid size-16 -rotate-6 place-items-center rounded-[1.125rem] border-2 border-bd-ink shadow-[0_4px_0_var(--bd-ink)]"
+            className="grid size-16 -rotate-6 place-items-center rounded-[1.125rem] border-2 border-bd-ink shadow-[0_4px_0_var(--bd-ink)] short-portrait:size-12"
             style={{ background: tile.background ?? accentColor, color: tile.color }}
           >
             {glyph}
@@ -555,7 +556,7 @@ export default function GameResultOverlay({
         )}
       </div>
 
-      <div className="flex min-w-0 flex-col gap-4 short:gap-3">
+      <div className="flex min-w-0 flex-col gap-4 short-portrait:gap-3 short:col-start-2 short:row-span-2 short:row-start-1 short:gap-3">
         {ranked && (
           <ol
             id={standingsId}
@@ -567,7 +568,7 @@ export default function GameResultOverlay({
               <li
                 key={row.id}
                 data-viewer={row.isViewer ? 'true' : undefined}
-                className={`grid h-9 grid-cols-[1.75rem_minmax(0,1fr)_auto] items-center gap-2 rounded-bd-sm px-3 short:h-8 ${
+                className={`grid h-9 grid-cols-[1.75rem_minmax(0,1fr)_auto] items-center gap-2 rounded-bd-sm px-3 short:h-8 short-portrait:h-8 ${
                   row.isViewer ? 'bg-bd-sun/25' : rank === 1 ? 'bg-bd-bg2' : ''
                 } ${gap ? 'mt-2' : ''}`}
               >
@@ -603,6 +604,12 @@ export default function GameResultOverlay({
           </div>
         </div>
       </div>
+
+      {shown && isRegistered && !isGuest && (
+        <div className="empty:hidden short:col-start-1 short:row-start-2 short:mt-3 short:self-start">
+          <PushOptInNudge source="after_game" gameType={gameType} variant="line" />
+        </div>
+      )}
     </div>
   )
 
@@ -637,7 +644,14 @@ export default function GameResultOverlay({
           gameId={gameId}
         />
         {onLeave && (
-          <button type="button" onClick={onLeave} className={`${RESULT_MENU_ROW_CLASS} text-bd-coral-text`}>
+          <button
+            type="button"
+            onClick={() => {
+              handleInspect()
+              onLeave()
+            }}
+            className={`${RESULT_MENU_ROW_CLASS} text-bd-coral-text`}
+          >
             <LeaveIcon size={18} />
             <span className="min-w-0">{t('game.ui.leave')}</span>
           </button>

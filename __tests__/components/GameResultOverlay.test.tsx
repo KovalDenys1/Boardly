@@ -24,6 +24,13 @@ jest.mock('@/components/game-chrome/AfterGameActions', () => {
   }
 })
 
+// The push ask has its own suite (push-opt-in-nudge.test.tsx).
+jest.mock('@/components/PushOptInNudge', () => {
+  return function MockPushOptInNudge() {
+    return <p data-testid="push-nudge" />
+  }
+})
+
 const mockRematch = { requestedBy: null as string | null, askState: 'idle' as 'idle' | 'sending' | 'sent', ask: jest.fn() }
 const mockRematchCode = jest.fn()
 jest.mock('@/hooks/useRematchSignal', () => ({
