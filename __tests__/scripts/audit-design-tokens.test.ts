@@ -148,6 +148,18 @@ describe('transition-all', () => {
   })
 })
 
+describe('the range slider', () => {
+  const rule = (selector: string) => new RegExp(`${selector.replace(/[.[\]"()-]/g, '\\$&')} \\{([^}]*)\\}`).exec(globalsCss)![1]
+
+  it('drops the browser track, so the player-count slider is not the one blue control on the site', () => {
+    expect(rule('input[type="range"].slider-thumb')).toMatch(/appearance: none;[^]*accent-color: var\(--bd-ink\);/)
+  })
+
+  it.each(['::-webkit-slider-thumb', '::-moz-range-thumb'])('draws the %s on the card with an ink edge, visible on the pale track', (pseudo) => {
+    expect(rule(`input[type="range"].slider-thumb${pseudo}`)).toMatch(/background: var\(--bd-card\);[^]*border: 2px solid var\(--bd-ink\);/)
+  })
+})
+
 function scan(rule: (src: string) => number[]): string[] {
   const root = path.join(__dirname, '..', '..')
   const found: string[] = []

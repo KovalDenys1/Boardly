@@ -1469,14 +1469,19 @@ input:focus, select:focus, textarea:focus {
 
 /* Custom Range Slider Styles */
 input[type="range"].slider-thumb {
+  appearance: none;
   height: 8px;
+  border-radius: 4px;
+  accent-color: var(--bd-ink);
 }
 
 input[type="range"].slider-thumb::-webkit-slider-thumb {
   appearance: none;
+  box-sizing: border-box;
   width: 20px;
   height: 20px;
-  background: white;
+  background: var(--bd-card);
+  border: 2px solid var(--bd-ink);
   border-radius: 50%;
   cursor: pointer;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
@@ -1494,10 +1499,11 @@ input[type="range"].slider-thumb::-webkit-slider-thumb:active {
 }
 
 input[type="range"].slider-thumb::-moz-range-thumb {
+  box-sizing: border-box;
   width: 20px;
   height: 20px;
-  background: white;
-  border: none;
+  background: var(--bd-card);
+  border: 2px solid var(--bd-ink);
   border-radius: 50%;
   cursor: pointer;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
