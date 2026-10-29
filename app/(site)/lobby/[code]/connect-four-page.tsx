@@ -941,6 +941,10 @@ export default function ConnectFourLobbyPage({ code, isSpectator = false, onGame
                             isDraw={isDraw}
                             accentColor="var(--bd-mint-deep)"
                             accentShadowColor="rgba(0,0,0,0.25)"
+                            standings={[
+                                { id: 'p1', name: p1Name, score: p1Wins, isViewer: myDisc === 1 },
+                                { id: 'p2', name: p2Name, score: p2Wins, isViewer: myDisc === 2 },
+                            ]}
                             onInspect={() => setOverlayInspecting(true)}
                             isHost={!!lobby && lobby.creatorId === currentUserId}
                             isLoading={isRematchSubmitting}

@@ -913,11 +913,11 @@ describe('LiarsPartyLobbyPage', () => {
       render(<LiarsPartyLobbyPage code="ABCD" />)
       await waitFor(() => expect(screen.getByTestId('liars-party-game-over-screen')).toBeTruthy())
 
-      // Over the board, not beside it: the overlay mounts inside the phase
-      // card, which is the only element it is positioned against.
-      const card = document.querySelector('.ttt-desktop-layout .liars-phase-card') as HTMLElement
-      expect(within(card).getByRole('button', { name: 'game.ui.viewBoard' })).toBeTruthy()
-      expect(within(card).getByRole('button', { name: 'lobby.game.playAgain' })).toBeTruthy()
+      // Three layout trees each mount it; one dialog draws over the whole screen (#1578).
+      const dialog = await screen.findByRole('dialog', {}, { timeout: 3000 })
+      expect(screen.getAllByRole('dialog')).toHaveLength(1)
+      expect(within(dialog).getByRole('button', { name: 'game.ui.viewBoard' })).toBeTruthy()
+      expect(within(dialog).getByRole('button', { name: 'lobby.game.playAgain' })).toBeTruthy()
     })
 
     it('lists the whole final ranking in the players panel, not the one survivor', async () => {
@@ -1045,8 +1045,8 @@ describe('LiarsPartyLobbyPage', () => {
       render(<LiarsPartyLobbyPage code="ABCD" />)
       await waitFor(() => expect(screen.getByTestId('liars-party-game-over-screen')).toBeTruthy())
 
-      const card = landscapeTree().querySelector('.liars-phase-card') as HTMLElement
-      expect(within(card).getByRole('button', { name: 'lobby.game.playAgain' })).toBeTruthy()
+      const dialog = await screen.findByRole('dialog', {}, { timeout: 3000 })
+      expect(within(dialog).getByRole('button', { name: 'lobby.game.playAgain' })).toBeTruthy()
       // And the standings still list everyone, not the one survivor.
       const panel = landscape().getByTestId('liars-standings')
       for (const name of ['Alice', 'Bob', 'Carol', 'Dave']) {

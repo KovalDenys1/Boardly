@@ -1,4 +1,4 @@
-import { act, render, screen } from '@testing-library/react'
+import { act, fireEvent, render, screen, within } from '@testing-library/react'
 import i18n, { changeLanguageLazy } from '@/i18n'
 import YahtzeeResults from '@/components/YahtzeeResults'
 import SpyResults from '@/components/SpyResults'
@@ -49,21 +49,20 @@ describe('i18n UI smoke checks', () => {
           canStartGame={false}
           canRequestRematch
           onPlayAgain={() => {}}
-          onRequestRematch={() => {}}
           onBackToLobby={() => {}}
           faceCounts={[11, 9, 12, 10, 8, 10]}
         />
       )
 
-      expect(screen.queryByText('Play Again')).toBeNull()
-      expect(screen.queryByText('Request Rematch')).toBeNull()
-      expect(screen.queryByText('Back to Lobbies')).toBeNull()
-      expect(screen.queryByText('Only the lobby host can start the next round.')).toBeNull()
-
-      expect(screen.queryByText(i18n.t('yahtzee.results.playAgain'))).not.toBeNull()
-      expect(screen.queryByText(i18n.t('yahtzee.results.requestRematch'))).not.toBeNull()
-      expect(screen.queryByText(i18n.t('yahtzee.results.backToLobbies'))).not.toBeNull()
-      expect(screen.queryByText(i18n.t('yahtzee.results.hostCanStartNextRound'))).not.toBeNull()
+      // The actions are the shared result dialog's (#1564): the host's wait, View board, More.
+      const dialog = await screen.findByRole('dialog', {}, { timeout: 2000 })
+      expect(within(dialog).queryByText('Waiting for host to start...')).toBeNull()
+      expect(within(dialog).queryByText('View Board')).toBeNull()
+      expect(within(dialog).queryByText(i18n.t('game.ui.waitingForHost'))).not.toBeNull()
+      expect(within(dialog).queryByText(i18n.t('game.ui.viewBoard'))).not.toBeNull()
+      fireEvent.click(within(dialog).getByTestId('game-result-more-button'))
+      expect(within(dialog).queryByText('Leave')).toBeNull()
+      expect(within(dialog).queryByText(i18n.t('game.ui.leave'))).not.toBeNull()
 
       // #1085: the face tally, translated, with every face's count from the server.
       expect(screen.queryByText(i18n.t('yahtzee.results.diceTally'))).not.toBeNull()
@@ -73,7 +72,7 @@ describe('i18n UI smoke checks', () => {
 
       // The after-game block renders here with no SessionProvider in the tree, which is
       // why it takes `isRegistered` as a prop instead of calling useSession() (#982).
-      expect(screen.queryByText(i18n.t('game.ui.discordAfterGame'))).not.toBeNull()
+      expect(within(dialog).queryByText(i18n.t('game.ui.discordAfterGame'))).not.toBeNull()
     }
   )
 

@@ -42,26 +42,31 @@ describe('GameResultOverlay (#736 phase 2)', () => {
     onReturnToLobby: jest.fn(),
     onLeave: jest.fn(),
     gameType: 'tic_tac_toe' as const,
+    revealDelayMs: 0,
   }
+
+  const openMore = () => fireEvent.click(screen.getByText('game.ui.resultMore'))
 
   beforeEach(() => {
     jest.clearAllMocks()
+    resetResultOverlayRevealState()
     mockRematch.requestedBy = null
     mockRematch.askState = 'idle'
   })
 
-  it('renders title, default kicker, and all host actions', () => {
+  it('renders the title and Play again, with Return to lobby and Leave behind More (#1564)', () => {
     render(<GameResultOverlay {...base} />)
     expect(screen.getByText('Alice wins!')).toBeTruthy()
-    expect(screen.getByText('game.ui.roundOver')).toBeTruthy()
     expect(screen.getByText('game.ui.viewBoard')).toBeTruthy()
     expect(screen.getByText('lobby.game.playAgain')).toBeTruthy()
+    expect(screen.queryByText('game.ui.returnToLobby')).toBeNull()
+    expect(screen.queryByText('game.ui.waitingForHost')).toBeNull()
+    openMore()
     expect(screen.getByText('game.ui.returnToLobby')).toBeTruthy()
     expect(screen.getByText('game.ui.leave')).toBeTruthy()
-    expect(screen.queryByText('game.ui.waitingForHost')).toBeNull()
   })
 
-  it('hands the after-game block everything it needs (#982)', () => {
+  it('hands the after-game block everything it needs, inside More (#982)', () => {
     render(
       <GameResultOverlay
         {...base}
@@ -70,10 +75,12 @@ describe('GameResultOverlay (#736 phase 2)', () => {
         isRegistered={false}
       />
     )
+    expect(screen.queryByTestId('after-game-actions')).toBeNull()
+    openMore()
     expect(screen.getByTestId('after-game-actions')).toBeTruthy()
     expect(mockAfterGameProps).toHaveBeenCalledWith(
       expect.objectContaining({
-        variant: 'overlay',
+        variant: 'menu',
         inviteCode: 'AB12',
         gameType: 'tic_tac_toe',
         isGuest: true,
@@ -127,6 +134,7 @@ describe('GameResultOverlay (#736 phase 2)', () => {
     render(<GameResultOverlay {...base} isHost={false} />)
     expect(screen.getByText('game.ui.waitingForHost')).toBeTruthy()
     expect(screen.queryByText('lobby.game.playAgain')).toBeNull()
+    openMore()
     expect(screen.queryByText('game.ui.returnToLobby')).toBeNull()
     // Leave stays available to everyone
     expect(screen.getByText('game.ui.leave')).toBeTruthy()
@@ -137,8 +145,9 @@ describe('GameResultOverlay (#736 phase 2)', () => {
   it('disables Play Again while loading (double-submit guard)', () => {
     const onPlayAgain = jest.fn()
     render(<GameResultOverlay {...base} onPlayAgain={onPlayAgain} isLoading />)
-    const btn = screen.getByText('…').closest('button') as HTMLButtonElement
+    const btn = screen.getByText('lobby.game.playAgain').closest('button') as HTMLButtonElement
     expect(btn.disabled).toBe(true)
+    expect(btn.getAttribute('aria-busy')).toBe('true')
     fireEvent.click(btn)
     expect(onPlayAgain).not.toHaveBeenCalled()
   })
@@ -155,41 +164,30 @@ describe('GameResultOverlay (#736 phase 2)', () => {
     expect(screen.getByText('returning…')).toBeTruthy()
     expect(screen.queryByText('lobby.game.playAgain')).toBeNull()
     // `actionsReplacement` replaces the host/non-host ternary only, so TTT's
-    // "Returning to lobby…" plate still gets share and the Discord line beneath it.
+    // "Returning to lobby…" plate still gets share and the Discord line behind More.
+    openMore()
     expect(screen.getByTestId('after-game-actions')).toBeTruthy()
   })
 
-  it('puts Play again first and View board, Return to lobby and Leave in one row under it (#1341)', () => {
-    render(<GameResultOverlay {...base} />)
-    const row = screen.getByTestId('game-result-secondary')
-    expect(Array.from(row.querySelectorAll('button')).map((b) => b.textContent)).toEqual([
-      'game.ui.viewBoard',
-      'game.ui.returnToLobby',
-      'game.ui.leave',
-    ])
-    const primary = screen.getByText('lobby.game.playAgain')
-    expect(primary.compareDocumentPosition(row) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
-    // The after-game block comes after both, below the fold on a short board.
-    expect(row.compareDocumentPosition(screen.getByTestId('after-game-actions')) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+  it('draws a string replacement as the status plate', () => {
+    render(<GameResultOverlay {...base} actionsReplacement="Returning to lobby…" />)
+    expect(screen.getByRole('status').textContent).toBe('Returning to lobby…')
   })
 
-  it('fades the scroller only while content sits below the fold (#1341)', () => {
-    const heights = { scrollHeight: 709, clientHeight: 274 }
-    const spies = (['scrollHeight', 'clientHeight'] as const).map((prop) =>
-      jest.spyOn(HTMLElement.prototype, prop, 'get').mockImplementation(function (this: HTMLElement) {
-        return this.dataset.testid === 'game-result-overlay-scroll' ? heights[prop] : 0
-      })
-    )
-    try {
-      render(<GameResultOverlay {...base} />)
-      const scroller = screen.getByTestId('game-result-overlay-scroll')
-      expect(scroller.getAttribute('data-more-below')).toBe('true')
-      scroller.scrollTop = 435
-      fireEvent.scroll(scroller)
-      expect(scroller.getAttribute('data-more-below')).toBe('false')
-    } finally {
-      spies.forEach((spy) => spy.mockRestore())
+  it('makes every button at least 44px tall (#1345)', () => {
+    render(<GameResultOverlay {...base} inviteCode="AB12" isGuest />)
+    const heightPx = (button: HTMLElement) => {
+      const rem = button.className.match(/\b(?:min-)?h-\[(\d+(?:\.\d+)?)rem\]/)
+      if (rem) return Number(rem[1]) * 16
+      const step = button.className.match(/\b(?:min-)?h-(\d+)\b/)
+      return step ? Number(step[1]) * 4 : 0
     }
+    const check = () => screen.getAllByRole('button').forEach((button) => {
+      expect(heightPx(button)).toBeGreaterThanOrEqual(44)
+    })
+    check()
+    openMore()
+    check()
   })
 
   it('renders the draw handshake instead of the trophy', () => {
