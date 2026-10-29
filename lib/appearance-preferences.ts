@@ -33,6 +33,10 @@ export function getStoredAppearanceLocale(storage?: Pick<Storage, 'getItem'>): s
   return defaultLocale
 }
 
+export function hasStoredAppearanceLocale(storage?: Pick<Storage, 'getItem'>): boolean {
+  return LANGUAGE_STORAGE_KEYS.some((key) => Boolean(storage?.getItem(key)))
+}
+
 // `storage` is nullable: in embedded WebViews it is unavailable entirely
 // (#769). The preference still applies for this session — only persistence
 // is skipped.
