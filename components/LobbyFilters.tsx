@@ -79,7 +79,7 @@ export default function LobbyFilters({ filters, onFiltersChange, embedded = fals
             placeholder={t('lobby.filters.searchPlaceholder')}
             value={filters.search || ''}
             onChange={(e) => handleFilterChange('search', e.target.value)}
-            className="w-full rounded-2xl border-2 border-bd-line bg-(--bd-input-bg) py-2.5 pl-10 pr-4 text-base text-bd-ink desk:text-sm outline-hidden transition placeholder:text-bd-ink-muted focus:border-bd-ink"
+            className="w-full rounded-2xl border-2 border-(--bd-input-border) bg-(--bd-input-bg) py-2.5 pl-10 pr-4 text-base text-bd-ink desk:text-sm outline-hidden transition placeholder:text-bd-ink-muted focus:border-bd-ink"
           />
           <svg
             className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-bd-ink-muted"
@@ -181,7 +181,7 @@ export default function LobbyFilters({ filters, onFiltersChange, embedded = fals
                   placeholder="1"
                   value={filters.minPlayers || ''}
                   onChange={(e) => handleFilterChange('minPlayers', e.target.value ? parseInt(e.target.value) : undefined)}
-                  className="w-20 rounded-2xl border-2 border-bd-line bg-(--bd-input-bg) px-3 py-2 text-center text-base text-bd-ink desk:text-sm outline-hidden transition focus:border-bd-ink"
+                  className="w-20 rounded-2xl border-2 border-(--bd-input-border) bg-(--bd-input-bg) px-3 py-2 text-center text-base text-bd-ink desk:text-sm outline-hidden transition focus:border-bd-ink"
                 />
                 <span className="text-sm text-bd-ink-muted">–</span>
                 <input
@@ -191,7 +191,7 @@ export default function LobbyFilters({ filters, onFiltersChange, embedded = fals
                   placeholder="8"
                   value={filters.maxPlayers || ''}
                   onChange={(e) => handleFilterChange('maxPlayers', e.target.value ? parseInt(e.target.value) : undefined)}
-                  className="w-20 rounded-2xl border-2 border-bd-line bg-(--bd-input-bg) px-3 py-2 text-center text-base text-bd-ink desk:text-sm outline-hidden transition focus:border-bd-ink"
+                  className="w-20 rounded-2xl border-2 border-(--bd-input-border) bg-(--bd-input-bg) px-3 py-2 text-center text-base text-bd-ink desk:text-sm outline-hidden transition focus:border-bd-ink"
                 />
               </div>
             </div>
