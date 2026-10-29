@@ -1,3 +1,6 @@
+import { readFileSync } from 'fs'
+import path from 'path'
+import postcss, { type AtRule } from 'postcss'
 import { render, screen } from '@testing-library/react'
 import GameStatusBanner from '@/components/game-chrome/GameStatusBanner'
 import { playCue } from '@/lib/sound-engine'
@@ -95,12 +98,12 @@ describe('GameStatusBanner idle nudge (#817)', () => {
     expect(screen.getByText('game.ui.firstMoveNudge')).toBeTruthy()
   })
 
-  it('pulses the banner itself instead of adding a block under it (#1343)', () => {
+  it('adds no block under the banner (#1343)', () => {
     const { container } = render(<GameStatusBanner {...base} isYourTurn secs={45} />)
     expect(container.childElementCount).toBe(1)
     const banner = container.firstElementChild as HTMLElement
     expect(banner.getAttribute('data-idle')).toBe('true')
-    expect(banner.className).toContain('game-status-banner--idle')
+    expect(banner.className).toBe('game-status-banner')
     expect(screen.getByRole('status').textContent).toBe('game.ui.firstMoveNudge')
   })
 
@@ -279,5 +282,127 @@ describe('GameStatusBanner live finish (#1464)', () => {
     const { rerender } = render(<GameStatusBanner {...base} isFinished />)
     rerender(<GameStatusBanner {...base} isFinished />)
     expect(liveFinishWithin(1000)).toBeNull()
+  })
+})
+
+describe('GameStatusBanner low-time warning (#1580)', () => {
+  const base = {
+    isFinished: false,
+    activeTitle: "Alice's turn",
+    secs: 30,
+    turnTimerLimit: 60,
+    barColor: 'var(--bd-mint)',
+  }
+
+  it('puts the warning in the timer: the clock and the bar turn low, then critical', () => {
+    const { rerender } = render(<GameStatusBanner {...base} />)
+    const levels = () => [
+      screen.getByTestId('game-status-timer').getAttribute('data-level'),
+      screen.getByTestId('game-status-timer-bar').getAttribute('data-level'),
+    ]
+    expect(levels()).toEqual(['normal', 'normal'])
+    rerender(<GameStatusBanner {...base} secs={10} />)
+    expect(levels()).toEqual(['low', 'low'])
+    rerender(<GameStatusBanner {...base} secs={5} />)
+    expect(levels()).toEqual(['critical', 'critical'])
+    expect(screen.getByTestId('game-status-timer').textContent).toBe(':05')
+  })
+
+  it('leaves the banner box alone when the warning starts', () => {
+    const { container, rerender } = render(<GameStatusBanner {...base} secs={11} />)
+    const banner = container.firstElementChild as HTMLElement
+    const before = { className: banner.className, style: banner.getAttribute('style'), children: banner.childElementCount }
+    for (const secs of [10, 5, 1]) {
+      rerender(<GameStatusBanner {...base} secs={secs} />)
+      expect(container.firstElementChild).toBe(banner)
+      expect({ className: banner.className, style: banner.getAttribute('style'), children: banner.childElementCount }).toEqual(before)
+    }
+  })
+
+  it('colours the bar from CSS by level, so the player colour stays underneath', () => {
+    render(<GameStatusBanner {...base} secs={4} />)
+    const bar = screen.getByTestId('game-status-timer-bar')
+    expect(bar.style.background).toBe('var(--bd-mint)')
+    expect(bar.querySelectorAll('.game-status-timer-fill__layer')).toHaveLength(2)
+  })
+})
+
+/**
+ * jsdom applies no stylesheet, so what each level looks like is read out of
+ * globals.css. Every seat colour a game passes as `barColor`:
+ * Connect Four, Tic-tac-toe, Checkers, RPS, Ludo, Yahtzee, Memory, Spy, Alias.
+ */
+describe('GameStatusBanner low time reads apart from every seat colour (#1580)', () => {
+  const SEAT_TOKENS = ['--bd-coral', '--bd-sun', '--bd-lav', '--bd-mint', '--bd-sky']
+  const css = postcss.parse(readFileSync(path.join(process.cwd(), 'app', 'globals.css'), 'utf8'))
+
+  function unconditional(selector: string): Record<string, string> {
+    const decls: Record<string, string> = {}
+    css.walkRules((rule) => {
+      if (!rule.selectors.includes(selector)) return
+      for (let node = rule.parent; node && node.type !== 'root'; node = node.parent) {
+        if (node.type === 'atrule' && (node as AtRule).name !== 'layer') return
+      }
+      rule.walkDecls((decl) => { decls[decl.prop] = decl.value })
+    })
+    return decls
+  }
+  const paint = (decls: Record<string, string>) => [decls.background, decls['background-color'], decls['background-image']].filter(Boolean).join(' ')
+
+  it('draws the low level as a pattern over the seat colour, not as another flat colour', () => {
+    expect(paint(unconditional('.game-status-timer-fill__layer--low'))).toMatch(/repeating-linear-gradient/)
+  })
+
+  it('fills the critical level with no seat colour, so a coral or sun seat cannot look normal', () => {
+    const critical = paint(unconditional('.game-status-timer-fill__layer--critical'))
+    expect(critical).not.toBe('')
+    for (const token of SEAT_TOKENS) expect(critical).not.toContain(token)
+  })
+
+  it('shows both levels without motion, so reduced motion keeps them', () => {
+    expect(unconditional('.game-status-timer-fill[data-level="low"] > .game-status-timer-fill__layer--low').opacity).toBe('1')
+    expect(unconditional('.game-status-timer-fill[data-level="critical"] > .game-status-timer-fill__layer--critical').opacity).toBe('1')
+  })
+})
+
+describe('GameStatusBanner idle nudge is visible (#1343)', () => {
+  const css = postcss.parse(readFileSync(path.join(process.cwd(), 'app', 'globals.css'), 'utf8'))
+  const IDLE = '.game-status-banner[data-idle="true"]::after'
+
+  function rulesFor(selector: string) {
+    const found: { decls: Record<string, string>; media: string[] }[] = []
+    css.walkRules((rule) => {
+      if (!rule.selectors.includes(selector)) return
+      const media: string[] = []
+      for (let node = rule.parent; node && node.type !== 'root'; node = node.parent) {
+        if (node.type === 'atrule' && (node as AtRule).name !== 'layer') media.push((node as AtRule).params)
+      }
+      const decls: Record<string, string> = {}
+      rule.walkDecls((decl) => { decls[decl.prop] = decl.value })
+      found.push({ decls, media })
+    })
+    return found
+  }
+
+  it('paints a ring on the banner itself, inside its box and radius', () => {
+    const base = rulesFor(IDLE).find((rule) => rule.media.length === 0)
+    expect(base).toBeDefined()
+    expect(base!.decls.content).toBeDefined()
+    expect(base!.decls['box-shadow'] ?? base!.decls.border).toMatch(/var\(--/)
+    expect(base!.decls['border-radius']).toBe('inherit')
+    // The banner's border is 1.5px: a larger negative inset would draw outside its box.
+    expect(parseFloat(base!.decls.inset)).toBeGreaterThanOrEqual(-1.5)
+    expect(rulesFor('.game-status-banner')[0]?.decls.position).toBe('relative')
+  })
+
+  it('pulses only by opacity, and only when motion is allowed', () => {
+    const animated = rulesFor(IDLE).filter((rule) => rule.decls.animation)
+    expect(animated.length).toBeGreaterThan(0)
+    for (const rule of animated) expect(rule.media.join(' ')).toContain('prefers-reduced-motion: no-preference')
+    const name = animated[0].decls.animation.split(' ')[0]
+    css.walkAtRules('keyframes', (at) => {
+      if (at.params !== name) return
+      at.walkDecls((decl) => expect(['opacity', 'transform']).toContain(decl.prop))
+    })
   })
 })

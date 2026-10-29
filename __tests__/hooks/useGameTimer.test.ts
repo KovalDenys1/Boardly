@@ -1,5 +1,5 @@
 import { act, renderHook } from '@testing-library/react'
-import { useGameTimer } from '@/app/(site)/lobby/[code]/hooks/useGameTimer'
+import { getTimerLevel, useGameTimer } from '@/app/(site)/lobby/[code]/hooks/useGameTimer'
 
 describe('useGameTimer race guards', () => {
   const advanceAndFlush = async (ms: number) => {
@@ -230,5 +230,54 @@ describe('useGameTimer with a turn that starts later (#1365)', () => {
 
     await act(async () => { jest.advanceTimersByTime(3_000) })
     expect(result.current.timeLeft).toBe(58)
+  })
+})
+
+describe('useGameTimer low-time level (#1580)', () => {
+  beforeEach(() => {
+    jest.useFakeTimers()
+    jest.setSystemTime(new Date('2026-02-20T12:00:00.000Z'))
+  })
+
+  afterEach(() => {
+    jest.useRealTimers()
+  })
+
+  it('reports normal, low and critical at the thresholds', async () => {
+    const turnStartedAt = Date.now()
+    const { result } = renderHook(() =>
+      useGameTimer({
+        isMyTurn: true,
+        gameState: { currentPlayerIndex: 0, turnStartedAt, status: 'playing' },
+        turnTimerLimit: 30,
+        onTimeout: jest.fn().mockResolvedValue(true),
+      })
+    )
+
+    const levelAt = async (secondsLeft: number) => {
+      await act(async () => {
+        jest.setSystemTime(new Date(turnStartedAt + (30 - secondsLeft) * 1000))
+        jest.advanceTimersByTime(1000)
+        await Promise.resolve()
+      })
+      expect(result.current.timeLeft).toBe(secondsLeft - 1)
+      return result.current.timerLevel
+    }
+
+    expect(result.current.timerLevel).toBe('normal')
+    expect(await levelAt(12)).toBe('normal')
+    expect(await levelAt(11)).toBe('low')
+    expect(await levelAt(7)).toBe('low')
+    expect(await levelAt(6)).toBe('critical')
+    expect(await levelAt(2)).toBe('critical')
+  })
+
+  it('maps seconds to a level the banner can share, with no level for an untimed turn', () => {
+    expect(getTimerLevel(11, 60)).toBe('normal')
+    expect(getTimerLevel(10, 60)).toBe('low')
+    expect(getTimerLevel(6, 60)).toBe('low')
+    expect(getTimerLevel(5, 60)).toBe('critical')
+    expect(getTimerLevel(0, 60)).toBe('critical')
+    expect(getTimerLevel(0, 0)).toBe('normal')
   })
 })

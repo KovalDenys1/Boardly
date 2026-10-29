@@ -514,9 +514,9 @@ describe('AliasLobbyPage in-game chrome (#905)', () => {
     const { container } = mountWith(buildTurnResponse({ meDescribing: true }))
     await waitFor(() => expect(screen.getByTestId('alias-describer-screen')).toBeTruthy())
 
-    // The shared control, in the shared place: GameScoreboardHeader's right
-    // cell is where every other game's Leave lives (layout DoD 2026-09-06).
-    const leave = container.querySelector('.game-scoreboard-cell--right .game-leave-button')
+    // The shared control, in the shared place: the header's actions are where
+    // every other game's Leave lives (#1577).
+    const leave = container.querySelector('.game-header__actions .game-leave-button')
     expect(leave).toBeTruthy()
 
     // ...and the old text link under the board is gone.

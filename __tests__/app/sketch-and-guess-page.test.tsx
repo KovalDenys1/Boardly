@@ -385,12 +385,12 @@ describe('SketchAndGuessLobbyPage shared chrome', () => {
     return view
   }
 
-  it('puts Leave inside the scoreboard header trailing slot, not a header of its own', async () => {
+  it('puts Leave inside the shared header\'s actions, not a header of its own', async () => {
     const { container } = await renderPage()
 
-    // The trailing slot is the header's right cell; a Leave button anywhere else
-    // on the page is the hand-rolled corner this migration removed.
-    const trailingLeave = container.querySelectorAll('.game-scoreboard-cell--right button.game-leave-button')
+    // A Leave button anywhere but the header's actions (#1577) is the
+    // hand-rolled corner this migration removed.
+    const trailingLeave = container.querySelectorAll('.game-header__actions button.game-leave-button')
     expect(trailingLeave.length).toBeGreaterThan(0)
     expect(container.querySelectorAll('button.game-leave-button').length).toBe(trailingLeave.length)
   })
@@ -406,7 +406,7 @@ describe('SketchAndGuessLobbyPage shared chrome', () => {
       { isSpectator: true }
     )
 
-    const back = container.querySelectorAll('.game-scoreboard-cell--right a.game-leave-button--back')
+    const back = container.querySelectorAll('.game-header__actions a.game-leave-button--back')
     expect(back.length).toBeGreaterThan(0)
     expect(back[0].getAttribute('href')).toBe('/lobby/ABCD')
     expect(container.querySelectorAll('button.game-leave-button').length).toBe(0)

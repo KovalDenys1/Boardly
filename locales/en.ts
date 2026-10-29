@@ -3181,7 +3181,7 @@ const en = {
       spectatorsLabel: 'Spectators',
       spectatorsDisabled: 'Disabled',
       inviteSpectators: 'Invite spectators',
-      spectatorsOff: 'Spectators off',
+      moreActions: 'More actions',
       availableSlots: 'Open slots',
       waitingForPlayer: 'Waiting for player...',
       openSlot: 'Open slot',

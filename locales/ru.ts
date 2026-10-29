@@ -3252,7 +3252,7 @@ const ru = {
       spectatorsLabel: 'Зрители',
       spectatorsDisabled: 'Отключено',
       inviteSpectators: 'Пригласить зрителей',
-      spectatorsOff: 'Без зрителей',
+      moreActions: 'Другие действия',
       availableSlots: 'Свободные места',
       waitingForPlayer: 'Ожидание игрока...',
       openSlot: 'Свободное место',

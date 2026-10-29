@@ -861,7 +861,7 @@ describe('LiarsPartyLobbyPage', () => {
       const tree = document.querySelector('.ttt-desktop-layout') as HTMLElement
       expect(tree.querySelector('.game-scoreboard-header')).toBeTruthy()
       expect(tree.querySelector('.game-chat-panel')).toBeTruthy()
-      expect(tree.querySelector('.game-room-card')).toBeTruthy()
+      expect(tree.querySelector('.game-header')).toBeTruthy()
       // The tab strip is the mobile tree's, and chat is one of its tabs.
       const mobile = document.querySelector('.ttt-mobile-layout') as HTMLElement
       expect(mobile.querySelector('.game-tabs')).toBeTruthy()
@@ -887,9 +887,8 @@ describe('LiarsPartyLobbyPage', () => {
     it('leaves exactly one way out per layout tree', async () => {
       await renderPlaying()
 
-      // GameRoomCard already carries GameLeaveButton, so passing `trailing` to
-      // GameScoreboardHeader as well would put two Leave buttons side by side
-      // in the same header row – which is what the ticket warned about.
+      // The header's actions carry Leave; any second Leave in the tree would sit
+      // beside it in the same row – which is what the ticket warned about.
       expect(desktop().getAllByRole('button', { name: 'game.ui.leave' })).toHaveLength(1)
     })
 
@@ -986,23 +985,20 @@ describe('LiarsPartyLobbyPage', () => {
       expect((side as HTMLElement).querySelector('.liars-panel')).toBeTruthy()
     })
 
-    it('keeps Leave in the top row beside the header, once', async () => {
+    it('keeps Leave in the header, once', async () => {
       await renderPlaying()
 
-      // Layout DoD item 2: Leave top-right of the header row. In this tree it
-      // is the compact GameRoomCard sharing a `.ttt-top-row` with the header
-      // card, and that shared row is what sizes both – which is why a rule
-      // that took the header out of the row's sizing could push Leave past its
-      // right edge without the document scrolling at all.
+      // Layout DoD item 2: Leave top-right of the header (#1577). The header card
+      // fills its `.ttt-top-row`, so a rule that took it out of the row's sizing
+      // could push Leave past the column's edge without the document scrolling.
       const leaveButtons = landscape().getAllByRole('button', { name: 'game.ui.leave' })
       expect(leaveButtons).toHaveLength(1)
 
       const row = leaveButtons[0].closest('.ttt-top-row')
       expect(row).toBeTruthy()
       expect(row!.parentElement).toHaveClass('game-landscape-side')
-      expect(row!.querySelector('.liars-header-card')).toBeTruthy()
       expect(row!.firstElementChild).toHaveClass('liars-header-card')
-      expect(leaveButtons[0].closest('.game-room-card--compact')).toBeTruthy()
+      expect(leaveButtons[0].closest('.game-header__actions')).toBeTruthy()
     })
 
     it('offers Players and Chat only – the phase already owns the board column', async () => {

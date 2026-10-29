@@ -9,11 +9,10 @@ import Chat from '@/components/Chat'
 import GameResultOverlay from '@/components/game-chrome/GameResultOverlay'
 import GamePlayerCard from '@/components/game-chrome/GamePlayerCard'
 import { reportablePlayerId } from '@/lib/reportable-player'
-import GameScoreboardHeader from '@/components/game-chrome/GameScoreboardHeader'
+import GameScoreboardHeader, { type GameHeaderRoom } from '@/components/game-chrome/GameScoreboardHeader'
 import GameStatusBanner from '@/components/game-chrome/GameStatusBanner'
 import { viewerOutcome } from '@/lib/game-outcome'
 import GameTabs from '@/components/game-chrome/GameTabs'
-import GameRoomCard from '@/components/game-chrome/GameRoomCard'
 import RockPaperScissorsGameBoard, { CHOICE_LABEL_KEY, getChoiceIcon, WinPips } from '@/components/RockPaperScissorsGameBoard'
 import { RPS_RESULT_REVEAL_DELAY_MS, RPS_REVEAL_MS } from '@/lib/rps-motion'
 import ScorePop from '@/components/game-chrome/ScorePop'
@@ -814,10 +813,18 @@ export default function RockPaperScissorsLobbyPage({ code, isSpectator = false, 
 
     // ─── Sections ─────────────────────────────────────────────────────────────
 
+    const headerRoom: GameHeaderRoom = {
+        gameId: 'rps',
+        title: t('games.rock_paper_scissors.name'),
+        code,
+        isSpectator,
+        allowSpectators: !!lobby.allowSpectators,
+        onLeave: () => setShowLeaveConfirmModal(true),
+    }
     const headerSection = (
         <div className="ttt-card" style={{ background: 'linear-gradient(135deg, var(--bd-card-warm) 0%, rgba(155,140,255,0.10) 100%)', overflow: 'hidden', padding: '12px 16px' }}>
-            <div style={{ position: 'absolute', right: -10, top: -14, opacity: 0.12, transform: 'rotate(12deg)', pointerEvents: 'none', lineHeight: 1 }}><Icon name="rock" size={96} /></div>
             <GameScoreboardHeader
+                room={headerRoom}
                 leftCard={<GamePlayerCard name={leftName} isActive={!shownFinished && !!leftId && currentUserId === leftId && !isLockedIn(leftId)} isMe={currentUserId === leftId} isWinner={!!shownWinnerId && shownWinnerId === leftId} side="left" avatarSrc={leftId ? getAvatar(leftId) : null} isPremium={leftId ? getIsPremium(leftId) : false} userId={reportablePlayerId(lobbyPlayers, leftId)} lobbyCode={code} accentColor="var(--bd-coral)" turnDotColor="var(--bd-mint-deep)" subline={<WinPips filled={leftScore} total={winsNeeded} color="var(--bd-coral)" />} cornerBadge={leftId ? cornerBadgeFor(leftId) : undefined} />}
                 center={
                     <>
@@ -989,21 +996,6 @@ export default function RockPaperScissorsLobbyPage({ code, isSpectator = false, 
         </section>
     )
 
-    // The room card sits to the right of the scoreboard, in the same grid row
-    // and at the same height (layout DoD, scheme A): game, room code, invite
-    // link, and Leave. Phones get the compact form beside the scoreboard.
-    const roomCardProps = {
-        gameId: 'rps',
-        title: t('games.rock_paper_scissors.name'),
-        code,
-        isSpectator,
-        leaveLabel: t('game.ui.leave'),
-        allowSpectators: !!lobby.allowSpectators,
-        onLeave: () => setShowLeaveConfirmModal(true),
-    }
-    const roomSection = <GameRoomCard {...roomCardProps} />
-    const roomSectionCompact = <GameRoomCard {...roomCardProps} compact />
-
     return (
         <div className="game-screen ttt-screen" style={themeStyle}>
 
@@ -1011,7 +1003,6 @@ export default function RockPaperScissorsLobbyPage({ code, isSpectator = false, 
             <div className="ttt-desktop-layout">
                 <div className="ttt-grid">
                     {headerSection}
-                    {roomSection}
                     <div className="ttt-center-col">
                         {statusSection}
                         {renderBoardSection('rps-board')}
@@ -1029,7 +1020,7 @@ export default function RockPaperScissorsLobbyPage({ code, isSpectator = false, 
                     {renderBoardSection('rps-board-landscape')}
                 </div>
                 <div className="game-landscape-side">
-                    <div className="ttt-top-row">{headerSection}{roomSectionCompact}</div>
+                    <div className="ttt-top-row">{headerSection}</div>
                     {statusSection}
                     <GameTabs
                         tabs={[
@@ -1048,7 +1039,7 @@ export default function RockPaperScissorsLobbyPage({ code, isSpectator = false, 
 
             {/* ── MOBILE ──────────────────────────────────────────────────── */}
             <div className="ttt-mobile-layout">
-                <div className="ttt-top-row">{headerSection}{roomSectionCompact}</div>
+                <div className="ttt-top-row">{headerSection}</div>
                 {statusSection}
                 <GameTabs
                     tabs={[

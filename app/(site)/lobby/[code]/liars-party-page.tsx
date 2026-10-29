@@ -23,8 +23,7 @@ import LeaveIcon from '@/components/LeaveIcon'
 import Chat from '@/components/Chat'
 import GamePlayerCard from '@/components/game-chrome/GamePlayerCard'
 import GameResultOverlay from '@/components/game-chrome/GameResultOverlay'
-import GameRoomCard from '@/components/game-chrome/GameRoomCard'
-import GameScoreboardHeader from '@/components/game-chrome/GameScoreboardHeader'
+import GameScoreboardHeader, { type GameHeaderRoom } from '@/components/game-chrome/GameScoreboardHeader'
 import GameStatusBanner from '@/components/game-chrome/GameStatusBanner'
 import { viewerOutcome } from '@/lib/game-outcome'
 import GameTabs from '@/components/game-chrome/GameTabs'
@@ -1284,27 +1283,18 @@ export default function LiarsPartyPage({ code, isSpectator = false, onGameReset 
     ? `${data!.currentRound}/${data!.maxRounds}`
     : `${players.length}/${maxPlayers}`
 
-  const roomCardProps = {
+  const headerRoom: GameHeaderRoom = {
     gameId: 'liars-party',
     title: t('liarsParty.name'),
     code,
     isSpectator,
-    leaveLabel: t('game.ui.leave'),
     allowSpectators: !!lobby?.allowSpectators,
     onLeave: requestLeave,
   }
-  // Leave lives in this card's own GameLeaveButton, top-right of the grid's
-  // first row, which is where the layout DoD puts it and where Tic-Tac-Toe,
-  // Connect Four and RPS already have it. That is why GameScoreboardHeader is
-  // given no `trailing` here: a second Leave would be the duplicate the ticket
-  // warned about, not a second placement.
-  const roomSection = <GameRoomCard {...roomCardProps} />
-  const roomSectionCompact = <GameRoomCard {...roomCardProps} compact />
-
   const headerSection = (
     <div className="ttt-card liars-header-card">
-      <div className="liars-header-card__mark" aria-hidden><Icon name="mask" size={96} /></div>
       <GameScoreboardHeader
+        room={headerRoom}
         leftCard={seatCard(featuredId, 'left', isPlaying && phase === 'claim')}
         center={
           <>
@@ -1549,7 +1539,6 @@ export default function LiarsPartyPage({ code, isSpectator = false, onGameReset 
       <div className="ttt-desktop-layout">
         <div className="ttt-grid">
           {headerSection}
-          {roomSection}
           <div className="ttt-center-col">
             {statusSection}
             {renderPhaseSection('desktop')}
@@ -1576,7 +1565,7 @@ export default function LiarsPartyPage({ code, isSpectator = false, onGameReset 
           {renderPhaseSection('landscape')}
         </div>
         <div className="game-landscape-side">
-          <div className="ttt-top-row">{headerSection}{roomSectionCompact}</div>
+          <div className="ttt-top-row">{headerSection}</div>
           {statusSection}
           <GameTabs
             tabs={[
@@ -1595,7 +1584,7 @@ export default function LiarsPartyPage({ code, isSpectator = false, onGameReset 
 
       {/* ── MOBILE ──────────────────────────────────────────────────── */}
       <div className="ttt-mobile-layout">
-        <div className="ttt-top-row">{headerSection}{roomSectionCompact}</div>
+        <div className="ttt-top-row">{headerSection}</div>
         {statusSection}
         <GameTabs
           tabs={[

@@ -3181,7 +3181,7 @@ const no = {
       spectatorsLabel: 'Tilskuere',
       spectatorsDisabled: 'Deaktivert',
       inviteSpectators: 'Inviter tilskuere',
-      spectatorsOff: 'Uten tilskuere',
+      moreActions: 'Flere handlinger',
       availableSlots: 'Ledige plasser',
       waitingForPlayer: 'Venter på spiller...',
       openSlot: 'Ledig plass',

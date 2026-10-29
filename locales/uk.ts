@@ -3254,7 +3254,7 @@ const uk: TranslationWithPlurals = {
       spectatorsLabel: 'Глядачі',
       spectatorsDisabled: 'Вимкнено',
       inviteSpectators: 'Запросити глядачів',
-      spectatorsOff: 'Без глядачів',
+      moreActions: 'Інші дії',
       availableSlots: 'Вільні місця',
       waitingForPlayer: 'Очікування гравця...',
       openSlot: 'Вільне місце',

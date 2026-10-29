@@ -3190,7 +3190,7 @@ const de: TranslationWithPlurals = {
       spectatorsLabel: 'Zuschauer',
       spectatorsDisabled: 'Aus',
       inviteSpectators: 'Zuschauer einladen',
-      spectatorsOff: 'Keine Zuschauer',
+      moreActions: 'Weitere Aktionen',
       availableSlots: 'Freie Plätze',
       waitingForPlayer: 'Warten auf Spieler …',
       openSlot: 'Freier Platz',

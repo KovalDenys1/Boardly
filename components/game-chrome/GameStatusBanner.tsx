@@ -5,6 +5,7 @@ import { useTranslation, type TranslationKeys } from '@/lib/i18n-helpers'
 import { noteLiveFinish } from '@/lib/live-finish'
 import { Icon } from '@/components/icons'
 import { useTurnTimerSounds } from '@/hooks/useTurnTimerSounds'
+import { getTimerLevel } from '@/app/(site)/lobby/[code]/hooks/useGameTimer'
 
 /**
  * Shared turn/result status banner (#736 phase 4) — replaces
@@ -18,6 +19,10 @@ import { useTurnTimerSounds } from '@/hooks/useTurnTimerSounds'
  * eye catches the swap instead of reading the same box with new words. The
  * timer bar scales on the compositor (scaleX from the left) instead of
  * animating width, which relaid the banner every second.
+ *
+ * Low time (#1580) is drawn by the timer alone: the bar and the clock carry
+ * `data-level` (useGameTimer's thresholds) and globals.css stripes the bar,
+ * then fills it with ink, never by hue alone. The banner's own box never changes.
  */
 /** The finished game seen from the viewer's seat. */
 export type GameOutcome = 'win' | 'loss' | 'draw'
@@ -55,9 +60,6 @@ export interface GameStatusBannerProps {
    */
   showTimer?: boolean
 }
-
-/** Single danger threshold for every game (was 5s in TTT/C4, 10s in Memory). */
-const DANGER_SECONDS = 10
 
 /**
  * `:07` for a turn timer, `4:51` once there are minutes on the clock.
@@ -154,18 +156,18 @@ export default function GameStatusBanner({
   }
 
   const pct = turnTimerLimit > 0 ? (secs / turnTimerLimit) * 100 : 100
-  const danger = secs <= DANGER_SECONDS
+  const level = getTimerLevel(secs, turnTimerLimit)
   // secs counts down, so elapsed is what the timer has already spent. With no
   // timer configured there is nothing to measure against, so no nudge.
   const elapsed = turnTimerLimit > 0 ? turnTimerLimit - secs : 0
   const showIdleNudge = showTimer && isYourTurn && turnTimerLimit > 0 && elapsed >= IDLE_NUDGE_SECONDS
-  // Idle (#1343): the banner itself pulses instead of growing a block under it.
-  // The title already says whose move it is, so the hint is for screen readers.
+  // Idle (#1343): a ring in the player's colour pulses on the banner's own edge.
   return (
     <div
-      className={`game-status-banner${showIdleNudge ? ' game-status-banner--idle' : ''}`}
+      className="game-status-banner"
       data-idle={showIdleNudge ? 'true' : undefined}
       style={{
+        ['--game-status-accent' as string]: barColor,
         padding: '10px 14px', borderRadius: 14, background: 'var(--bd-bg)',
         border: '1.5px solid var(--bd-line)', boxShadow: '0 4px 14px rgba(31,27,22,0.07)',
         display: 'flex', alignItems: 'center', gap: 12,
@@ -180,23 +182,23 @@ export default function GameStatusBanner({
           )}
         </div>
         {showTimer && (
-          <div style={{ marginTop: 6, height: 5, background: 'var(--bd-bg2)', borderRadius: 999, overflow: 'hidden' }}>
-            <div data-testid="game-status-timer-bar" style={{
+          <div className="game-status-timer-track">
+            <div data-testid="game-status-timer-bar" className="game-status-timer-fill" data-level={level} style={{
               height: '100%', width: '100%',
               transform: `scaleX(${Math.max(0, Math.min(1, pct / 100))})`,
               transformOrigin: 'left center',
-              background: danger ? 'var(--bd-coral)' : barColor,
-              transition: 'transform 1s linear, background 0.2s',
-            }} />
+              background: barColor,
+              transition: 'transform 1s linear',
+            }}>
+              <span className="game-status-timer-fill__layer game-status-timer-fill__layer--low" />
+              <span className="game-status-timer-fill__layer game-status-timer-fill__layer--critical" />
+            </div>
           </div>
         )}
       </div>
       {showTimer && (
-        <div style={{
-          fontFamily: 'ui-monospace, monospace', fontSize: 18, fontWeight: 700, minWidth: 44, textAlign: 'right',
-          color: danger ? 'var(--bd-coral-text)' : 'var(--bd-ink)',
-        }}>
-          {formatSeconds(secs)}
+        <div className="game-status-clock" data-testid="game-status-timer" data-level={level}>
+          <span className="game-status-clock__digits">{formatSeconds(secs)}</span>
         </div>
       )}
       <span role="status" className="sr-only">{mounted && showIdleNudge ? t('game.ui.firstMoveNudge') : ''}</span>

@@ -136,10 +136,10 @@ describe("the landscape header card of a game whose header shares a row", () => 
     page.indexOf('{/* ── MOBILE'),
   )
 
-  it("renders the header and Leave in one `.ttt-top-row` in the landscape tree", () => {
+  it("renders the header, Leave included, in one `.ttt-top-row` in the landscape tree", () => {
     // If this ever stops being true the rule below stops applying, and whoever
     // changes it should read the comment above before relaxing it.
-    expect(landscapeTree).toContain('<div className="ttt-top-row">{headerSection}{roomSectionCompact}</div>')
+    expect(landscapeTree).toContain('<div className="ttt-top-row">{headerSection}</div>')
     expect(page).toContain('<div className="ttt-card liars-header-card">')
   })
 

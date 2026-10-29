@@ -119,8 +119,7 @@ import GameLeaveButton from '@/components/game-chrome/GameLeaveButton'
 import GameStatusBanner from '@/components/game-chrome/GameStatusBanner'
 import GameTabs from '@/components/game-chrome/GameTabs'
 import GamePlayerCard from '@/components/game-chrome/GamePlayerCard'
-import GameScoreboardHeader from '@/components/game-chrome/GameScoreboardHeader'
-import GameRoomCard from '@/components/game-chrome/GameRoomCard'
+import GameScoreboardHeader, { type GameHeaderRoom } from '@/components/game-chrome/GameScoreboardHeader'
 import ScorePop from '@/components/game-chrome/ScorePop'
 import YahtzeeDesktopLayout from '@/components/yahtzee/YahtzeeDesktopLayout'
 import { reportablePlayerId } from '@/lib/reportable-player'
@@ -1915,10 +1914,19 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
       )
     }
     const scoreOf = (index: number) => enginePlayers[index]?.score || 0
+    const headerRoom: GameHeaderRoom = {
+      gameId: 'yahtzee',
+      title: t('games.yahtzee.name'),
+      code,
+      isSpectator,
+      allowSpectators: !!lobby?.allowSpectators,
+      onLeave: () => setShowLeaveConfirmModal(true),
+    }
     const scoreboard = (
       <div className="ttt-card yz-scoreboard-card">
         {enginePlayers.length === 2 ? (
           <GameScoreboardHeader
+            room={headerRoom}
             leftCard={playerCard(enginePlayers[0].id, 'left')}
             center={
               <>
@@ -1931,25 +1939,9 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
             rightCard={playerCard(enginePlayers[1].id, 'right')}
           />
         ) : (
-          <div className="yz-player-grid">
-            {enginePlayers.map((p, index) => (
-              <React.Fragment key={p.id}>{playerCard(p.id, index % 2 === 0 ? 'left' : 'right')}</React.Fragment>
-            ))}
-          </div>
+          <GameScoreboardHeader room={headerRoom} players={enginePlayers.map((p) => playerCard(p.id, 'left'))} />
         )}
       </div>
-    )
-
-    const room = (
-      <GameRoomCard
-        gameId="yahtzee"
-        title={t('games.yahtzee.name')}
-        code={code}
-        isSpectator={isSpectator}
-        leaveLabel={t('game.ui.leave')}
-        allowSpectators={!!lobby?.allowSpectators}
-        onLeave={() => setShowLeaveConfirmModal(true)}
-      />
     )
 
     const panel = (variant?: 'board') => (
@@ -1960,7 +1952,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
       </div>
     )
 
-    return { header, statusBanner, diceBar, table, revertNotice, scoreboard, room, panel }
+    return { header, statusBanner, diceBar, table, revertNotice, scoreboard, panel }
   })() : null
 
   return (
@@ -2193,7 +2185,6 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
               {(gameLayout === null || gameLayout === 'desktop') && (
                 <YahtzeeDesktopLayout
                   header={yahtzeeView?.scoreboard}
-                  room={yahtzeeView?.room}
                   status={yahtzeeView?.statusBanner}
                   board={<div className="yz-board-card">{yahtzeeView?.panel('board')}</div>}
                   events={<YahtzeeEventLog entries={rollHistory} />}
@@ -2321,6 +2312,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
               onReturnToWaiting={canStartGame ? handleReturnToWaiting : undefined}
               isRestarting={startingGame || isReturningToWaiting}
               onLeave={() => setShowLeaveConfirmModal(true)}
+              allowSpectators={!!lobby?.allowSpectators}
               chatMessages={hasMultipleHumans ? chatMessages : undefined}
               onSendChatMessage={hasMultipleHumans ? sendChatMessage : undefined}
               chatTermsAccepted={chatTermsAccepted}
@@ -2344,6 +2336,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
               onPlayAgain={handleStartGame}
               onReturnToWaiting={canStartGame ? handleReturnToWaiting : undefined}
               onLeave={() => setShowLeaveConfirmModal(true)}
+              allowSpectators={!!lobby?.allowSpectators}
               isRestarting={startingGame || isReturningToWaiting}
               chatMessages={chatMessages}
               onSendChatMessage={sendChatMessage}

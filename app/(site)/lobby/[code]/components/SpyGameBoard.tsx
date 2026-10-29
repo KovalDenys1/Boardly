@@ -7,9 +7,8 @@ import SpyVoting from '@/components/SpyVoting'
 import SpyResults, { SPY_OUTCOME_LINE_STEP, spyResultsLastStep } from '@/components/SpyResults'
 import { resolveSpyGameResult, resolveSpyOutcome } from '@/lib/games/spy-outcome'
 import Chat from '@/components/Chat'
-import GameScoreboardHeader from '@/components/game-chrome/GameScoreboardHeader'
+import GameScoreboardHeader, { type GameHeaderRoom } from '@/components/game-chrome/GameScoreboardHeader'
 import GamePlayerCard from '@/components/game-chrome/GamePlayerCard'
-import GameLeaveButton from '@/components/game-chrome/GameLeaveButton'
 import GameStatusBanner from '@/components/game-chrome/GameStatusBanner'
 import { hasTopScore, viewerOutcome } from '@/lib/game-outcome'
 import GameTabs from '@/components/game-chrome/GameTabs'
@@ -100,6 +99,8 @@ interface SpyGameBoardProps {
   isRestarting?: boolean
   onLeave?: () => void
   isSpectator?: boolean
+  /** Whether the lobby admits spectators, so the header can offer the invite. */
+  allowSpectators?: boolean
   /**
    * Lobby chat, handed down by whoever owns `useLobbyChat` (LobbyPageClient,
    * or the spectate page). Guess the Spy is a conversation game – the talking
@@ -210,6 +211,7 @@ export default function SpyGameBoard({
   isRestarting = false,
   onLeave,
   isSpectator = false,
+  allowSpectators = false,
   chatMessages = [],
   onSendChatMessage,
   chatTermsAccepted,
@@ -712,12 +714,18 @@ export default function SpyGameBoard({
     />
   )
 
+  const headerRoom: GameHeaderRoom = {
+    gameId: 'spy',
+    title: t('games.spy.name'),
+    code: lobbyCode,
+    isSpectator,
+    allowSpectators,
+    onLeave,
+  }
   const headerSection = (
     <div className="ttt-card spy-header-card" style={{ background: 'linear-gradient(135deg, var(--bd-card-warm) 0%, rgba(155,140,255,0.12) 100%)', overflow: 'hidden', padding: '12px 16px' }}>
-      <div style={{ position: 'absolute', right: -10, top: -14, opacity: 0.12, transform: 'rotate(12deg)', pointerEvents: 'none', lineHeight: 1 }}>
-        <Icon name="eye" size={96} />
-      </div>
       <GameScoreboardHeader
+        room={headerRoom}
         leftCard={seatCard(
           waitingOnId ? playersById.get(waitingOnId) : undefined,
           'left',
@@ -746,13 +754,6 @@ export default function SpyGameBoard({
           'right',
           isQuestioning && !!rightSeatId && rightSeatId === data.currentTargetId
         )}
-        trailing={
-          isSpectator
-            ? <GameLeaveButton label={t('game.ui.backToLobby')} href={`/lobby/${lobbyCode}`} variant="back" />
-            : onLeave
-              ? <GameLeaveButton label={t('game.ui.leave')} onClick={onLeave} />
-              : undefined
-        }
       />
     </div>
   )

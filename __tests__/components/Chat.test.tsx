@@ -1,4 +1,6 @@
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
+import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
 import { useState } from 'react'
 import { useSession } from 'next-auth/react'
 import Chat from '@/components/Chat'
@@ -103,6 +105,48 @@ describe('Chat', () => {
     expect(screen.queryByLabelText('chat.send')).toBeNull()
     // messages still visible
     expect(screen.getByText('hello there')).toBeTruthy()
+  })
+})
+
+// #1579: the game card around the chat draws the one border. `.bd-card` is unlayered in
+// globals.css, so it beats Tailwind's layered `border-0` and the panel drew a second frame.
+describe('Chat border inside a game card (#1579)', () => {
+  const bdCardRule = (() => {
+    const css = readFileSync(join(process.cwd(), 'app/globals.css'), 'utf8')
+    const rule = css.match(/\n\.bd-card \{[^}]*\}/)
+    if (!rule) throw new Error('.bd-card rule not found in app/globals.css')
+    return rule[0]
+  })()
+
+  let sheet: HTMLStyleElement
+  beforeEach(() => {
+    sheet = document.createElement('style')
+    sheet.textContent = bdCardRule
+    document.head.append(sheet)
+  })
+  afterEach(() => sheet.remove())
+
+  const chatRoot = (container: HTMLElement) =>
+    container.querySelector('.game-chat-panel > div') as HTMLElement
+
+  it('renders no border of its own inside a game card', () => {
+    const { container } = render(
+      <section className="game-chat-panel">
+        <Chat messages={messages} onSendMessage={jest.fn()} currentUserId="u1" fullScreen />
+      </section>
+    )
+    const style = getComputedStyle(chatRoot(container))
+    expect(style.border).not.toMatch(/solid/)
+    expect(style.borderRadius === '' || style.borderRadius === '0px').toBe(true)
+  })
+
+  it('keeps its own card when it floats on its own', () => {
+    render(
+      <Chat messages={messages} onSendMessage={jest.fn()} currentUserId="u1" isMinimized={false} onToggleMinimize={jest.fn()} />
+    )
+    const floating = screen.getByText('hello there').closest('.bd-card') as HTMLElement
+    expect(floating).not.toBeNull()
+    expect(getComputedStyle(floating).border).toMatch(/solid/)
   })
 })
 
