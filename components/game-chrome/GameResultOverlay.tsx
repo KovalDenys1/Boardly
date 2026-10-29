@@ -14,6 +14,7 @@ import { useRematchSignal } from '@/hooks/useRematchSignal'
 import { playCue } from '@/lib/sound-engine'
 import { resultCue } from '@/lib/game-outcome'
 import { liveFinishWithin, RESULT_REVEAL_DELAY_MS } from '@/lib/live-finish'
+import { noteFinishedGame } from '@/lib/finished-game'
 import type { GameOutcome } from '@/components/game-chrome/GameStatusBanner'
 
 /**
@@ -346,6 +347,10 @@ export default function GameResultOverlay({
     return () => clearTimeout(timer)
     // eslint-disable-next-line react-hooks/exhaustive-deps -- mount-only by design
   }, [])
+
+  useEffect(() => {
+    if (revealed && !isSpectator) noteFinishedGame()
+  }, [revealed, isSpectator])
 
   // Not resultKey: its lastMoveAt changes when the server answers the winning move.
   const finishGameId = gameId ?? resultKey?.split(':')[0] ?? ''

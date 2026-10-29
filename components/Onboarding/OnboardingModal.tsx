@@ -10,6 +10,7 @@ import { useTranslation } from '@/lib/i18n-helpers'
 import { usePageLocale } from '@/lib/page-locale'
 import { Icon } from '@/components/icons'
 import { showToast } from '@/lib/i18n-toast'
+import { hasFinishedGame } from '@/lib/finished-game'
 import { fetchWithGuest } from '@/lib/fetch-with-guest'
 import { getPublicRegisteredGameTypes, getGameLobbiesRoute } from '@/lib/public-game-access'
 import { getGameMetadata, hasBotSupport } from '@/lib/game-catalog'
@@ -56,14 +57,20 @@ export function OnboardingModal() {
     if (needsAccountStep(accountSetup)) setStep('account')
   }, [showModal, accountSetup])
 
+  // After a finished game the choice it offers is already made; the account step still runs.
+  const playedAlready = showModal && !needsAccountStep(accountSetup) && hasFinishedGame()
   useEffect(() => {
-    if (!showModal || isTourActive) return
+    if (playedAlready) void skipOnboarding()
+  }, [playedAlready, skipOnboarding])
+
+  useEffect(() => {
+    if (!showModal || isTourActive || playedAlready) return
     const prev = document.body.style.overflow
     document.body.style.overflow = 'hidden'
     return () => { document.body.style.overflow = prev }
-  }, [showModal, isTourActive])
+  }, [showModal, isTourActive, playedAlready])
 
-  if (!showModal || isTourActive) return null
+  if (!showModal || isTourActive || playedAlready) return null
 
   const handleShowMeAround = () => {
     hideModal()
@@ -327,6 +334,7 @@ export function OnboardingModal() {
                 background: 'none',
                 border: 'none',
                 cursor: 'pointer',
+                minHeight: 44,
                 padding: '4px 0',
               }}
             >
@@ -387,6 +395,7 @@ export function OnboardingModal() {
                 background: 'none',
                 border: 'none',
                 cursor: 'pointer',
+                minHeight: 44,
                 padding: '4px 0',
               }}
             >
@@ -488,6 +497,7 @@ export function OnboardingModal() {
                 background: 'none',
                 border: 'none',
                 cursor: 'pointer',
+                minHeight: 44,
                 padding: '4px 0',
               }}
             >

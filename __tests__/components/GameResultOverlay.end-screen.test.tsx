@@ -3,6 +3,7 @@ import GameResultOverlay, {
   RESULT_REVEAL_DELAY_MS,
   resetResultOverlayRevealState,
 } from '@/components/game-chrome/GameResultOverlay'
+import { hasFinishedGame, resetFinishedGameNote } from '@/lib/finished-game'
 
 jest.mock('@/lib/sound-engine', () => ({ playCue: jest.fn(() => true) }))
 
@@ -71,6 +72,7 @@ const originalMatchMedia = window.matchMedia
 beforeEach(() => {
   jest.clearAllMocks()
   resetResultOverlayRevealState()
+  resetFinishedGameNote()
   setReducedMotion(false)
 })
 
@@ -181,6 +183,12 @@ describe('one clear next step (#1564)', () => {
       'game.ui.viewBoard',
       'game.ui.resultMore',
     ])
+  })
+
+  it('notes that this browser finished a game, which keeps onboarding away', () => {
+    expect(hasFinishedGame()).toBe(false)
+    render(<GameResultOverlay {...base} isGuest />)
+    expect(hasFinishedGame()).toBe(true)
   })
 })
 
