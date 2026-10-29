@@ -215,6 +215,7 @@ const de: TranslationWithPlurals = {
       spectatorsToggle: 'Zuschauer an/aus',
       friendsSelected: '{{value}} ausgewählt',
       friendsToInvite: 'Freunde einladen: {{value}}',
+      inviteNotSent: 'Die Lobby ist bereit, aber nicht alle, die du ausgewählt hast, konnten eingeladen werden.',
       inviteCodeNotice: 'Der Einladungscode entsteht beim Erstellen',
       changeGame: 'Spiel wechseln',
       chooseGame: 'Spiel auswählen',

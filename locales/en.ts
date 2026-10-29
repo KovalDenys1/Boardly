@@ -212,6 +212,7 @@ const en = {
       spectatorsToggle: 'Toggle spectators',
       friendsSelected: '{{value}} selected',
       friendsToInvite: 'Friends to invite: {{value}}',
+      inviteNotSent: 'The lobby is ready, but not everyone you picked could be invited.',
       inviteCodeNotice: 'Invite code generated on create',
       changeGame: 'Change game',
       chooseGame: 'Choose a game',

@@ -212,6 +212,7 @@ const no = {
       spectatorsToggle: 'Slå tilskuere av eller på',
       friendsSelected: '{{value}} valgt',
       friendsToInvite: 'Venner som inviteres: {{value}}',
+      inviteNotSent: 'Lobbyen er klar, men ikke alle du valgte kunne inviteres.',
       inviteCodeNotice: 'Invitasjonskoden lages når du oppretter lobbyen',
       changeGame: 'Bytt spill',
       chooseGame: 'Velg et spill',

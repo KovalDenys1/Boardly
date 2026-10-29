@@ -217,6 +217,7 @@ const es: TranslationWithPlurals = {
       spectatorsToggle: 'Activar o desactivar espectadores',
       friendsSelected: '{{value}} seleccionados',
       friendsToInvite: 'Amigos a invitar: {{value}}',
+      inviteNotSent: 'La sala está lista, pero no se pudo invitar a todas las personas que elegiste.',
       inviteCodeNotice: 'El código de invitación se genera al crear la sala',
       changeGame: 'Cambiar juego',
       chooseGame: 'Elige un juego',

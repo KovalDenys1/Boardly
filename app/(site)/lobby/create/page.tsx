@@ -390,6 +390,8 @@ function CreateLobbyPage() {
             body: JSON.stringify({ friendIds: selectedFriendIds }),
           })
           const inviteResult = await inviteResponse.json().catch(() => null)
+          const skipped = Array.isArray(inviteResult?.skippedFriendIds) ? inviteResult.skippedFriendIds.length : 0
+          if (!inviteResponse.ok || skipped > 0) showToast.error('lobby.create.inviteNotSent')
           if (!inviteResponse.ok) {
             clientLogger.warn('Lobby created but party invite request failed', {
               lobbyCode, status: inviteResponse.status, error: inviteResult,
@@ -398,10 +400,11 @@ function CreateLobbyPage() {
             clientLogger.log('Party invite flow completed during lobby creation', {
               lobbyCode,
               invitedCount: typeof inviteResult?.invitedCount === 'number' ? inviteResult.invitedCount : selectedFriendIds.length,
-              skippedCount: Array.isArray(inviteResult?.skippedFriendIds) ? inviteResult.skippedFriendIds.length : 0,
+              skippedCount: skipped,
             })
           }
         } catch (inviteError) {
+          showToast.error('lobby.create.inviteNotSent')
           clientLogger.warn('Lobby created but party invite request threw an error', { lobbyCode, error: inviteError })
         }
       }

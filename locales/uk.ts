@@ -247,6 +247,7 @@ const uk: TranslationWithPlurals = {
       spectatorsToggle: 'Увімкнути або вимкнути глядачів',
       friendsSelected: 'Обрано: {{value}}',
       friendsToInvite: 'Запросити друзів: {{value}}',
+      inviteNotSent: 'Лобі створено, але запросити вдалося не всіх, кого ви обрали.',
       inviteCodeNotice: 'Код запрошення з’явиться після створення лобі',
       changeGame: 'Змінити гру',
       chooseGame: 'Виберіть гру',

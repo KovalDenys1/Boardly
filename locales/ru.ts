@@ -238,6 +238,7 @@ const ru = {
       spectatorsToggle: 'Включить или выключить зрителей',
       friendsSelected: 'Выбрано: {{value}}',
       friendsToInvite: 'Пригласить друзей: {{value}}',
+      inviteNotSent: 'Лобби создано, но пригласить удалось не всех, кого вы выбрали.',
       inviteCodeNotice: 'Код приглашения появится после создания лобби',
       changeGame: 'Сменить игру',
       chooseGame: 'Выберите игру',
