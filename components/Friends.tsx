@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback } from 'react'
+import { useCallback, useEffect } from 'react'
 import { useSession } from 'next-auth/react'
 import { useTranslation } from '@/lib/i18n-helpers'
 import { Icon } from '@/components/icons'
@@ -13,12 +13,22 @@ import FriendsEmptyState from './friendship/FriendsEmptyState'
 import { useFriendsData } from './friendship/useFriendsData'
 import { FOCUS_RING, type Friend } from './friendship/types'
 
-export default function Friends() {
+interface FriendsProps {
+  /** Called once the first screen is drawn, so a host can scroll to it without the page still growing. */
+  onLoaded?: () => void
+}
+
+export default function Friends({ onLoaded }: FriendsProps = {}) {
   const { t } = useTranslation()
   const { data: session, status } = useSession()
   const verified = status === 'authenticated' && Boolean(session?.user?.emailVerified)
   const data = useFriendsData(verified)
   const onlineUserIds = useOnlinePresence()
+  const ready = status === 'authenticated' && (!verified || !data.loading)
+
+  useEffect(() => {
+    if (ready) onLoaded?.()
+  }, [ready, onLoaded])
 
   const presenceOf = useCallback(
     (friend: Friend) => mergeFriendPresence(friend.presence, onlineUserIds.has(friend.id)),

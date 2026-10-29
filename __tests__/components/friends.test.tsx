@@ -302,6 +302,27 @@ describe('Friends', () => {
     expect(mockShowToast.success).toHaveBeenCalledWith('profile.friends.friendCodeCopied')
   })
 
+  it('tells the page around it once its list is on screen, not while it is loading', async () => {
+    let finishLoading: () => void = () => {}
+    const loaded = new Promise<void>((resolve) => {
+      finishLoading = resolve
+    })
+    const answer = mockFetch.getMockImplementation()!
+    mockFetch.mockImplementation(async (input: RequestInfo | URL, init?: RequestInit) => {
+      if (String(input) === '/api/friends') await loaded
+      return answer(input, init)
+    })
+    const onLoaded = jest.fn()
+
+    render(<Friends onLoaded={onLoaded} />)
+    await act(async () => {})
+    expect(onLoaded).not.toHaveBeenCalled()
+
+    await act(async () => finishLoading())
+    await screen.findByRole('heading', { name: 'profile.friends.title' })
+    expect(onLoaded).toHaveBeenCalled()
+  })
+
   it('asks for a verified email before loading anything', async () => {
     mockUseSession.mockReturnValue({
       data: { user: { id: 'user-1', emailVerified: null } },

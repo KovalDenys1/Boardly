@@ -602,6 +602,7 @@ export default function ProfilePage() {
     window.history.replaceState({}, '', `${currentUrl.pathname}${currentUrl.search}${currentUrl.hash}`)
   }, [])
 
+  const friendsLinkPendingRef = useRef(false)
   useEffect(() => {
     if (typeof window === 'undefined') return
 
@@ -616,7 +617,15 @@ export default function ProfilePage() {
       setSettingsScrollRequest((request) => request + 1)
     } else if (isTabType(tabFromQuery)) {
       setActiveTab(tabFromQuery)
+      friendsLinkPendingRef.current = tabFromQuery === 'friends'
     }
+  }, [])
+
+  // Friend-request notifications open ?tab=friends: land at the tab list, not the top of the profile.
+  const scrollToTabsFromFriendsLink = useCallback(() => {
+    if (!friendsLinkPendingRef.current || !tabListRef.current) return
+    friendsLinkPendingRef.current = false
+    tabListRef.current.scrollIntoView({ block: 'start' })
   }, [])
 
   // A request stays pending until the section is on the page: a deep link arrives
@@ -2064,7 +2073,7 @@ export default function ProfilePage() {
               ref={setTabList}
               role="tablist"
               aria-label={t('profile.title')}
-              className="relative flex w-full min-w-max gap-1 rounded-2xl border-[1.5px] border-bd-line bg-bd-card-warm p-1.5 shadow-bd-soft"
+              className="relative flex w-full min-w-max scroll-mt-4 gap-1 rounded-2xl border-[1.5px] border-bd-line bg-bd-card-warm p-1.5 shadow-bd-soft"
             >
               <div
                 aria-hidden="true"
@@ -2099,8 +2108,14 @@ export default function ProfilePage() {
             </nav>
           </div>
 
-          {/* ── Tab Content ── */}
-          <div className="mt-6 rounded-4xl border-[1.5px] border-bd-line bg-bd-card-warm p-5 shadow-bd-card sm:p-8">
+          {/* ── Tab Content ── The friends tab's sections are cards already; a frame would nest them. */}
+          <div
+            className={
+              activeTab === 'friends'
+                ? 'mt-6'
+                : 'mt-6 rounded-4xl border-[1.5px] border-bd-line bg-bd-card-warm p-5 shadow-bd-card sm:p-8'
+            }
+          >
 
           {activeTab === 'profile' && (
             <div role="tabpanel" id="profile-tab-panel-profile" aria-labelledby="profile-tab-profile">
@@ -2440,7 +2455,7 @@ export default function ProfilePage() {
           {/* Friends Tab */}
           {activeTab === 'friends' && (
             <div role="tabpanel" id="profile-tab-panel-friends" aria-labelledby="profile-tab-friends">
-              <Friends />
+              <Friends onLoaded={scrollToTabsFromFriendsLink} />
             </div>
           )}
 
