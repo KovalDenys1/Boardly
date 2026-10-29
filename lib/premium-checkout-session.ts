@@ -19,7 +19,7 @@ export type PremiumCheckoutSessionInput = {
  * receipts and invoices. Enabling it is per session; the Dashboard's "Enable by
  * default" is off, so a session without `managed_payments` would be an
  * ordinary Stripe sale again. It needs API version 2025-03-31.basil or later
- * (lib/stripe.ts pins 2026-04-22.dahlia).
+ * (lib/stripe.ts sends the endive version stripe-node pins).
  *
  * Managed Payments refuses a list of parameters, among them `automatic_tax`,
  * `tax_id_collection`, `payment_method_types`, `payment_method_configuration`,

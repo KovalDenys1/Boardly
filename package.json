@@ -100,7 +100,7 @@
     "react-hot-toast": "^2.6.1",
     "react-i18next": "^17.1.2",
     "resend": "^6.34.1",
-    "stripe": "^22.1.1",
+    "stripe": "^23.0.1",
     "tailwindcss": "^4.3.3",
     "tsx": "^4.23.15",
     "typescript": "6.0.3",
