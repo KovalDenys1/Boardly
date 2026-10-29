@@ -243,11 +243,12 @@
   /* A slab that stays dark in dark, where --bd-ink turns cream; text on it is --bd-ink-on-inverse. */
   --bd-inverse: #1F1B16;
   --bd-ink-on-inverse: #FBF6EE;
-  /* Accent-coloured text. The -deep shades are the border and shadow of a fill and do not flip. */
-  --bd-coral-text: #E04B3B;
-  --bd-mint-text: #2FA787;
-  --bd-lav-text: #7867E8;
-  --bd-sun-text: #8A5F00;
+  /* Accent-coloured text, 4.5:1 on every surface and on its own 10-20 % tint. The -deep shades are
+     the border and shadow of a fill and do not flip. */
+  --bd-coral-text: #B71F14;
+  --bd-mint-text: #076F57;
+  --bd-lav-text: #5E49C7;
+  --bd-sun-text: #875D01;
   --bd-btn-ink: var(--bd-ink);
   --bd-line: #E8DDC8;
   /* A plate raised above whatever is behind it - a player pill on a team card,
@@ -297,8 +298,8 @@ html.dark {
   --bd-ink:       #F0E8DB;
   --bd-ink-soft:  #B5A494;
   --bd-ink-muted: #9C8E7E;
-  --bd-coral-text: #FF8273;
-  --bd-mint-text: #45BF9C;
+  --bd-coral-text: #FF8475;
+  --bd-mint-text: #4AC3A0;
   --bd-lav-text:  #A99BFF;
   --bd-inverse:   #35302A;
   --bd-ink-on-inverse: #F0E8DB;

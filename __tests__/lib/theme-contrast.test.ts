@@ -80,14 +80,18 @@ describe.each(Object.entries(THEMES))('%s theme tokens', (_name, tokens) => {
   })
 })
 
-describe('dark accent text', () => {
-  const v = (name: string) => THEMES.dark[`--bd-${name}`]
+const TEXT_SURFACES = ['bg', 'bg2', 'card', 'card-warm', 'input-bg']
 
-  it.each(['coral', 'mint', 'lav'])('%s-text reads on the dark surfaces and on its own 15 %% tint', (accent) => {
+describe.each(Object.entries(THEMES))('%s accent text', (_name, tokens) => {
+  const v = (name: string) => tokens[`--bd-${name}`]
+
+  // Chips, badges and hover plates put the text on its own accent at 10-20 %.
+  it.each(['coral', 'mint', 'lav', 'sun'])('%s-text reads on every surface and on its own tint', (accent) => {
     const text = v(`${accent}-text`)
     const pairs: Array<[string, string, string]> = []
-    for (const s of ['bg', 'bg2', 'card']) {
-      pairs.push([`on ${s}`, text, v(s)], [`on ${accent}/15 over ${s}`, text, tint(v(accent), 0.15, v(s))])
+    for (const s of TEXT_SURFACES) {
+      pairs.push([`on ${s}`, text, v(s)])
+      for (const alpha of [0.1, 0.15, 0.2]) pairs.push([`on ${accent}/${alpha * 100} over ${s}`, text, tint(v(accent), alpha, v(s))])
     }
     expect(below(pairs)).toEqual([])
   })
@@ -119,16 +123,10 @@ describe.each(SHADE_SURFACES)('%s: accent shades', (_name, tokens, page) => {
     expect(ratio('#FFFFFF', tokens['--bd-lav-deep'])).toBeGreaterThanOrEqual(3)
   })
 
-  // On an ink-filled control only light and dark are pinned (below): Ocean's ink was 2.72:1 before #1538 too.
-  it.each(['page', '--bd-bg2', '--bd-card', '--bd-input-bg'])('the lav-deep focus ring reaches 3:1 on %s', (surface) => {
+  // The ring is inset, so on an ink-filled control (the Roll button, the drawer's ink buttons, a selected
+  // plate) its neighbours are the ink fill inside and the surface outside.
+  it.each(['page', '--bd-bg2', '--bd-card', '--bd-input-bg', '--bd-ink'])('the lav-deep focus ring reaches 3:1 on %s', (surface) => {
     expect(ratio(tokens['--bd-lav-deep'], surface === 'page' ? page : tokens[surface])).toBeGreaterThanOrEqual(3)
-  })
-})
-
-describe.each(Object.entries(THEMES))('%s: focus ring on a control filled with ink', (_name, tokens) => {
-  // The Roll button, the drawer's ink buttons and a selected plate are ink: cream in dark.
-  it('reaches 3:1', () => {
-    expect(ratio(tokens['--bd-lav-deep'], tokens['--bd-ink'])).toBeGreaterThanOrEqual(3)
   })
 })
 
@@ -137,10 +135,10 @@ describe('lobby themes', () => {
     const theme = LOBBY_THEMES[id]
     const style = getThemePageStyle(id) as Record<string, string>
     const pairs: Array<[string, string, string]> = [['on-inverse on inverse', style['--bd-ink-on-inverse'], style['--bd-inverse']]]
-    for (const accent of ['coral', 'mint', 'lav']) {
+    for (const accent of ['coral', 'mint', 'lav', 'sun']) {
       const text = style[`--bd-${accent}-text`]
       expect(text).toMatch(/^#[0-9A-F]{6}$/i)
-      if (theme.dark) pairs.push([`${accent}-text on bg`, text, theme.bg], [`${accent}-text on bg2`, text, theme.bg2])
+      pairs.push([`${accent}-text on bg`, text, theme.bg], [`${accent}-text on bg2`, text, theme.bg2])
     }
     expect(below(pairs)).toEqual([])
   })

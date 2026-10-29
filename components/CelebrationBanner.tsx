@@ -44,7 +44,7 @@ export default function CelebrationBanner({ event, onComplete }: CelebrationBann
           border: 'rgba(255,196,77,0.34)',
           gradient: 'linear-gradient(135deg,rgba(255,196,77,0.2),var(--bd-bg))',
           icon: 'bg-[rgba(255,196,77,0.24)]',
-          badge: 'bg-[rgba(255,196,77,0.22)] text-(--bd-coral-text)',
+          badge: 'bg-[rgba(255,196,77,0.22)] text-(--bd-sun-text)',
         }
       case 'largeStraight':
         return {

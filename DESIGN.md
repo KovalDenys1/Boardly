@@ -42,13 +42,13 @@ All tokens are defined in `app/globals.css` (`:root`) and mirrored in its `@them
 | Card warm (card surfaces) | `var(--bd-card-warm)` | `bd-card-warm` | `#FFF8EC` |
 | Inverse (dark slab) | `var(--bd-inverse)` | `bd-inverse` | `#1F1B16` |
 | Ink on inverse | `var(--bd-ink-on-inverse)` | `bd-ink-on-inverse` | `#FBF6EE` |
-| Coral text | `var(--bd-coral-text)` | `bd-coral-text` | `#E04B3B` |
-| Mint text | `var(--bd-mint-text)` | `bd-mint-text` | `#2FA787` |
-| Lav text | `var(--bd-lav-text)` | `bd-lav-text` | `#7867E8` |
-| Sun text (on a sun tint) | `var(--bd-sun-text)` | `bd-sun-text` | `#8A5F00` |
+| Coral text | `var(--bd-coral-text)` | `bd-coral-text` | `#B71F14` |
+| Mint text | `var(--bd-mint-text)` | `bd-mint-text` | `#076F57` |
+| Lav text | `var(--bd-lav-text)` | `bd-lav-text` | `#5E49C7` |
+| Sun text (on a sun tint) | `var(--bd-sun-text)` | `bd-sun-text` | `#875D01` |
 
 Dark values (`html.dark`) that are not obvious from the light ones: `--bd-ink-muted` `#9C8E7E`,
-`--bd-coral-text` `#FF8273`, `--bd-mint-text` `#45BF9C`, `--bd-lav-text` `#A99BFF`, `--bd-inverse`
+`--bd-coral-text` `#FF8475`, `--bd-mint-text` `#4AC3A0`, `--bd-lav-text` `#A99BFF`, `--bd-inverse`
 `#35302A`, `--bd-ink-on-inverse` `#F0E8DB`, `--bd-sun-text` `#FFC44D`.
 
 **Accent text is `-text`; `-deep` is a shade.** `--bd-*-deep` draws what belongs to a fill: the border
@@ -83,6 +83,7 @@ Ratios below are computed straight from the hex values in the Color tokens table
 | `bd-ink-on-inverse` on `bd-inverse` (marquee, CTA band, finished banner) | 15.9:1 (dark 10.7:1) | AA text + large |
 | accents on `bd-inverse` in dark (coral, lav, mint, sky, sun) | 4.67-8.25:1 | AA text + large |
 | `bd-sun-text` on a `bd-sun/25` tint | 5.0:1 (dark 5.5:1) | AA text + large |
+| `bd-coral/mint/lav/sun-text` on every surface and on its own 10-20 % tint | 4.56:1 or more (light and dark) | AA text + large |
 | `bd-bg` text on `bd-ink` (primary button) | 15.9:1 | AA text + large |
 | `bd-ink` text on `bd-sun` (badges) | 10.8:1 | AA text + large |
 | `bd-ink` text on `bd-mint` | 8.3:1 | AA text + large |
@@ -93,6 +94,7 @@ Ratios below are computed straight from the hex values in the Color tokens table
 | `bd-ink-on-accent` text on `bd-lav` (Lav button) | 6.2:1 | AA text + large |
 | white text on `bd-coral` / `bd-lav` | 2.8:1 | **fails AA at any size — never use** |
 | `bd-input-border` on white (`.bd-input` resting border) | 3.6:1 | AA UI boundary |
+| `bd-lav-deep` focus ring on the page, cards, inputs and an ink-filled control | 3:1 or more in every theme (Ocean lifts it to `#8272F4`) | AA UI boundary |
 | `bd-line` border on `bd-bg` (cards, dividers) | 1.3:1 | decorative only — not for a field's edge |
 
 **Text on a coral or lavender fill is `--bd-ink-on-accent` (#1F1B16, the same in both

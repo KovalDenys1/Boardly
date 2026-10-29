@@ -20,10 +20,12 @@ export function getLobbyTheme(theme: string | null | undefined) {
   return LOBBY_THEMES.default
 }
 
-const DARK_THEME_TEXT: Record<string, string> = { '--bd-coral-text': '#FF8273', '--bd-mint-text': '#45BF9C', '--bd-lav-text': '#A99BFF' }
+const DARK_THEME_TEXT: Record<string, string> = { '--bd-coral-text': '#FF8475', '--bd-mint-text': '#4AC3A0', '--bd-lav-text': '#A99BFF' }
 // The theme's own surfaces are lighter than html.dark's, so the default lav-deep ring falls under 3:1 on them.
 const DARK_THEME_SHADE: Record<string, string> = { '--bd-lav-deep': '#8070EE' }
-const LIGHT_THEME_TEXT: Record<string, string> = { '--bd-coral-text': '#E04B3B', '--bd-mint-text': '#2FA787', '--bd-lav-text': '#7867E8' }
+// Ocean's ink is a mid navy, so the default ring on an ink-filled control is 2.7:1; this one is 3.1:1 there and on its pale surfaces.
+const OCEAN_SHADE: Record<string, string> = { '--bd-lav-deep': '#8272F4' }
+const LIGHT_THEME_TEXT: Record<string, string> = { '--bd-coral-text': '#B71F14', '--bd-mint-text': '#076F57', '--bd-lav-text': '#5E49C7' }
 
 export function getThemePageStyle(theme: string | null | undefined): CSSProperties {
   const t = getLobbyTheme(theme)
@@ -47,9 +49,10 @@ export function getThemePageStyle(theme: string | null | undefined): CSSProperti
     '--bd-btn-ink': t.text,
     // A light theme sets them too, or inside html.dark it would inherit the pale dark values.
     ...(t.dark ? { ...DARK_THEME_TEXT, ...DARK_THEME_SHADE } : LIGHT_THEME_TEXT),
+    ...(theme === 'ocean' ? OCEAN_SHADE : {}),
     '--bd-inverse': t.dark ? t.bg2 : t.text,
     '--bd-ink-on-inverse': t.dark ? t.text : t.bg,
-    '--bd-sun-text': t.dark ? '#FFC44D' : '#8A5F00',
+    '--bd-sun-text': t.dark ? '#FFC44D' : '#875D01',
     background: t.bg,
     color: t.text,
     transition: 'background 0.3s ease, color 0.3s ease',
