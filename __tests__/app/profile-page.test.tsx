@@ -814,6 +814,20 @@ describe('ProfilePage', () => {
     })
   })
 
+  it('names every tab itself, since on a phone only its icon shows', async () => {
+    render(<ProfilePage />)
+
+    const tabs = await screen.findAllByRole('tab')
+    expect(tabs.map((tab) => tab.getAttribute('aria-label'))).toEqual([
+      'profile.title',
+      'profile.friends.title',
+      'profile.gameHistory.title',
+      'profile.stats.title',
+      'Premium',
+      'profile.settings.title',
+    ])
+  })
+
   /** Friend-request notifications link to /profile?tab=friends (#1584). */
   describe('a link straight to a tab', () => {
     const scrollIntoView = () => Element.prototype.scrollIntoView as jest.Mock

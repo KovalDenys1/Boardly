@@ -2091,6 +2091,7 @@ export default function ProfilePage() {
                   key={tab.id}
                   ref={setTabButton(tab.id)}
                   role="tab"
+                  aria-label={tab.label}
                   aria-selected={activeTab === tab.id}
                   aria-controls={`profile-tab-panel-${tab.id}`}
                   id={`profile-tab-${tab.id}`}
