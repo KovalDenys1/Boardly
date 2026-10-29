@@ -1797,7 +1797,9 @@ input[type="range"].slider-thumb::-moz-range-track {
 .ttt-grid {
   flex: 1;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 320px;
+  /* A height-bound board leaves width over in the centre column: the side
+     column takes some of it on wide screens (#1566). */
+  grid-template-columns: minmax(0, 1fr) clamp(320px, 28vw, 400px);
   /* Row 1: the one header, across both columns (#1577). Row 2: the columns. */
   grid-template-rows: auto minmax(0, 1fr);
   gap: 12px 16px;
@@ -1861,7 +1863,7 @@ input[type="range"].slider-thumb::-moz-range-track {
      a separate box that hugs the board; this one stretches, unseen, and the
      space it keeps reads as page padding. */
   container-type: size;
-  --c4-cell: clamp(22px, min(calc((100cqw - 79px) / 7), calc((100cqh - 97px) / 6)), 80px);
+  --c4-cell: clamp(16px, min(calc((100cqw - 79px) / 7), calc((100cqh - 97px) / 6)), 120px);
   /* Not decoration: .ttt-board-overlay takes its radius from here. */
   border-radius: 18px;
   display: flex;
@@ -1931,7 +1933,6 @@ input[type="range"].slider-thumb::-moz-range-track {
 .replay-board.ttt-board-card {
   --c4-cell: clamp(16px, min(calc((100cqw - 79px) / 7), calc((100cqh - 73px) / 6)), 80px);
 }
-/* A 320×568 replay card is ~190 px tall, below the live boards' floors (Checkers 248 px, Ludo 180 + 27 px). */
 .replay-board .ck-board {
   --ck-cell: clamp(16px, min(calc((100cqw - 40px) / 8), calc((100cqh - 40px) / 8)), 72px);
 }
@@ -1944,7 +1945,7 @@ input[type="range"].slider-thumb::-moz-range-track {
    board's own chrome only: the surface's padding and border (2×12 + 2×1.5) and
    the frame's padding (2×6), rounded up. */
 .ck-board {
-  --ck-cell: clamp(26px, min(calc((100cqw - 40px) / 8), calc((100cqh - 40px) / 8)), 72px);
+  --ck-cell: clamp(16px, min(calc((100cqw - 40px) / 8), calc((100cqh - 40px) / 8)), 110px);
   --ck-pad: 6px;
   position: relative;
   display: grid;
@@ -2787,7 +2788,7 @@ input[type="range"].slider-thumb::-moz-range-track {
   /* Both terms read the board card, which is the size container – the surface
      between them hugs, so a percentage here would have nothing to resolve
      against. 27px is the surface's own padding and border on one axis. */
-  width: min(calc(100cqw - 27px), calc(100cqh - 27px), 560px);
+  width: min(calc(100cqw - 27px), calc(100cqh - 27px), 880px);
   aspect-ratio: 1;
   height: auto;
   display: flex;
@@ -5042,7 +5043,7 @@ html.dark .liars-seat { background: var(--bd-bg2); }
 
 
 .memory-grid {
-  width: min(100%, 780px);
+  width: min(100%, 1040px);
   margin: 0 auto;
   display: grid;
   gap: clamp(6px, 1.3vw, 12px);
@@ -5056,7 +5057,7 @@ html.dark .liars-seat { background: var(--bd-bg2); }
     /* Both terms read the panel, which is the size container; 27px is the
        surface's padding and border on one axis (#903). A percentage would have
        nothing to resolve against now that the surface hugs this grid. */
-    width: min(calc(100cqw - 27px), 780px, calc((100cqh - 27px) * var(--grid-cols, 4) / var(--grid-rows, 4)));
+    width: min(calc(100cqw - 27px), 1040px, calc((100cqh - 27px) * var(--grid-cols, 4) / var(--grid-rows, 4)));
   }
 }
 
@@ -5985,7 +5986,7 @@ html.dark .sketch-score-row { background: var(--bd-bg2); }
    axis. Tokens move by transform only (a WAAPI walk, #1113); nothing animates size. */
 .ludo-board {
   display: block;
-  width: clamp(180px, min(calc(100cqw - 27px), calc(100cqh - 27px)), 720px);
+  width: clamp(140px, min(calc(100cqw - 27px), calc(100cqh - 27px)), 960px);
   height: auto;
   aspect-ratio: 1 / 1;
   user-select: none;
