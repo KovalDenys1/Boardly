@@ -114,8 +114,8 @@ hands its `revalidate` to the page that calls it, so a 30 s cache in `Announceme
 static routes rebuild every 30 s, and Sentry's one-a-minute uptime check rebuilt `/` ~1 400 times a
 day. Read the build's route table after touching anything the layout reads: static rows say `1h`.
 
-**There are three root layouts since #1394: `app/(site)/layout.tsx`, `app/ru/layout.tsx` and
-`app/uk/layout.tsx`, all rendering `app/root-document.tsx`.** Next attaches a file-based
+**There are four root layouts since #928: `app/(site)/layout.tsx`, `app/ru/layout.tsx`,
+`app/uk/layout.tsx` and `app/no/layout.tsx`, all rendering `app/root-document.tsx`.** Next attaches a file-based
 `opengraph-image` only to metadata set at its own segment level, so when the layouts moved, `/`
 and 20 static pages lost their share image while every test stayed green. The site card is now a
 route handler named in `siteMetadata` (`lib/site-card.tsx`). After touching layouts or metadata,
@@ -263,12 +263,12 @@ plus 844×390 landscape). Check before calling it done:
 - [ ] `app/(site)/games/<game>/lobbies/page.tsx` — lobbies list page (use `GameLobbiesPage`)
 - [ ] `app/(site)/lobby/[code]/<game>-page.tsx` — full game UI (dedicated lobby page)
 - [ ] `app/(site)/lobby/[code]/LobbyPageClient.tsx` — add dynamic import + route check
-- [ ] `app/localized-game-page.tsx` — add the detail component to `DETAIL_CONTENT`, so `/ru/games/<game>` and `/uk/games/<game>` exist (#1394); `localized-pages.test.tsx` fails without it
+- [ ] `app/localized-game-page.tsx` — add the detail component to `DETAIL_CONTENT`, so `/ru/games/<game>`, `/uk/games/<game>` and `/no/games/<game>` exist (#1394, #928); `localized-pages.test.tsx` fails without it
 - [ ] Every new page goes under `app/(site)/`: outside every root layout, Next writes a bare layout for it
 - [ ] `components/HomePage/GameRibbon.tsx` – add to `translatedDetails` and `getIllustration`; the accent colour and the detail href are derived from the catalog entry, so there is nothing else to add
 
 ### Locales
-- [ ] `locales/en.ts`, `ru.ts`, `no.ts`, `uk.ts`, `de.ts`, `es.ts` — add complete `games.<game>` namespace, `seo.title` and `seo.description` included – they are the /ru and /uk page titles (parity enforced by pre-commit hook)
+- [ ] `locales/en.ts`, `ru.ts`, `no.ts`, `uk.ts`, `de.ts`, `es.ts` — add complete `games.<game>` namespace, `seo.title` and `seo.description` included – they are the /ru, /uk and /no page titles (parity enforced by pre-commit hook)
 
 ### Verify
 ```bash
@@ -279,14 +279,14 @@ npm run ci:quick   # lint + typecheck + arch audit
 
 ---
 
-## This is a 16 GB laptop Denys is using at the same time
+## This is a laptop Denys is using at the same time
 
-The machine is an M2 Pro: 12 cores but only 16 GB, and Chrome, Obsidian and
-Discord are always resident. Memory is the limit, not cores, and when it is
-exceeded macOS swaps and the whole desktop stutters — his editor, not just the
-build. On 2026-09-18 five agents each ran `npx jest` and `npx tsc --noEmit` at
-once: 55 jest workers plus five typecheckers, load average 15 on 12 cores, and
-he could not use the Mac.
+Since 2026-10-28 the machine is an M4 Pro with 48 GB, so five to eight agents in
+separate worktrees fit; the old one was an M2 Pro with 16 GB. Chrome, Obsidian and
+Discord are always resident, and he works on it while agents run, so the rules
+below still hold per agent. On 2026-09-18 five agents each ran `npx jest` and
+`npx tsc --noEmit` at once on the 16 GB Mac: 55 jest workers plus five
+typecheckers, load average 15 on 12 cores, and he could not use the Mac.
 
 - **`pnpm test` / `npm test`, never a bare `npx jest`.** The script passes
   `--runInBand` (one process). A bare `npx jest` used to spawn one worker per
@@ -753,7 +753,7 @@ The result becomes acceptance criteria on the ticket. The first run is in
 - Every agent-built PR gets a code review and an adversarial refuter before merge. On 2026-09-24 that caught a seat/side desync in Checkers, a forgeable host accept in Sketch & Guess, and #1103: the results route was leaking running games' secrets.
 
 **Limits:**
-- Keep the fan-out small: one or two long-reading agents at a time, each writing its result before the next one starts.
+- Keep the fan-out to what the plan window holds: up to five or eight build agents in their own worktrees on the 48 GB Mac, each writing its result as it finishes.
 - Wide parallelism burns Denys's usage limit and returns nothing if stopped.
 - One agent owns Chrome at a time.
 

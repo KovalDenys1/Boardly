@@ -2,9 +2,11 @@
 
 import { render, screen } from '@testing-library/react'
 import BoardlyErrorState from '@/components/BoardlyErrorState'
+import NoPageLocale from '@/components/i18n/NoPageLocale'
 import RuPageLocale from '@/components/i18n/RuPageLocale'
 import UkPageLocale from '@/components/i18n/UkPageLocale'
 import en from '@/locales/en'
+import no from '@/locales/no'
 import ru from '@/locales/ru'
 import uk from '@/locales/uk'
 
@@ -24,6 +26,15 @@ describe('the error page home link (#1394)', () => {
       </UkPageLocale>
     )
     expect(screen.getByRole('link', { name: uk.errorPage.goHome })).toHaveAttribute('href', '/uk')
+  })
+
+  it('goes to /no from a /no page', () => {
+    render(
+      <NoPageLocale>
+        <BoardlyErrorState />
+      </NoPageLocale>
+    )
+    expect(screen.getByRole('link', { name: no.errorPage.goHome })).toHaveAttribute('href', '/no')
   })
 
   it('goes to / elsewhere', () => {

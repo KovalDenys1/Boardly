@@ -1,5 +1,5 @@
 import {
-  SEO_LOCALES,
+  HREFLANG,
   isLocalizedPage,
   languageAlternates,
   localeSwitchHref,
@@ -10,8 +10,8 @@ import {
 import { serverTranslator } from '@/lib/server-i18n'
 
 /**
- * #1394: the server renders a locale for /ru/... and /uk/... on /, /games and
- * /games/<game>. These are the pieces every such page is built on: the URL a
+ * #1394, #928: the server renders a locale for /ru/..., /uk/... and /no/... on /,
+ * /games and /games/<game>. These are the pieces every such page is built on: the URL a
  * locale lives at, the hreflang set it publishes, the links between its pages,
  * and a translator the server can use without the browser singleton.
  */
@@ -22,14 +22,17 @@ describe('localized paths (#1394)', () => {
     expect(localizedPath('/', 'ru')).toBe('/ru')
     expect(localizedPath('/games', 'uk')).toBe('/uk/games')
     expect(localizedPath('/games/alias', 'ru')).toBe('/ru/games/alias')
+    expect(localizedPath('/games/yahtzee', 'no')).toBe('/no/games/yahtzee')
   })
 
   it('reads the locale back off a path, and only a served one', () => {
     expect(pathLocale('/ru/games/alias')).toBe('ru')
     expect(pathLocale('/uk')).toBe('uk')
+    expect(pathLocale('/no/games')).toBe('no')
     expect(pathLocale('/games/alias')).toBeNull()
-    expect(pathLocale('/no/games')).toBeNull()
+    expect(pathLocale('/de/games')).toBeNull()
     expect(pathLocale('/russia')).toBeNull()
+    expect(pathLocale('/norway')).toBeNull()
   })
 })
 
@@ -41,25 +44,34 @@ describe('hreflang alternates (#1394)', () => {
       en: 'https://boardly.online/games/alias',
       ru: 'https://boardly.online/ru/games/alias',
       uk: 'https://boardly.online/uk/games/alias',
+      nb: 'https://boardly.online/no/games/alias',
       'x-default': 'https://boardly.online/games/alias',
     })
+  })
+
+  it('publishes Norwegian under the Bokmål code nb, at the /no URL', () => {
+    expect(HREFLANG.no).toBe('nb')
+    expect(languageAlternates('/')).toMatchObject({ nb: 'https://boardly.online/no' })
+    expect(Object.keys(languageAlternates('/games'))).not.toContain('no')
   })
 
   it('publishes the same set from every language version of a page', () => {
     for (const path of pages) {
       const set = languageAlternates(path)
-      for (const locale of SEO_LOCALES) {
-        const version = new URL(set[locale]).pathname
-        expect(languageAlternates(version)).toEqual(set)
+      const versions = Object.values(set)
+      expect(versions.length).toBe(5)
+      for (const url of versions) {
+        expect(languageAlternates(new URL(url).pathname)).toEqual(set)
       }
     }
   })
 })
 
 describe('server translator (#1394)', () => {
-  it('renders Russian and Ukrainian on the server', () => {
+  it('renders Russian, Ukrainian and Norwegian on the server', () => {
     expect(serverTranslator('ru')('games.alias.name')).toBe('Алиас')
     expect(serverTranslator('uk')('games.alias.name')).not.toBe(serverTranslator('en')('games.alias.name'))
+    expect(serverTranslator('no')('games.yahtzee.name')).toBe('Yatzy')
   })
 
   it('keeps each locale to itself when they interleave', () => {
@@ -95,6 +107,7 @@ describe('links on a localized page (#1394)', () => {
     expect(localizeHref('/games', 'ru')).toBe('/ru/games')
     expect(localizeHref('/games/yahtzee#strategy', 'uk')).toBe('/uk/games/yahtzee#strategy')
     expect(localizeHref('/?ref=nav', 'ru')).toBe('/ru?ref=nav')
+    expect(localizeHref('/games/yahtzee', 'no')).toBe('/no/games/yahtzee')
   })
 
   it('leave every other page on its English URL', () => {
@@ -109,10 +122,12 @@ describe('switching language on a prefixed page (#1394)', () => {
     expect(localeSwitchHref('/ru/games/alias', 'en')).toBe('/games/alias')
     expect(localeSwitchHref('/ru/games/alias', 'uk')).toBe('/uk/games/alias')
     expect(localeSwitchHref('/uk', 'ru')).toBe('/ru')
+    expect(localeSwitchHref('/uk', 'no')).toBe('/no')
+    expect(localeSwitchHref('/no/games/yahtzee', 'en')).toBe('/games/yahtzee')
   })
 
   it('takes a locale without its own URL to the English URL, where the stored choice applies', () => {
     expect(localeSwitchHref('/ru/games', 'de')).toBe('/games')
-    expect(localeSwitchHref('/uk', 'no')).toBe('/')
+    expect(localeSwitchHref('/no', 'es')).toBe('/')
   })
 })

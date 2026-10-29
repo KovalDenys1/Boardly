@@ -15,7 +15,7 @@ function urlOf(path: string, locale: PrefixedLocale): string {
   return `${BASE}${localizedPath(path, locale)}`
 }
 
-/** What `app/ru/layout.tsx` and `app/uk/layout.tsx` hand every page below them: the site defaults, in the locale. */
+/** What each prefixed root layout (`app/ru`, `app/uk`, `app/no`) hands every page below it: the site defaults, in the locale. */
 export function localizedSiteMetadata(site: Metadata, locale: PrefixedLocale): Metadata {
   const t = serverTranslator(locale)
   const title = t('home.seo.title')

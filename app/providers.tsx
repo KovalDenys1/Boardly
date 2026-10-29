@@ -12,7 +12,12 @@ import { OnboardingProvider } from '@/contexts/OnboardingContext'
 import { TourProvider } from '@/contexts/TourContext'
 import DeferredGlobalEffects from '@/components/DeferredGlobalEffects'
 import i18n, { changeLanguageLazy, type Locale } from '@/i18n'
-import { getStoredAppearanceLocale, normalizeAppearanceLocale } from '@/lib/appearance-preferences'
+import {
+  getStoredAppearanceLocale,
+  hasStoredAppearanceLocale,
+  normalizeAppearanceLocale,
+  setStoredAppearanceLocale,
+} from '@/lib/appearance-preferences'
 import { getSafeLocalStorage } from '@/lib/safe-storage'
 import { pruneUnrememberedLastAccount } from '@/lib/last-account'
 import type { PrefixedLocale } from '@/lib/seo-locales'
@@ -35,11 +40,15 @@ export default function Providers({
   pathLocale,
 }: {
   children: React.ReactNode
-  /** Set on /ru and /uk pages, whose language is the URL's and not the visitor's stored choice (#1394). */
+  /** Set on /ru, /uk and /no pages, whose language is the URL's and not the visitor's stored choice (#1394). */
   pathLocale?: PrefixedLocale
 }) {
   useEffect(() => {
-    if (pathLocale) return
+    if (pathLocale) {
+      const storage = getSafeLocalStorage()
+      if (!hasStoredAppearanceLocale(storage ?? undefined)) setStoredAppearanceLocale(storage, pathLocale)
+      return
+    }
     const nextLanguage = getStoredAppearanceLocale(getSafeLocalStorage() ?? undefined) as Locale
 
     if (i18n.language !== nextLanguage) {
@@ -63,7 +72,7 @@ export default function Providers({
    * English rules, the browser offers to translate a page already in the reader's
    * language, and hyphenation and font selection follow the wrong locale.
    *
-   * A /ru or /uk page gets its `lang` from the server and keeps it (#1394).
+   * A /ru, /uk or /no page gets its `lang` from the server and keeps it (#1394).
    */
   useEffect(() => {
     if (pathLocale) return
