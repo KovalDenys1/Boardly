@@ -1,4 +1,4 @@
-import { GameEngine, Player, Move, GameState } from '../game-engine'
+import { GameEngine, Player, Move, GameState, GameTimeoutRecord, PlayerLeaveContext } from '../game-engine'
 
 // Spy Game Specific Types
 export enum SpyGamePhase {
@@ -434,6 +434,13 @@ export class SpyGame extends GameEngine {
     return true
   }
 
+  /** The clocks the lobby GET applies, in its order, for a move or a leave that lands first; null when none has run out. */
+  closeLapsedPhase(nowMs: number = Date.now()): GameTimeoutRecord | null {
+    if (this.applyVotingTimeout(nowMs)) return { actionType: 'spy:vote-timeout', actionPayload: {} }
+    if (this.applyRoleRevealTimeout(nowMs)) return { actionType: 'spy:reveal-timeout', actionPayload: {} }
+    return null
+  }
+
   /**
    * A player left mid-game (#1263). The spy leaving abandons the game before
    * this runs (catalog `abandonWhenRoleLeaves`), and so does the roster
@@ -442,14 +449,17 @@ export class SpyGame extends GameEngine {
    * history still names them, but they no longer hold a phase open: not the
    * reveal, not the vote, and they are never asked or made to ask.
    */
-  handlePlayerLeave(playerId: string): boolean {
+  handlePlayerLeave(playerId: string, context: PlayerLeaveContext = {}): boolean {
     const data = this.state.data as SpyGameData
     const player = this.state.players.find((p) => p.id === playerId)
     if (!player || player.isActive === false) return false
 
+    const lapsed = this.closeLapsedPhase()
+    if (lapsed) context.onTimeoutApplied?.(lapsed)
+
     player.isActive = false
-    // A vote they cast no longer counts; votes cast for them still do.
-    if (data?.votes && playerId in data.votes) delete data.votes[playerId]
+    // A vote they cast no longer counts while the vote is open; votes cast for them still do.
+    if (data?.phase === SpyGamePhase.VOTING && data.votes && playerId in data.votes) delete data.votes[playerId]
 
     if (this.state.status === 'playing' && data) {
       if (data.phase === SpyGamePhase.ROLE_REVEAL) {

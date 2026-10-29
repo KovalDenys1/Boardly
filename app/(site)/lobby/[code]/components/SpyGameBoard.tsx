@@ -468,6 +468,21 @@ export default function SpyGameBoard({
           payload = await res.json().catch(() => null)
         }
 
+        if (res.status === 409 && payload?.code === 'TURN_ALREADY_ENDED') {
+          await refreshAfterAction()
+          trackMoveSubmitApplied({
+            gameType: 'guess_the_spy',
+            moveType: action,
+            durationMs: Date.now() - submitStartedAt,
+            isGuest,
+            success: false,
+            applied: false,
+            statusCode: responseStatus,
+          })
+          moveMetricTracked = true
+          return false
+        }
+
         if (!res.ok) {
           throw new Error(payload?.error || 'Failed to submit action')
         }

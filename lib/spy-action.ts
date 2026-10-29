@@ -10,6 +10,7 @@ import { buildPartyGameTerminalUpdate } from '@/lib/game-persistence'
 import { commitGameState, GameStateConflictError } from '@/lib/game-state-lock'
 import { checkAchievementsOnStatusChange } from '@/lib/achievement-engine'
 import { requiresTermsAcceptance } from '@/lib/terms-gate'
+import { commitTimeoutFallback } from '@/lib/party-timeout-commit'
 
 export const spyActionSchema = z.object({
   action: z.enum([
@@ -89,6 +90,21 @@ export async function applySpyAction(params: {
     // Load game engine
     const spyGame = new SpyGame(gameId)
     spyGame.loadState(parsePersistedGameState(game.state))
+
+    const lapsed = game.status === 'playing' ? spyGame.closeLapsedPhase() : null
+    if (lapsed) {
+      const committed = await commitTimeoutFallback({
+        activeGame: game,
+        nextState: spyGame.getState(),
+        ...lapsed,
+        lobbyCode: game.lobby.code,
+        gameType: 'guess_the_spy',
+        source: 'move',
+      })
+      return committed
+        ? NextResponse.json({ error: 'Turn already ended', code: 'TURN_ALREADY_ENDED', skipped: true }, { status: 409 })
+        : NextResponse.json({ error: 'Game state changed, please retry', code: 'STATE_CONFLICT', skipped: false }, { status: 409 })
+    }
 
     // Build move object
     const move = {

@@ -62,6 +62,7 @@ const votedState = {
 jest.mock('@/lib/games/spy-game', () => ({
   SpyGame: jest.fn().mockImplementation(() => ({
     loadState: jest.fn(),
+    closeLapsedPhase: jest.fn(() => null),
     makeMove: jest.fn(() => true),
     getState: jest.fn(() => votedState),
   })),

@@ -1,4 +1,4 @@
-import { GameEngine, type Move, type Player } from '@/lib/game-engine'
+import { GameEngine, type GameTimeoutRecord, type Move, type Player, type PlayerLeaveContext } from '@/lib/game-engine'
 import { ALIAS_WORDS } from './alias-words'
 
 export interface AliasTeam {
@@ -51,6 +51,9 @@ export const SOLO_PLAYER_COUNT = 3
 
 /** The names the engine gives the two shared teams; a client shows its own locale's instead. */
 export const DEFAULT_TEAM_NAMES: Readonly<Record<string, string>> = { 'team-1': 'Team 1', 'team-2': 'Team 2' }
+
+/** The replay record every path that applies the Alias turn timer writes. */
+export const ALIAS_TIMEOUT_RECORD: GameTimeoutRecord = { actionType: 'alias:timeout-fallback', actionPayload: {} }
 
 export class AliasGame extends GameEngine {
   constructor(gameId: string) {
@@ -270,9 +273,15 @@ export class AliasGame extends GameEngine {
     }
   }
 
-  handlePlayerLeave(playerId: string): boolean {
+  handlePlayerLeave(playerId: string, context: PlayerLeaveContext = {}): boolean {
     const data = this.state.data as AliasGameData
     let changed = false
+
+    const { turnTimerSeconds } = context
+    if (typeof turnTimerSeconds === 'number' && turnTimerSeconds > 0 && this.applyTimeoutFallback(turnTimerSeconds).changed) {
+      context.onTimeoutApplied?.(ALIAS_TIMEOUT_RECORD)
+      changed = true
+    }
 
     for (const team of data.teams) {
       const idx = team.playerIds.indexOf(playerId)
