@@ -97,6 +97,23 @@ describe('shadows', () => {
   })
 })
 
+describe('dead tokens', () => {
+  it.each(['--color-primary:', '--color-secondary:', '--primary-500:', '--secondary-500:', '--success-500:', '--error-500:'])('globals.css no longer declares %s, which nothing reads', (token) => {
+    expect(globalsCss).not.toContain(token)
+  })
+
+  it('draws a ring with no colour class in the focus colour, through @theme inline so a lobby theme reaches it', () => {
+    const inline = /@theme inline \{([^]*?)\n\}/.exec(globalsCss)![1]
+    expect(inline).toContain('--default-ring-color: var(--bd-lav-deep);')
+    expect(globalsCss.match(/--default-ring-color:/g)).toHaveLength(1)
+  })
+
+  it('the game catalog carries no gradient class list that nothing renders', () => {
+    const catalog = readFileSync(path.join(__dirname, '..', '..', 'lib', 'game-catalog.ts'), 'utf8')
+    expect(catalog).not.toMatch(/\bgradient:/)
+  })
+})
+
 function scan(rule: (src: string) => number[]): string[] {
   const root = path.join(__dirname, '..', '..')
   const found: string[] = []

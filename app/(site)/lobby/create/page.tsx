@@ -59,7 +59,6 @@ type GameInfo = {
   descriptionKey: string
   svgId: string
   accentColor: string
-  gradient: string
   allowedPlayers: number[]
   defaultMaxPlayers: number
   settings: GameSettings
@@ -76,7 +75,6 @@ function buildGameInfoFromCatalog(): Record<string, GameInfo> {
           descriptionKey: g.descriptionKey,
           svgId: g.id,
           accentColor: getGameMetadata(g.gameType)?.accentColor ?? 'var(--bd-coral)',
-          gradient: g.lobbyCreateConfig.gradient,
           allowedPlayers: g.lobbyCreateConfig.allowedPlayers,
           defaultMaxPlayers: g.lobbyCreateConfig.defaultMaxPlayers,
           settings: {

@@ -41,6 +41,7 @@
   --color-bd-input-bg: var(--bd-input-bg);
   --color-bd-input-border: var(--bd-input-border);
   --color-bd-premium: var(--bd-premium);
+  --default-ring-color: var(--bd-lav-deep);
   --shadow-bd-ink-4: 0 4px 0 var(--bd-ink);
   --shadow-bd-ink-5: 0 5px 0 var(--bd-ink);
   --shadow-bd-coral-4: 0 4px 0 var(--bd-coral-deep);
@@ -56,13 +57,9 @@
   /* The single mobile/desktop switch point (docs/RESPONSIVE.md), DESKTOP_MIN_WIDTH_PX in lib/responsive-tokens. */
   --breakpoint-desk: 1024px;
 
-  --color-primary: #3b82f6;
-  --color-secondary: #8b5cf6;
   --color-bd-danger-border: #F0B3AC;
   --color-bd-danger-bg: #FFF2EF;
   --color-bd-danger-text: #A6554A;
-
-  --default-ring-color: rgb(59 130 246 / 0.5);
 
   --text-xs--line-height: 1rem;
   --text-sm--line-height: 1.25rem;
@@ -1065,13 +1062,6 @@ html.dark {
 }
 
 :root {
-  --primary-500: 59, 130, 246;
-  --primary-600: 37, 99, 235;
-  --primary-700: 29, 78, 216;
-  --secondary-500: 139, 92, 246;
-  --secondary-600: 124, 58, 237;
-  --success-500: 34, 197, 94;
-  --error-500: 239, 68, 68;
   --mobile-tabs-offset: 5.75rem;
   color-scheme: light;
 }
