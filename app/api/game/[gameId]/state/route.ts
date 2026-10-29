@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { restoreGameEngine } from '@/lib/game-registry'
-import { Move, Player, GameEngine, hasRollsLeft, hasScorecard, hasPendingRequest, isTimerOnlyMove, resolveTurnStartedAt, type TurnClockSnapshot } from '@/lib/game-engine'
+import { Move, Player, GameEngine, type GameTimeoutRecord, hasRollsLeft, hasScorecard, hasPendingRequest, isTimerOnlyMove, resolveTurnStartedAt, type TurnClockSnapshot } from '@/lib/game-engine'
 import { apiLogger } from '@/lib/logger'
 import { getRequestAuthUser } from '@/lib/request-auth'
 import { advanceTurnPastDisconnectedPlayers, type TurnState } from '@/lib/disconnected-turn'
@@ -22,6 +22,7 @@ import { requiresTermsAcceptance } from '@/lib/terms-gate'
 import { applySpyAction, spyActionSchema } from '@/lib/spy-action'
 import { LiarsPartyGame, liarsPartyTimeoutRecord } from '@/lib/games/liars-party-game'
 import { commitTimeoutFallback } from '@/lib/party-timeout-commit'
+import { ALIAS_TIMEOUT_RECORD, AliasGame } from '@/lib/games/alias'
 
 type AutoActionContext = AutoActionContextRequest
 
@@ -71,6 +72,26 @@ function resolveLastMoveAtDate(stateLastMoveAt: unknown): Date | undefined {
   const timestamp = normalizeTimestamp(stateLastMoveAt)
   if (timestamp === null) return undefined
   return new Date(timestamp)
+}
+
+type LapsedPartyClock = GameTimeoutRecord & {
+  gameType: string
+  gameSocketEvent?: string
+  gameSocketData?: Record<string, unknown>
+}
+
+function closeLapsedPartyClock(engine: GameEngine, turnTimerSeconds: number): LapsedPartyClock | null {
+  if (turnTimerSeconds <= 0) return null
+  if (engine instanceof LiarsPartyGame) {
+    const lapsed = engine.closeLapsedPhase(turnTimerSeconds)
+    if (!lapsed.changed) return null
+    const record = liarsPartyTimeoutRecord(lapsed)
+    return { ...record, gameType: 'liars_party', gameSocketEvent: 'liars-party-action', gameSocketData: record.actionPayload }
+  }
+  if (engine instanceof AliasGame) {
+    return engine.applyTimeoutFallback(turnTimerSeconds).changed ? { ...ALIAS_TIMEOUT_RECORD, gameType: 'alias' } : null
+  }
+  return null
 }
 
 function shouldDebounceAutoAction(key: string): boolean {
@@ -435,20 +456,15 @@ export async function POST(
       )
     }
 
-    // The lobby read applies a lapsed Liar's Party clock only when it next runs; a move landing first must not reopen the round it closed.
-    if (gameEngine instanceof LiarsPartyGame && game.status === 'playing') {
-      const turnTimerSeconds = resolveTurnTimerMs(game.lobby?.turnTimer) / 1000
-      const lapsed = turnTimerSeconds > 0 ? gameEngine.closeLapsedPhase(turnTimerSeconds) : null
-      if (lapsed?.changed) {
-        const record = liarsPartyTimeoutRecord(lapsed)
+    // The lobby read applies a lapsed party clock only when it next runs; a move landing first must not reopen the round it closed.
+    if (game.status === 'playing') {
+      const lapsed = closeLapsedPartyClock(gameEngine, resolveTurnTimerMs(game.lobby?.turnTimer) / 1000)
+      if (lapsed) {
         const committed = await commitTimeoutFallback({
           activeGame: game,
           nextState: gameEngine.getState(),
-          ...record,
+          ...lapsed,
           lobbyCode: game.lobby.code,
-          gameType: 'liars_party',
-          gameSocketEvent: 'liars-party-action',
-          gameSocketData: record.actionPayload,
           source: 'move',
         })
         return committed

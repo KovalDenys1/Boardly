@@ -5,7 +5,9 @@ import { broadcastToLobby } from '@/lib/supabase-server'
 import { pickRelevantLobbyGame } from '@/lib/lobby-snapshot'
 import { getLobbyPlayerRequirements } from '@/lib/lobby-player-requirements'
 import { parseAndValidateGameState, toPersistedGameStateInput } from '@/lib/persisted-game-state'
-import { commitGameState } from '@/lib/game-state-lock'
+import { commitGameState, type LockedGameStateUpdate } from '@/lib/game-state-lock'
+import { buildPartyGameTerminalUpdate, type PartyGameTerminalUpdate } from '@/lib/game-persistence'
+import { checkAchievementsOnStatusChange } from '@/lib/achievement-engine'
 import { restoreGameEngine } from '@/lib/game-registry'
 import type { GameTimeoutRecord } from '@/lib/game-engine'
 import { appendGameReplaySnapshot } from '@/lib/game-replay'
@@ -59,7 +61,8 @@ type LeaveStateWriteResult<TState> =
 async function commitLeaveStateChange<TState>(
   gameId: string,
   snapshot: { state: Prisma.JsonValue; currentTurn: number; updatedAt: Date },
-  applyLeave: (state: Prisma.JsonValue) => TState | null
+  applyLeave: (state: Prisma.JsonValue) => TState | null,
+  extraData: (nextState: TState) => LockedGameStateUpdate = () => ({})
 ): Promise<LeaveStateWriteResult<TState>> {
   let row: { state: Prisma.JsonValue; currentTurn: number; updatedAt: Date } | null = snapshot
 
@@ -72,7 +75,7 @@ async function commitLeaveStateChange<TState>(
     const committed = await commitGameState({
       gameId,
       revision: { currentTurn: row.currentTurn, updatedAt: row.updatedAt },
-      data: { state: toPersistedGameStateInput(nextState) },
+      data: { state: toPersistedGameStateInput(nextState), ...extraData(nextState) },
     })
 
     if (committed) return { status: 'committed', state: nextState }
@@ -618,15 +621,40 @@ export async function performPlayerLeave(
   if (gameMeta?.engineHandlesLeave) {
     try {
       let lapsedClock: GameTimeoutRecord | null = null
+      let terminalUpdate: PartyGameTerminalUpdate | null = null
       const result = await commitLeaveStateChange(activeGame.id, gameRowSnapshot, (rawState) => {
         const engine = restoreGameEngine(activeGame.gameType, activeGame.id, rawState)
         lapsedClock = null
         const onTimeoutApplied = (record: GameTimeoutRecord) => { lapsedClock = record }
         if (!engine.handlePlayerLeave(userId, { turnTimerSeconds: lobby.turnTimer, onTimeoutApplied })) return null
         return engine.getState()
+      }, (nextState) => {
+        terminalUpdate = buildPartyGameTerminalUpdate({
+          previousStatus: activeGame.status,
+          state: nextState,
+          startedAt: activeGame.startedAt ?? null,
+          dbPlayers: activeGame.players,
+        })
+        return terminalUpdate ? { status: nextState.status, ...terminalUpdate.terminalFields } : {}
       })
 
       if (result.status === 'committed') {
+        const terminal = terminalUpdate as PartyGameTerminalUpdate | null
+        if (terminal) {
+          await Promise.all(terminal.changedPlayerUpdates.map((update) =>
+            prisma.players.update({
+              where: { id: update.id },
+              data: {
+                score: update.score,
+                scorecard: update.scorecard,
+                finalScore: update.finalScore,
+                placement: update.placement,
+                isWinner: update.isWinner,
+              },
+            })
+          ))
+          await checkAchievementsOnStatusChange(activeGame.status, result.state.status, activeGame.players, log)
+        }
         const appliedClock = lapsedClock as GameTimeoutRecord | null
         if (appliedClock) {
           const { actionType, actionPayload } = appliedClock
