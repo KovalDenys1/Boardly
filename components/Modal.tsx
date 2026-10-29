@@ -199,7 +199,7 @@ export default function Modal({
 
         {/* Body */}
         <div
-          className={`flex-1 overflow-y-auto custom-scrollbar ${
+          className={`flex-1 overflow-y-auto overscroll-contain custom-scrollbar ${
             bodyPadding === 'default' && mobileFullscreen ? 'px-4 py-4 sm:px-6 sm:py-6' : ''
           }`}
           style={
