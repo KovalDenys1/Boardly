@@ -23,20 +23,27 @@ async function measure(table: Locator) {
       return value.left < frame.left - 0.5 || value.right > frame.right + 0.5
     })
     const rowHeader = sheet.querySelector('[role="rowheader"]')!
+    const crampedRows = Array.from(sheet.querySelectorAll('[role="row"]')).filter((row) => {
+      const head = row.querySelector('[role="rowheader"]')
+      return head && head.getBoundingClientRect().height > row.getBoundingClientRect().height + 0.5
+    })
     return {
       headers: headers.length,
       overflow: sheet.scrollWidth - sheet.clientWidth,
+      overflowY: sheet.scrollHeight - sheet.clientHeight,
+      pageOverflowY: document.documentElement.scrollHeight - window.innerHeight,
       currentVisible: columns.some((column) => column.current && column.visible),
       visibleColumns: columns.filter((column) => column.visible).length,
       totals: totals.length,
       totalRows: new Set(totals.map((cell) => Math.round(cell.getBoundingClientRect().top))).size,
       clippedTotals: clipped.length,
       categoryOffset: Math.abs(rowHeader.getBoundingClientRect().left - box.left),
+      crampedRows: crampedRows.length,
     }
   })
 }
 
-test('the Yahtzee score table holds the lobby maximum at 390 and 1280', async ({ browser, request, baseURL }) => {
+test('the Yahtzee score table holds the lobby maximum at 390 and 1280, every classic row on screen at 1280x800', async ({ browser, request, baseURL }) => {
   const url = baseURL!
   const maxPlayers = getGameMetadata('yahtzee')!.maxPlayers
   const host = await createGuest(request, url)
@@ -71,13 +78,18 @@ test('the Yahtzee score table holds the lobby maximum at 390 and 1280', async ({
   try {
     const page = await desktop.newPage()
     await page.goto(`/lobby/${code}`)
-    await page.getByRole('button', { name: /start game/i }).click({ timeout: 30_000 })
+    const start = page.getByRole('button', { name: /start game/i })
+    await expect(start).toBeEnabled({ timeout: 30_000 })
+    await start.click()
 
     const wide = page.locator('[data-testid="yahtzee-score-table"]:visible')
     await expect(wide).toBeVisible({ timeout: 30_000 })
     const atDesktop = await measure(wide)
     expect(atDesktop.headers).toBe(maxPlayers + 1)
     expect(atDesktop.overflow).toBeLessThanOrEqual(0)
+    expect(atDesktop.overflowY).toBeLessThanOrEqual(0)
+    expect(atDesktop.pageOverflowY).toBeLessThanOrEqual(0)
+    expect(atDesktop.crampedRows).toBe(0)
     expect(atDesktop.visibleColumns).toBe(maxPlayers)
     expect(atDesktop.totals).toBe(maxPlayers)
     expect(atDesktop.totalRows).toBe(1)
@@ -94,6 +106,7 @@ test('the Yahtzee score table holds the lobby maximum at 390 and 1280', async ({
     expect(atPhone.totals).toBe(maxPlayers)
     expect(atPhone.totalRows).toBe(1)
     expect(atPhone.clippedTotals).toBe(0)
+    expect(atPhone.crampedRows).toBe(0)
 
     // Scrolled to the far end, the category column has not moved.
     await narrow.evaluate((sheet) => sheet.scrollTo({ left: sheet.scrollWidth }))
