@@ -33,7 +33,7 @@ const SNAPSHOT_UPDATED_AT = new Date('2026-10-29T10:00:00.000Z')
 let clock = 1_000_000
 let nowSpy: jest.SpyInstance<number, []>
 
-function lobbyWith(gameType: string, ids: string[], state: unknown) {
+function lobbyWith(gameType: string, ids: string[], state: unknown, status = 'playing') {
   return {
     id: 'lobby-1',
     code: 'ABCD12',
@@ -43,7 +43,7 @@ function lobbyWith(gameType: string, ids: string[], state: unknown) {
     games: [
       {
         id: 'game-1',
-        status: 'playing',
+        status,
         gameType,
         state,
         currentTurn: 0,
@@ -185,5 +185,20 @@ describe('an Alias describer who leaves after the turn timer ran out', () => {
       actionType: 'alias:timeout-fallback',
       actionPayload: expect.objectContaining({ source: 'lobby-leave' }),
     }))
+  })
+})
+
+describe('a leave from a game that has not started', () => {
+  it('removes the seat and never writes the game state, so only a playing game reaches the leave writes', async () => {
+    const IDS = ['p1', 'p2', 'p3', 'p4']
+    const game = new AliasGame('game-1')
+    for (const id of IDS) game.addPlayer({ id, name: id, score: 0, isActive: true })
+    ;(prisma.players.count as jest.Mock).mockResolvedValue(3)
+
+    await performPlayerLeave(lobbyWith('alias', IDS, JSON.parse(JSON.stringify(game.getState())), 'waiting') as any, 'ABCD12', 'p2', mockLog)
+
+    expect(prisma.players.delete).toHaveBeenCalledWith({ where: { id: 'row-p2' } })
+    expect(prisma.games.updateMany).not.toHaveBeenCalled()
+    expect(prisma.games.findUnique).not.toHaveBeenCalled()
   })
 })
