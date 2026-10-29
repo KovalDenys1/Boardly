@@ -366,7 +366,7 @@ export function TourOverlay() {
       )}
       {showSpotlight && targetRect && (
         <div
-          className="pointer-events-none fixed z-105 rounded-2xl transition-all duration-200"
+          className="pointer-events-none fixed z-105 rounded-2xl transition-[top,left,width,height] duration-200"
           style={{
             top: targetRect.top - SPOTLIGHT_PADDING,
             left: targetRect.left - SPOTLIGHT_PADDING,

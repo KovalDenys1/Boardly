@@ -1,6 +1,6 @@
 import { existsSync, readdirSync, readFileSync, statSync, writeFileSync } from 'fs'
 import path from 'path'
-import { LEGACY_CLASS, accentTextLines, colourUtilities, focusColourLines, tokenHexShadowLines, tokenHexValues, varShorthandLines } from './design-token-rules'
+import { LEGACY_CLASS, accentTextLines, colourUtilities, focusColourLines, tokenHexShadowLines, tokenHexValues, transitionAllLines, varShorthandLines } from './design-token-rules'
 
 /**
  * Design-token audit – the pre-Boardly palette must not come back (#1254).
@@ -49,11 +49,13 @@ const globalsCss = readFileSync(path.join(repoRoot, 'app', 'globals.css'), 'utf8
 const utilities = colourUtilities(globalsCss)
 const tokenHex = tokenHexValues(globalsCss)
 const hexShadow: string[] = []
+const transitionAll: string[] = []
 for (const file of files) {
   const src = readFileSync(file, 'utf8')
   const rel = path.relative(repoRoot, file).split(path.sep).join('/')
   const n = (src.match(LEGACY_CLASS) ?? []).length
   if (n > 0) counts[rel] = n
+  for (const line of transitionAllLines(src)) transitionAll.push(`${rel}:${line}`)
   if (file.endsWith('.css')) continue
   for (const line of accentTextLines(src)) accentText.push(`${rel}:${line}`)
   for (const line of focusColourLines(src)) focusColour.push(`${rel}:${line}`)
@@ -85,6 +87,7 @@ for (const [file, allowed] of Object.entries(baseline)) {
 for (const at of accentText) problems.push(`${at}: an accent fill or shade as text – use --bd-<accent>-text (DESIGN.md)`)
 for (const at of focusColour) problems.push(`${at}: a focus ring in another colour – use bd-lav-deep (DESIGN.md)`)
 for (const at of varShorthand) problems.push(`${at}: a colour spelled through its variable – use the bd-* utility`)
+for (const at of transitionAll) problems.push(`${at}: transition-all also animates layout – use transition, or name the property`)
 for (const at of hexShadow) problems.push(`${at}: a shadow with a token's hex – use var(--bd-*) so it follows dark mode`)
 
 if (problems.length > 0) {

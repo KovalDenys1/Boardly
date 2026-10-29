@@ -91,7 +91,7 @@ export default function ConfirmModal({
         <div className="flex gap-3 justify-center">
           <button
             onClick={onClose}
-            className="px-6 py-2.5 rounded-xl font-medium transition-all"
+            className="px-6 py-2.5 rounded-xl font-medium transition"
             style={{
               background: 'var(--bd-bg2)',
               color: 'var(--bd-ink)',
@@ -102,7 +102,7 @@ export default function ConfirmModal({
           </button>
           <button
             onClick={handleConfirm}
-            className={`px-6 py-2.5 rounded-xl font-medium transition-all ${style.buttonText}`}
+            className={`px-6 py-2.5 rounded-xl font-medium transition ${style.buttonText}`}
             style={{ background: style.buttonBg }}
             autoFocus
           >

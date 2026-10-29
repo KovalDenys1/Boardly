@@ -145,7 +145,7 @@ export default function AvatarPicker({
                 key={id}
                 onClick={() => selectAvatar(id)}
                 disabled={saving}
-                className={`h-12 w-12 overflow-hidden rounded-full border-2 transition-all hover:scale-105 disabled:opacity-50 ${
+                className={`h-12 w-12 overflow-hidden rounded-full border-2 transition hover:scale-105 disabled:opacity-50 ${
                   isSelected
                     ? 'border-bd-lav-deep outline-solid outline-2 outline-bd-lav -outline-offset-4'
                     : 'border-transparent hover:border-bd-line'

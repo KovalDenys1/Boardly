@@ -133,7 +133,7 @@ const PREMIUM_PAGE_THEMES: Record<string, {
 }
 
 const primaryActionClassName =
-  'inline-flex w-full items-center justify-center rounded-2xl bg-bd-ink px-5 py-3 text-sm font-bold text-bd-bg shadow-[0_4px_0_var(--bd-coral)] transition-all hover:-translate-y-0.5 hover:shadow-[0_6px_0_var(--bd-coral)] disabled:cursor-not-allowed disabled:opacity-60 dark:bg-white'
+  'inline-flex w-full items-center justify-center rounded-2xl bg-bd-ink px-5 py-3 text-sm font-bold text-bd-bg shadow-[0_4px_0_var(--bd-coral)] transition hover:-translate-y-0.5 hover:shadow-[0_6px_0_var(--bd-coral)] disabled:cursor-not-allowed disabled:opacity-60 dark:bg-white'
 const secondaryActionClassName =
   'inline-flex w-full items-center justify-center rounded-2xl border-2 border-bd-ink bg-bd-card-warm px-5 py-3 text-sm font-bold text-bd-ink transition-colors hover:bg-bd-bg2'
 const quietActionClassName =
@@ -336,7 +336,7 @@ export default function PublicProfileView({
       return (
         <Link
           href="/profile"
-          className="inline-flex w-full max-w-xs items-center justify-center rounded-2xl border-2 border-bd-lav-deep bg-bd-lav px-5 py-3 text-sm font-bold text-bd-ink-on-accent shadow-[0_4px_0_var(--bd-lav-deep)] transition-all hover:-translate-y-0.5 hover:bg-bd-lav-mid hover:shadow-[0_6px_0_var(--bd-lav-deep)]"
+          className="inline-flex w-full max-w-xs items-center justify-center rounded-2xl border-2 border-bd-lav-deep bg-bd-lav px-5 py-3 text-sm font-bold text-bd-ink-on-accent shadow-[0_4px_0_var(--bd-lav-deep)] transition hover:-translate-y-0.5 hover:bg-bd-lav-mid hover:shadow-[0_6px_0_var(--bd-lav-deep)]"
         >
           {t('profile.publicProfile.goToOwnProfile')}
         </Link>
@@ -691,7 +691,7 @@ export default function PublicProfileView({
                         onClick={() => void handleCopyProfileLink()}
                         disabled={copiedProfileLink}
                         aria-label={copiedProfileLink ? t('profile.publicProfile.linkCopied') : t('profile.publicProfile.copyLink')}
-                        className="mt-4 inline-flex items-center justify-center gap-2 rounded-2xl border-2 border-bd-lav-deep bg-bd-lav px-4 py-3 text-sm font-bold text-bd-ink-on-accent shadow-[0_4px_0_var(--bd-lav-deep)] transition-all hover:-translate-y-0.5 hover:bg-bd-lav-mid hover:shadow-[0_6px_0_var(--bd-lav-deep)] disabled:cursor-default disabled:opacity-90"
+                        className="mt-4 inline-flex items-center justify-center gap-2 rounded-2xl border-2 border-bd-lav-deep bg-bd-lav px-4 py-3 text-sm font-bold text-bd-ink-on-accent shadow-[0_4px_0_var(--bd-lav-deep)] transition hover:-translate-y-0.5 hover:bg-bd-lav-mid hover:shadow-[0_6px_0_var(--bd-lav-deep)] disabled:cursor-default disabled:opacity-90"
                       >
                         {copiedProfileLink ? (
                           <>

@@ -1222,7 +1222,7 @@ input:focus, select:focus, textarea:focus {
 }
 
 .dice {
-  @apply w-16 h-16 border-2 rounded-lg flex items-center justify-center text-2xl font-bold cursor-pointer transition-all;
+  @apply w-16 h-16 border-2 rounded-lg flex items-center justify-center text-2xl font-bold cursor-pointer transition;
   background: var(--bd-input-bg);
   border-color: var(--bd-ink);
   color: var(--bd-ink);
@@ -1238,7 +1238,7 @@ input:focus, select:focus, textarea:focus {
 }
 
 .btn {
-  @apply px-4 py-2 rounded-lg font-semibold transition-all duration-200 transform active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100 focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-bd-lav-deep focus-visible:outline-hidden;
+  @apply px-4 py-2 rounded-lg font-semibold transition duration-200 transform active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100 focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-bd-lav-deep focus-visible:outline-hidden;
 }
 
 .btn-primary {
@@ -1264,14 +1264,14 @@ input:focus, select:focus, textarea:focus {
 }
 
 .card {
-  @apply rounded-lg shadow-lg p-4 sm:p-6 transition-all duration-200 hover:shadow-xl;
+  @apply rounded-lg shadow-lg p-4 sm:p-6 transition duration-200 hover:shadow-xl;
   background: var(--bd-card-warm);
   border: 1.5px solid var(--bd-line);
   color: var(--bd-ink);
 }
 
 .input {
-  @apply w-full px-4 py-3 rounded-lg focus:ring-2 focus:ring-inset focus:ring-bd-lav-deep focus:border-transparent transition-all;
+  @apply w-full px-4 py-3 rounded-lg focus:ring-2 focus:ring-inset focus:ring-bd-lav-deep focus:border-transparent transition;
   border: 1px solid var(--bd-input-border);
   background: var(--bd-input-bg);
   color: var(--bd-ink);
@@ -1283,7 +1283,7 @@ input:focus, select:focus, textarea:focus {
 }
 
 .oauth-btn {
-  @apply w-full px-4 py-3 rounded-lg font-semibold transition-all flex items-center justify-center gap-2 border-2;
+  @apply w-full px-4 py-3 rounded-lg font-semibold transition flex items-center justify-center gap-2 border-2;
 }
 
 .oauth-btn-google {

@@ -75,7 +75,7 @@ function GuideCard({ slug, title, description, icon, readTime, accent }: {
   return (
     <Link
       href={`/guides/${slug}`}
-      className="bd-card group flex flex-col gap-4 p-5 transition-all hover:-translate-y-0.5"
+      className="bd-card group flex flex-col gap-4 p-5 transition hover:-translate-y-0.5"
     >
       <div className="flex items-start gap-4">
         <div

@@ -1679,7 +1679,7 @@ export default function ProfilePage() {
           <button
             type="button"
             onDoubleClick={() => beginInlineEdit(field)}
-            className={`block w-full rounded-lg bg-transparent p-0 text-left transition-all duration-200 ease-out focus:outline-hidden ${
+            className={`block w-full rounded-lg bg-transparent p-0 text-left transition duration-200 ease-out focus:outline-hidden ${
               isEditing
                 ? 'pointer-events-none absolute inset-0 -translate-y-1 opacity-0'
                 : 'relative translate-y-0 opacity-100'
@@ -1690,7 +1690,7 @@ export default function ProfilePage() {
           </button>
 
           <div
-            className={`flex items-center gap-2 transition-all duration-200 ease-out ${
+            className={`flex items-center gap-2 transition duration-200 ease-out ${
               isEditing
                 ? 'relative translate-y-0 opacity-100'
                 : 'pointer-events-none absolute inset-0 translate-y-1 opacity-0'
@@ -1718,7 +1718,7 @@ export default function ProfilePage() {
               }}
               aria-label={field === 'email' ? 'inline-email-input' : 'inline-username-input'}
               tabIndex={isEditing ? 0 : -1}
-              className={`min-w-0 flex-1 border-0 border-b-2 bg-transparent px-0 pb-1 shadow-none outline-hidden transition-all duration-200 focus:ring-0 ${
+              className={`min-w-0 flex-1 border-0 border-b-2 bg-transparent px-0 pb-1 shadow-none outline-hidden transition duration-200 focus:ring-0 ${
                 editingStatus === 'available'
                   ? 'border-emerald-400'
                   : editingStatus === 'taken' || editingStatus === 'invalid' || editingStatus === 'error'
@@ -1773,7 +1773,7 @@ export default function ProfilePage() {
         )}
 
         <div
-          className={`overflow-hidden transition-all duration-200 ease-out ${
+          className={`overflow-hidden transition-[max-height,margin,opacity] duration-200 ease-out ${
             isEditing ? 'mt-1 max-h-10 opacity-100' : 'max-h-0 opacity-0'
           }`}
         >
@@ -1806,15 +1806,15 @@ export default function ProfilePage() {
   const settingsScopeBadgeClassName =
     'inline-flex w-fit rounded-full bg-bd-bg2 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-bd-ink-soft'
   const actionPrimaryButtonClassName =
-    'inline-flex items-center justify-center gap-2 rounded-2xl border-2 border-bd-lav-deep bg-bd-lav px-5 py-3 text-sm font-bold text-bd-ink-on-accent shadow-[0_4px_0_var(--bd-lav-deep)] transition-all hover:-translate-y-0.5 hover:bg-bd-lav-mid hover:shadow-[0_6px_0_var(--bd-lav-deep)] disabled:cursor-not-allowed disabled:opacity-60'
+    'inline-flex items-center justify-center gap-2 rounded-2xl border-2 border-bd-lav-deep bg-bd-lav px-5 py-3 text-sm font-bold text-bd-ink-on-accent shadow-[0_4px_0_var(--bd-lav-deep)] transition hover:-translate-y-0.5 hover:bg-bd-lav-mid hover:shadow-[0_6px_0_var(--bd-lav-deep)] disabled:cursor-not-allowed disabled:opacity-60'
   const actionSecondaryButtonClassName =
-    'inline-flex items-center justify-center gap-2 rounded-2xl border-[1.5px] border-bd-line bg-bd-card-warm px-5 py-3 text-sm font-semibold text-bd-ink shadow-[0_3px_0_var(--bd-line)] transition-all hover:-translate-y-0.5 hover:bg-bd-bg2'
+    'inline-flex items-center justify-center gap-2 rounded-2xl border-[1.5px] border-bd-line bg-bd-card-warm px-5 py-3 text-sm font-semibold text-bd-ink shadow-[0_3px_0_var(--bd-line)] transition hover:-translate-y-0.5 hover:bg-bd-bg2'
   const actionDangerButtonClassName =
     'inline-flex items-center justify-center gap-2 rounded-2xl border border-bd-danger-border bg-bd-card-warm px-4 py-2.5 text-sm font-semibold text-bd-coral-text transition-colors hover:bg-bd-danger-bg dark:border-red-500/30 dark:text-red-300 dark:hover:bg-red-500/10'
   const profileSurfaceClassName =
     'rounded-3xl border border-bd-line bg-bd-bg p-5'
   const fieldInputClassName =
-    'w-full rounded-2xl border bg-bd-input-bg px-4 py-3 text-base text-bd-ink shadow-xs outline-hidden desk:text-sm transition-all focus:ring-2 focus:ring-inset focus:ring-bd-lav-deep'
+    'w-full rounded-2xl border bg-bd-input-bg px-4 py-3 text-base text-bd-ink shadow-xs outline-hidden desk:text-sm transition focus:ring-2 focus:ring-inset focus:ring-bd-lav-deep'
   const settingsSyncBadgeClassName =
     'inline-flex w-fit rounded-full bg-bd-lav/15 px-2.5 py-1 text-xs font-semibold text-bd-lav-text dark:text-bd-lav'
 
@@ -1897,7 +1897,7 @@ export default function ProfilePage() {
                       <button
                         type="button"
                         onClick={handleBackNavigation}
-                        className="group inline-flex items-center gap-2 rounded-xl px-3 py-1.5 text-sm font-semibold text-bd-ink-soft transition-all hover:bg-bd-bg2"
+                        className="group inline-flex items-center gap-2 rounded-xl px-3 py-1.5 text-sm font-semibold text-bd-ink-soft transition hover:bg-bd-bg2"
                       >
                         <span aria-hidden className="transition-transform group-hover:-translate-x-0.5">
                           ←
@@ -1951,7 +1951,7 @@ export default function ProfilePage() {
                               type="button"
                               onClick={handleResendVerification}
                               disabled={showResendVerification}
-                              className="inline-flex shrink-0 items-center justify-center rounded-xl bg-amber-500 px-3 py-2 text-xs font-semibold text-bd-ink-on-accent shadow-xs transition-all hover:bg-amber-600 hover:shadow-sm disabled:cursor-not-allowed disabled:opacity-60"
+                              className="inline-flex shrink-0 items-center justify-center rounded-xl bg-amber-500 px-3 py-2 text-xs font-semibold text-bd-ink-on-accent shadow-xs transition hover:bg-amber-600 hover:shadow-sm disabled:cursor-not-allowed disabled:opacity-60"
                             >
                               {showResendVerification
                                 ? t('common.loading')
@@ -1971,7 +1971,7 @@ export default function ProfilePage() {
                             type="button"
                             onClick={openPublicProfilePreview}
                             disabled={isPublicProfilePreviewTransitioning}
-                            className="group inline-flex items-center justify-center gap-2 rounded-2xl border-2 border-bd-lav-deep bg-bd-lav px-4 py-3 text-sm font-bold text-bd-ink-on-accent shadow-[0_4px_0_var(--bd-lav-deep)] transition-all hover:-translate-y-0.5 hover:bg-bd-lav-mid hover:shadow-[0_6px_0_var(--bd-lav-deep)] disabled:cursor-not-allowed disabled:opacity-70 dark:border-bd-lav-mid dark:bg-bd-lav dark:text-bd-ink-on-accent"
+                            className="group inline-flex items-center justify-center gap-2 rounded-2xl border-2 border-bd-lav-deep bg-bd-lav px-4 py-3 text-sm font-bold text-bd-ink-on-accent shadow-[0_4px_0_var(--bd-lav-deep)] transition hover:-translate-y-0.5 hover:bg-bd-lav-mid hover:shadow-[0_6px_0_var(--bd-lav-deep)] disabled:cursor-not-allowed disabled:opacity-70 dark:border-bd-lav-mid dark:bg-bd-lav dark:text-bd-ink-on-accent"
                           >
                             <span>{t('profile.publicProfile.viewOwn')}</span>
                             <span aria-hidden className="transition-transform group-hover:translate-x-0.5">
@@ -2030,7 +2030,7 @@ export default function ProfilePage() {
                           )}
                         </>
                       )
-                      const baseClass = 'group relative overflow-hidden rounded-3xl border-[1.5px] border-bd-line bg-bd-bg p-5 shadow-bd-soft transition-all hover:-translate-y-0.5'
+                      const baseClass = 'group relative overflow-hidden rounded-3xl border-[1.5px] border-bd-line bg-bd-bg p-5 shadow-bd-soft transition hover:-translate-y-0.5'
                       return card.onClick ? (
                         <button
                           key={card.id}
@@ -2124,7 +2124,7 @@ export default function ProfilePage() {
                           type="button"
                           onClick={handleResendVerification}
                           disabled={showResendVerification}
-                          className="mt-3 inline-flex items-center gap-1.5 rounded-xl bg-amber-500 px-4 py-2 text-xs font-semibold text-bd-ink-on-accent shadow-xs transition-all hover:bg-amber-600 hover:shadow-sm disabled:opacity-50 sm:text-sm"
+                          className="mt-3 inline-flex items-center gap-1.5 rounded-xl bg-amber-500 px-4 py-2 text-xs font-semibold text-bd-ink-on-accent shadow-xs transition hover:bg-amber-600 hover:shadow-sm disabled:opacity-50 sm:text-sm"
                         >
                           {showResendVerification ? t('profile.sending') : t('profile.verificationBanner.resend')}
                         </button>
@@ -2790,7 +2790,7 @@ export default function ProfilePage() {
                               }
                               disabled={accountPreferencesSaving || !accountPreferencesLoaded}
                               aria-pressed={accountPreferencesLoaded && accountPreferences.profileVisibility === option.value}
-                              className={`rounded-2xl border px-4 py-3 text-left transition-all disabled:cursor-not-allowed ${
+                              className={`rounded-2xl border px-4 py-3 text-left transition disabled:cursor-not-allowed ${
                                 accountPreferencesLoaded && accountPreferences.profileVisibility === option.value
                                   ? 'border-bd-lav-deep bg-bd-lav/15 text-bd-lav-text shadow-xs dark:border-bd-lav dark:bg-bd-lav/15 dark:text-bd-lav'
                                   : 'border-bd-line bg-bd-card-warm text-bd-ink-soft hover:bg-bd-bg2'
@@ -3007,7 +3007,7 @@ export default function ProfilePage() {
                           type="button"
                           onClick={() => void handleCheckout()}
                           disabled={premiumActionLoading}
-                          className="inline-flex items-center gap-2 rounded-xl bg-amber-500 px-5 py-2.5 text-sm font-bold text-bd-ink-on-accent shadow-[0_3px_0_#d97706] transition-all hover:-translate-y-px hover:bg-amber-600 hover:shadow-[0_4px_0_#d97706] active:scale-95 disabled:cursor-not-allowed disabled:opacity-60"
+                          className="inline-flex items-center gap-2 rounded-xl bg-amber-500 px-5 py-2.5 text-sm font-bold text-bd-ink-on-accent shadow-[0_3px_0_#d97706] transition hover:-translate-y-px hover:bg-amber-600 hover:shadow-[0_4px_0_#d97706] active:scale-95 disabled:cursor-not-allowed disabled:opacity-60"
                         >
                           {premiumActionLoading ? (
                             <>
@@ -3058,7 +3058,7 @@ export default function ProfilePage() {
                       type="button"
                       disabled={customizeSaving}
                       onClick={() => void handleSaveCustomization({ bio: profileBio })}
-                      className="inline-flex items-center gap-1.5 rounded-xl border-2 border-bd-lav-deep bg-bd-lav px-3 py-1.5 text-xs font-bold text-bd-ink-on-accent shadow-[0_3px_0_var(--bd-lav-deep)] transition-all hover:-translate-y-px hover:bg-bd-lav-mid hover:shadow-[0_4px_0_var(--bd-lav-deep)] disabled:cursor-not-allowed disabled:opacity-50"
+                      className="inline-flex items-center gap-1.5 rounded-xl border-2 border-bd-lav-deep bg-bd-lav px-3 py-1.5 text-xs font-bold text-bd-ink-on-accent shadow-[0_3px_0_var(--bd-lav-deep)] transition hover:-translate-y-px hover:bg-bd-lav-mid hover:shadow-[0_4px_0_var(--bd-lav-deep)] disabled:cursor-not-allowed disabled:opacity-50"
                     >
                       {customizeSaving ? (
                         <>

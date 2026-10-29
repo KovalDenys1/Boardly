@@ -46,7 +46,7 @@ export default function LobbyFilters({ filters, onFiltersChange, embedded = fals
   }, [hasActiveFilters])
 
   const chip = (active: boolean) =>
-    `bd-chip cursor-pointer px-3.5 py-1.5 text-sm transition-all ${
+    `bd-chip cursor-pointer px-3.5 py-1.5 text-sm transition ${
       active ? 'border-bd-ink bg-bd-ink text-bd-bg' : 'hover:border-bd-ink hover:bg-bd-card-warm'
     }`
 
@@ -99,7 +99,7 @@ export default function LobbyFilters({ filters, onFiltersChange, embedded = fals
           )}
           <button
             onClick={() => setShowFilters(!showFilters)}
-            className={`bd-chip flex cursor-pointer items-center gap-2 px-4 py-2.5 text-sm transition-all ${
+            className={`bd-chip flex cursor-pointer items-center gap-2 px-4 py-2.5 text-sm transition ${
               showFilters ? 'border-bd-ink bg-bd-ink text-bd-bg' : 'hover:border-bd-ink hover:bg-bd-card-warm'
             }`}
           >
@@ -163,7 +163,7 @@ export default function LobbyFilters({ filters, onFiltersChange, embedded = fals
                 ))}
                 <button
                   onClick={() => handleFilterChange('sortOrder', filters.sortOrder === 'asc' ? 'desc' : 'asc')}
-                  className="bd-chip flex h-9 w-9 cursor-pointer items-center justify-center text-base transition-all hover:border-bd-ink hover:bg-bd-card-warm"
+                  className="bd-chip flex h-9 w-9 cursor-pointer items-center justify-center text-base transition hover:border-bd-ink hover:bg-bd-card-warm"
                   title={filters.sortOrder === 'asc' ? t('lobby.sort.asc') : t('lobby.sort.desc')}
                 >
                   {filters.sortOrder === 'asc' ? '↑' : '↓'}

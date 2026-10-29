@@ -219,7 +219,7 @@ function GamesCatalog({ games: catalogGames, filters, onFiltersChange }: GamesCa
               const href = detailHref(game)
               const isAvailable = game.status === 'available'
               const isLinked = isAvailable && href !== null
-              const cardClass = `bd-card relative flex flex-col gap-3 overflow-hidden p-6 transition-all ${
+              const cardClass = `bd-card relative flex flex-col gap-3 overflow-hidden p-6 transition ${
                 isLinked ? 'cursor-pointer hover:-translate-y-0.5' : 'cursor-default opacity-[0.72]'
               }`
               const card = (

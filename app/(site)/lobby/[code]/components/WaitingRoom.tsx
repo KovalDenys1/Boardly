@@ -156,7 +156,7 @@ export default function WaitingRoom({
             {isBot && canManageBots && onKickBot && (
               <button
                 onClick={() => onKickBot(p.id)}
-                className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-xs font-bold text-bd-ink-muted transition-all hover:bg-bd-coral/15 hover:text-bd-coral-text"
+                className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-xs font-bold text-bd-ink-muted transition hover:bg-bd-coral/15 hover:text-bd-coral-text"
                 title={t('game.ui.removeBot')}
               >
                 <Icon name="close" size={14} />
@@ -166,7 +166,7 @@ export default function WaitingRoom({
             {!isBot && !isCurrentUser && canKickPlayers && onKickPlayer && (
               <button
                 onClick={(e) => { e.stopPropagation(); onKickPlayer(p.id) }}
-                className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-xs font-bold text-bd-ink-muted transition-all hover:bg-bd-coral/15 hover:text-bd-coral-text"
+                className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-xs font-bold text-bd-ink-muted transition hover:bg-bd-coral/15 hover:text-bd-coral-text"
                 title={t('game.ui.kickPlayer')}
               >
                 <Icon name="close" size={14} />

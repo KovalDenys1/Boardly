@@ -95,3 +95,18 @@ export function tokenHexShadowLines(src: string, tokenHex: Set<string>): number[
   })
   return hits
 }
+
+const TRANSITION_ALL = /(?<![\w-])(?:[a-z0-9-]+:)*transition-all(?![\w-])/
+
+/**
+ * 1-based lines using `transition-all` (#1457 S21). v4's `transition` covers colour, shadow, opacity
+ * and transform; `all` also animates width, height and margins, which the motion rules forbid. An
+ * animation that does need a layout property names it: `transition-[width]`.
+ */
+export function transitionAllLines(src: string): number[] {
+  const hits: number[] = []
+  src.split('\n').forEach((line, i) => {
+    if (TRANSITION_ALL.test(line)) hits.push(i + 1)
+  })
+  return hits
+}

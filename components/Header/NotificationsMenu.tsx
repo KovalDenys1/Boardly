@@ -356,7 +356,7 @@ export function NotificationsMenu() {
                     return (
                       <div
                         key={item.id}
-                        className={`group relative rounded-2xl border transition-all hover:-translate-y-px hover:shadow-[0_4px_14px_rgba(31,27,22,0.08)] ${
+                        className={`group relative rounded-2xl border transition hover:-translate-y-px hover:shadow-[0_4px_14px_rgba(31,27,22,0.08)] ${
                           item.readAt
                             ? 'border-bd-line bg-bd-card-warm'
                             : toneClass

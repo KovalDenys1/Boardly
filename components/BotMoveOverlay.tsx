@@ -143,7 +143,7 @@ export default function BotMoveOverlay({
                   return (
                     <div
                       key={index}
-                      className="rounded-lg shadow-lg flex items-center justify-center font-bold transition-all"
+                      className="rounded-lg shadow-lg flex items-center justify-center font-bold transition"
                       style={{
                         width: `clamp(40px, 4vw, 60px)`,
                         height: `clamp(40px, 4vw, 60px)`,
@@ -254,7 +254,7 @@ export default function BotMoveOverlay({
             style={{ height: `clamp(6px, 0.6vh, 10px)`, background: 'var(--bd-line)' }}
           >
             <div
-              className="rounded-full transition-all duration-500"
+              className="rounded-full transition-[width] duration-500"
               style={{
                 width: `${((currentStepIndex + 1) / steps.length) * 100}%`,
                 height: `clamp(6px, 0.6vh, 10px)`,

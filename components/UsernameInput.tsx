@@ -142,7 +142,7 @@ export default function UsernameInput({
           type="text"
           required={required}
           disabled={disabled}
-          className={`w-full rounded-2xl border bg-bd-input-bg px-4 py-3 pr-10 text-base text-bd-ink shadow-xs outline-hidden transition-all placeholder:text-bd-ink-muted desk:text-sm ${
+          className={`w-full rounded-2xl border bg-bd-input-bg px-4 py-3 pr-10 text-base text-bd-ink shadow-xs outline-hidden transition placeholder:text-bd-ink-muted desk:text-sm ${
             status === 'available'
               ? 'border-emerald-400 focus:ring-2 focus:ring-inset focus:ring-bd-lav-deep'
               : status === 'taken' || status === 'invalid'

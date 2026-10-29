@@ -327,7 +327,7 @@ export default function YahtzeeResults({
               return (
                 <div
                   key={player.playerId}
-                  className={`rounded-[22px] border p-3 transition-all sm:p-4 ${getPlacementCardClass(player.rank)} ${
+                  className={`rounded-[22px] border p-3 transition sm:p-4 ${getPlacementCardClass(player.rank)} ${
                     isCurrentUser ? 'ring-2 ring-inset ring-bd-sky' : ''
                   }`}
                   style={{

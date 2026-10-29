@@ -178,7 +178,7 @@ function LeaderboardPageContent({ initial }: { initial: LeaderboardPage | null }
                   <button
                     key={p}
                     onClick={() => setPeriod(p)}
-                    className={`bd-chip px-4 py-2 text-sm transition-all ${
+                    className={`bd-chip px-4 py-2 text-sm transition ${
                       period === p ? 'border-bd-ink bg-bd-ink text-bd-bg' : 'hover:border-bd-ink hover:bg-bd-card-warm'
                     }`}
                   >
@@ -194,7 +194,7 @@ function LeaderboardPageContent({ initial }: { initial: LeaderboardPage | null }
                     aria-haspopup="listbox"
                     aria-expanded={gameMenuOpen}
                     onClick={() => setGameMenuOpen((open) => !open)}
-                    className={`flex w-full min-w-64 items-center justify-between gap-4 rounded-2xl border-2 bg-bd-card-warm px-4 py-3 text-left shadow-[0_4px_0_var(--bd-line)] transition-all sm:w-auto ${
+                    className={`flex w-full min-w-64 items-center justify-between gap-4 rounded-2xl border-2 bg-bd-card-warm px-4 py-3 text-left shadow-[0_4px_0_var(--bd-line)] transition sm:w-auto ${
                       gameMenuOpen
                         ? 'border-bd-ink shadow-[0_5px_0_var(--bd-ink)]'
                         : 'border-bd-line hover:border-bd-ink hover:shadow-[0_5px_0_var(--bd-ink)]'

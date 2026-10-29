@@ -255,7 +255,7 @@ export default function FriendsListModal({
                     <button
                       key={friend.id}
                       onClick={() => toggleFriend(friend.id)}
-                      className="w-full flex items-center gap-3 p-3 rounded-xl transition-all"
+                      className="w-full flex items-center gap-3 p-3 rounded-xl transition"
                       style={{
                         border: isSelected ? '2px solid var(--bd-sun)' : '1.5px solid var(--bd-line)',
                         background: isSelected ? '#FFC44D18' : 'var(--bd-bg)',

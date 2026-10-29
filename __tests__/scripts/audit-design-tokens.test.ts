@@ -1,6 +1,6 @@
 import { existsSync, readdirSync, readFileSync, statSync } from 'fs'
 import path from 'path'
-import { accentTextLines, colourUtilities, focusColourLines, tokenHexShadowLines, tokenHexValues, varShorthandLines } from '../../scripts/design-token-rules'
+import { accentTextLines, colourUtilities, focusColourLines, tokenHexShadowLines, tokenHexValues, transitionAllLines, varShorthandLines } from '../../scripts/design-token-rules'
 
 const globalsCss = readFileSync(path.join(__dirname, '..', '..', 'app', 'globals.css'), 'utf8')
 
@@ -130,6 +130,24 @@ describe('preflight defaults and sources', () => {
   })
 })
 
+describe('transition-all', () => {
+  it.each([
+    ['a class', '<button className="rounded-xl transition-all duration-200">'],
+    ['a variant', '<div className="md:transition-all">'],
+    ['an @apply', '  @apply px-4 py-2 transition-all duration-200;'],
+  ])('flags %s', (_label, line) => {
+    expect(transitionAllLines(line)).toEqual([1])
+  })
+
+  it('leaves transition, a property list and a longer name alone', () => {
+    expect(transitionAllLines('<div className="transition transition-[width] transition-colors transition-all-x">')).toEqual([])
+  })
+
+  it('globals.css applies no transition-all', () => {
+    expect(transitionAllLines(globalsCss)).toEqual([])
+  })
+})
+
 function scan(rule: (src: string) => number[]): string[] {
   const root = path.join(__dirname, '..', '..')
   const found: string[] = []
@@ -156,6 +174,10 @@ describe('the app and components', () => {
   it('draw shadows in a token colour through its variable', () => {
     const tokenHex = tokenHexValues(globalsCss)
     expect(scan((src) => tokenHexShadowLines(src, tokenHex)).filter((at) => !at.startsWith('app/root-document.tsx'))).toEqual([])
+  })
+
+  it('name what they transition instead of transition-all, which reaches layout properties', () => {
+    expect(scan(transitionAllLines)).toEqual([])
   })
 
   it('spell a colour with a utility as that utility', () => {
