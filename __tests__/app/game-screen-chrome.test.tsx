@@ -25,11 +25,13 @@ import { YahtzeeGame } from '@/lib/games/yahtzee-game'
 import { fetchWithGuest } from '@/lib/fetch-with-guest'
 
 /**
- * #1566: every game screen reads the same. Each game is rendered as a player
- * sees it, in English, and asked three things – one h1 naming the game, a status
- * line in the one grammar "<whose turn>: <what to do>", and the sound control in
- * the header's actions. Only a viewer who can act is told what to do; another
- * player's turn, and anything a spectator reads, says what is happening.
+ * #1566 and #1577: every game screen reads the same. Each game is rendered as a
+ * player sees it, in English, and asked three things – one h1 naming the game,
+ * a status line in the one grammar "<whose turn>: <what to do>", and the sound
+ * control in the header's actions – plus Yahtzee below 1024px on the shared
+ * header instead of its own top bar. Only a viewer who can act is told what to
+ * do; another player's turn, and anything a spectator reads, says what is
+ * happening.
  */
 
 let mockViewerId = 'user-1'
@@ -359,7 +361,7 @@ describe.each(GAMES.map((game) => [game.name, Object.keys(game.lines).join(' / '
   })
 })
 
-describe('Yahtzee below 1024px', () => {
+describe('Yahtzee below 1024px uses the one header (#1577)', () => {
   jest.setTimeout(15000)
 
   function yahtzeeResponse(playerCount: number) {
@@ -382,6 +384,30 @@ describe('Yahtzee below 1024px', () => {
     await waitFor(() => expect(view.container.querySelector('.yahtzee-screen')).not.toBeNull(), { timeout: 8000 })
     return view
   }
+
+  it.each(['mobile', 'landscape'] as const)('renders GameScoreboardHeader and no top bar of its own (%s)', async (layout) => {
+    mockLayout = layout
+    const { container } = await mountYahtzee(2)
+    const header = container.querySelector('.yahtzee-screen .game-header') as HTMLElement
+    expect(header).not.toBeNull()
+    expect(container.querySelector('.yz-topbar')).toBeNull()
+    expect(container.querySelector('.yz-pills')).toBeNull()
+    expect(container.querySelector('.yz-sound')).toBeNull()
+    expect(within(header.querySelector('.game-header__actions') as HTMLElement).getByRole('button', { name: 'Sound' })).toBeTruthy()
+    expect(within(header.querySelector('.game-header__actions') as HTMLElement).getByRole('button', { name: 'Leave' })).toBeTruthy()
+  })
+
+  it.each([2, 4])('keeps every player\'s total in the header\'s player row with %i players', async (count) => {
+    mockLayout = 'mobile'
+    const { container } = await mountYahtzee(count)
+    const header = container.querySelector('.yahtzee-screen .game-header') as HTMLElement
+    const cards = header.querySelectorAll('.game-player-card')
+    expect(cards).toHaveLength(count)
+    NAMES.slice(0, count).forEach((name, index) => {
+      expect(cards[index].textContent).toContain(name)
+      expect(cards[index].textContent).toContain(`${(index + 1) * 10} pts`)
+    })
+  })
 
   it('has one h1 naming the game and the shared status line', async () => {
     mockLayout = 'mobile'

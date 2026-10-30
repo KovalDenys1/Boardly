@@ -2749,6 +2749,42 @@ a.game-header__menu-item { text-decoration: none; }
   .game-status-spectator .game-status-meta,
   .game-status-spectator .game-status-spectating { margin-top: 4px; }
 }
+.yahtzee-top-status-bar {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 8px 12px 0;
+}
+.yz-scoreboard-score.yz-scoreboard-score--compact { font-size: 22px; }
+.yz-subline-score { display: inline-block; }
+.yz-seat-points-compact { display: none; }
+@container game-scoreboard-cell (max-width: 109px) {
+  .yz-scoreboard-card .game-scoreboard-player > .game-player-card .game-player-subline { display: block; margin-top: 0; }
+  .yz-scoreboard-card .game-scoreboard-player > .game-player-card .game-player-subline .bd-chip { display: none; }
+}
+@container game-scoreboard-cell (max-width: 63px) {
+  .yz-scoreboard-card .game-scoreboard-player > .game-player-card { gap: 2px; }
+  .yz-scoreboard-card .game-scoreboard-player > .game-player-card .game-player-identity {
+    position: static;
+    width: auto;
+    height: auto;
+    overflow: visible;
+    clip: auto;
+  }
+  .yz-scoreboard-card .game-scoreboard-player > .game-player-card .game-player-name-row,
+  .yz-scoreboard-card .yz-seat-points {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+  .yz-scoreboard-card .yz-seat-points-compact { display: inline; }
+}
+@media (max-width: 1023px) and (orientation: landscape) {
+  .yahtzee-landscape-side .yz-scoreboard-card .game-scoreboard-player .game-player-subline { display: block; }
+}
 /* Every seat on one equal track (#1577): the player whose turn it is keeps their
    seat and is marked by the active plate, so nothing moves when the turn passes. */
 .game-scoreboard-players {
@@ -3851,72 +3887,6 @@ a.game-header__menu-item { text-decoration: none; }
   from { opacity: 0; transform: translateY(4px); }
   to { opacity: 1; transform: none; }
 }
-
-.yz-pills {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  min-width: 0;
-  flex: 1 1 auto;
-  margin: 0;
-  padding: 0 16px 0 0;
-  list-style: none;
-  overflow-x: auto;
-  scrollbar-width: none;
-  -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 16px), transparent 100%);
-  mask-image: linear-gradient(to right, #000 calc(100% - 16px), transparent 100%);
-}
-.yz-pills::-webkit-scrollbar { display: none; }
-.yz-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  flex-shrink: 0;
-  min-height: 34px;
-  padding: 0 10px;
-  border-radius: 999px;
-  border: 1.5px solid var(--bd-line);
-  background: var(--bd-card);
-  color: var(--bd-ink);
-  font-size: 12px;
-  font-weight: 700;
-  white-space: nowrap;
-  transition-property: background-color, border-color;
-  transition-duration: var(--bd-dur);
-  transition-timing-function: var(--bd-ease-out);
-}
-.yz-pill--current { border-color: var(--bd-ink); background: color-mix(in srgb, var(--bd-sun) 26%, var(--bd-card)); }
-button.yz-pill { font: inherit; font-size: 12px; font-weight: 700; cursor: pointer; -webkit-tap-highlight-color: transparent; }
-@media (hover: hover) {
-  button.yz-pill:hover { border-color: var(--bd-ink); }
-}
-button.yz-pill:active { scale: 0.96; }
-button.yz-pill:focus-visible { outline: 3px solid var(--bd-lav-deep); outline-offset: -3px; }
-.yz-pill__name { max-width: 8ch; overflow: hidden; text-overflow: ellipsis; }
-.yz-pill__score { font-family: var(--bd-font-display); font-weight: 800; font-size: 14px; }
-.yz-pill__turn {
-  width: 7px; height: 7px; border-radius: 999px; background: var(--bd-coral); flex-shrink: 0;
-  opacity: 0; transform: scale(0.4);
-  transition-property: opacity, transform;
-  transition-duration: var(--bd-dur);
-  transition-timing-function: var(--bd-ease-spring);
-}
-.yz-pill--current .yz-pill__turn { opacity: 1; transform: none; }
-
-.yz-topbar {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-shrink: 0;
-  padding: 8px 12px 0;
-}
-.yz-sound {
-  display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0;
-  width: 40px; height: 40px; border-radius: 12px;
-  border: 1.5px solid var(--bd-line); background: var(--bd-card); color: var(--bd-ink);
-}
-.yz-sound:focus-visible { outline: 3px solid var(--bd-lav-deep); outline-offset: -3px; }
-.yz-status { flex-shrink: 0; padding: 8px 12px 0; }
 
 .yz-mobile {
   flex: 1 1 auto;
@@ -5504,8 +5474,6 @@ html.dark .liars-seat { background: var(--bd-bg2); }
   .yahtzee-top-status-bar { display: none !important; }
   .yahtzee-landscape-layout { padding: 0 10px 10px; }
   .yahtzee-landscape-layout .game-landscape-board > .yz-panel { flex: 1 1 auto; padding: 8px 0 0; }
-  .yahtzee-landscape-side .yz-topbar,
-  .yahtzee-landscape-side .yz-status { padding-left: 0; padding-right: 0; }
   .yahtzee-landscape-side .yz-tray { flex: 1 0 auto; display: flex; flex-direction: column; justify-content: center; padding: 8px 10px 10px; }
   .yahtzee-landscape-side .yz-tray__body { --yz-die: min(calc((100cqw - 4 * var(--yz-gap)) / 5), 46px); gap: 8px; }
 }

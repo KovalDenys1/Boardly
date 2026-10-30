@@ -7,11 +7,9 @@ import { useSession } from 'next-auth/react'
 import { YahtzeeGame, type YahtzeeGameData } from '@/lib/games/yahtzee-game'
 import { ConnectionStatus } from '@/components/ConnectionStatus'
 import { playCue, type PlayOptions } from '@/lib/sound-engine'
-import { toggleSoundEnabled } from '@/lib/sound-settings'
 import type { CueId } from '@/lib/sound-map'
 import { lobbySoundCues } from '@/lib/lobby-sound-cues'
 import { useSoundConsumer } from '@/hooks/useSoundConsumer'
-import { useSoundSettings } from '@/hooks/useSoundSettings'
 import { useConfetti } from '@/hooks/useConfetti'
 import { useRemoteRoll } from '@/hooks/useRemoteRoll'
 import type { RollHistoryEntry } from '@/components/RollHistory'
@@ -116,7 +114,6 @@ import { resolveDedicatedLobbyPageGameType } from '@/lib/lobby-page-routing'
 import { resolveLobbySurface } from '@/lib/lobby-surface'
 import { getLobbyTheme, getThemePageStyle } from '@/lib/lobby-themes'
 import LeaveIcon from '@/components/LeaveIcon'
-import GameLeaveButton from '@/components/game-chrome/GameLeaveButton'
 import GameStatusBanner, { type GameTurn } from '@/components/game-chrome/GameStatusBanner'
 import GamePageHeading from '@/components/game-chrome/GamePageHeading'
 import GameTabs from '@/components/game-chrome/GameTabs'
@@ -134,7 +131,6 @@ import { createStuckTurnRecovery, turnSignatureOf } from '@/lib/stuck-turn-recov
 
 const PlayerProfileCard = dynamic(() => import('@/components/PlayerProfileCard'))
 const YahtzeeScoreTable = dynamic(() => import('@/components/yahtzee/YahtzeeScoreTable'))
-const YahtzeeScorePills = dynamic(() => import('@/components/yahtzee/YahtzeeScorePills'))
 const YahtzeeDiceBar = dynamic(() => import('@/components/yahtzee/YahtzeeDiceBar'))
 // next/dynamic without `loading` has no Suspense boundary; these mount mid-game and must not hide the game while their chunk loads.
 const CelebrationBanner = dynamic(() => import('@/components/CelebrationBanner'), { loading: () => null })
@@ -210,7 +206,6 @@ function LobbyPageContent({
   const [loading, setLoading] = useState(true)
   const [startingGame, setStartingGame] = useState(false)
   const [error, setError] = useState('')
-  const { enabled: soundEnabled } = useSoundSettings()
   const { celebrate, fireworks } = useConfetti()
   const { t } = useTranslation()
 
@@ -1770,15 +1765,6 @@ function LobbyPageContent({
     )
   }
 
-  const toggleSound = () => {
-    const newState = toggleSoundEnabled()
-    if (newState) playCue('ui.select')
-    showToast.success(newState ? 'game.ui.soundOn' : 'game.ui.soundOff', undefined, undefined, {
-      ...BELOW_HEADER_TOAST,
-      duration: 2000,
-    })
-  }
-
   const yahtzeeView = gameEngine instanceof YahtzeeGame ? (() => {
     const viewerId = getCurrentUserId() || null
     const currentPlayerId = gameEngine.getCurrentPlayer()?.id ?? null
@@ -1796,13 +1782,6 @@ function LobbyPageContent({
         || enginePlayers.find((p) => p.id === playerId)?.name
         || t('game.ui.playerFallback')
     }
-    const pills = enginePlayers.map((p) => ({
-      id: p.id,
-      name: nameOf(p.id),
-      score: p.score || 0,
-      isBot: isBotPlayer(p.id),
-      profileId: p.id === viewerId ? null : reportablePlayerId(game?.players ?? [], p.id),
-    }))
     const canScore = myTurn && !isMoveInProgress && rollsLeft < 3
 
     const turn: GameTurn = myTurn && !isSpectator
@@ -1819,24 +1798,6 @@ function LobbyPageContent({
         barColor="var(--bd-sun)"
         isYourTurn={myTurn}
       />
-    )
-
-    const header = (
-      <>
-        <div className="yz-topbar">
-          <YahtzeeScorePills players={pills} viewerId={viewerId} currentTurnId={currentPlayerId} onOpenProfile={setProfileUserId} />
-          <button
-            type="button"
-            className="yz-sound"
-            onClick={toggleSound}
-            aria-label={soundEnabled ? t('game.ui.disableSound') : t('game.ui.enableSound')}
-          >
-            <Icon name={soundEnabled ? 'sound-on' : 'sound-off'} size={16} />
-          </button>
-          <GameLeaveButton label={t('game.ui.leave')} onClick={() => setShowLeaveConfirmModal(true)} />
-        </div>
-        <div className="yz-status">{statusBanner}</div>
-      </>
     )
 
     const diceBar = (
@@ -1899,7 +1860,10 @@ function LobbyPageContent({
               {isBotPlayer(playerId) && (
                 <span className="bd-chip bd-chip-lav" style={{ padding: '0 5px', fontSize: 9, marginRight: 4 }}>{t('game.ui.botBadge')}</span>
               )}
-              {t('yahtzee.ui.pointsShort', { count: score })}
+              <ScorePop value={score} className="yz-subline-score">
+                <span className="yz-seat-points">{t('yahtzee.ui.pointsShort', { count: score })}</span>
+                <span className="yz-seat-points-compact" aria-hidden="true">{score}</span>
+              </ScorePop>
             </>
           }
         />
@@ -1928,6 +1892,11 @@ function LobbyPageContent({
                 <div className="yz-scoreboard-meta">{t('yahtzee.ui.total')}</div>
               </>
             }
+            centerCompact={
+              <ScorePop value={`${scoreOf(0)}:${scoreOf(1)}`} className="yz-scoreboard-score yz-scoreboard-score--compact">
+                {scoreOf(0)}<span className="yz-scoreboard-score__sep">:</span>{scoreOf(1)}
+              </ScorePop>
+            }
             rightCard={playerCard(enginePlayers[1].id, 'right')}
           />
         ) : (
@@ -1944,7 +1913,7 @@ function LobbyPageContent({
       </div>
     )
 
-    return { header, statusBanner, diceBar, table, revertNotice, scoreboard, panel }
+    return { statusBanner, diceBar, table, revertNotice, scoreboard, panel }
   })() : null
 
   return (
@@ -2207,7 +2176,8 @@ function LobbyPageContent({
 
               {(gameLayout === null || gameLayout === 'mobile') && (
                 <div className="desk:hidden shrink-0 yahtzee-top-status-bar">
-                  {yahtzeeView?.header}
+                  {yahtzeeView?.scoreboard}
+                  {yahtzeeView?.statusBanner}
                 </div>
               )}
 
@@ -2269,7 +2239,8 @@ function LobbyPageContent({
                         <div className="yz-panel">{yahtzeeView?.table}</div>
                       </div>
                       <div className="game-landscape-side yahtzee-landscape-side">
-                        {yahtzeeView?.header}
+                        {yahtzeeView?.scoreboard}
+                        {yahtzeeView?.statusBanner}
                         {yahtzeeView?.revertNotice}
                         {yahtzeeView?.diceBar}
                       </div>
