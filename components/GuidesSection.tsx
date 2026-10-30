@@ -5,6 +5,7 @@ import { useTranslation } from '@/lib/i18n-helpers'
 import { getGuideCard } from '@/lib/guide-cards'
 import { ALL_GUIDES } from '@/lib/guides-catalog'
 import { useLocalizedHref, usePageLocale } from '@/lib/page-locale'
+import { guideLocaleFor } from '@/lib/seo-locales'
 import GameIcon from '@/components/GameIcon'
 import { Icon } from '@/components/icons'
 
@@ -19,7 +20,7 @@ import { Icon } from '@/components/icons'
  */
 export default function GuidesSection() {
   const { t } = useTranslation()
-  const locale = usePageLocale() ?? 'en'
+  const locale = guideLocaleFor(usePageLocale())
   const localize = useLocalizedHref()
 
   return (

@@ -20,7 +20,7 @@ function promoVideoText(locale: SeoLocale) {
   return { name: t('home.promoVideo.title'), description: t('home.promoVideo.label') }
 }
 
-/** The home page at /, /ru, /uk and /no; its structured data speaks the page's language. */
+/** The home page at / and under each language prefix; its structured data speaks the page's language. */
 export default async function HomePageView({ locale }: { locale: SeoLocale }) {
   // The FAQ quotes Premium's price: take it from Stripe like /premium does
   // (#1167), refreshed with the page's hourly revalidation.

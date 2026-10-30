@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import GameIcon from '@/components/GameIcon'
-import { localizeHref, type SeoLocale } from '@/lib/seo-locales'
+import { localizeHref, type GuideLocale } from '@/lib/seo-locales'
 
 export interface GuideGameCardMeta {
   gameId: string
@@ -27,7 +27,7 @@ export function GuideGameCards({
   meta: GuideGameCardMeta[]
   items: GuideGameCardCopy[]
   noteLabel: string
-  locale: SeoLocale
+  locale: GuideLocale
 }) {
   return (
     <div className="space-y-4">

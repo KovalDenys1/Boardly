@@ -8,12 +8,16 @@
 
 import { renderToString } from 'react-dom/server'
 import FaqSection from '@/components/HomePage/FaqSection'
+import DePageLocale from '@/components/i18n/DePageLocale'
+import EsPageLocale from '@/components/i18n/EsPageLocale'
 import NoPageLocale from '@/components/i18n/NoPageLocale'
 import RuPageLocale from '@/components/i18n/RuPageLocale'
 import UkPageLocale from '@/components/i18n/UkPageLocale'
 import { buildFaqFacts } from '@/lib/faq-facts'
 import { buildPromoVideoJsonLd, promoVideoFor } from '@/lib/promo-video'
+import de from '@/locales/de'
 import en from '@/locales/en'
+import es from '@/locales/es'
 import no from '@/locales/no'
 import ru from '@/locales/ru'
 import uk from '@/locales/uk'
@@ -58,6 +62,21 @@ describe('home FAQ schema language (#1394)', () => {
     expect(faqSchema(html).mainEntity[0].name).toBe(no.faq.q0.question)
   })
 
+  it('is German on /de and Spanish on /es (#1610)', () => {
+    const german = renderToString(
+      <DePageLocale>
+        <FaqSection facts={facts} />
+      </DePageLocale>
+    )
+    const spanish = renderToString(
+      <EsPageLocale>
+        <FaqSection facts={facts} />
+      </EsPageLocale>
+    )
+    expect(faqSchema(german).mainEntity[0].name).toBe(de.faq.q0.question)
+    expect(faqSchema(spanish).mainEntity[0].name).toBe(es.faq.q0.question)
+  })
+
   it('stays English on an unprefixed page', () => {
     expect(faqSchema(renderToString(<FaqSection facts={facts} />)).mainEntity[0].name).toBe(en.faq.q0.question)
   })
@@ -80,6 +99,19 @@ describe('home VideoObject language (#1394)', () => {
       inLanguage: 'nb',
       contentUrl: promoVideoFor('no').src,
       url: 'https://boardly.online/no',
+    })
+  })
+
+  it('names the German and Spanish cuts at the /de and /es URLs (#1610)', () => {
+    expect(buildPromoVideoJsonLd('de', { name: de.home.promoVideo.title, description: de.home.promoVideo.label })).toMatchObject({
+      inLanguage: 'de',
+      contentUrl: promoVideoFor('de').src,
+      url: 'https://boardly.online/de',
+    })
+    expect(buildPromoVideoJsonLd('es', { name: es.home.promoVideo.title, description: es.home.promoVideo.label })).toMatchObject({
+      inLanguage: 'es',
+      contentUrl: promoVideoFor('es').src,
+      url: 'https://boardly.online/es',
     })
   })
 

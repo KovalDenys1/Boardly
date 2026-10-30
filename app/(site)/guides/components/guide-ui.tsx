@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import type { SeoLocale } from '@/lib/seo-locales'
+import type { GuideLocale } from '@/lib/seo-locales'
 
 /**
  * The words around a guide and on the guides index, in the four languages the guides are
@@ -47,7 +47,7 @@ function slavicPlural(count: number, [one, few, many]: [string, string, string])
 /** "Alias-spill" is the site's Norwegian name; in running text it takes the definite form. */
 const norwegianDefinite = (game: string) => game.replace(/-spill$/, '-spillet')
 
-export const GUIDE_UI: Record<SeoLocale, GuideUi> = {
+export const GUIDE_UI: Record<GuideLocale, GuideUi> = {
   en: {
     dateLocale: 'en-GB',
     lastUpdated: (date) => <>Last updated {date}</>,

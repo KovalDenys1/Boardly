@@ -34,7 +34,7 @@ export function promoVideoFor(language: string | undefined): PromoVideo {
   return PROMO_VIDEOS[base] ?? PROMO_VIDEOS.en
 }
 
-/** The cut the prerendered page plays: English at /, the page's language at /ru, /uk and /no, named in that language. */
+/** The cut the prerendered page plays: English at /, the page's language under each language prefix, named in that language. */
 export function buildPromoVideoJsonLd(
   locale: SeoLocale = 'en',
   text: { name: string; description: string } = {

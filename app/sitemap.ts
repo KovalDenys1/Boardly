@@ -3,7 +3,7 @@ import { MetadataRoute } from 'next'
 import { getGuideCard } from '@/lib/guide-cards'
 import { ALL_GUIDES } from '@/lib/guides-catalog'
 import { getRouteUpdated, type DatedRoute } from '@/lib/route-dates'
-import { HREFLANG, SEO_LOCALES, isLocalizedPage, languageAlternates } from '@/lib/seo-locales'
+import { GUIDE_LOCALES, isLocalizedPage, languageAlternates, localizedPath, pageLocales } from '@/lib/seo-locales'
 
 const BASE = 'https://boardly.online'
 
@@ -23,19 +23,24 @@ function page(
   }
 }
 
-// A page with /ru, /uk and /no versions is listed once per language, each entry naming them all (#1394, #928).
+// A page with localized versions is listed once per language, each entry naming them all (#1394, #928, #1610).
 function withLanguageVersions(entry: MetadataRoute.Sitemap[number]): MetadataRoute.Sitemap {
   const path = entry.url.slice(BASE.length) || '/'
   if (!isLocalizedPage(path)) return [entry]
   const languages = languageAlternates(path)
-  return SEO_LOCALES.map((locale) => ({ ...entry, url: languages[HREFLANG[locale]], alternates: { languages } }))
+  return pageLocales(path).map((locale) => ({
+    ...entry,
+    url: `${BASE}${localizedPath(path, locale)}`,
+    alternates: { languages },
+  }))
 }
 
 // A guide's translations are written and updated on their own dates, so each version carries its own.
 function guideVersions(slug: string): MetadataRoute.Sitemap {
-  const languages = languageAlternates(`/guides/${slug}`)
-  return SEO_LOCALES.map((locale) => ({
-    url: languages[HREFLANG[locale]],
+  const path = `/guides/${slug}`
+  const languages = languageAlternates(path)
+  return GUIDE_LOCALES.map((locale) => ({
+    url: `${BASE}${localizedPath(path, locale)}`,
     lastModified: new Date(getGuideCard(slug, locale).updated),
     changeFrequency: 'monthly' as const,
     priority: 0.8,

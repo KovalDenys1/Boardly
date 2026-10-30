@@ -17,7 +17,7 @@ import { getCatalogEntryById } from '@/lib/game-catalog'
 import { buildGameMetadata, gameIdForSlug } from '@/lib/game-seo'
 import type { PrefixedLocale } from '@/lib/seo-locales'
 
-/** Every `/games/<slug>` page, for `app/ru/games/[game]`, `app/uk/games/[game]` and `app/no/games/[game]`. */
+/** Every `/games/<slug>` page, for `app/<locale>/games/[game]` under each language prefix. */
 const DETAIL_CONTENT: Record<string, ComponentType> = {
   alias: AliasDetailContent,
   checkers: CheckersDetailContent,

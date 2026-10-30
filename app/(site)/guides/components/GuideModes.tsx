@@ -1,4 +1,4 @@
-import type { SeoLocale } from '@/lib/seo-locales'
+import type { GuideLocale } from '@/lib/seo-locales'
 import { GuideRich } from './GuideRich'
 
 /** The "Playing on Boardly" list: a bold label per option, then a closing line that links the game page. */
@@ -10,7 +10,7 @@ export function GuideModes({
 }: {
   modes: { label: string; text: string }[]
   more: string
-  locale: SeoLocale
+  locale: GuideLocale
   linkClassName?: string
 }) {
   return (

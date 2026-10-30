@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import type { ReactNode } from 'react'
-import { localizeHref, type SeoLocale } from '@/lib/seo-locales'
+import { localizeHref, type GuideLocale } from '@/lib/seo-locales'
 
 const LINK = /\[([^\]]+)\]\(([^)\s]+)\)/g
 
@@ -18,7 +18,7 @@ export function GuideRich({
   linkClassName = GUIDE_LINK_CLASS,
 }: {
   text: string
-  locale: SeoLocale
+  locale: GuideLocale
   linkClassName?: string
 }) {
   const parts: ReactNode[] = []
@@ -43,7 +43,7 @@ export function GuideParagraph({
   linkClassName,
 }: {
   text: string
-  locale: SeoLocale
+  locale: GuideLocale
   className: string
   linkClassName?: string
 }) {
