@@ -140,7 +140,7 @@ export async function createGuestLobby(
   const turnTimer = options?.turnTimer ?? 60
   let host = hostOverride ?? readCachedGuest(role) ?? (await createGuest(request, baseURL))
 
-  for (let attempt = 0; attempt < 2; attempt += 1) {
+  for (let attempt = 0; attempt < 3; attempt += 1) {
     const res = await request.post(`${baseURL}/api/lobby`, {
       headers: { Origin: baseURL, 'X-Guest-Token': host.guestToken },
       data: {
@@ -157,6 +157,15 @@ export async function createGuestLobby(
       // The cached token has expired. Mint one and try again.
       forgetCachedGuest(role)
       host = await createGuest(request, baseURL)
+      continue
+    }
+
+    if (res.status() === 403 && (await res.json().catch(() => null))?.code === 'TERMS_REQUIRED') {
+      // A named lobby waits for the host's terms acceptance (#1482), as the create page asks for it.
+      const accepted = await request.post(`${baseURL}/api/user/accept-terms`, {
+        headers: { Origin: baseURL, 'X-Guest-Token': host.guestToken },
+      })
+      if (!accepted.ok()) throw new Error(`Could not accept the terms: ${accepted.status()}`)
       continue
     }
 
@@ -263,6 +272,13 @@ export async function contextForGuest(
  */
 export function enableSpectators(code: string): void {
   execFileSync('npx', ['tsx', path.join(__dirname, 'enable-spectators.ts'), code], {
+    cwd: path.join(__dirname, '..', '..'),
+    stdio: 'inherit',
+  })
+}
+
+export function sweepLobby(code: string): void {
+  execFileSync('npx', ['tsx', path.join(__dirname, 'sweep-lobby.ts'), code], {
     cwd: path.join(__dirname, '..', '..'),
     stdio: 'inherit',
   })

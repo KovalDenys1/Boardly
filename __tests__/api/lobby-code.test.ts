@@ -133,6 +133,15 @@ describe('GET /api/lobby/[code]', () => {
     expect(queryArgs.select.games.include.players.include.user.select.email).toBeUndefined()
   })
 
+  it('reads the creation date and pseudonymisation mark the reopen panel is decided by (#1594)', async () => {
+    mockPrisma.lobbies.findUnique.mockResolvedValue(mockLobby as any)
+
+    await GET(new NextRequest('http://localhost:3000/api/lobby/ABC123?includeFinished=true'), { params: { code: 'ABC123' } })
+
+    const queryArgs = mockPrisma.lobbies.findUnique.mock.calls[0][0] as any
+    expect(queryArgs.select).toEqual(expect.objectContaining({ isActive: true, createdAt: true, pseudonymisedAt: true }))
+  })
+
   it('should prioritize playing game when multiple active games exist', async () => {
     const lobbyWithMultipleGames = {
       ...mockLobby,

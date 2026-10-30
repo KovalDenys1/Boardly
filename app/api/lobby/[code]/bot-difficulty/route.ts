@@ -1,14 +1,20 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { apiLogger } from '@/lib/logger'
 import { getRequestAuthUser } from '@/lib/request-auth'
 import { broadcastToLobby } from '@/lib/supabase-server'
 import { normalizeBotDifficulty, getBotDisplayName } from '@/lib/bot-profiles'
+import { rateLimit, rateLimitPresets } from '@/lib/rate-limit'
+
+const limiter = rateLimit(rateLimitPresets.api)
 
 export async function PATCH(
-  request: Request,
+  request: NextRequest,
   { params }: { params: Promise<{ code: string }> }
 ) {
+  const rateLimitResult = await limiter(request)
+  if (rateLimitResult) return rateLimitResult
+
   const log = apiLogger('PATCH /api/lobby/[code]/bot-difficulty')
   try {
     const requestUser = await getRequestAuthUser(request)

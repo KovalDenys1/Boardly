@@ -133,4 +133,9 @@ describe('buildOperationalEventRecord', () => {
     expect(SERVER_OPERATIONAL_EVENT_NAMES).toContain('guest_upgraded')
     expect(OPERATIONAL_EVENT_NAMES as readonly string[]).not.toContain('guest_upgraded')
   })
+
+  it('keeps lobby_reopened off the public beacon enum (#1594)', () => {
+    expect(SERVER_OPERATIONAL_EVENT_NAMES as readonly string[]).toContain('lobby_reopened')
+    expect(OPERATIONAL_EVENT_NAMES as readonly string[]).not.toContain('lobby_reopened')
+  })
 })

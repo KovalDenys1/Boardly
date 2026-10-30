@@ -626,6 +626,7 @@ export type InviteCopySource =
   | 'lobby_header_button'
   | 'result_overlay'
   | 'waiting_room_slot'
+  | 'table_reopened'
 
 /**
  * Someone sent an invite link out of the page (#920, extended by #927).

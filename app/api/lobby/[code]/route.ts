@@ -101,6 +101,7 @@ export async function GET(
         gameType: true,
         theme: true,
         createdAt: true,
+        pseudonymisedAt: true,
         creatorId: true,
         password: true,
         creator: {

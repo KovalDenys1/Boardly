@@ -56,6 +56,8 @@ export async function recordLobbyParticipation(params: {
   isGuest?: boolean
   /** Copied from the user at join, because the user row may not survive the week. */
   signupSource?: string | null
+  /** False when the row is not someone joining, such as an opener reopening a closed table. */
+  countsAsJoin?: boolean
 }): Promise<boolean> {
   let created: { joinedAt: Date } | null = null
   try {
@@ -99,7 +101,7 @@ export async function recordLobbyParticipation(params: {
     }
   }
 
-  if (created && !params.isBot) {
+  if (created && !params.isBot && params.countsAsJoin !== false) {
     await recordSecondHumanJoined({ ...params, joinedAt: created.joinedAt })
   }
 

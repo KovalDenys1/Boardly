@@ -22,7 +22,7 @@ import { Game, GamePlayer, GameUpdatePayload, PlayerJoinedPayload, GameStartedPa
 import type { BaseBotActionEvent, YahtzeeBotActionEvent } from '@/lib/bots'
 import { selectBestAvailableCategory, calculateScore, YahtzeeCategory, ALL_CATEGORIES, getActiveCategories } from '@/lib/yahtzee'
 import { GameEngine } from '@/lib/game-engine'
-import { DEFAULT_GAME_TYPE } from '@/lib/game-catalog'
+import { DEFAULT_GAME_TYPE, getAvailableGameTypes } from '@/lib/game-catalog'
 import { canCreateLobbyForGameType, getGameLobbiesRoute, getLobbyCreateRoute } from '@/lib/public-game-access'
 import { restoreGameEngineClient } from '@/lib/restore-game-engine-client'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
@@ -101,6 +101,7 @@ import { useShellGameSounds } from './hooks/useShellGameSounds'
 import { useSpectatorResultCue } from '@/hooks/useSpectatorResultCue'
 import { RESULT_REVEAL_DELAY_MS } from '@/lib/live-finish'
 import { LobbyPageErrorFallback, LobbyPageLoadingFallback } from './components/LobbyPageFallbacks'
+import ReopenTablePanel from './components/ReopenTablePanel'
 import { showToast } from '@/lib/i18n-toast'
 import { useGuest } from '@/contexts/GuestContext'
 import { fetchWithGuest } from '@/lib/fetch-with-guest'
@@ -108,7 +109,7 @@ import { getLobbyPlayerRequirements } from '@/lib/lobby-player-requirements'
 import { useLobbyRouteState } from './hooks/useLobbyRouteState'
 import { useLeaveLobby } from './hooks/useLeaveLobby'
 import type { BotDifficulty } from '@/lib/bot-profiles'
-import { isTerminalGameStatus, resolveLifecycleRedirectReason } from '@/lib/lobby-lifecycle'
+import { isTerminalGameStatus, resolveClosedLobbyOutcome, resolveLifecycleRedirectReason } from '@/lib/lobby-lifecycle'
 import { trackInviteOpened, trackLobbyLeaveRedirect } from '@/lib/analytics'
 import { parseInviteAttribution, readDocumentNavigation, stripInviteMarker } from '@/lib/invite-attribution'
 import { resolveDedicatedLobbyPageGameType } from '@/lib/lobby-page-routing'
@@ -125,6 +126,7 @@ import YahtzeeDesktopLayout from '@/components/yahtzee/YahtzeeDesktopLayout'
 import { reportablePlayerId } from '@/lib/reportable-player'
 import { useActiveGameLayout } from '@/hooks/useActiveGameLayout'
 import { useYahtzeeHoldHint } from '@/hooks/useYahtzeeHoldHint'
+import { rematchRefusalToastKey } from '@/hooks/useRematchSignal'
 import { isBotSeat } from '@/lib/bots/core/bot-helpers'
 import { MOBILE_MAX_MEDIA_QUERY } from '@/lib/responsive-tokens'
 import { createStuckTurnRecovery, turnSignatureOf } from '@/lib/stuck-turn-recovery'
@@ -186,7 +188,14 @@ const BELOW_HEADER_TOAST = { position: 'top-center', style: { marginTop: 'calc(v
 const LIFECYCLE_REDIRECT_FALLBACK_MS = 1600
 const WAITING_LOBBY_SYNC_INTERVAL_MS = 2000
 
-function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage?: (gameType: string) => void }) {
+function LobbyPageContent({
+  onSwitchToDedicatedPage,
+  reopened = false,
+}: {
+  onSwitchToDedicatedPage?: (gameType: string) => void
+  /** This viewer just reopened the table from its old link (#1594). */
+  reopened?: boolean
+}) {
   const router = useRouter()
   const params = useParams()
   const { data: session, status } = useSession()
@@ -1424,21 +1433,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
 
       const result = await response.json().catch(() => null)
       if (!response.ok) {
-        const translationKey =
-          typeof result?.translationKey === 'string' ? result.translationKey : null
-        const fallbackMessage =
-          (typeof result?.error === 'string' && result.error) || 'Failed to request rematch'
-
-        if (translationKey) {
-          showToast.error(translationKey, undefined, undefined, { id: 'rematch-request' })
-        } else {
-          showToast.error(
-            'toast.rematchRequestFailed',
-            undefined,
-            { message: fallbackMessage },
-            { id: 'rematch-request' }
-          )
-        }
+        showToast.error(rematchRefusalToastKey(response.status, result), undefined, undefined, { id: 'rematch-request' })
         return
       }
 
@@ -2071,6 +2066,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
                   onAddBot={canStartGame ? handleAddBot : undefined}
                   kickedPlayers={kickedPlayers}
                   onUnkickPlayer={isCreator ? handleUnkickPlayer : undefined}
+                  leadWithShare={reopened && !hasMultipleHumans}
                 />
               </div>
               {/* Chat - mobile only, inside card */}
@@ -2446,15 +2442,53 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
 
 export default function LobbyPage() {
   const params = useParams()
+  const router = useRouter()
   const { status } = useSession()
   const { isGuest, guestToken } = useGuest()
   const code = params.code as string
-  const { gameType, gameStatus, loading, handleGameStarted, handleGameReset } = useLobbyRouteState({
+  const {
+    gameType,
+    gameStatus,
+    lobby: routeLobby,
+    lastGame,
+    loading,
+    handleGameStarted,
+    handleGameReset,
+    refresh,
+  } = useLobbyRouteState({
     code,
     status,
     isGuest,
     guestToken,
   })
+  const [reopenedHere, setReopenedHere] = useState(false)
+
+  // A closed table's link offers to reopen it (#1594); past its window it leads to the game.
+  const closedGameAvailable = (getAvailableGameTypes() as string[]).includes(gameType as string)
+  const closedOutcome = React.useMemo(
+    () =>
+      resolveClosedLobbyOutcome({
+        gameStatus: lastGame?.status ?? null,
+        lobbyIsActive: routeLobby?.isActive,
+        createdAt: routeLobby?.createdAt as string | undefined,
+        pseudonymisedAt: routeLobby?.pseudonymisedAt as string | null | undefined,
+        gameAvailable: closedGameAvailable,
+      }),
+    [routeLobby, lastGame, closedGameAvailable]
+  )
+  const closedLobbyTarget =
+    (closedGameAvailable && getGameLobbiesRoute(gameType)?.replace(/\/lobbies$/, '')) || '/games'
+  const leaveClosedTable = useCallback(() => {
+    showToast.info('lobby.reopen.tooOld', undefined, undefined, { id: 'lobby-too-old' })
+    router.replace(closedLobbyTarget)
+  }, [closedLobbyTarget, router])
+  useEffect(() => {
+    if (closedOutcome === 'start_new') leaveClosedTable()
+  }, [closedOutcome, leaveClosedTable])
+  const handleTableOpen = useCallback((reopenedByViewer: boolean) => {
+    setReopenedHere(reopenedByViewer)
+    refresh()
+  }, [refresh])
   // Held here, not in LobbyPageContent: the dedicated game pages render instead of the shell.
   useSoundConsumer(lobbySoundCues(gameType))
 
@@ -2485,8 +2519,26 @@ export default function LobbyPage() {
     }
   }, [code])
 
-  if (loading) {
+  if (loading || closedOutcome === 'start_new') {
     return <LobbyPageLoadingFallback />
+  }
+
+  if (closedOutcome === 'reopen' && routeLobby) {
+    return (
+      <div className="bd-page bd-screen min-h-(--game-h)" style={getThemePageStyle(routeLobby.theme as string | undefined)}>
+        <div className="mx-auto flex min-h-(--game-h) max-w-7xl flex-col px-4 py-5 sm:px-6 sm:py-7 lg:px-8">
+          <div className="flex flex-1 items-center justify-center">
+            <ReopenTablePanel
+              lobby={routeLobby}
+              lastGame={lastGame}
+              viewerMode={status === 'authenticated' ? 'authenticated' : isGuest ? 'guest' : 'anonymous'}
+              onTableOpen={handleTableOpen}
+              onTooOld={leaveClosedTable}
+            />
+          </div>
+        </div>
+      </div>
+    )
   }
 
   // Route to dedicated pages only when the game is active or just finished.
@@ -2528,7 +2580,7 @@ export default function LobbyPage() {
   return (
     <ErrorBoundary fallback={<LobbyPageErrorFallback />}>
       <Suspense fallback={<LobbyPageLoadingFallback />}>
-        <LobbyPageContent onSwitchToDedicatedPage={handleGameStarted} />
+        <LobbyPageContent onSwitchToDedicatedPage={handleGameStarted} reopened={reopenedHere} />
       </Suspense>
     </ErrorBoundary>
   )

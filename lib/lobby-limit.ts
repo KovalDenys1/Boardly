@@ -49,8 +49,11 @@ export type LobbyLimitVerdict =
  * `cleanupStaleLobbiesAndGames`, and a player who gets sent back to a room they
  * no longer want can leave it from there.
  */
-export async function checkOpenLobbyLimit(creatorId: string): Promise<LobbyLimitVerdict> {
-  const existing = await prisma.lobbies.findFirst({
+export async function checkOpenLobbyLimit(
+  creatorId: string,
+  db: { lobbies: Pick<typeof prisma.lobbies, 'findFirst'> } = prisma
+): Promise<LobbyLimitVerdict> {
+  const existing = await db.lobbies.findFirst({
     where: {
       creatorId,
       // A deactivated lobby cannot be joined or returned to, so sending the creator there is

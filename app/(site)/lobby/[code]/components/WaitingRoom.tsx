@@ -37,6 +37,8 @@ interface WaitingRoomProps {
   /** Host-only; the list is not sent to anyone else. */
   kickedPlayers?: KickedPlayer[]
   onUnkickPlayer?: (userId: string) => void
+  /** Opens on the share button: the table was just reopened and the friend needs the link (#1594). */
+  leadWithShare?: boolean
 }
 
 export default function WaitingRoom({
@@ -53,6 +55,7 @@ export default function WaitingRoom({
   onAddBot,
   kickedPlayers,
   onUnkickPlayer,
+  leadWithShare = false,
 }: WaitingRoomProps) {
   const { t } = useTranslation()
   const shareInvite = useInviteShare(lobby?.code)
@@ -74,6 +77,28 @@ export default function WaitingRoom({
   // roster can take the slack instead of leaving it empty (#899).
   return (
     <div className="flex min-h-full flex-col gap-2 px-4 py-4 sm:px-6">
+      {leadWithShare && (
+        <div className="flex flex-col gap-3 rounded-xl border border-bd-sun/60 bg-bd-sun/10 px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="min-w-0">
+            <p className="text-sm font-extrabold text-bd-ink">{t('lobby.reopen.sharedTitle')}</p>
+            <p className="mt-0.5 text-xs leading-5 text-bd-ink-soft">{t('lobby.reopen.sharedText')}</p>
+          </div>
+          <button
+            type="button"
+            onClick={() => {
+              playCue('ui.select')
+              void shareInvite('table_reopened')
+            }}
+            className="bd-btn bd-btn-primary w-full shrink-0 justify-center sm:w-auto"
+          >
+            <span className="inline-flex items-center justify-center gap-2">
+              <Icon name="link" size={18} />
+              <span>{t('lobby.reopen.share')}</span>
+            </span>
+          </button>
+        </div>
+      )}
+
       {/* Theme banner */}
       {hasCustomTheme && (
         <LobbyThemeBanner theme={lobby.theme as LobbyTheme} />

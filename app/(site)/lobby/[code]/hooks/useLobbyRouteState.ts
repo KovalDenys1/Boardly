@@ -15,12 +15,20 @@ interface UseLobbyRouteStateParams {
   guestToken: string | null
 }
 
+type LobbySnapshotRecord = Record<string, unknown>
+
 interface UseLobbyRouteStateResult {
   gameType: string | null
   gameStatus: string | null
+  /** The lobby as last read, for the closed-table decision (#1594); null until read or on failure. */
+  lobby: LobbySnapshotRecord | null
+  /** The lobby's most relevant game, finished ones included. */
+  lastGame: LobbySnapshotRecord | null
   loading: boolean
   handleGameStarted: (startedGameType: string) => void
   handleGameReset: () => void
+  /** Read the lobby again, e.g. after the table was reopened. */
+  refresh: () => void
 }
 
 export function useLobbyRouteState({
@@ -31,7 +39,10 @@ export function useLobbyRouteState({
 }: UseLobbyRouteStateParams): UseLobbyRouteStateResult {
   const [gameType, setGameType] = useState<string | null>(null)
   const [gameStatus, setGameStatus] = useState<string | null>(null)
+  const [lobby, setLobby] = useState<LobbySnapshotRecord | null>(null)
+  const [lastGame, setLastGame] = useState<LobbySnapshotRecord | null>(null)
   const [loading, setLoading] = useState(true)
+  const [readCount, setReadCount] = useState(0)
 
   useEffect(() => {
     if (status === 'loading') {
@@ -50,6 +61,8 @@ export function useLobbyRouteState({
       }
       setGameType(DEFAULT_GAME_TYPE)
       setGameStatus(null)
+      setLobby(null)
+      setLastGame(null)
     }
 
     ;(async () => {
@@ -68,6 +81,8 @@ export function useLobbyRouteState({
           const { lobby: lobbyData, activeGame } = normalizeLobbySnapshotResponse(data)
           setGameType(lobbyData?.gameType || DEFAULT_GAME_TYPE)
           setGameStatus(activeGame?.status || null)
+          setLobby(lobbyData)
+          setLastGame(activeGame)
           return
         }
 
@@ -85,22 +100,37 @@ export function useLobbyRouteState({
     return () => {
       cancelled = true
     }
-  }, [code, status, isGuest, guestToken])
+  }, [code, status, isGuest, guestToken, readCount])
+
+  // A live transition outdates the read; only a fresh read may decide that the table is closed.
+  const forgetRead = useCallback(() => {
+    setLobby(null)
+    setLastGame(null)
+  }, [])
 
   const handleGameStarted = useCallback((startedGameType: string) => {
     setGameType(startedGameType)
     setGameStatus('playing')
-  }, [])
+    forgetRead()
+  }, [forgetRead])
 
   const handleGameReset = useCallback(() => {
     setGameStatus(null)
+    forgetRead()
+  }, [forgetRead])
+
+  const refresh = useCallback(() => {
+    setReadCount((count) => count + 1)
   }, [])
 
   return {
     gameType,
     gameStatus,
+    lobby,
+    lastGame,
     loading,
     handleGameStarted,
     handleGameReset,
+    refresh,
   }
 }

@@ -7,6 +7,13 @@ import { showToast } from '@/lib/i18n-toast'
 
 export type RematchAskState = 'idle' | 'sending' | 'sent'
 
+// A 429 carries the limiter's English message and no translationKey.
+export function rematchRefusalToastKey(status: number, body: unknown): string {
+  if (status === 429) return 'errors.tooManyRequests'
+  const translationKey = (body as { translationKey?: unknown } | null)?.translationKey
+  return typeof translationKey === 'string' ? translationKey : 'toast.rematchRequestFailed'
+}
+
 interface RematchSnapshot {
   requestedBy: string | null
   askState: RematchAskState
@@ -100,7 +107,7 @@ export function useRematchSignal(code: string | null | undefined, finishKey: str
       const response = await fetchWithGuest(`/api/lobby/${code}/rematch`, { method: 'POST' })
       const result = await response.json().catch(() => null)
       if (!response.ok) {
-        showToast.error(result?.translationKey || 'toast.rematchRequestFailed', undefined, undefined, { id: 'rematch-request' })
+        showToast.error(rematchRefusalToastKey(response.status, result), undefined, undefined, { id: 'rematch-request' })
         update(code, { askState: 'idle' })
         return
       }
