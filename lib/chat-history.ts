@@ -24,6 +24,7 @@ interface ChatRedisClient {
   // what comes back is whatever was stored — see parseStoredMessage below.
   lrange(key: string, start: number, stop: number): Promise<unknown[]>
   lrem(key: string, count: number, value: string): Promise<unknown>
+  del(key: string): Promise<unknown>
 }
 
 interface UpstashRedisModule {
@@ -157,6 +158,24 @@ export async function getChatHistory(lobbyCode: string): Promise<StoredChatMessa
       error: err instanceof Error ? err.message : String(err),
     })
     return []
+  }
+}
+
+/**
+ * Drop a lobby's whole history, so a reopened table starts a new conversation. Silently
+ * no-ops if Redis is unavailable; the 24h TTL then still ends the old one.
+ */
+export async function clearChatHistory(lobbyCode: string): Promise<void> {
+  const redis = await getChatRedisClient()
+  if (!redis) return
+
+  try {
+    await redis.del(lobbyKey(lobbyCode))
+  } catch (err) {
+    logger.warn('chat-history: failed to clear history', {
+      lobbyCode,
+      error: err instanceof Error ? err.message : String(err),
+    })
   }
 }
 

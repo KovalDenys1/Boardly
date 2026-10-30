@@ -45,12 +45,27 @@ export interface SweepStalePlayersResult {
 export async function sweepStalePlayers(
   game: SweepableGame,
   code: string,
-  log: ReturnType<typeof apiLogger>
+  log: ReturnType<typeof apiLogger>,
+  options: { presentUserId?: string | null } = {}
 ): Promise<SweepStalePlayersResult> {
   const cutoff = Date.now() - HEARTBEAT_STALE_THRESHOLD_MS
-  const stalePlayerIds = game.players
+  const staleIds = game.players
     .filter((p) => p.leftAt === null && !p.user.bot && p.lastHeartbeatAt.getTime() < cutoff)
     .map((p) => p.userId)
+
+  // A tab back from the background reads the lobby before its throttled heartbeat lands.
+  const presentUserId = options.presentUserId ?? null
+  if (presentUserId && staleIds.includes(presentUserId)) {
+    try {
+      await prisma.players.updateMany({
+        where: { gameId: game.id, userId: presentUserId, leftAt: null },
+        data: { lastHeartbeatAt: new Date() },
+      })
+    } catch (error) {
+      log.warn('Failed to refresh the reading player\'s heartbeat', { code, userId: presentUserId, error })
+    }
+  }
+  const stalePlayerIds = staleIds.filter((userId) => userId !== presentUserId)
 
   if (stalePlayerIds.length === 0) {
     return { removedUserIds: [], gameAbandoned: false }
