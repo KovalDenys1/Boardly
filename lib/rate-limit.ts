@@ -413,17 +413,17 @@ export function rateLimit(config: RateLimitConfig) {
     // identity when the route passes one, the address otherwise.
     const scope = keyScope ?? new URL(request.url).pathname
     const caller = options?.identity ? `id:${options.identity}` : ip
-    const key = `${caller}:${scope}`
-    const blockKey = `${key}:${windowMs}:${maxRequests}`
+    // A limiter is its window and its ceiling, so two limiters on one path count apart in either store.
+    const key = `${caller}:${scope}:${windowMs}:${maxRequests}`
 
     const now = Date.now()
 
-    const knownBlockedUntil = blockedUntil.get(blockKey)
+    const knownBlockedUntil = blockedUntil.get(key)
     if (knownBlockedUntil !== undefined) {
       if (knownBlockedUntil > now) {
         return tooManyRequests(message, maxRequests, knownBlockedUntil, now)
       }
-      blockedUntil.delete(blockKey)
+      blockedUntil.delete(key)
     }
 
     const shared = await consumeSharedRateLimit(key, windowMs, now, scope)
@@ -459,7 +459,7 @@ export function rateLimit(config: RateLimitConfig) {
     if (record.count > maxRequests) {
       if (shared.kind === 'ok') {
         if (blockedUntil.size >= BLOCKED_CACHE_MAX_ENTRIES) blockedUntil.clear()
-        blockedUntil.set(blockKey, record.resetTime)
+        blockedUntil.set(key, record.resetTime)
       }
       if (record.count === maxRequests + 1) {
         await reportRateLimited(scope, now)

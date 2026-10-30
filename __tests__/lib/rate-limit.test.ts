@@ -151,7 +151,7 @@ describe('rateLimit store backends', () => {
     expect(hincrby).toHaveBeenCalledTimes(1)
     const [windowKey, field, increment] = hincrby.mock.calls[0]
     expect(windowKey).toMatch(/^rate_limit_window:60000:\d+$/)
-    expect(field).toBe('203.0.113.10:/api/test-rate-limit')
+    expect(field).toBe('203.0.113.10:/api/test-rate-limit:60000:10')
     expect(increment).toBe(1)
     expect(expire).toHaveBeenCalledTimes(1)
     expect(expire.mock.calls[0][0]).toBe(windowKey)
@@ -386,7 +386,7 @@ describe('rateLimit store backends', () => {
 
     const fields = store.hincrby.mock.calls.map(([, field]) => field)
     expect(new Set(fields)).toEqual(
-      new Set(['198.51.100.11:/api/lobby/1111/rematch', '198.51.100.11:/api/lobby/2222/rematch'])
+      new Set(['198.51.100.11:/api/lobby/1111/rematch:3600000:10', '198.51.100.11:/api/lobby/2222/rematch:3600000:10'])
     )
   })
 
@@ -568,6 +568,43 @@ describe('rateLimit store backends', () => {
       if ((await join(joinRequest(String(2000 + i)))) === null) admitted += 1
     }
     expect(admitted).toBe(rateLimitPresets.lobbyJoinGuest.maxRequests)
+  })
+
+  it.each([
+    ['without the shared store', false],
+    ['with the shared store', true],
+  ])('never lets one limiter on a path spend another one\'s budget, %s', async (_label, withStore) => {
+    if (withStore) {
+      process.env.UPSTASH_REDIS_REST_URL = 'https://store.example'
+      process.env.UPSTASH_REDIS_REST_TOKEN = 'token'
+    } else {
+      delete process.env.UPSTASH_REDIS_REST_URL
+      delete process.env.UPSTASH_REDIS_REST_TOKEN
+    }
+    pinClock()
+    const { rateLimit, rateLimitPresets, __rateLimitTestUtils } = await loadRateLimitModule(
+      withStore ? countingStore() : undefined
+    )
+    __rateLimitTestUtils.clearInMemoryStore()
+    __rateLimitTestUtils.resetSharedClient()
+    expect(__rateLimitTestUtils.getBackend()).toBe(withStore ? 'shared' : 'memory')
+
+    const outcome = async (result: Promise<Response | null>) => (await result)?.status ?? 'allowed'
+
+    // GET /api/lobby/<code> counts reads on the address ceiling; a join from that address counts on the game budget.
+    const lobbyRead = rateLimit(rateLimitPresets.lobbyReadAddress)
+    const lobbyJoin = rateLimit(rateLimitPresets.game)
+    const lobby = () => requestFrom('198.51.100.50', '/api/lobby/4821')
+    for (let i = 0; i < rateLimitPresets.game.maxRequests; i += 1) expect(await outcome(lobbyRead(lobby()))).toBe('allowed')
+    expect(await outcome(lobbyJoin(lobby()))).toBe('allowed')
+
+    // /api/friends/request: one send, seven page loads of two list reads each, then the next send.
+    const send = rateLimit(rateLimitPresets.friendRequest)
+    const list = rateLimit(rateLimitPresets.api)
+    const friends = () => requestFrom('198.51.100.51', '/api/friends/request')
+    expect(await outcome(send(friends()))).toBe('allowed')
+    for (let i = 0; i < 14; i += 1) expect(await outcome(list(friends()))).toBe('allowed')
+    expect(await outcome(send(friends()))).toBe('allowed')
   })
 
   // #1120 (audit S2-05): the per-user friend-code limiter needs a key that is not the

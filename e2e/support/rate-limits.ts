@@ -27,7 +27,7 @@ export async function clearLoopbackRateLimits(): Promise<number> {
   const redis = new Redis(credentials)
   let removed = 0
 
-  // Since #1156 the counters are fields `<client>:<scope>` in one hash per window
+  // Since #1156 the counters are fields `<client>:<scope>:<windowMs>:<max>` in one hash per window
   // (`rate_limit_window:<windowMs>:<window>`), so each window's hash is searched for this
   // machine's fields and only those are removed; everyone else's stay.
   const windowKeys: string[] = []

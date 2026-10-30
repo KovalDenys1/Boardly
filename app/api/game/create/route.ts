@@ -17,7 +17,7 @@ import { toPersistedGameStateInput } from '@/lib/persisted-game-state'
 import { buildGameStartFields } from '@/lib/game-persistence'
 import { isTemporarilyUnavailableGameType } from '@/lib/public-game-access'
 import { sanitizeStateForBroadcast } from '@/lib/broadcast-sanitize'
-import { buildBotTurnHeaders, getInternalAppOrigin, postBotTurn } from '@/lib/bot-turn-trigger'
+import { runBotTurn } from '@/lib/bot-turn-runner'
 import { runAfterResponse } from '@/lib/after-response'
 import { requiresTermsAcceptance } from '@/lib/terms-gate'
 import { resolveSketchCustomWords } from '@/lib/sketch-custom-words'
@@ -469,46 +469,17 @@ export async function POST(request: NextRequest) {
     if (dbCurrentPlayer && isBot(dbCurrentPlayer)) {
       log.info('First player is a bot, triggering bot turn...', { botUserId: dbCurrentPlayer.userId })
 
-      // Trigger bot turn via separate HTTP request (fire and forget). The target is this
-      // app's own fixed origin, never the inbound request's — see getInternalAppOrigin (#1116).
-      const botApiUrl = `${getInternalAppOrigin()}/api/game/${game.id}/bot-turn`
-      const internalSecret = process.env.BOARDLY_INTERNAL_SECRET
-      const botTurnHeaders = buildBotTurnHeaders({
-        internalSecret,
-        authorization: request.headers.get('authorization'),
-        guestToken: request.headers.get('X-Guest-Token'),
-        cookie: request.headers.get('cookie'),
-      })
-
-      const controller = new AbortController()
-      const timeoutId = setTimeout(() => controller.abort(), 30000)
-
-      // Kept alive past the response with after(): a bare fetch here could be frozen
-      // with the instance once the response left, and a bot that moves first then
-      // waited for the client's fallback - the freeze #985 fixed in the state route.
+      // In this invocation after the response, not over HTTP: a call back to this app crosses the public edge and the proxy.
+      const botUserId = dbCurrentPlayer.userId
       runAfterResponse(
-        postBotTurn(botApiUrl, {
-          headers: botTurnHeaders,
-          body: JSON.stringify({
-            botUserId: dbCurrentPlayer.userId,
-            lobbyCode: lobby.code,
-            triggerSource: 'game-create',
-            triggeredAt: Date.now(),
-          }),
-          signal: controller.signal,
-        })
-          .then(() => clearTimeout(timeoutId))
-          .catch(error => {
-            clearTimeout(timeoutId)
-            if (error.name === 'AbortError') {
-              log.error('Bot turn timeout - request aborted after 30s')
-            } else {
-              log.error('Failed to trigger bot turn', error)
+        runBotTurn({ gameId: game.id, botUserId, lobbyCode: lobby.code, source: 'game-create', turnStartedAt: Date.now() })
+          .then((outcome) => {
+            if (outcome.status !== 200 && outcome.status !== 409) {
+              log.error('Bot turn after game start failed', undefined, { gameId: game.id, botUserId, status: outcome.status })
             }
           })
+          .catch((error) => log.error('Bot turn after game start failed', error as Error, { gameId: game.id, botUserId }))
       )
-
-      log.info('Bot turn request sent', { botApiUrl })
     }
 
     return NextResponse.json({

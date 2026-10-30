@@ -173,7 +173,7 @@ export function printEnvInfo(options: ValidateEnvOptions = {}): void {
     console.log(`  - Email Service: ⚠️  Disabled`)
   }
   
-  console.log(`  - Internal Secret (BOARDLY_INTERNAL_SECRET): ${env.BOARDLY_INTERNAL_SECRET ? '✅ Set' : '⚠️  Not set (server-side bot turns will fall back to client-side)'}`)
+  console.log(`  - Internal Secret (BOARDLY_INTERNAL_SECRET): ${env.BOARDLY_INTERNAL_SECRET ? '✅ Set' : '⚠️  Not set (only server-to-server bot-turn calls need it)'}`)
   console.log(`  - Bot UX Delay Override: ${env.BOT_UX_DELAY_MS || 'auto'}`)
   console.log(`  - Bot UX Delay Scale: ${env.BOT_UX_DELAY_SCALE || '0.55 (default)'}`)
   console.log(
