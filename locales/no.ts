@@ -437,8 +437,6 @@ const no = {
     chooseWhatToPlay: 'Hva skal vi spille?',
     seeAllGames: 'Se alle spill →',
     heroTagline: 'Vennene dine er én lenke unna.',
-    ribbonBadgeLater: 'Kommer snart',
-    ribbonBadgePlanned: 'På planen',
     ribbonDescription: '{{available}} spill er klare nå. {{more}} til er under utvikling.',
     ribbonMoreTitle: 'Flere på vei',
     ribbonMoreDesc: '{{count}} spill til er under utvikling. Hele katalogen viser hva som kommer.',
@@ -501,7 +499,6 @@ const no = {
     playNow: 'Spill nå',
     viewLobbies: 'Se lobbyer',
     catalog: 'Katalog',
-    seeGame: 'Se spillet →',
     noGamesFound: 'Ingen spill passer til disse filtrene.',
     filters: {
       reset: 'Nullstill filtre',
@@ -570,8 +567,6 @@ const no = {
         answer: 'Ja. Opprett en lobby, del den firesifrede koden, og inntil fire spillere spiller i sanntid – gratis, i nettleseren, med et gjestenavn i stedet for en konto. Kort modus har ni poengkategorier, klassisk har alle femten, og en bot kan ta en ledig plass.',
       },
       ribbon: {
-        desc: 'Rull fem terninger, fyll ut poenglisten og jakt de beste kombinasjonene. Spill med venner eller start en rask solo-kamp.',
-        tag: 'Terninger',
         time: '15 min',
       },
       detail: {
@@ -836,8 +831,6 @@ const no = {
         answer: 'Alle i rommet får det samme hemmelige stedet og en rolle der, bortsett fra én spiller som bare vet at vedkommende er spionen. Dere stiller hverandre spørsmål etter tur til gruppen tar en avstemning – eller spionen gjetter stedet og tar 500 poeng. Tre til ti spillere, gratis, i nettleseren.',
       },
       ribbon: {
-        desc: 'Alle får samme sted bortsett fra spionen. Still spørsmål, lytt nøye og stem.',
-        tag: 'Deduksjon',
         time: '10 min',
       },
       detail: {
@@ -1059,8 +1052,6 @@ const no = {
         answer: 'Ja. Del en lobbykode og bytt på å sette merker i 3×3-rutenettet i sanntid, eller legg til en bot på lett, middels eller vanskelig når ingen er tilgjengelig. En lobby fortsetter med nye runder og løpende poengstilling med mindre du setter den til best av 3, 5 eller 10. Gratis, i nettleseren.',
       },
       ribbon: {
-        desc: 'En rask klassiker for to. Spill med en venn eller start en rask kamp når du bare har et minutt.',
-        tag: 'Strategi',
         time: '5 min',
       },
       detail: {
@@ -1307,8 +1298,6 @@ const no = {
         answer: 'Ja. To til fire spillere deler ett brett i nettleseren: snu to kort når det er din tur, behold paret og fortsett når de matcher, og den som har flest par til slutt vinner. Lett er 4×4 med 8 par, middels 5×4 med 10, vanskelig 6×6 med 18.',
       },
       ribbon: {
-        desc: 'Vend kort, husk posisjoner og match par på lett, middels eller vanskelig brett.',
-        tag: 'Kort',
         time: '10 min',
       },
       detail: {
@@ -1572,8 +1561,6 @@ const no = {
         answer: 'Ja. Brettet er sju kolonner ganger seks rader, spilt direkte i nettleseren: send en venn lobbykoden, eller velg lett, middels eller vanskelig og slipp brikker mot en bot. Gratis, ingenting å installere, og et gjestenavn er all kontoen du trenger.',
       },
       ribbon: {
-        desc: 'En klassisk strategispill for to spillere. Slipp brikker, bygg rekker og utmanøvrer motstanderen.',
-        tag: 'Strategi',
         time: '10 min',
       },
       detail: {
@@ -1813,8 +1800,6 @@ const no = {
         answer: 'Ja. Det er standard engelsk dam på et 8×8-brett i nettleseren: send en venn lobbykoden eller spill mot en bot på lett, middels eller vanskelig. Et gjestenavn er all kontoen du trenger.',
       },
       ribbon: {
-        desc: 'Den klassiske diagonale duellen. Tvungne slag, hoppkjeder og konger.',
-        tag: 'Strategi',
         time: '15 minutter',
       },
       detail: {
@@ -2035,8 +2020,6 @@ const no = {
         answer: 'Ja. Begge velger samtidig, og de to hendene snus samtidig, så ingen ser den andres trekk først. Spill mot en venn med en delt lobbykode eller mot en bot på lett, middels eller vanskelig; den som først vinner to runder, tar kampen. Gratis, i nettleseren.',
       },
       ribbon: {
-        desc: 'Velg stein, saks eller papir og avslør samtidig. Raske runder, første til målet vinner.',
-        tag: 'Uformell',
         time: '2 min',
       },
       rule_1: 'Begge spillerne velger stein, papir eller saks samtidig',
@@ -2232,8 +2215,6 @@ const no = {
         answer: 'Ja. Opprett en lobby og send koden til opptil tre venner, eller fyll tomme plasser med roboter på lett, middels eller vanskelig. Serveren vår kaster terningen, og det er gratis uten noe å installere.',
       },
       ribbon: {
-        desc: 'Det klassiske familiespillet. Slå en sekser for å komme ut, send motstanderne tilbake til gården og få alle brikkene hjem.',
-        tag: 'Brettspill',
         time: '15 minutter',
       },
       modes: {
@@ -2480,8 +2461,6 @@ const no = {
         answer: 'Ja, med tre til seksten personer og ingen boter – Alias er lag som snakker sammen, så rommet trenger ekte spillere. En på laget forklarer ordet uten å si det, de andre gjetter mot klokka, et hopp koster et poeng, og høyest poengsum vinner.',
       },
       ribbon: {
-        desc: 'Én spiller beskriver et hemmelig ord, laget kapper om å gjette det. Gjettede ord gir poeng.',
-        tag: 'Lag',
         time: '20 min',
       },
       detail: {
@@ -2724,8 +2703,6 @@ const no = {
         answer: 'Ja, tre til ti personer rett i nettleseren. Hver runde tegner én spiller et hemmelig ord på et delt lerret mens de andre skriver gjetninger mot klokka. Raske gjett gir flere poeng, og et gjestenavn er all kontoen du trenger.',
       },
       ribbon: {
-        desc: 'Tegn et hemmelig ord etter tur mens de andre kappes om å gjette det.',
-        tag: 'Tegning',
         time: '10 min',
       },
       detail: {
@@ -2900,8 +2877,6 @@ const no = {
       description: 'Bløff, les bordet og avslør de beste løgnerne før de lurer alle.',
       difficulty: 'Vanskelig',
       ribbon: {
-        desc: 'Kom med en påstand og håp den holder - bordet stemmer over om du snakker sant.',
-        tag: 'Bløff',
         time: '15 min',
       },
       seo: {

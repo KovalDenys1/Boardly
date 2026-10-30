@@ -447,8 +447,6 @@ const es: TranslationWithPlurals = {
     chooseWhatToPlay: 'Elige a qué jugar',
     seeAllGames: 'Ver todos los juegos →',
     heroTagline: 'Tus amigos están a un enlace de distancia.',
-    ribbonBadgeLater: 'Más adelante',
-    ribbonBadgePlanned: 'En la lista',
     ribbonDescription: 'Hoy hay {{available}} juegos listos. Estamos explorando {{more}} más para futuras noches de juego.',
     ribbonMoreTitle: 'Vienen más',
     ribbonMoreDesc: 'Hay {{count}} juegos más en desarrollo. El catálogo completo muestra lo que viene.',
@@ -512,7 +510,6 @@ const es: TranslationWithPlurals = {
     playNow: 'Jugar ahora',
     viewLobbies: 'Ver salas',
     catalog: 'Catálogo',
-    seeGame: 'Ver juego →',
     noGamesFound: 'Ningún juego coincide con estos filtros.',
     filters: {
       reset: 'Restablecer filtros',
@@ -581,8 +578,6 @@ const es: TranslationWithPlurals = {
         answer: 'Sí. Abre una sala, comparte el código de cuatro dígitos y hasta cuatro personas juegan en tiempo real – gratis, en el navegador y con un nombre de invitado en lugar de una cuenta. El modo corto usa nueve categorías de puntuación, el clásico las quince, y un bot puede ocupar un asiento vacío.',
       },
       ribbon: {
-        desc: 'Tira cinco dados, llena la hoja de puntuación y busca las mejores combinaciones. Juega con amigos o empieza una partida rápida tú solo.',
-        tag: 'Dados',
         time: '15 min',
       },
       detail: {
@@ -847,8 +842,6 @@ const es: TranslationWithPlurals = {
         answer: 'Todos en la sala reciben el mismo lugar secreto y un rol dentro de él, salvo un jugador que solo sabe que es el espía. Se turnan para hacerse preguntas hasta que el grupo pide una votación, o hasta que el espía nombra el lugar y se lleva 500 puntos. De tres a diez jugadores, gratis y en el navegador.',
       },
       ribbon: {
-        desc: 'Todos reciben el mismo lugar menos el espía. Haz preguntas, escucha con atención y vota.',
-        tag: 'Deducción',
         time: '10 min',
       },
       detail: {
@@ -1070,8 +1063,6 @@ const es: TranslationWithPlurals = {
         answer: 'Sí. Comparte un código de sala y juega por turnos en la cuadrícula de 3×3 en tiempo real, o añade un bot fácil, medio o difícil cuando no haya nadie. Una sala sigue jugando rondas con un marcador acumulado salvo que fijes un mejor de 3, 5 o 10. Gratis, en el navegador, basta con un nombre de invitado.',
       },
       ribbon: {
-        desc: 'Un clásico rápido para dos. Juega con un amigo o empieza una partida rápida cuando solo tengas un minuto.',
-        tag: 'Estrategia',
         time: '5 min',
       },
       detail: {
@@ -1319,8 +1310,6 @@ const es: TranslationWithPlurals = {
         answer: 'Sí. De dos a cuatro jugadores comparten un tablero en el navegador: en tu turno volteas dos cartas, si son pareja te la quedas y vuelves a jugar, y gana quien tenga más parejas al final. Fácil es 4×4 con 8 parejas, medio 5×4 con 10 y difícil 6×6 con 18.',
       },
       ribbon: {
-        desc: 'Voltea cartas, recuerda posiciones y forma parejas en tableros fáciles, medios o difíciles.',
-        tag: 'Cartas',
         time: '10 min',
       },
       detail: {
@@ -1585,8 +1574,6 @@ const es: TranslationWithPlurals = {
         answer: 'Sí. El tablero es el estándar de siete columnas por seis filas y se juega en directo en el navegador: envía a un amigo el código de tu sala, o elige fácil, medio o difícil y suelta fichas contra un bot. Gratis, sin nada que instalar, y un nombre de invitado es toda la cuenta que necesitas.',
       },
       ribbon: {
-        desc: 'Un clásico de estrategia para dos. Suelta fichas, crea secuencias y gánale a tu rival.',
-        tag: 'Estrategia',
         time: '10 min',
       },
       detail: {
@@ -1826,8 +1813,6 @@ const es: TranslationWithPlurals = {
         answer: 'Sí. Son las damas inglesas estándar en un tablero de 8×8 en el navegador: envía a un amigo el código de tu sala o juega contra un bot fácil, medio o difícil. Un nombre de invitado es toda la cuenta que necesitas.',
       },
       ribbon: {
-        desc: 'El clásico duelo en diagonal. Fuerza capturas, encadena saltos y corona tus damas.',
-        tag: 'Estrategia',
         time: '15 min',
       },
       detail: {
@@ -2049,8 +2034,6 @@ const es: TranslationWithPlurals = {
         answer: 'Sí. Los dos jugadores eligen a la vez y las dos manos se muestran juntas, así que nadie ve antes la jugada del otro. Juega contra un amigo con el código de una sala compartida o contra un bot en nivel fácil, medio o difícil; gana la partida quien gane primero dos rondas. Gratis, en el navegador.',
       },
       ribbon: {
-        desc: 'Elige Piedra, Papel o Tijera y revela al mismo tiempo. Rondas rápidas: gana quien llegue primero al objetivo.',
-        tag: 'Informal',
         time: '2 min',
       },
       rule_1: 'Los dos jugadores eligen Piedra, Papel o Tijera al mismo tiempo',
@@ -2248,8 +2231,6 @@ const es: TranslationWithPlurals = {
         answer: 'Sí. Abre una sala y envía el código a hasta tres amigos, o llena los asientos vacíos con bots en nivel fácil, medio o difícil. Nuestro servidor tira el dado, y es gratis, sin instalar nada.',
       },
       ribbon: {
-        desc: 'El juego de carreras de toda la familia. Saca un seis para salir, devuelve a los rivales a su casa y lleva todas tus fichas a la meta.',
-        tag: 'Tablero',
         time: '15 min',
       },
       modes: {
@@ -2496,8 +2477,6 @@ const es: TranslationWithPlurals = {
         answer: 'Sí, de tres a dieciséis personas y sin bots: Alias consiste en que los equipos hablen entre sí, así que la sala necesita jugadores de verdad. Un compañero describe la palabra sin decirla, los demás adivinan contra el reloj, pasar cuesta un punto y gana la puntuación más alta.',
       },
       ribbon: {
-        desc: 'Un jugador describe una palabra secreta y su equipo corre para adivinarla. Acierta más palabras de las que pasas para ganar.',
-        tag: 'Equipos',
         time: '20 min',
       },
       detail: {
@@ -2740,8 +2719,6 @@ const es: TranslationWithPlurals = {
         answer: 'Sí, de tres a diez personas en el navegador. En cada ronda, un jugador dibuja una palabra secreta en un lienzo compartido y los demás escriben sus respuestas contra el reloj. Las respuestas rápidas puntúan más, y no necesitas más cuenta que un nombre de invitado.',
       },
       ribbon: {
-        desc: 'Por turnos, un jugador dibuja una palabra secreta mientras los demás compiten por adivinarla.',
-        tag: 'Dibujo',
         time: '10 min',
       },
       detail: {
@@ -2916,8 +2893,6 @@ const es: TranslationWithPlurals = {
       description: 'Echa faroles, lee a la mesa y desenmascara a los mejores mentirosos antes de que engañen a todos.',
       difficulty: 'Difícil',
       ribbon: {
-        desc: 'Haz una afirmación y espera que se sostenga: la mesa vota si dices la verdad.',
-        tag: 'Faroles',
         time: '15 min',
       },
       seo: {

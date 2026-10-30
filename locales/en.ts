@@ -437,8 +437,6 @@ const en = {
     chooseWhatToPlay: 'Choose what to play',
     seeAllGames: 'See all games →',
     heroTagline: 'Your friends are one link away.',
-    ribbonBadgeLater: 'Coming later',
-    ribbonBadgePlanned: 'On the list',
     ribbonDescription: '{{available}} games are ready today. {{more}} more are being explored for future game nights.',
     ribbonMoreTitle: 'More on the way',
     ribbonMoreDesc: '{{count}} more games are in development. The full catalog shows what is next.',
@@ -501,7 +499,6 @@ const en = {
     playNow: 'Play Now',
     viewLobbies: 'View Lobbies',
     catalog: 'Catalog',
-    seeGame: 'See game →',
     noGamesFound: 'No games match these filters.',
     filters: {
       reset: 'Reset filters',
@@ -570,8 +567,6 @@ const en = {
         answer: 'Yes. Open a lobby, share the four-digit code, and up to four of you play in real time – free, in the browser, with a guest name instead of an account. Short mode runs nine scoring categories, classic runs all fifteen, and a bot can fill an empty seat.',
       },
       ribbon: {
-        desc: 'Roll five dice, fill the scorecard, and chase the best combinations. You can play with friends or start a quick solo-friendly match.',
-        tag: 'Dice',
         time: '15 min',
       },
       detail: {
@@ -836,8 +831,6 @@ const en = {
         answer: 'Everyone in the room gets the same secret location and a role in it, except one player who only knows they are the spy. You take turns asking each other questions until the group calls a vote – or the spy names the location and takes 500 points. Three to ten players, free, in the browser.',
       },
       ribbon: {
-        desc: 'Everyone gets the same location except the spy. Ask questions, listen closely, and vote.',
-        tag: 'Deduction',
         time: '10 min',
       },
       detail: {
@@ -1059,8 +1052,6 @@ const en = {
         answer: 'Yes. Share a lobby code and take turns on the 3×3 grid in real time, or add a bot on easy, medium or hard when nobody is around. A lobby keeps playing rounds with a running score unless you set a best of 3, 5 or 10. Free, in the browser, a guest name is enough.',
       },
       ribbon: {
-        desc: 'A fast two-player classic. Play with a friend or start a quick game when you only have a minute.',
-        tag: 'Strategy',
         time: '5 min',
       },
       detail: {
@@ -1307,8 +1298,6 @@ const en = {
         answer: 'Yes. Two to four of you share one board in the browser: flip two cards on your turn, keep the pair and go again when they match, and whoever holds the most pairs at the end wins. Easy is 4×4 with 8 pairs, medium 5×4 with 10, hard 6×6 with 18.',
       },
       ribbon: {
-        desc: 'Flip cards, remember positions, and match pairs across easy, medium, or hard boards.',
-        tag: 'Cards',
         time: '10 min',
       },
       detail: {
@@ -1572,8 +1561,6 @@ const en = {
         answer: 'Yes. The board is the standard seven columns by six rows, played live in the browser: send a friend your lobby code, or pick easy, medium or hard and drop discs against a bot. Free, nothing to install, and a guest name is all the account you need.',
       },
       ribbon: {
-        desc: 'A two-player strategy classic. Drop discs, build sequences, and outsmart your opponent.',
-        tag: 'Strategy',
         time: '10 min',
       },
       detail: {
@@ -1813,8 +1800,6 @@ const en = {
         answer: 'Yes. It is standard English checkers on an 8×8 board in the browser: send a friend your lobby code or play a bot on easy, medium or hard. A guest name is all the account you need.',
       },
       ribbon: {
-        desc: 'The classic diagonal duel. Force captures, chain jumps and crown your kings.',
-        tag: 'Strategy',
         time: '15 min',
       },
       detail: {
@@ -2035,8 +2020,6 @@ const en = {
         answer: 'Yes. Both players pick at the same time and the two hands turn over together, so nobody sees the other\'s move first. Play a friend from a shared lobby code or a bot on easy, medium or hard; a match goes to whoever wins two rounds first. Free, in the browser.',
       },
       ribbon: {
-        desc: 'Pick Rock, Paper or Scissors and reveal at the same time. Quick rounds, first to the target wins.',
-        tag: 'Casual',
         time: '2 min',
       },
       rule_1: 'Both players choose Rock, Paper, or Scissors simultaneously',
@@ -2232,8 +2215,6 @@ const en = {
         answer: 'Yes. Open a lobby and send the code to up to three friends, or fill empty seats with bots on easy, medium or hard. Our server rolls the die, and it is free with nothing to install.',
       },
       ribbon: {
-        desc: 'The family race game. Roll a six to get out, send rivals back to their yard and bring every token home.',
-        tag: 'Board',
         time: '15 min',
       },
       modes: {
@@ -2480,8 +2461,6 @@ const en = {
         answer: 'Yes, with three to sixteen people and no bots – Alias is teams talking to each other, so the room needs real players. One teammate describes the word without saying it, the others guess against the clock, a skip costs a point, and the higher score wins.',
       },
       ribbon: {
-        desc: 'One player describes a secret word, the team races to guess it. Score more guesses than skips to win.',
-        tag: 'Team',
         time: '20 min',
       },
       detail: {
@@ -2724,8 +2703,6 @@ const en = {
         answer: 'Yes, with three to ten people in the browser. Each round one player draws a secret prompt on a shared canvas and everyone else types guesses against the clock. Quick guesses score more, and a guest name is all the account you need.',
       },
       ribbon: {
-        desc: 'Take turns drawing a secret prompt while everyone else races to guess it.',
-        tag: 'Drawing',
         time: '10 min',
       },
       detail: {
@@ -2900,8 +2877,6 @@ const en = {
       description: 'Bluff, read the room, and catch the best liars before they fool everyone.',
       difficulty: 'Hard',
       ribbon: {
-        desc: 'Make a claim and hope it holds - the table votes on whether you are telling the truth.',
-        tag: 'Bluffing',
         time: '15 min',
       },
       seo: {
