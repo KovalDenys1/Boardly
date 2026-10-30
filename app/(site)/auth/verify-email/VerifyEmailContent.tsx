@@ -125,7 +125,7 @@ export default function VerifyEmailContent() {
 
   const authShell = (children: ReactNode) => (
     <div
-      className="page-shell-full flex items-center justify-center p-4"
+      className="page-shell flex items-center justify-center p-4"
       style={{
         background:
           'radial-gradient(circle at 12% 8%, rgba(255,196,77,0.18), transparent 35%), radial-gradient(circle at 88% 14%, rgba(155,140,255,0.16), transparent 40%), radial-gradient(circle at 50% 100%, rgba(79,201,166,0.14), transparent 50%), var(--bd-bg)',

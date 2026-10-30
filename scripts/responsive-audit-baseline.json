@@ -1,6 +1,6 @@
 [
   {
-    "file": "app/(site)/auth/login/LoginForm.tsx",
+    "file": "app/(site)/maintenance/MaintenanceContent.tsx",
     "check": "R5",
     "count": 1
   },
@@ -8,11 +8,6 @@
     "file": "app/globals.css",
     "check": "R2",
     "count": 7
-  },
-  {
-    "file": "app/(site)/maintenance/MaintenanceContent.tsx",
-    "check": "R5",
-    "count": 1
   },
   {
     "file": "components/Chat.tsx",

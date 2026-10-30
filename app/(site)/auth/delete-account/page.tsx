@@ -80,14 +80,14 @@ function DeleteAccountContent() {
 
   if (loading) {
     return (
-      <div className="page-shell-full bg-bd-bg flex items-center justify-center overflow-y-auto">
+      <div className="page-shell bg-bd-bg flex items-center justify-center overflow-y-auto">
         <LoadingSpinner size="lg" />
       </div>
     )
   }
 
   return (
-    <div className="page-shell-full bg-bd-bg flex items-center justify-center overflow-y-auto p-4">
+    <div className="page-shell bg-bd-bg flex items-center justify-center overflow-y-auto p-4">
       <div className="max-w-md w-full bg-bd-card-warm border border-bd-line rounded-2xl shadow-2xl p-8">
         {error ? (
           <>
@@ -192,7 +192,7 @@ function DeleteAccountContent() {
 
 export default function DeleteAccountPage() {
   return (
-    <Suspense fallback={<div className="page-shell-full bg-bd-bg flex items-center justify-center"><LoadingSpinner /></div>}>
+    <Suspense fallback={<div className="page-shell bg-bd-bg flex items-center justify-center"><LoadingSpinner /></div>}>
       <DeleteAccountContent />
     </Suspense>
   )
