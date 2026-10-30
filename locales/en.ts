@@ -3,6 +3,7 @@ const en = {
     loading: 'Loading...',
     error: 'Error',
     success: 'Success',
+    contents: 'Contents',
     cancel: 'Cancel',
     confirm: 'Confirm',
     save: 'Save',
@@ -36,7 +37,6 @@ const en = {
     label: 'Breadcrumb',
     home: 'Home',
     games: 'Games',
-    ariaLabel: 'breadcrumb',
   },
   lobby: {
     title: 'Game Lobbies',
@@ -4821,7 +4821,8 @@ const en = {
   },
   notFoundPage: {
     lostRoute: 'Lost Route',
-    description: 'Page not found. This turn ended outside the board.',
+    title: 'Page not found',
+    description: 'This turn ended outside the board.',
     description2: 'Return to lobby list or jump home to start a new game.',
     browseLobby: 'Browse Lobbies',
     goHome: 'Go Home',
@@ -4995,7 +4996,6 @@ const en = {
   },
   privacyPolicy: {
     title: 'Privacy Policy',
-    breadcrumbHome: 'Home',
     intro: 'This policy explains what personal data Boardly processes, why, on what legal basis, who receives it, how long we keep it and which rights you have. "We" means the Boardly team.',
     updated: 'Last updated: {{date}}',
     controller: {

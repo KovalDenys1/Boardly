@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { useSession } from 'next-auth/react'
+import Breadcrumbs from '@/components/Breadcrumbs'
 import Footer from '@/components/Footer'
 import GameIcon from '@/components/GameIcon'
 import { Icon } from '@/components/icons'
@@ -137,13 +138,15 @@ export default function GameDetailPage({
   return (
     <div className="bd-page bd-screen flex min-h-(--game-h) flex-col overflow-y-auto text-bd-ink">
       <main className="mx-auto w-full max-w-6xl grow px-4 py-8 sm:px-6 lg:px-8">
-        <nav className="mb-6 flex flex-wrap items-center gap-2 text-sm font-semibold text-bd-ink-muted" aria-label={t('breadcrumbs.label')}>
-          <Link href={localize('/')} className="transition-colors hover:text-bd-ink">{t('breadcrumbs.home')}</Link>
-          <span>/</span>
-          <Link href={localize('/games')} className="transition-colors hover:text-bd-ink">{t('breadcrumbs.games')}</Link>
-          <span>/</span>
-          <span className="text-bd-ink">{gameName}</span>
-        </nav>
+        <Breadcrumbs
+          className="mb-6"
+          label={t('breadcrumbs.label')}
+          items={[
+            { label: t('breadcrumbs.home'), href: localize('/') },
+            { label: t('breadcrumbs.games'), href: localize('/games') },
+            { label: gameName },
+          ]}
+        />
 
         {/* No overflow-hidden here — the Play vs Bot dropdown must escape the
             card; decorative layers clip themselves via rounded-[inherit]. */}

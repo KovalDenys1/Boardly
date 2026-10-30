@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
+import Breadcrumbs from '@/components/Breadcrumbs'
 import Footer from '@/components/Footer'
 import GameIcon from '@/components/GameIcon'
 import { Icon } from '@/components/icons'
@@ -167,11 +168,11 @@ export default function GuidesIndex({ locale }: { locale: SeoLocale }) {
       <div className="bd-page bd-screen flex-1 overflow-y-auto">
         <div className="mx-auto max-w-4xl px-4 pb-20 pt-10 sm:px-6 lg:px-8">
 
-          <nav className="mb-8 flex items-center gap-2 text-sm" style={{ color: 'var(--bd-ink-muted)' }} aria-label={t('breadcrumbs.label')}>
-            <Link href={localizedPath('/', locale)} className="transition-colors hover:text-bd-ink">{t('breadcrumbs.home')}</Link>
-            <span>/</span>
-            <span style={{ color: 'var(--bd-ink)' }}>{t('header.guides')}</span>
-          </nav>
+          <Breadcrumbs
+            className="mb-8"
+            label={t('breadcrumbs.label')}
+            items={[{ label: t('breadcrumbs.home'), href: localizedPath('/', locale) }, { label: t('header.guides') }]}
+          />
 
           {/* Hero */}
           <div

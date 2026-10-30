@@ -79,10 +79,10 @@ function ResetPasswordForm() {
           </div>
         </div>
         <div className="grid gap-3 sm:grid-cols-2">
-          <button type="button" onClick={navigateToForgotPassword} className="bd-btn bd-btn-coral" style={{ justifyContent: 'center' }}>
+          <button type="button" onClick={navigateToForgotPassword} className="bd-btn bd-btn-coral whitespace-normal! leading-tight! text-center" style={{ justifyContent: 'center' }}>
             {t('auth.resetPassword.requestNewLink')}
           </button>
-          <button type="button" onClick={navigateToLogin} className="bd-btn bd-btn-ghost" style={{ justifyContent: 'center' }}>
+          <button type="button" onClick={navigateToLogin} className="bd-btn bd-btn-ghost whitespace-normal! leading-tight! text-center" style={{ justifyContent: 'center' }}>
             {t('auth.resetPassword.loginLink')}
           </button>
         </div>
@@ -120,7 +120,7 @@ function ResetPasswordForm() {
           </p>
         )}
 
-        <button type="submit" disabled={loading} className="bd-btn bd-btn-coral bd-btn-lg" style={{ justifyContent: 'center', marginTop: 4 }}>
+        <button type="submit" disabled={loading} className="bd-btn bd-btn-coral bd-btn-lg whitespace-normal! leading-tight! text-center" style={{ justifyContent: 'center', marginTop: 4 }}>
           {loading ? (
             <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <LoadingSpinner size="sm" />

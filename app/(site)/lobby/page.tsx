@@ -56,23 +56,19 @@ function LobbyListPageContent() {
       <AuthGateModal dest={authGateDest} onClose={() => setAuthGateDest(null)} />
     )}
     <div className="bd-page bd-screen flex min-h-(--game-h) flex-col overflow-y-auto">
-      <div className="mx-auto w-full max-w-[1280px] grow px-8 pb-10 pt-10">
+      <div className="mx-auto w-full max-w-[1280px] grow px-4 pb-10 pt-6 sm:px-6 sm:pt-10 lg:px-8">
 
         {activeLobby && (
           <RejoinLobbyBanner lobby={activeLobby} onDismiss={dismissActiveLobby} />
         )}
 
-        {/* Page header */}
-        <div
-          className="bd-card relative mb-6 overflow-hidden p-7 sm:p-8"
-          style={{ background: 'linear-gradient(120deg, var(--bd-card-warm) 0%, rgba(155,140,255,0.08) 100%)' }}
-        >
-          <div className="bd-dot-grid absolute inset-0 opacity-35" />
-          <div className="relative flex flex-col gap-6 sm:flex-row sm:items-stretch">
+        {/* A card from sm up; on a phone the page padding is the only inset. */}
+        <div className="relative mb-6 sm:overflow-hidden sm:rounded-bd-lg sm:border-[1.5px] sm:border-bd-line sm:bg-[linear-gradient(120deg,var(--bd-card-warm)_0%,rgba(155,140,255,0.08)_100%)] sm:p-8 sm:shadow-bd-card">
+          <div className="bd-dot-grid absolute inset-0 hidden opacity-35 sm:block" />
+          <div className="relative flex flex-col gap-5 sm:flex-row sm:items-stretch sm:gap-6">
 
-            {/* Left: nav + title + stats */}
             <div className="flex flex-1 flex-col">
-              <div className="mb-5">
+              <div className="mb-4 sm:mb-5">
                 <button
                   type="button"
                   onClick={() => router.push('/games')}
@@ -81,7 +77,6 @@ function LobbyListPageContent() {
                   ← {t('lobby.backToGames')}
                 </button>
               </div>
-              <span className="bd-kicker mb-2 block">{t('header.lobbies')}</span>
               <h1
                 className="mb-2 text-[clamp(32px,4vw,52px)] font-extrabold leading-none tracking-tight text-bd-ink"
                 style={{ fontFamily: 'var(--bd-font-display)' }}
@@ -91,7 +86,7 @@ function LobbyListPageContent() {
               <p className="text-[15px] text-bd-ink-soft">
                 {t('lobby.subtitle')}
               </p>
-              <div className="mt-auto flex flex-wrap items-center gap-2 border-t border-bd-line pt-4">
+              <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-bd-line pt-4 sm:mt-auto">
                 <span className="bd-chip">
                   <span className="bd-live-dot h-1.5 w-1.5" />
                   {t('lobby.lobbiesCount', { count: lobbies.length })}
@@ -102,28 +97,27 @@ function LobbyListPageContent() {
               </div>
             </div>
 
-            {/* Right: full-height create button */}
             <button
               type="button"
               data-tour-step="create-lobby"
               onClick={handleCreateLobby}
-              className="flex min-h-[80px] w-full shrink-0 flex-row items-center justify-center gap-3 rounded-3xl border-2 border-bd-ink bg-bd-coral text-bd-ink-on-accent shadow-[4px_4px_0_var(--bd-ink)] transition hover:-translate-y-0.5 hover:shadow-[4px_6px_0_var(--bd-ink)] active:translate-y-0.5 active:shadow-[4px_2px_0_var(--bd-ink)] sm:w-[220px] sm:flex-col sm:min-h-0"
+              className="flex min-h-14 w-full shrink-0 flex-row items-center justify-center gap-3 rounded-3xl border-2 border-bd-ink bg-bd-coral px-5 py-3 text-bd-ink-on-accent shadow-[4px_4px_0_var(--bd-ink)] transition hover:-translate-y-0.5 hover:shadow-[4px_6px_0_var(--bd-ink)] active:translate-y-0.5 active:shadow-[4px_2px_0_var(--bd-ink)] sm:min-h-0 sm:w-[220px] sm:flex-col sm:py-0"
             >
-              <Icon name="sparkle" size={34} />
+              <Icon name="sparkle" size={28} />
               <span
                 className="text-center text-[18px] font-extrabold leading-tight"
                 style={{ fontFamily: 'var(--bd-font-display)' }}
               >
                 {t('lobby.createNew')}
               </span>
-              <span className="text-sm font-bold">{t('lobby.getStarted')} →</span>
+              <span className="hidden text-sm font-bold sm:inline">{t('lobby.getStarted')} →</span>
             </button>
 
           </div>
         </div>
 
         {/* Lobbies list */}
-        <div className="bd-card p-6">
+        <div className="bd-card p-4 sm:p-6">
           <div data-tour-step="filter-bar" className="mb-5 border-b border-bd-line pb-5">
             <LobbyFilters embedded filters={filters} onFiltersChange={setFilters} />
           </div>

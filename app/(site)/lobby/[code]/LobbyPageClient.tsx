@@ -2006,7 +2006,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
            game branch below narrows `game` to non-null, which the inline
            `game?.status === 'playing'` comparison used to do on its own. */
         /* Waiting Room - unified card with pinned actions */
-        <div className="bd-card flex min-h-0 flex-1 flex-col overflow-hidden">
+        <div className="bd-card mx-auto flex min-h-0 w-full max-w-180 flex-1 flex-col overflow-hidden">
           <LobbyInfo
             lobby={lobby}
             game={game}

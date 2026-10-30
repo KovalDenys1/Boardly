@@ -5,6 +5,7 @@ const es: TranslationWithPlurals = {
     loading: 'Cargando...',
     error: 'Error',
     success: 'Éxito',
+    contents: 'Índice',
     cancel: 'Cancelar',
     confirm: 'Confirmar',
     save: 'Guardar',
@@ -38,7 +39,6 @@ const es: TranslationWithPlurals = {
     label: 'Ruta de navegación',
     home: 'Inicio',
     games: 'Juegos',
-    ariaLabel: 'ruta de navegación',
   },
   lobby: {
     title: 'Salas de juego',
@@ -4855,7 +4855,8 @@ const es: TranslationWithPlurals = {
   },
   notFoundPage: {
     lostRoute: 'Ruta perdida',
-    description: 'Página no encontrada. Este turno terminó fuera del tablero.',
+    title: 'Página no encontrada',
+    description: 'Este turno terminó fuera del tablero.',
     description2: 'Vuelve a la lista de salas o ve al inicio para empezar una partida nueva.',
     browseLobby: 'Ver salas',
     goHome: 'Ir al inicio',
@@ -5030,7 +5031,6 @@ const es: TranslationWithPlurals = {
   },
   privacyPolicy: {
     title: 'Política de privacidad',
-    breadcrumbHome: 'Inicio',
     intro: 'Esta política explica qué datos personales trata Boardly, por qué, con qué base jurídica, quién los recibe, cuánto tiempo los conservamos y qué derechos tienes. "Nosotros" significa el equipo de Boardly.',
     updated: 'Última actualización: {{date}}',
     controller: {

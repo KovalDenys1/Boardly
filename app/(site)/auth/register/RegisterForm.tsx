@@ -270,10 +270,10 @@ export default function RegisterForm() {
 
   return (
     <div className="bd-screen" style={{
-      minHeight: '100svh', overflowX: 'hidden', overflowY: 'auto',
+      minHeight: 'var(--game-h)', overflowX: 'hidden', overflowY: 'auto',
       background: 'radial-gradient(circle at 12% 8%, rgba(255,196,77,0.18), transparent 35%), radial-gradient(circle at 88% 14%, rgba(155,140,255,0.16), transparent 40%), radial-gradient(circle at 50% 100%, rgba(79,201,166,0.14), transparent 50%), var(--bd-bg)',
     }}>
-      <div className="grid grid-cols-1 lg:grid-cols-2" style={{ maxWidth: 1280, margin: '0 auto', gap: 40, alignItems: 'center', padding: 'clamp(24px, 5vw, 40px) clamp(20px, 4vw, 32px)', minHeight: '100svh', boxSizing: 'border-box' }}>
+      <div className="grid grid-cols-1 lg:grid-cols-2" style={{ maxWidth: 1280, margin: '0 auto', gap: 40, alignItems: 'center', padding: 'clamp(24px, 5vw, 40px) clamp(20px, 4vw, 32px)', minHeight: 'var(--game-h)', boxSizing: 'border-box' }}>
 
         {/* LEFT: form */}
         <div style={{ maxWidth: 460, justifySelf: 'center', width: '100%' }}>
