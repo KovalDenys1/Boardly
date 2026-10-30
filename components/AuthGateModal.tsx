@@ -1,11 +1,12 @@
 'use client'
 
-import { useState } from 'react'
+import { useId, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useGuest } from '@/contexts/GuestContext'
 import { buildAuthUrl } from '@/lib/auth-redirect'
 import { useTranslation } from '@/lib/i18n-helpers'
 import { Icon } from '@/components/icons'
+import Modal, { ModalCloseButton } from '@/components/Modal'
 
 interface AuthGateModalProps {
   /** Where Login/Sign Up should return to, and (if onGuestReady is omitted) where guest play navigates. */
@@ -17,15 +18,20 @@ interface AuthGateModalProps {
   /** Called only when the visitor dismisses the gate without choosing – onClose also
    * runs on the way to guest play, login and sign-up, so it cannot tell the two apart. */
   onDismiss?: () => void
+  /** false where the gate is the page itself (/lobby/create): no Escape and no close button. */
+  dismissible?: boolean
 }
 
-export function AuthGateModal({ dest, onClose, onGuestReady, onDismiss }: AuthGateModalProps) {
+export function AuthGateModal({ dest, onClose, onGuestReady, onDismiss, dismissible = true }: AuthGateModalProps) {
   const router = useRouter()
   const { t } = useTranslation()
   const { setGuestMode } = useGuest()
   const [name, setName] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const titleId = useId()
+  const descriptionId = useId()
+  const nameId = useId()
 
   const canSubmit = name.trim().length >= 2
 
@@ -47,22 +53,24 @@ export function AuthGateModal({ dest, onClose, onGuestReady, onDismiss }: AuthGa
     }
   }
 
+  const dismiss = () => {
+    onClose()
+    onDismiss?.()
+  }
+
   return (
-    <div
-      className="fixed inset-0 z-dialog flex items-start justify-center overflow-y-auto overscroll-contain p-4"
-      style={{ background: 'rgba(31,27,22,0.55)', backdropFilter: 'blur(4px)' }}
-      onClick={(e) => { if (e.target === e.currentTarget) { onClose(); onDismiss?.() } }}
+    <Modal
+      isOpen
+      onClose={dismiss}
+      dismissible={dismissible}
+      aria-labelledby={titleId}
+      aria-describedby={descriptionId}
+      maxWidth="sm"
+      bodyPadding="none"
+      panelClassName="rounded-bd-lg border-2 border-bd-ink bg-bd-bg shadow-[6px_6px_0_var(--bd-ink)]"
     >
-      <div
-        className="my-auto w-full max-w-sm"
-        style={{
-          background: 'var(--bd-bg)',
-          border: '2px solid var(--bd-ink)',
-          borderRadius: 24,
-          boxShadow: '6px 6px 0 var(--bd-ink)',
-          padding: '28px 24px',
-        }}
-      >
+      <div className="relative" style={{ padding: '28px 24px' }}>
+        {dismissible && <ModalCloseButton onClick={dismiss} className="absolute right-2 top-2" />}
         {/* Header */}
         <div style={{ textAlign: 'center', marginBottom: 20 }}>
           <div style={{
@@ -71,23 +79,24 @@ export function AuthGateModal({ dest, onClose, onGuestReady, onDismiss }: AuthGa
             border: '2px solid var(--bd-ink)', boxShadow: '3px 3px 0 var(--bd-ink)',
             display: 'grid', placeItems: 'center', fontSize: 28, color: 'var(--bd-ink-on-accent)',
           }}><Icon name="gamepad" size={30} /></div>
-          <h2 style={{
+          <h2 id={titleId} style={{
             fontFamily: 'var(--bd-font-display)', fontWeight: 800, fontSize: 22,
             color: 'var(--bd-ink)', letterSpacing: '-0.02em', margin: '0 0 8px',
           }}>
             {t('header.authGateTitle')}
           </h2>
-          <p style={{ fontSize: 14, color: 'var(--bd-ink-soft)', lineHeight: 1.5, margin: 0 }}>
+          <p id={descriptionId} style={{ fontSize: 14, color: 'var(--bd-ink-soft)', lineHeight: 1.5, margin: 0 }}>
             {t('header.authGateDesc')}
           </p>
         </div>
 
         {/* Guest name input */}
         <div style={{ marginBottom: 12 }}>
-          <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--bd-ink)', marginBottom: 7 }}>
+          <label htmlFor={nameId} style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--bd-ink)', marginBottom: 7 }}>
             {t('guest.enterName')}
           </label>
           <input
+            id={nameId}
             className="bd-input"
             type="text"
             placeholder={t('guest.namePlaceholder')}
@@ -96,7 +105,7 @@ export function AuthGateModal({ dest, onClose, onGuestReady, onDismiss }: AuthGa
             onKeyDown={(e) => { if (e.key === 'Enter') handleGuestPlay() }}
             disabled={loading}
             maxLength={20}
-            autoFocus
+            data-autofocus
           />
         </div>
 
@@ -141,6 +150,6 @@ export function AuthGateModal({ dest, onClose, onGuestReady, onDismiss }: AuthGa
           </button>
         </div>
       </div>
-    </div>
+    </Modal>
   )
 }

@@ -1,8 +1,9 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useId, useState } from 'react'
 import { usePathname } from 'next/navigation'
 import { useTranslation } from '@/lib/i18n-helpers'
+import Modal from '@/components/Modal'
 
 type FeedbackType = 'bug' | 'feature' | 'other'
 
@@ -16,7 +17,9 @@ export default function FeedbackWidget() {
   const [submitted, setSubmitted] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const pathname = usePathname()
-  const textareaRef = useRef<HTMLTextAreaElement>(null)
+  const titleId = useId()
+  const messageId = useId()
+  const emailId = useId()
   const { t } = useTranslation()
 
   const TYPE_OPTIONS: { type: FeedbackType; label: string; shortLabel: string }[] = [
@@ -49,24 +52,10 @@ export default function FeedbackWidget() {
   }, [])
 
   useEffect(() => {
-    if (isOpen) {
-      setTimeout(() => textareaRef.current?.focus(), 50)
-      return
-    }
+    if (isOpen) return
 
     setSubmitted(false)
     setError(null)
-  }, [isOpen])
-
-  useEffect(() => {
-    if (!isOpen) return
-
-    const handler = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setIsOpen(false)
-    }
-
-    window.addEventListener('keydown', handler)
-    return () => window.removeEventListener('keydown', handler)
   }, [isOpen])
 
   const isGamePage = /^\/(lobby|replay)\/[^/]+$/.test(pathname)
@@ -128,13 +117,16 @@ export default function FeedbackWidget() {
       </button>
 
       {isOpen && (
-        <div
-          className="fixed inset-0 z-dialog flex items-end justify-center p-4 backdrop-blur-xs sm:items-center"
-          onClick={(e) => {
-            if (e.target === e.currentTarget) setIsOpen(false)
-          }}
+        <Modal
+          isOpen
+          onClose={() => setIsOpen(false)}
+          aria-labelledby={titleId}
+          placement="sheet"
+          maxWidth="md"
+          bodyPadding="none"
+          panelClassName="overflow-hidden rounded-t-4xl border-[1.5px] border-bd-line bg-bd-input-bg text-bd-ink shadow-bd-card sm:rounded-4xl dark:text-white"
         >
-          <div className="relative w-full max-w-md overflow-hidden rounded-4xl border-[1.5px] border-bd-line bg-bd-input-bg text-bd-ink shadow-bd-card dark:text-white">
+          <div className="relative overflow-clip">
             <div className="dot-grid pointer-events-none absolute inset-0 opacity-30" />
             <div className="pointer-events-none absolute -right-12 -top-12 h-32 w-32 rounded-full bg-bd-lav/20" />
             <div className="pointer-events-none absolute -bottom-14 left-10 h-28 w-28 rotate-12 rounded-[1.75rem] bg-bd-sun/20" />
@@ -145,7 +137,7 @@ export default function FeedbackWidget() {
                   {/* i18n-allow: brand name, identical in all four locales */}
                   Boardly
                 </p>
-                <h2 className="font-display text-2xl font-bold text-bd-ink dark:text-white">
+                <h2 id={titleId} className="font-display text-2xl font-bold text-bd-ink dark:text-white">
                   {t('feedback.title')}
                 </h2>
               </div>
@@ -204,11 +196,12 @@ export default function FeedbackWidget() {
                 </div>
 
                 <div>
-                  <label className="mb-2 block font-mono text-xs font-semibold uppercase tracking-[0.18em] text-bd-ink-muted">
+                  <label htmlFor={messageId} className="mb-2 block font-mono text-xs font-semibold uppercase tracking-[0.18em] text-bd-ink-muted">
                     {t('feedback.messageLabel')} <span className="text-bd-coral-text">*</span>
                   </label>
                   <textarea
-                    ref={textareaRef}
+                    id={messageId}
+                    data-autofocus
                     value={message}
                     onChange={(e) => setMessage(e.target.value)}
                     placeholder={t('feedback.messagePlaceholder')}
@@ -223,13 +216,14 @@ export default function FeedbackWidget() {
                 </div>
 
                 <div>
-                  <label className="mb-2 block font-mono text-xs font-semibold uppercase tracking-[0.18em] text-bd-ink-muted">
+                  <label htmlFor={emailId} className="mb-2 block font-mono text-xs font-semibold uppercase tracking-[0.18em] text-bd-ink-muted">
                     {t('feedback.emailLabel')}{' '}
                     <span className="normal-case tracking-normal">
                       ({t('feedback.emailOptional')})
                     </span>
                   </label>
                   <input
+                    id={emailId}
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
@@ -254,7 +248,7 @@ export default function FeedbackWidget() {
               </form>
             )}
           </div>
-        </div>
+        </Modal>
       )}
     </>
   )

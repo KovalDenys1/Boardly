@@ -347,7 +347,7 @@ export default function PlayVsBotButton({ gameType, className = '' }: PlayVsBotB
       {pendingDifficulty && (
         <AuthGateModal
           dest={pathname}
-          onClose={() => { setPendingDifficulty(null); setOpen(false) }}
+          onClose={() => { setPendingDifficulty(null); setOpen(false); triggerRef.current?.focus() }}
           onGuestReady={() => {
             const difficulty = pendingDifficulty
             setPendingDifficulty(null)

@@ -13,6 +13,7 @@ import {
   type FriendPresence,
 } from '@/hooks/useFriendPresence'
 import LoadingSpinner from './LoadingSpinner'
+import Modal from './Modal'
 
 interface Friend {
   id: string
@@ -165,24 +166,8 @@ export default function FriendsListModal({
   const presenceLabel = (presence: FriendPresence): string | null => getFriendPresenceLabel(presence, t)
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-dialog p-4">
-      <div
-        className="rounded-2xl p-6 max-w-md w-full max-h-[80vh] overflow-y-auto overscroll-contain"
-        style={{ background: 'var(--bd-card-warm)', border: '1.5px solid var(--bd-line)' }}
-      >
-        <div className="flex justify-between items-center mb-4">
-          <h3 className="text-xl font-bold" style={{ color: 'var(--bd-ink)' }}>
-            {t('lobby.invite.title')}
-          </h3>
-          <button
-            onClick={onClose}
-            className="transition-opacity hover:opacity-60"
-            style={{ color: 'var(--bd-ink-muted)' }}
-          >
-            <Icon name="close" size={16} />
-          </button>
-        </div>
-
+    <Modal isOpen={isOpen} onClose={onClose} title={t('lobby.invite.title')} maxWidth="md">
+      <>
         {loading ? (
           <div className="flex justify-center py-8">
             <LoadingSpinner />
@@ -328,7 +313,7 @@ export default function FriendsListModal({
             )}
           </>
         )}
-      </div>
-    </div>
+      </>
+    </Modal>
   )
 }
