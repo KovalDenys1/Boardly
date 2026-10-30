@@ -4,7 +4,6 @@
 
 import { NextRequest } from 'next/server'
 import { POST as postState } from '@/app/api/game/[gameId]/state/route'
-import { POST as postBotTurn } from '@/app/api/game/[gameId]/bot-turn/route'
 import { prisma } from '@/lib/db'
 import { getRequestAuthUser } from '@/lib/request-auth'
 import { RockPaperScissorsGame, type RockPaperScissorsGameData } from '@/lib/games/rock-paper-scissors-game'
@@ -25,6 +24,16 @@ jest.mock('@/lib/rate-limit', () => ({
   rateLimit: jest.fn(() => jest.fn(() => Promise.resolve(null))),
   rateLimitPresets: { game: {} },
 }))
+jest.mock('@/lib/bot-turn-runner', () => {
+  const actual = jest.requireActual('@/lib/bot-turn-runner')
+  return {
+    runBotTurn: jest.fn((input) => {
+      const turn = actual.runBotTurn(input)
+      mockBotTurns.push(turn)
+      return turn
+    }),
+  }
+})
 jest.mock('@/lib/logger', () => {
   const log = { debug: jest.fn(), info: jest.fn(), warn: jest.fn(), error: jest.fn() }
   return { apiLogger: jest.fn(() => log), logger: log }
@@ -47,7 +56,7 @@ interface Row {
 let row: Row
 const originalFetch = global.fetch
 const originalEnv = { ...process.env }
-const botTurnCalls: Promise<Response>[] = []
+const mockBotTurns: Promise<{ status: number }>[] = []
 
 function snapshot() {
   return {
@@ -83,10 +92,8 @@ async function pick(choice: string) {
     { params: Promise.resolve({ gameId: GAME_ID }) },
   )
   expect(response.status).toBe(200)
-  // The trigger runs after the response; wait for every bot turn it started.
-  for (let i = 0; i < 20 && botTurnCalls.length === 0; i += 1) await new Promise((r) => setTimeout(r, 5))
-  const calls = botTurnCalls.splice(0)
-  return Promise.all(calls)
+  // The bot turn runs after the response; wait for every one the move started.
+  return Promise.all(mockBotTurns.splice(0))
 }
 
 describe('Rock Paper Scissors against a bot, without the turn timer (#1364)', () => {
@@ -110,18 +117,8 @@ describe('Rock Paper Scissors against a bot, without the turn timer (#1364)', ()
     ;(prisma.players.update as jest.Mock).mockResolvedValue({})
     ;(prisma.operationalEvents.create as jest.Mock).mockResolvedValue({})
 
-    // Production's NEXTAUTH_URL is the www host, which 301s to the apex; fetch follows that as a GET.
-    global.fetch = jest.fn(async (url: string | URL, init?: RequestInit) => {
-      const target = new URL(String(url))
-      if (target.pathname !== `/api/game/${GAME_ID}/bot-turn`) throw new Error(`unexpected fetch ${target}`)
-      if (target.hostname === 'www.boardly.online') {
-        const apex = `https://boardly.online${target.pathname}`
-        if (init?.redirect === 'manual') return new Response(null, { status: 301, headers: { location: apex } })
-        return new Response(null, { status: 405 })
-      }
-      const call = postBotTurn(new NextRequest(target, init as never), { params: Promise.resolve({ gameId: GAME_ID }) })
-      botTurnCalls.push(call)
-      return call
+    global.fetch = jest.fn(async (url: string | URL) => {
+      throw new Error(`unexpected fetch ${url}`)
     }) as typeof fetch
   })
 
