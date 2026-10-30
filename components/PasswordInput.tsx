@@ -142,7 +142,7 @@ export default function PasswordInput({
 
           <div className="h-2 rounded-full overflow-hidden shadow-inner" style={{ background: 'var(--bd-line)' }}>
             <div
-              className="h-full transition-[width,background-color] duration-500 ease-out"
+              className="h-full transition-[width,background-color] duration-bd-slow ease-out"
               style={{ width: `${strength.percentage}%`, background: strength.color }}
             />
           </div>

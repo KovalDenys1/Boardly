@@ -32,7 +32,7 @@ interface GamesCatalogProps extends GamesClientProps {
   onFiltersChange?: (next: GamesFilters) => void
 }
 
-const RESULTS_ENTER = 'animate-[bd-screen-in_0.3s_var(--bd-ease-out)_backwards] motion-reduce:animate-none'
+const RESULTS_ENTER = 'bd-screen'
 const GRID_STYLE: CSSProperties = { gridTemplateColumns: 'repeat(auto-fill, minmax(min(300px, 100%), 1fr))' }
 
 type CardSnapshot = { el: HTMLElement; x: number; y: number; width: number; height: number; opacity: number }
@@ -88,7 +88,7 @@ class ReorderGrid extends Component<{ order: string; children: ReactNode }> {
     const exits = this.exits.current
     if (!before || !wrapper || !exits) return
 
-    const easing = motionToken('--bd-ease-out') || 'cubic-bezier(0.2, 0.7, 0.2, 1)'
+    const easing = motionToken('--bd-ease-out') || 'ease-out'
     const move = durationToken('--bd-dur', 250)
     const exit = durationToken('--bd-dur-fast', 150)
     const origin = wrapper.getBoundingClientRect()
@@ -303,7 +303,7 @@ function FilterChip({ active, onClick, children }: { active: boolean; onClick: (
       type="button"
       aria-pressed={active}
       onClick={onClick}
-      className={`bd-chip shrink-0 px-[18px] py-2.5 text-sm transition-[background-color,border-color,color,scale] duration-200 ease-out focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-bd-lav-deep active:scale-[0.97] motion-reduce:transition-none ${
+      className={`bd-chip shrink-0 px-[18px] py-2.5 text-sm transition-[background-color,border-color,color,scale] duration-bd-fast ease-out focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-bd-lav-deep active:scale-[0.97] ${
         active
           ? 'border-bd-ink bg-bd-ink text-bd-bg'
           : 'border-bd-line bg-bd-card-warm text-bd-ink-soft hover:border-bd-ink'

@@ -152,7 +152,7 @@ function LobbyListPageContent() {
               title={t('lobby.refresh')}
             >
               <span
-                className="inline-block transition-transform duration-300"
+                className="inline-block transition-transform duration-bd"
                 style={{ transform: isManualRefreshing || isAutoRefreshing ? 'rotate(360deg)' : 'none' }}
               >
                 <Icon name={isRefreshUpdated ? 'check' : 'refresh'} size={14} />

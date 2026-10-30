@@ -41,7 +41,7 @@ const DARK_THEME_STATUS: Record<string, string> = {
 export function getThemePageStyle(theme: string | null | undefined): CSSProperties {
   const t = getLobbyTheme(theme)
   const isDefault = !theme || theme === 'default'
-  if (isDefault) return { transition: 'background 0.3s ease, color 0.3s ease' }
+  if (isDefault) return { transition: 'background var(--bd-dur) var(--bd-ease-out), color var(--bd-dur) var(--bd-ease-out)' }
 
   return {
     '--bd-bg': t.bg,
@@ -69,6 +69,6 @@ export function getThemePageStyle(theme: string | null | undefined): CSSProperti
     '--bd-board-cell': t.dark ? t.bg : '#ffffff',
     background: t.bg,
     color: t.text,
-    transition: 'background 0.3s ease, color 0.3s ease',
+    transition: 'background var(--bd-dur) var(--bd-ease-out), color var(--bd-dur) var(--bd-ease-out)',
   } as CSSProperties
 }

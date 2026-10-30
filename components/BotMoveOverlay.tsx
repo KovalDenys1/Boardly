@@ -254,7 +254,7 @@ export default function BotMoveOverlay({
             style={{ height: `clamp(6px, 0.6vh, 10px)`, background: 'var(--bd-line)' }}
           >
             <div
-              className="rounded-full transition-[width] duration-500"
+              className="rounded-full transition-[width] duration-bd-slow"
               style={{
                 width: `${((currentStepIndex + 1) / steps.length) * 100}%`,
                 height: `clamp(6px, 0.6vh, 10px)`,

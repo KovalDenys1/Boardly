@@ -34,6 +34,7 @@ import {
   PRIVACY_SETTINGS_SECTION_ID,
 } from '@/lib/public-profile'
 import { prefersReducedMotion } from '@/lib/motion'
+import { MOTION_MS } from '@/lib/motion-durations'
 import {
   getStoredAppearancePreferences,
   normalizeAppearanceLocale,
@@ -196,8 +197,8 @@ function getEmailChangeRefusalKey(data: unknown): TranslationKeys | null {
 type InlineEditorStatus = 'idle' | 'checking' | 'available' | 'taken' | 'invalid' | 'error'
 type PublicProfilePreviewTransitionPhase = 'idle' | 'hero-exit' | 'preview-enter' | 'preview-exit' | 'hero-enter'
 
-const PROFILE_PREVIEW_EXIT_MS = 220
-const PROFILE_PREVIEW_ENTER_MS = 420
+const PROFILE_PREVIEW_EXIT_MS = MOTION_MS.fast
+const PROFILE_PREVIEW_ENTER_MS = MOTION_MS.slow
 const PROFILE_TAB_INDICATOR_X_INSET_PX = 2
 
 function getProfilePreviewTransitionTimings() {
@@ -1688,7 +1689,7 @@ export default function ProfilePage() {
           <button
             type="button"
             onDoubleClick={() => beginInlineEdit(field)}
-            className={`block w-full rounded-lg bg-transparent p-0 text-left transition duration-200 ease-out focus:outline-hidden ${
+            className={`block w-full rounded-lg bg-transparent p-0 text-left transition duration-bd-fast ease-out focus:outline-hidden ${
               isEditing
                 ? 'pointer-events-none absolute inset-0 -translate-y-1 opacity-0'
                 : 'relative translate-y-0 opacity-100'
@@ -1699,7 +1700,7 @@ export default function ProfilePage() {
           </button>
 
           <div
-            className={`flex items-center gap-2 transition duration-200 ease-out ${
+            className={`flex items-center gap-2 transition duration-bd-fast ease-out ${
               isEditing
                 ? 'relative translate-y-0 opacity-100'
                 : 'pointer-events-none absolute inset-0 translate-y-1 opacity-0'
@@ -1727,7 +1728,7 @@ export default function ProfilePage() {
               }}
               aria-label={field === 'email' ? 'inline-email-input' : 'inline-username-input'}
               tabIndex={isEditing ? 0 : -1}
-              className={`min-w-0 flex-1 border-0 border-b-2 bg-transparent px-0 pb-1 shadow-none outline-hidden transition duration-200 focus:ring-0 ${
+              className={`min-w-0 flex-1 border-0 border-b-2 bg-transparent px-0 pb-1 shadow-none outline-hidden transition duration-bd-fast focus:ring-0 ${
                 editingStatus === 'available'
                   ? 'border-bd-success'
                   : editingStatus === 'taken' || editingStatus === 'invalid' || editingStatus === 'error'
@@ -1782,7 +1783,7 @@ export default function ProfilePage() {
         )}
 
         <div
-          className={`overflow-hidden transition-[max-height,margin,opacity] duration-200 ease-out ${
+          className={`overflow-hidden transition-[max-height,margin,opacity] duration-bd-fast ease-out ${
             isEditing ? 'mt-1 max-h-10 opacity-100' : 'max-h-0 opacity-0'
           }`}
         >
@@ -2077,7 +2078,7 @@ export default function ProfilePage() {
             >
               <div
                 aria-hidden="true"
-                className={`pointer-events-none absolute left-0 bottom-1.5 top-1.5 rounded-xl bg-bd-lav shadow-[0_3px_0_var(--bd-lav-deep)] ${animateTabIndicator ? 'transition-[transform,width,opacity] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]' : ''}`}
+                className={`pointer-events-none absolute left-0 bottom-1.5 top-1.5 rounded-xl bg-bd-lav shadow-[0_3px_0_var(--bd-lav-deep)] ${animateTabIndicator ? 'transition-[transform,width,opacity] duration-bd ease-out' : ''}`}
                 style={{
                   width: activeTabIndicatorStyle.width
                     ? `${activeTabIndicatorStyle.width}px`
@@ -2096,7 +2097,7 @@ export default function ProfilePage() {
                   aria-controls={`profile-tab-panel-${tab.id}`}
                   id={`profile-tab-${tab.id}`}
                   onClick={() => handleTabChange(tab.id)}
-                  className={`relative z-10 flex flex-1 items-center justify-center gap-1.5 rounded-xl px-3 py-2.5 text-sm font-semibold transition-colors duration-300 sm:px-4 ${
+                  className={`relative z-10 flex flex-1 items-center justify-center gap-1.5 rounded-xl px-3 py-2.5 text-sm font-semibold transition-colors duration-bd sm:px-4 ${
                     activeTab === tab.id
                       ? `text-bd-ink-on-accent ${activeTabIndicatorStyle.opacity ? '' : 'bg-bd-lav'}`
                       : 'text-bd-ink-soft hover:bg-bd-bg2 hover:text-bd-ink'
@@ -3122,7 +3123,7 @@ export default function ProfilePage() {
                           outlineOffset: profileAccentColor === hex ? -3 : -2, cursor: 'pointer',
                           boxShadow: profileAccentColor === hex ? 'inset 0 0 0 5px var(--bd-bg)' : undefined,
                           opacity: hasUploadPack ? 1 : 0.4,
-                          transition: 'all 0.15s',
+                          transition: 'all var(--bd-dur-fast) var(--bd-ease-out)',
                         }}
                       />
                     ))}

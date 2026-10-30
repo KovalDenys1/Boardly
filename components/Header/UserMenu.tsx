@@ -35,7 +35,7 @@ export function UserMenu({ userName, userEmail, userImage }: UserMenuProps) {
   return (
     <Menu as="div" className="relative">
       <MenuButton
-        className="flex h-9 w-9 shrink-0 overflow-hidden rounded-full bg-bd-bg2 p-0.5 shadow-[inset_0_0_0_2px_var(--bd-ink)] transition-[box-shadow,scale] duration-150 ease-out hover:shadow-[inset_0_0_0_2px_var(--bd-lav)] data-open:shadow-[inset_0_0_0_2px_var(--bd-lav)] motion-safe:active:scale-[0.96] focus:outline-hidden focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-bd-lav-deep"
+        className="flex h-9 w-9 shrink-0 overflow-hidden rounded-full bg-bd-bg2 p-0.5 shadow-[inset_0_0_0_2px_var(--bd-ink)] transition-[box-shadow,scale] duration-bd-fast ease-out hover:shadow-[inset_0_0_0_2px_var(--bd-lav)] data-open:shadow-[inset_0_0_0_2px_var(--bd-lav)] motion-safe:active:scale-[0.96] focus:outline-hidden focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-bd-lav-deep"
         aria-label={t('header.openUserMenu')}
         title={userName || t('header.profile')}
       >
@@ -50,10 +50,10 @@ export function UserMenu({ userName, userEmail, userImage }: UserMenuProps) {
 
       <Transition
         as={Fragment}
-        enter="transition ease-out duration-150"
+        enter="transition ease-out duration-bd-fast"
         enterFrom="opacity-0 translate-y-1 scale-[0.98]"
         enterTo="opacity-100 translate-y-0 scale-100"
-        leave="transition ease-in duration-100"
+        leave="transition ease-in duration-bd-fast"
         leaveFrom="opacity-100 translate-y-0 scale-100"
         leaveTo="opacity-0 translate-y-1 scale-[0.98]"
       >

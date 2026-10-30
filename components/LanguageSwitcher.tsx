@@ -106,10 +106,10 @@ export default function LanguageSwitcher({ anchor }: LanguageSwitcherProps) {
 
       <Transition
         as={Fragment}
-        enter="transition ease-out duration-150"
+        enter="transition ease-out duration-bd-fast"
         enterFrom="opacity-0 translate-y-1 scale-[0.98]"
         enterTo="opacity-100 translate-y-0 scale-100"
-        leave="transition ease-in duration-100"
+        leave="transition ease-in duration-bd-fast"
         leaveFrom="opacity-100 translate-y-0 scale-100"
         leaveTo="opacity-0 translate-y-1 scale-[0.98]"
       >

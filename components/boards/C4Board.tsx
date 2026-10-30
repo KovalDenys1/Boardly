@@ -79,7 +79,7 @@ function C4Disc({ disc, isWin, pop, ghost, ghostDisc, fallDistancePx, isLast, on
             background: color,
             boxShadow: isWin ? `inset 0 0 0 3px white, ${shadow}` : shadow,
             transform: isWin ? 'scale(1.12)' : 'scale(1)',
-            transition: 'transform 0.15s, box-shadow 0.15s',
+            transition: 'transform var(--bd-dur-fast) var(--bd-ease-out), box-shadow var(--bd-dur-fast) var(--bd-ease-out)',
             position: 'relative',
         }}>
             {isLast && !!disc && !isWin && <C4LastMarker />}
@@ -138,7 +138,7 @@ export default function C4Board({ board, winningLine, hoverCol, onColHover, onCo
                     <div key={c} style={{
                         height: 20, display: 'grid', placeItems: 'center',
                         opacity: hoverCol === c && !disabled && board[0]?.[c] === null ? 1 : 0,
-                        transition: 'opacity 0.12s',
+                        transition: 'opacity var(--bd-dur-fast) var(--bd-ease-out)',
                     }}>
                         <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
                             <path d="M7 1v9M3 7l4 5 4-5" stroke={currentDisc === 1 ? DISC_RED : DISC_YELLOW} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
@@ -211,7 +211,7 @@ export default function C4Board({ board, winningLine, hoverCol, onColHover, onCo
                                     borderRadius: '50%',
                                     padding: 3,
                                     background: isHoveredCol && !cell ? hoverTint : 'rgba(255,255,255,0.10)',
-                                    transition: 'background 0.1s',
+                                    transition: 'background var(--bd-dur-fast) var(--bd-ease-out)',
                                     border: 'none',
                                     cursor: disabled || colFull ? 'not-allowed' : 'pointer',
                                     outline: 'none',

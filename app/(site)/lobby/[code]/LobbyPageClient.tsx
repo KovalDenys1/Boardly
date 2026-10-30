@@ -2050,7 +2050,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
           <div className="relative flex-1 min-h-0 overflow-hidden">
             <div
               aria-hidden={showLobbySettings}
-              className={`absolute inset-0 transition-opacity duration-200 motion-reduce:transition-none ${
+              className={`absolute inset-0 transition-opacity duration-bd-fast ${
                 showLobbySettings ? 'pointer-events-none opacity-0' : 'opacity-100'
               }`}
             >
@@ -2096,7 +2096,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
             </div>
             <div
               aria-hidden={!showLobbySettings}
-              className={`absolute inset-0 overflow-y-auto transition-opacity duration-200 motion-reduce:transition-none ${
+              className={`absolute inset-0 overflow-y-auto transition-opacity duration-bd-fast ${
                 showLobbySettings ? 'opacity-100' : 'pointer-events-none opacity-0'
               }`}
             >

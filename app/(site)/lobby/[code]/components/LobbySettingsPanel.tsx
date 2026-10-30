@@ -189,7 +189,7 @@ export default function LobbySettingsPanel({
           fills its area instead of leaving a dead gap under the last row. */}
       <div
         aria-hidden={view === 'games'}
-        className={`absolute inset-0 overflow-y-auto transition-opacity duration-200 motion-reduce:transition-none ${
+        className={`absolute inset-0 overflow-y-auto transition-opacity duration-bd-fast ${
           view === 'games' ? 'pointer-events-none opacity-0' : 'opacity-100'
         }`}
       >
@@ -409,7 +409,7 @@ export default function LobbySettingsPanel({
           of future games. */}
       <div
         aria-hidden={view !== 'games'}
-        className={`absolute inset-0 overflow-y-auto transition-opacity duration-200 motion-reduce:transition-none ${
+        className={`absolute inset-0 overflow-y-auto transition-opacity duration-bd-fast ${
           view === 'games' ? 'opacity-100' : 'pointer-events-none opacity-0'
         }`}
       >

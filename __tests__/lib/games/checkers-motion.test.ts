@@ -132,7 +132,7 @@ describe('deriveCheckersMotion', () => {
         const first = planOf(deriveCheckersMotion(s0, s1, 2))
         const second = planOf(deriveCheckersMotion(s1, s2, 2))
         const firstTiming = timeCheckersMotion(first)
-        // Landed at 220, capture fade runs to 330: the run is still going at 300.
+        // Landed at JUMP_HOP_MS, the capture fade runs past it: the run is still going at 300.
         const elapsed = 300
         expect(elapsed).toBeGreaterThan(firstTiming.liftStart)
         expect(elapsed).toBeLessThan(firstTiming.total)

@@ -414,15 +414,35 @@ The motion tokens are in `:root` and do not change with the theme:
 | `--bd-dur-fast` | `150ms` | hover, press and small fades |
 | `--bd-dur` | `250ms` | a status cue, a last-move marker, a fade |
 | `--bd-dur-slow` | `420ms` | a score pop, the result panel, a last-move ring |
-| `--bd-ease-out` | `cubic-bezier(0.2, 0.7, 0.2, 1)` | the default curve |
+| `--bd-ease-out` | `cubic-bezier(0.2, 0.7, 0.2, 1)` | the default curve: entrances, hovers, fades |
 | `--bd-ease-spring` | `cubic-bezier(0.2, 1.4, 0.4, 1)` | a pop that overshoots slightly |
+| `--bd-ease-in` | `cubic-bezier(0.5, 0, 0.85, 0.35)` | accelerates like a fall: a dropped disc, an exit |
+| `--bd-ease-in-out` | `cubic-bezier(0.42, 0, 0.58, 1)` | a shake, a loop |
 
+- **Nothing spells a curve or a duration but the token block (#1569).** CSS uses `var(--bd-dur*)` and
+  `var(--bd-ease-*)`; Tailwind uses `duration-bd-fast`, `duration-bd`, `duration-bd-slow`, and `ease-out`,
+  `ease-in`, `ease-in-out`, which `@theme inline` points at the tokens, as it does a bare `transition`'s
+  default duration and curve. A loop's period (`infinite`) and a `linear` clock or progress bar keep their
+  real time. Arbitrary values follow the same rule: `animate-[slideIn_var(--bd-dur-fast)_var(--bd-ease-out)]`.
+  `__tests__/lib/motion-tokens.test.ts` fails on a `cubic-bezier(` outside the token block, a keyword
+  curve, or a raw duration, in CSS, inline styles and Tailwind classes alike.
+- **A wait in JavaScript takes its time from the tokens.** `MOTION_MS` in `lib/motion-durations.ts` holds the three
+  durations in milliseconds, and a constant that waits for a CSS animation is built from it
+  (`RPS_REVEAL_MS`, `CAPTURE_FADE_MS`, `MATCH_CUE_MS`); the motion test pins each one to the rule it waits for.
 - Animate `transform` and `opacity` only (CLAUDE.md, "never animate height"). Use `transition`, never
   `transition-all`: v4's `transition` leaves width, height and margins out, and the audit refuses
   `transition-all`. An animation that still moves a layout property names it (`transition-[width]`), so
   it can be found.
-- `prefers-reduced-motion` is collapsed by the global rule in `globals.css`. A wait that lives in
-  JavaScript asks `prefersReducedMotion()` from `lib/motion.ts`, never its own `matchMedia`.
+- **Reduced motion removes movement and keeps fades.** The global rule in `globals.css` collapses keyframe
+  animations and every delay, and limits transitions to opacity and colour at their own duration, so a
+  transform or a layout property snaps while a fade still runs, which is why there is no
+  `motion-reduce:transition-none` (the rule would override it anyway, and the test refuses it). A
+  keyframe animation that only changes opacity gets its time back under that rule through a line that
+  names its keyframes, so a moving animation on the same element cannot borrow it; `.bd-screen` and the
+  lobby route's children fade instead of sliding. The motion test fails when a fade is missing from the
+  list, when the list names a keyframe that moves, and on a fade in an arbitrary `animate-[…]` class, which
+  that list cannot reach. A wait that lives in JavaScript asks `prefersReducedMotion()` from
+  `lib/motion.ts`, never its own `matchMedia`.
 
 ---
 
