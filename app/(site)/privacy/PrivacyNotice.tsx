@@ -1,7 +1,8 @@
 'use client'
 
-import Link from 'next/link'
 import type { ReactNode } from 'react'
+import Breadcrumbs from '@/components/Breadcrumbs'
+import DocumentContents from '@/components/DocumentContents'
 import { useTranslation } from '@/lib/i18n-helpers'
 import { reopenGoogleConsentMessage } from '@/lib/consent'
 import { isProductionDeployment } from '@/lib/feature-flags'
@@ -62,14 +63,28 @@ const STORAGE_ITEMS = [
 
 const RIGHTS_ITEMS = ['export', 'correct', 'delete', 'forget'] as const
 
+const SECTIONS = [
+  'controller',
+  'purposes',
+  'recipients',
+  'discord',
+  'ads',
+  'storage',
+  'rights',
+  'complaints',
+  'security',
+  'children',
+  'changes',
+] as const
+
 // Google Play's Data safety form links here as the app's account deletion page.
 const DELETE_ACCOUNT_ANCHOR = 'delete-account'
 
 export type PrivacyController = { name: string; address: string } | null
 
-function Section({ title, children }: { title: string; children: ReactNode }) {
+function Section({ id, title, children }: { id: (typeof SECTIONS)[number]; title: string; children: ReactNode }) {
   return (
-    <section>
+    <section id={id} className="scroll-mt-[calc(var(--bd-header-h)+1rem)]">
       <h2 className="mb-3 text-base font-semibold" style={{ color: 'var(--bd-ink)' }}>
         {title}
       </h2>
@@ -125,11 +140,11 @@ export default function PrivacyNotice({ controller }: { controller: PrivacyContr
 
   return (
     <div className="mx-auto max-w-3xl px-4 pb-20 pt-10 sm:px-6 lg:px-8">
-      <nav className="mb-6 flex items-center gap-2 text-sm" style={{ color: 'var(--bd-ink-soft)' }} aria-label="Breadcrumb">
-        <Link href="/" className="transition-colors hover:text-bd-ink">{t('privacyPolicy.breadcrumbHome')}</Link>
-        <span aria-hidden="true">/</span>
-        <span style={strong}>{t('privacyPolicy.title')}</span>
-      </nav>
+      <Breadcrumbs
+        className="mb-6"
+        label={t('breadcrumbs.label')}
+        items={[{ label: t('breadcrumbs.home'), href: '/' }, { label: t('privacyPolicy.title') }]}
+      />
 
       <div className="bd-card p-6 sm:p-8 md:p-12">
         <h1
@@ -139,10 +154,15 @@ export default function PrivacyNotice({ controller }: { controller: PrivacyContr
           {t('privacyPolicy.title')}
         </h1>
 
+        <DocumentContents
+          label={t('common.contents')}
+          sections={SECTIONS.map((id) => ({ id, title: t(`privacyPolicy.${id}.title`) }))}
+        />
+
         <div className="space-y-8 text-sm leading-relaxed" style={{ color: 'var(--bd-ink-soft)' }}>
           <p>{t('privacyPolicy.intro')}</p>
 
-          <Section title={t('privacyPolicy.controller.title')}>
+          <Section id="controller" title={t('privacyPolicy.controller.title')}>
             <p>
               {controller
                 ? t('privacyPolicy.controller.body', { name: controller.name, address: controller.address })
@@ -152,7 +172,7 @@ export default function PrivacyNotice({ controller }: { controller: PrivacyContr
             <p className="mt-3">{t('privacyPolicy.controller.dpo')}</p>
           </Section>
 
-          <Section title={t('privacyPolicy.purposes.title')}>
+          <Section id="purposes" title={t('privacyPolicy.purposes.title')}>
             <p>{t('privacyPolicy.purposes.lead')}</p>
             <div className="mt-4 space-y-4">
               {PURPOSES.map((id) => (
@@ -175,7 +195,7 @@ export default function PrivacyNotice({ controller }: { controller: PrivacyContr
             </div>
           </Section>
 
-          <Section title={t('privacyPolicy.recipients.title')}>
+          <Section id="recipients" title={t('privacyPolicy.recipients.title')}>
             <p>{t('privacyPolicy.recipients.lead')}</p>
             <div className="mt-4 space-y-4">
               {RECIPIENTS.map(({ id, name }) => (
@@ -206,7 +226,7 @@ export default function PrivacyNotice({ controller }: { controller: PrivacyContr
             <p className="mt-4">{t('privacyPolicy.recipients.note')}</p>
           </Section>
 
-          <Section title={t('privacyPolicy.discord.title')}>
+          <Section id="discord" title={t('privacyPolicy.discord.title')}>
             <ul className="list-disc space-y-1.5 pl-5">
               <li>{t('privacyPolicy.discord.feed')}</li>
               <li>{t('privacyPolicy.discord.bot')}</li>
@@ -214,7 +234,7 @@ export default function PrivacyNotice({ controller }: { controller: PrivacyContr
             </ul>
           </Section>
 
-          <Section title={t('privacyPolicy.ads.title')}>
+          <Section id="ads" title={t('privacyPolicy.ads.title')}>
             <p>{t('privacyPolicy.ads.current')}</p>
             <p className="mt-3">{t('privacyPolicy.ads.future')}</p>
             <p className="mt-3">
@@ -236,7 +256,7 @@ export default function PrivacyNotice({ controller }: { controller: PrivacyContr
             )}
           </Section>
 
-          <Section title={t('privacyPolicy.storage.title')}>
+          <Section id="storage" title={t('privacyPolicy.storage.title')}>
             <p className="mb-3">{t('privacyPolicy.storage.lead')}</p>
             <ul className="list-disc space-y-1.5 pl-5">
               {STORAGE_ITEMS.map((id) => (
@@ -248,7 +268,7 @@ export default function PrivacyNotice({ controller }: { controller: PrivacyContr
             <p className="mt-3">{t('privacyPolicy.storage.noTrackers')}</p>
           </Section>
 
-          <Section title={t('privacyPolicy.rights.title')}>
+          <Section id="rights" title={t('privacyPolicy.rights.title')}>
             <p className="mb-3">{t('privacyPolicy.rights.lead')}</p>
             <ul className="list-disc space-y-1.5 pl-5">
               {RIGHTS_ITEMS.map((id) => (
@@ -265,7 +285,7 @@ export default function PrivacyNotice({ controller }: { controller: PrivacyContr
             <p className="mt-3">{t('privacyPolicy.rights.required')}</p>
           </Section>
 
-          <Section title={t('privacyPolicy.complaints.title')}>
+          <Section id="complaints" title={t('privacyPolicy.complaints.title')}>
             <p>{t('privacyPolicy.complaints.body', { email })}</p>
             <p className="mt-2">
               <a href="https://www.datatilsynet.no" className="underline" target="_blank" rel="noopener noreferrer">
@@ -274,15 +294,15 @@ export default function PrivacyNotice({ controller }: { controller: PrivacyContr
             </p>
           </Section>
 
-          <Section title={t('privacyPolicy.security.title')}>
+          <Section id="security" title={t('privacyPolicy.security.title')}>
             <p>{t('privacyPolicy.security.body')}</p>
           </Section>
 
-          <Section title={t('privacyPolicy.children.title')}>
+          <Section id="children" title={t('privacyPolicy.children.title')}>
             <p>{t('privacyPolicy.children.body', { email })}</p>
           </Section>
 
-          <Section title={t('privacyPolicy.changes.title')}>
+          <Section id="changes" title={t('privacyPolicy.changes.title')}>
             <p>{t('privacyPolicy.changes.body')}</p>
           </Section>
 

@@ -3,6 +3,7 @@ const no = {
     loading: 'Laster...',
     error: 'Feil',
     success: 'Suksess',
+    contents: 'Innhold',
     cancel: 'Avbryt',
     confirm: 'Bekreft',
     save: 'Lagre',
@@ -4809,7 +4810,8 @@ const no = {
   },
   notFoundPage: {
     lostRoute: 'Tapt rute',
-    description: 'Side ikke funnet. Dette trekket endte utenfor brettet.',
+    title: 'Siden finnes ikke',
+    description: 'Dette trekket endte utenfor brettet.',
     description2: 'Gå tilbake til lobbylisten eller hjem for å starte et nytt spill.',
     browseLobby: 'Bla gjennom lobbyer',
     goHome: 'Gå hjem',
@@ -4983,7 +4985,6 @@ const no = {
   },
   privacyPolicy: {
     title: 'Personvernerklæring',
-    breadcrumbHome: 'Hjem',
     intro: 'Denne erklæringen forklarer hvilke personopplysninger Boardly behandler, hvorfor, på hvilket rettslig grunnlag, hvem som mottar dem, hvor lenge vi lagrer dem og hvilke rettigheter du har. «Vi» betyr Boardly-teamet.',
     updated: 'Sist oppdatert: {{date}}',
     controller: {

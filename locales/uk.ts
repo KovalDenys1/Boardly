@@ -5,6 +5,7 @@ const uk: TranslationWithPlurals = {
     loading: 'Завантаження...',
     error: 'Помилка',
     success: 'Успіх',
+    contents: 'Зміст',
     cancel: 'Скасувати',
     confirm: 'Підтвердити',
     save: 'Зберегти',
@@ -4958,7 +4959,8 @@ const uk: TranslationWithPlurals = {
   },
   notFoundPage: {
     lostRoute: 'Загублений маршрут',
-    description: 'Сторінку не знайдено. Цей хід завершився за межами дошки.',
+    title: 'Сторінку не знайдено',
+    description: 'Цей хід завершився за межами дошки.',
     description2: 'Повернутися до списку лобі або перейти на головну, щоб почати нову гру.',
     browseLobby: 'Переглянути лобі',
     goHome: 'На головну',
@@ -5135,7 +5137,6 @@ const uk: TranslationWithPlurals = {
   },
   privacyPolicy: {
     title: 'Політика конфіденційності',
-    breadcrumbHome: 'Головна',
     intro: 'Ця політика пояснює, які персональні дані обробляє Boardly, навіщо, на якій правовій підставі, хто їх отримує, як довго ми їх зберігаємо і які у вас є права. «Ми» означає команду Boardly.',
     updated: 'Останнє оновлення: {{date}}',
     controller: {

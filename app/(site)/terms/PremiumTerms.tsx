@@ -18,7 +18,7 @@ export default function PremiumTerms() {
   const { t } = useTranslation()
 
   return (
-    <section data-testid="terms-premium">
+    <section id="premium" data-testid="terms-premium" className="scroll-mt-[calc(var(--bd-header-h)+1rem)]">
       <h2 className="mb-3 text-base font-semibold" style={{ color: 'var(--bd-ink)' }}>
         {t('terms.premium.title')}
       </h2>

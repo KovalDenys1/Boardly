@@ -5,6 +5,7 @@ const de: TranslationWithPlurals = {
     loading: 'Wird geladen …',
     error: 'Fehler',
     success: 'Erfolg',
+    contents: 'Inhalt',
     cancel: 'Abbrechen',
     confirm: 'Bestätigen',
     save: 'Speichern',
@@ -4840,7 +4841,8 @@ const de: TranslationWithPlurals = {
   },
   notFoundPage: {
     lostRoute: 'Vom Weg abgekommen',
-    description: 'Seite nicht gefunden. Dieser Zug ist neben dem Spielbrett gelandet.',
+    title: 'Seite nicht gefunden',
+    description: 'Dieser Zug ist neben dem Spielbrett gelandet.',
     description2: 'Geh zurück zur Lobbyliste oder zur Startseite, um ein neues Spiel zu starten.',
     browseLobby: 'Lobbys ansehen',
     goHome: 'Zur Startseite',
@@ -5015,7 +5017,6 @@ const de: TranslationWithPlurals = {
   },
   privacyPolicy: {
     title: 'Datenschutzerklärung',
-    breadcrumbHome: 'Startseite',
     intro: 'Diese Erklärung beschreibt, welche personenbezogenen Daten Boardly verarbeitet, warum, auf welcher Rechtsgrundlage, wer sie erhält, wie lange wir sie aufbewahren und welche Rechte du hast. „Wir“ bezeichnet das Boardly-Team.',
     updated: 'Zuletzt aktualisiert: {{date}}',
     controller: {

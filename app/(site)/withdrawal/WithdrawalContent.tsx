@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { useCallback, useMemo, useState } from 'react'
+import Breadcrumbs from '@/components/Breadcrumbs'
 import Footer from '@/components/Footer'
 import { Icon } from '@/components/icons'
 import { useTranslation } from '@/lib/i18n-helpers'
@@ -81,11 +82,11 @@ export default function WithdrawalContent() {
   return (
     <div className="bd-page flex min-h-full flex-1 flex-col">
       <div className="mx-auto w-full max-w-3xl px-4 pb-20 pt-10 sm:px-6 lg:px-8">
-        <nav className="mb-6 flex items-center gap-2 text-sm" style={{ color: 'var(--bd-ink-soft)' }} aria-label={t('breadcrumbs.label')}>
-          <Link href="/" className="transition-colors hover:text-bd-ink">{t('breadcrumbs.home')}</Link>
-          <span>/</span>
-          <span style={{ color: 'var(--bd-ink)' }}>{t('withdrawal.breadcrumb')}</span>
-        </nav>
+        <Breadcrumbs
+          className="mb-6"
+          label={t('breadcrumbs.label')}
+          items={[{ label: t('breadcrumbs.home'), href: '/' }, { label: t('withdrawal.breadcrumb') }]}
+        />
 
         <article className="bd-card p-8 md:p-12">
           <h1
