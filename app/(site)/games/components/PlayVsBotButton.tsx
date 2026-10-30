@@ -277,9 +277,7 @@ export default function PlayVsBotButton({ gameType, className = '' }: PlayVsBotB
         disabled={loading}
         aria-haspopup="menu"
         aria-expanded={open}
-        className={`bd-btn bd-btn-soft bd-btn-lg w-full justify-center disabled:opacity-60 ${
-          open ? 'bg-bd-bg2' : ''
-        }`}
+        className="bd-btn bd-btn-primary bd-btn-lg w-full justify-center disabled:opacity-60"
       >
         <Icon name="robot" size={16} /> {loading ? '…' : t('quickPlay.playVsBot')}
       </button>

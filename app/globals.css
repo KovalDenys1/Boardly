@@ -701,6 +701,11 @@ html.dark {
   padding-bottom: clamp(64px, 8vw, 96px);
 }
 
+/* Game page screenshots: one frame per theme, swapped on the html class the theme toggle sets, not on the system setting. */
+.bd-shot-dark { display: none; }
+html.dark .bd-shot-light { display: none; }
+html.dark .bd-shot-dark { display: block; }
+
 .home-video-frame {
   aspect-ratio: 16 / 9;
   background: var(--bd-card-warm);

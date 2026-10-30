@@ -443,8 +443,6 @@ const de: TranslationWithPlurals = {
     chooseWhatToPlay: 'Wähle dein Spiel',
     seeAllGames: 'Alle Spiele ansehen →',
     heroTagline: 'Deine Freunde sind nur einen Link entfernt.',
-    ribbonBadgeLater: 'Kommt später',
-    ribbonBadgePlanned: 'Auf der Liste',
     ribbonDescription: '{{available}} Spiele sind heute spielbereit. {{more}} weitere prüfen wir für künftige Spieleabende.',
     ribbonMoreTitle: 'Mehr ist unterwegs',
     ribbonMoreDesc: '{{count}} weitere Spiele sind in Entwicklung. Der komplette Katalog zeigt, was als Nächstes kommt.',
@@ -506,9 +504,9 @@ const de: TranslationWithPlurals = {
     available: 'Verfügbar',
     comingSoon: 'Demnächst',
     playNow: 'Jetzt spielen',
+    playWithFriends: 'Mit Freunden spielen',
     viewLobbies: 'Lobbys ansehen',
     catalog: 'Katalog',
-    seeGame: 'Zum Spiel →',
     noGamesFound: 'Keine Spiele passen zu diesen Filtern.',
     filters: {
       reset: 'Filter zurücksetzen',
@@ -577,8 +575,6 @@ const de: TranslationWithPlurals = {
         answer: 'Ja. Öffne eine Lobby, teile den vierstelligen Code, und bis zu vier von euch spielen in Echtzeit – kostenlos, im Browser, mit einem Gastnamen statt eines Kontos. Der kurze Modus hat neun Kategorien, der klassische alle fünfzehn, und ein Bot kann einen freien Platz besetzen.',
       },
       ribbon: {
-        desc: 'Würfle mit fünf Würfeln, füll den Block und jag die besten Kombinationen. Spiel mit Freunden oder starte schnell eine Partie, auch allein.',
-        tag: 'Würfel',
         time: '15 Min.',
       },
       detail: {
@@ -843,8 +839,6 @@ const de: TranslationWithPlurals = {
         answer: 'Alle im Raum bekommen denselben geheimen Ort und eine Rolle darin – außer einer Person, die nur weiß, dass sie der Spion ist. Ihr stellt euch reihum Fragen, bis die Gruppe abstimmt – oder der Spion den Ort nennt und 500 Punkte kassiert. Drei bis zehn Spieler, kostenlos, im Browser.',
       },
       ribbon: {
-        desc: 'Alle bekommen denselben Ort – außer dem Spion. Stellt Fragen, hört genau hin und stimmt ab.',
-        tag: 'Deduktion',
         time: '10 Min.',
       },
       detail: {
@@ -1066,8 +1060,6 @@ const de: TranslationWithPlurals = {
         answer: 'Ja. Teile einen Lobby-Code, und ihr setzt abwechselnd in Echtzeit auf dem 3×3-Raster, oder hol dir einen Bot auf Leicht, Mittel oder Schwer, wenn gerade niemand da ist. Eine Lobby spielt Runde um Runde mit laufendem Punktestand, außer du stellst Best of 3, 5 oder 10 ein. Kostenlos, im Browser, ein Gastname reicht.',
       },
       ribbon: {
-        desc: 'Ein schneller Klassiker für zwei. Spiel mit Freunden oder starte eine schnelle Partie, wenn du nur eine Minute hast.',
-        tag: 'Strategie',
         time: '5 Min.',
       },
       detail: {
@@ -1314,8 +1306,6 @@ const de: TranslationWithPlurals = {
         answer: 'Ja. Zwei bis vier Leute teilen sich ein Brett im Browser: Deck in deinem Zug zwei Karten auf, behalte das Paar und mach weiter, wenn sie zusammenpassen, und wer am Ende die meisten Paare hat, gewinnt. Leicht ist 4×4 mit 8 Paaren, Mittel 5×4 mit 10, Schwer 6×6 mit 18.',
       },
       ribbon: {
-        desc: 'Karten aufdecken, Positionen merken und Paare finden – auf leichten, mittleren oder schweren Brettern.',
-        tag: 'Karten',
         time: '10 Min.',
       },
       detail: {
@@ -1580,8 +1570,6 @@ const de: TranslationWithPlurals = {
         answer: 'Ja. Gespielt wird auf dem Standardbrett mit sieben Spalten und sechs Reihen, live im Browser: Schick Freunden deinen Lobby-Code oder wähle Leicht, Mittel oder Schwer und wirf Steine gegen einen Bot ein. Kostenlos, nichts zu installieren, und ein Gastname ist alles, was du an Konto brauchst.',
       },
       ribbon: {
-        desc: 'Ein Strategieklassiker für zwei. Steine einwerfen, Reihen bauen und den Gegner überlisten.',
-        tag: 'Strategie',
         time: '10 Min.',
       },
       detail: {
@@ -1821,8 +1809,6 @@ const de: TranslationWithPlurals = {
         answer: 'Ja. Gespielt wird die englische Variante (Checkers) auf einem 8×8-Brett im Browser: Schick Freunden deinen Lobby-Code oder spiel gegen einen Bot auf Leicht, Mittel oder Schwer. Ein Gastname ist alles, was du an Konto brauchst.',
       },
       ribbon: {
-        desc: 'Das klassische Duell auf der Diagonalen. Schlagzwang, Sprungketten und Damen krönen.',
-        tag: 'Strategie',
         time: '15 Min.',
       },
       detail: {
@@ -2043,8 +2029,6 @@ const de: TranslationWithPlurals = {
         answer: 'Ja. Beide wählen gleichzeitig, und beide Hände werden zusammen aufgedeckt – niemand sieht den Zug des anderen zuerst. Spiel gegen einen Freund über einen gemeinsamen Lobby-Code oder gegen einen Bot auf Leicht, Mittel oder Schwer; das Match gewinnt, wer zuerst zwei Runden holt. Kostenlos, im Browser.',
       },
       ribbon: {
-        desc: 'Wählt Stein, Papier oder Schere und deckt gleichzeitig auf. Schnelle Runden – wer zuerst das Ziel erreicht, gewinnt.',
-        tag: 'Locker',
         time: '2 Min.',
       },
       rule_1: 'Beide wählen gleichzeitig Stein, Papier oder Schere',
@@ -2241,8 +2225,6 @@ const de: TranslationWithPlurals = {
         answer: 'Ja. Eröffne eine Lobby und schick den Code an bis zu drei Freunde oder besetze freie Plätze mit Bots auf Leicht, Mittel oder Schwer. Unser Server würfelt, und alles ist kostenlos, ganz ohne Installation.',
       },
       ribbon: {
-        desc: 'Das Wettrennen für die ganze Familie. Würfle eine Sechs zum Rauskommen, schick Gegner zurück ins Haus und bring jede Figur ins Ziel.',
-        tag: 'Brettspiel',
         time: '15 Min.',
       },
       modes: {
@@ -2489,8 +2471,6 @@ const de: TranslationWithPlurals = {
         answer: 'Ja, mit drei bis sechzehn Leuten und ohne Bots – bei Alias reden Teams miteinander, also braucht der Raum echte Spieler. Eine Person im Team beschreibt den Begriff, ohne ihn zu sagen, die anderen raten gegen die Uhr, Überspringen kostet einen Punkt, und die höhere Punktzahl gewinnt.',
       },
       ribbon: {
-        desc: 'Eine Person beschreibt einen geheimen Begriff, das Team rät um die Wette. Erratet mehr Begriffe, als ihr überspringt, um zu gewinnen.',
-        tag: 'Team',
         time: '20 Min.',
       },
       detail: {
@@ -2733,8 +2713,6 @@ const de: TranslationWithPlurals = {
         answer: 'Ja, mit drei bis zehn Leuten im Browser. In jeder Runde zeichnet eine Person einen geheimen Begriff auf einer gemeinsamen Zeichenfläche, und alle anderen tippen gegen die Uhr ihre Antworten. Schnelle Antworten bringen mehr Punkte, und ein Gastname ist das einzige Konto, das du brauchst.',
       },
       ribbon: {
-        desc: 'Zeichnet abwechselnd einen geheimen Begriff, während alle anderen um die Wette raten.',
-        tag: 'Zeichnen',
         time: '10 Min.',
       },
       detail: {
@@ -2909,8 +2887,6 @@ const de: TranslationWithPlurals = {
       description: 'Bluffe, lies die Runde und entlarve die besten Lügner, bevor sie alle hereinlegen.',
       difficulty: 'Schwer',
       ribbon: {
-        desc: 'Stell eine Behauptung auf und hoff, dass sie hält – die Runde stimmt ab, ob du die Wahrheit sagst.',
-        tag: 'Bluffen',
         time: '15 Min.',
       },
       seo: {

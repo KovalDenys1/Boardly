@@ -162,20 +162,24 @@ export default function GameDetailPage({
               <p className="mt-5 max-w-2xl text-base font-medium leading-relaxed text-bd-ink-soft sm:text-lg sm:leading-7">
                 {description}
               </p>
-              <div className="mt-7 flex flex-col items-stretch gap-3 sm:flex-row sm:items-center sm:justify-center lg:items-start lg:justify-start">
+              <div className="mt-7 flex flex-col items-stretch gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-center lg:items-start lg:justify-start">
                 {primaryCtaDisabled ? (
-                  <span className="bd-btn bd-btn-primary bd-btn-lg cursor-not-allowed justify-center opacity-70 sm:w-[190px]" aria-disabled="true">
+                  <span className="bd-btn bd-btn-primary bd-btn-lg cursor-not-allowed justify-center opacity-70 sm:min-w-40" aria-disabled="true">
                     {ctaLabel}
                   </span>
+                ) : playVsBotGameType ? (
+                  <>
+                    <PlayVsBotButton gameType={playVsBotGameType} className="sm:min-w-40" />
+                    <Link href={lobbiesHref} className="bd-btn bd-btn-ghost bd-btn-lg justify-center sm:min-w-40">
+                      {t('games.playWithFriends')}
+                    </Link>
+                  </>
                 ) : (
-                  <Link href={lobbiesHref} className="bd-btn bd-btn-primary bd-btn-lg justify-center sm:w-[190px]">
+                  <Link href={lobbiesHref} className="bd-btn bd-btn-primary bd-btn-lg justify-center sm:min-w-40">
                     {ctaLabel}
                   </Link>
                 )}
-                {playVsBotGameType && !primaryCtaDisabled && (
-                  <PlayVsBotButton gameType={playVsBotGameType} className="sm:w-[190px]" />
-                )}
-                <Link href={localize('/games')} className="bd-btn bd-btn-ghost bd-btn-lg justify-center sm:w-[190px]">
+                <Link href={localize('/games')} className="bd-btn bd-btn-ghost bd-btn-lg justify-center sm:min-w-40">
                   {t('home.browseGames')}
                 </Link>
               </div>
@@ -187,7 +191,7 @@ export default function GameDetailPage({
             </div>
 
             {hasScreenshot(gameId) ? (
-              <div className="relative mx-auto w-full max-w-md lg:mx-0 lg:w-104">
+              <div className="relative mx-auto w-full max-w-md lg:mx-0 lg:w-96">
                 <GameScreenshot gameId={gameId} gameName={gameName} />
                 <div className="absolute -left-4 -top-4">
                   <GameIcon gameId={gameId} accentColor={accentColor ?? 'var(--bd-coral)'} size={72} label={iconLabel} />
