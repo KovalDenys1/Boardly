@@ -546,6 +546,7 @@ const uk: TranslationWithPlurals = {
     available: 'Доступно',
     comingSoon: 'Незабаром',
     playNow: 'Грати зараз',
+    playWithFriends: 'Грати з друзями',
     viewLobbies: 'Переглянути лобі',
     catalog: 'Каталог',
     noGamesFound: 'Жодна гра не підходить під ці фільтри.',

@@ -497,6 +497,7 @@ const en = {
     available: 'Available',
     comingSoon: 'Coming Soon',
     playNow: 'Play Now',
+    playWithFriends: 'Play with friends',
     viewLobbies: 'View Lobbies',
     catalog: 'Catalog',
     noGamesFound: 'No games match these filters.',

@@ -22,7 +22,6 @@ export default function RockPaperScissorsDetailContent() {
       accentColor="var(--bd-lav)"
       accent="var(--bd-lav)"
       lobbiesHref="/games/rock-paper-scissors/lobbies"
-      primaryCtaLabel={t('games.playNow')}
       playVsBotGameType="rock_paper_scissors"
       facts={[
         { label: t('games.detail.labels.players'), value: '1–2' },

@@ -508,6 +508,7 @@ const es: TranslationWithPlurals = {
     available: 'Disponible',
     comingSoon: 'Próximamente',
     playNow: 'Jugar ahora',
+    playWithFriends: 'Jugar con amigos',
     viewLobbies: 'Ver salas',
     catalog: 'Catálogo',
     noGamesFound: 'Ningún juego coincide con estos filtros.',

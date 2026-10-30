@@ -544,6 +544,7 @@ const ru = {
     available: 'Доступно',
     comingSoon: 'Скоро',
     playNow: 'Играть сейчас',
+    playWithFriends: 'Играть с друзьями',
     viewLobbies: 'Посмотреть лобби',
     catalog: 'Каталог',
     noGamesFound: 'Ни одна игра не подходит под эти фильтры.',

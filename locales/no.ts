@@ -497,6 +497,7 @@ const no = {
     available: 'Tilgjengelig',
     comingSoon: 'Kommer snart',
     playNow: 'Spill nå',
+    playWithFriends: 'Spill med venner',
     viewLobbies: 'Se lobbyer',
     catalog: 'Katalog',
     noGamesFound: 'Ingen spill passer til disse filtrene.',
