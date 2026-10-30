@@ -1,5 +1,5 @@
 import { getGuideBySlug, type LocalizedGuideCard } from '@/lib/guides-catalog'
-import type { PrefixedLocale, SeoLocale } from '@/lib/seo-locales'
+import type { GuideLocale, PrefixedGuideLocale } from '@/lib/seo-locales'
 import no from './no'
 import ru from './ru'
 import uk from './uk'
@@ -8,9 +8,9 @@ import uk from './uk'
  * The guides as the index and the home page list them, per language. Kept apart from the guide
  * text so the home page's client bundle carries ten titles, not ten articles.
  */
-const CARDS: Record<PrefixedLocale, Record<string, LocalizedGuideCard>> = { ru, uk, no }
+const CARDS: Record<PrefixedGuideLocale, Record<string, LocalizedGuideCard>> = { ru, uk, no }
 
-export function getGuideCard(slug: string, locale: SeoLocale): LocalizedGuideCard {
+export function getGuideCard(slug: string, locale: GuideLocale): LocalizedGuideCard {
   if (locale === 'en') {
     const { title, description, readTime, published, updated } = getGuideBySlug(slug)
     return { title, description, readTime, published, updated }

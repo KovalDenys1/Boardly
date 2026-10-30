@@ -1,15 +1,17 @@
 // @ts-nocheck
 
 /**
- * #1394, #928: /ru/..., /uk/... and /no/... render their own language on the
- * server, and a language the visitor stored earlier must not turn them back
- * after hydration.
+ * #1394, #928, #1610: /ru/..., /uk/..., /no/..., /de/... and /es/... render their
+ * own language on the server, and a language the visitor stored earlier must not
+ * turn them back after hydration.
  */
 
 import { act, render, screen } from '@testing-library/react'
 import { renderToString } from 'react-dom/server'
 import i18n from '@/i18n'
 import Providers from '@/app/providers'
+import DePageLocale from '@/components/i18n/DePageLocale'
+import EsPageLocale from '@/components/i18n/EsPageLocale'
 import NoPageLocale from '@/components/i18n/NoPageLocale'
 import RuPageLocale from '@/components/i18n/RuPageLocale'
 import UkPageLocale from '@/components/i18n/UkPageLocale'
@@ -19,6 +21,8 @@ import ru from '@/locales/ru'
 import uk from '@/locales/uk'
 import en from '@/locales/en'
 import no from '@/locales/no'
+import de from '@/locales/de'
+import es from '@/locales/es'
 
 jest.mock('next-auth/react', () => ({
   SessionProvider: ({ children }) => <>{children}</>,
@@ -34,6 +38,11 @@ jest.mock('next/dynamic', () => () => () => null)
 function GameName() {
   const { t } = useTranslation()
   return <p data-testid="name">{t('games.alias.name')}</p>
+}
+
+function SpyName() {
+  const { t } = useTranslation()
+  return <p data-testid="spy">{t('games.spy.name')}</p>
 }
 
 function YahtzeeName() {
@@ -153,6 +162,49 @@ describe('a prefixed page keeps its own language (#1394)', () => {
       </NoPageLocale>
     )
     expect(screen.getByTestId('links').textContent).toBe('/no /no/games /no/games/alias /games/alias/lobbies /no/guides')
+  })
+
+  it('renders German and Spanish in the server HTML of /de and /es pages (#1610)', () => {
+    const german = renderToString(
+      <DePageLocale>
+        <SpyName />
+      </DePageLocale>
+    )
+    const spanish = renderToString(
+      <EsPageLocale>
+        <SpyName />
+      </EsPageLocale>
+    )
+    expect(german).toContain(`>${de.games.spy.name}<`)
+    expect(spanish).toContain(`>${es.games.spy.name}<`)
+    for (const html of [german, spanish]) expect(html).not.toContain(`>${en.games.spy.name}<`)
+  })
+
+  it('stays Spanish after hydration when the visitor stored German (#1610)', async () => {
+    window.localStorage.setItem('i18nextLng', 'de')
+    document.documentElement.lang = 'es'
+
+    render(
+      <EsPageLocale>
+        <Providers pathLocale="es">
+          <SpyName />
+        </Providers>
+      </EsPageLocale>
+    )
+    await act(async () => {})
+
+    expect(screen.getByTestId('spy').textContent).toBe(es.games.spy.name)
+    expect(document.documentElement.lang).toBe('es')
+    expect(i18n.language).not.toBe('de')
+  })
+
+  it('links the game pages in German on a /de page and the guides in English, which are not written in German (#1610)', () => {
+    render(
+      <DePageLocale>
+        <Links />
+      </DePageLocale>
+    )
+    expect(screen.getByTestId('links').textContent).toBe('/de /de/games /de/games/alias /games/alias/lobbies /guides')
   })
 
   it('leaves links alone on an unprefixed page', () => {

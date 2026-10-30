@@ -135,7 +135,7 @@ export function RootDocument({
   children,
 }: {
   lang: string
-  /** A /ru, /uk or /no page: the language comes from the URL, and `LocaleProvider` renders it. */
+  /** A /ru, /uk, /no, /de or /es page: the language comes from the URL, and `LocaleProvider` renders it. */
   pathLocale?: PrefixedLocale
   LocaleProvider?: (props: { children: React.ReactNode }) => React.ReactNode
   children: React.ReactNode

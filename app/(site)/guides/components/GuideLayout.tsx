@@ -9,7 +9,7 @@ import { getCatalogEntryById } from '@/lib/game-catalog'
 import { getGuideCard } from '@/lib/guide-cards'
 import { getGuideBySlug, getGuideGamePath, type GuideIcon } from '@/lib/guides-catalog'
 import { GUIDES_AD_SLOT } from '@/lib/ad-slots'
-import { localizeHref, localizedPath, type SeoLocale } from '@/lib/seo-locales'
+import { localizeHref, localizedPath, type GuideLocale } from '@/lib/seo-locales'
 import { serverTranslator } from '@/lib/server-i18n'
 import { GUIDE_UI } from './guide-ui'
 
@@ -23,7 +23,7 @@ interface GuideLayoutProps {
   icon: GuideIcon
   /** The guide's catalog slug – the "Last updated" date is read from it, never hand-typed (#923). */
   slug: string
-  locale: SeoLocale
+  locale: GuideLocale
   /** The last crumb, from the same `seo` block the BreadcrumbList node reads, so the two cannot drift. */
   breadcrumbLabel: string
   title: string
