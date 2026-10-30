@@ -63,6 +63,8 @@
   --color-bd-warning-text: var(--bd-warning-text);
   --color-bd-warning-bg: var(--bd-warning-bg);
   --color-bd-warning-border: var(--bd-warning-border);
+  --color-bd-board-line: var(--bd-board-line);
+  --color-bd-board-cell: var(--bd-board-cell);
   --default-ring-color: var(--bd-lav-deep);
   --shadow-bd-ink-4: 0 4px 0 var(--bd-ink);
   --shadow-bd-ink-5: 0 5px 0 var(--bd-ink);
@@ -382,6 +384,18 @@ html.dark {
   --bd-warning-text: #FFC44D;
   --bd-warning-bg: #352A12;
   --bd-warning-border: #62501F;
+}
+
+/* Boards (#1567): the line that draws a board's edge and grid, 3:1 off every card and page a board sits on,
+   and Ludo's cells under it. The dark line is light, so a dark board keeps its edge on the dark card. */
+:root {
+  --bd-board-line: #1F1B16;
+  --bd-board-cell: #FFFFFF;
+}
+
+html.dark {
+  --bd-board-line: #A89A88;
+  --bd-board-cell: #1E1B17;
 }
 
 @keyframes bd-float {
@@ -5186,8 +5200,8 @@ html.dark .liars-seat { background: var(--bd-bg2); }
   width: 44%;
   height: 44%;
   border-radius: 50%;
-  background: var(--bd-card);
-  color: var(--bd-ink);
+  background: rgba(255, 255, 255, 0.55);
+  color: var(--bd-ink-on-accent);
   font-family: var(--bd-font-display);
   font-size: clamp(12px, 3vw, 28px);
   font-weight: 900;

@@ -147,13 +147,12 @@ export default function C4Board({ board, winningLine, hoverCol, onColHover, onCo
                 ))}
             </div>}
 
-            {/* Board grid — fixed dark frame (not var(--bd-ink), which
-                flips to a light color in html.dark) so the board keeps its
-                self-contained look in both themes; see DISC_EMPTY above. */}
+            {/* Dark in both themes (--bd-ink turns cream in html.dark), with a rim that keeps its edge on a dark card. */}
             <div style={{
-                background: '#1F1B16',
+                background: 'var(--bd-inverse)',
+                border: '2px solid var(--bd-board-line)',
                 borderRadius: 16,
-                padding: 8,
+                padding: 6,
                 boxShadow: '0 8px 24px rgba(31,27,22,0.24)',
                 display: 'grid',
                 gridTemplateColumns: `repeat(${COLS}, 1fr)`,

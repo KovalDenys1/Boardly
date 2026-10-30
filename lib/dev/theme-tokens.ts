@@ -83,6 +83,8 @@ export const THEME_TOKENS: readonly ThemeToken[] = [
   { name: 'bd-input-bg', group: 'surface', note: 'Input and field background', light: '#ffffff', dark: '#2B2720' },
   { name: 'bd-line', group: 'surface', note: 'Hairline borders and dividers', light: '#E8DDC8', dark: '#3A3530' },
   { name: 'bd-inverse', group: 'surface', note: 'The dark slab: marquee, CTA band, finished-game banner. Stays dark in dark', light: '#1F1B16', dark: '#35302A' },
+  { name: 'bd-board-line', group: 'surface', note: 'Board frames and grid lines: 3:1 on every card in both themes', light: '#1F1B16', dark: '#A89A88' },
+  { name: 'bd-board-cell', group: 'surface', note: 'A board square or cell', light: '#FFFFFF', dark: '#1E1B17' },
 ]
 
 export const GROUP_LABELS: Record<TokenGroup, string> = {

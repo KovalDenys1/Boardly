@@ -144,6 +144,60 @@ describe('lobby themes: status colours', () => {
 })
 
 /**
+ * Boards keep their edge in dark mode (#1567): Connect Four's dark frame carries a rim in --bd-board-line,
+ * Ludo draws its grid in it on --bd-board-cell, and the Memory card back is the same card in every theme.
+ */
+const BOARD_THEMES: Array<[name: string, tokens: Record<string, string>]> = [
+  ['light', THEMES.light],
+  ['dark', THEMES.dark],
+  ...LOBBY_THEME_IDS.filter((id) => id !== 'default').map((id): [string, Record<string, string>] => [
+    `lobby ${id}`,
+    { ...THEMES.light, '--bd-bg': LOBBY_THEMES[id].bg, ...(getThemePageStyle(id) as Record<string, string>) },
+  ]),
+]
+
+describe.each(BOARD_THEMES)('%s: board edges', (_name, tokens) => {
+  it.each(['--bd-card', '--bd-card-warm', '--bd-bg'])('the board line stands 3:1 off %s, where a board sits', (surface) => {
+    expect(ratio(tokens['--bd-board-line'], tokens[surface])).toBeGreaterThanOrEqual(3)
+  })
+
+  it('Ludo grid lines read 3:1 on its cells', () => {
+    expect(ratio(tokens['--bd-board-line'], tokens['--bd-board-cell'])).toBeGreaterThanOrEqual(3)
+  })
+})
+
+describe('board sources', () => {
+  const read = (file: string) => fs.readFileSync(path.join(__dirname, '..', '..', file), 'utf8')
+
+  it('Connect Four rims its frame in the board line, inside the box', () => {
+    expect(read('components/boards/C4Board.tsx')).toMatch(/border: '2px solid var\(--bd-board-line\)'/)
+  })
+
+  it('Ludo draws its ground, cells and lines with theme tokens, not light hex', () => {
+    const ludo = read('components/boards/LudoBoard.tsx')
+    expect(ludo).toMatch(/const BOARD_BG = 'var\(--bd-card-warm\)'/)
+    expect(ludo).toMatch(/const CELL_BG = 'var\(--bd-board-cell\)'/)
+    expect(ludo).toMatch(/const BOARD_LINE = 'var\(--bd-board-line\)'/)
+  })
+})
+
+describe('the Memory card back mark', () => {
+  const rule = /\.memory-tile-back-mark \{([^}]*)\}/.exec(css)![1]
+  const markToken = /(?<![-\w])color:\s*var\((--bd-[a-z-]+)\)/.exec(rule)?.[1] ?? ''
+  const plate = /background:\s*rgba\(255,\s*255,\s*255,\s*([0-9.]+)\)/.exec(rule)
+
+  it('is drawn in --bd-ink-on-accent on a white plate over the lav back, the same card in every theme', () => {
+    expect(markToken).toBe('--bd-ink-on-accent')
+    expect(plate).not.toBeNull()
+  })
+
+  it.each(Object.entries(THEMES))('reads 3:1 or more in %s', (_name, tokens) => {
+    const ground = tint('#FFFFFF', Number(plate?.[1] ?? 0), tokens['--bd-lav'])
+    expect(ratio(tokens[markToken] ?? '#FFFFFF', ground)).toBeGreaterThanOrEqual(3)
+  })
+})
+
+/**
  * The -deep shades draw the border and hard shadow of a filled button, a checked box and
  * the focus ring, so they hold their own floors: in every theme, lobby themes included.
  */

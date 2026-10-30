@@ -71,6 +71,13 @@ Dark: danger `#F2665C` / `#FF8A80` / `#3A201D` / `#6E302A`, success `#4FC9A6` / 
 warning `#FFC44D` / `#FFC44D` / `#352A12` / `#62501F`. Text on the danger fill is `--bd-ink-on-danger` (white, ink
 in dark). Premium is gold, not a status: `bd-premium` fills, `bd-sun/25` chips with `bd-sun-text`.
 
+### Boards
+
+A board is a slab of its own and keeps an edge in every theme (#1567). `--bd-board-line` (`#1F1B16`, dark
+`#A89A88`) draws its edge and grid, 3:1 off every card and page; `--bd-board-cell` (`#FFFFFF`, dark `#1E1B17`)
+fills Ludo's cells. Connect Four's frame is `--bd-inverse` with a 2px rim in the line. The Memory card back is
+the same card in both themes: its mark is `--bd-ink-on-accent` on a white plate over lavender.
+
 **Accent text is `-text`; `-deep` is a shade.** `--bd-*-deep` draws what belongs to a fill: the border
 and hard shadow of a coral or lavender button, a checked box, a status dot, the lavender focus ring. It
 never flips, because the fills never flip. Coloured words and icons on a surface use `--bd-*-text`,

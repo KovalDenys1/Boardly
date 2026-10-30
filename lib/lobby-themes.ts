@@ -65,6 +65,8 @@ export function getThemePageStyle(theme: string | null | undefined): CSSProperti
     '--bd-inverse': t.dark ? t.bg2 : t.text,
     '--bd-ink-on-inverse': t.dark ? t.text : t.bg,
     '--bd-sun-text': t.dark ? '#FFC44D' : '#875D01',
+    '--bd-board-line': t.dark ? '#A89A88' : '#1F1B16',
+    '--bd-board-cell': t.dark ? t.bg : '#ffffff',
     background: t.bg,
     color: t.text,
     transition: 'background 0.3s ease, color 0.3s ease',
