@@ -32,6 +32,7 @@ jest.mock('@/lib/db', () => ({
       findUnique: jest.fn(),
       delete: jest.fn(),
       update: jest.fn(),
+      updateMany: jest.fn(async () => ({ count: 1 })),
       count: jest.fn(),
     },
     lobbyInvites: {
@@ -140,6 +141,42 @@ describe('GET /api/lobby/[code]', () => {
 
     const queryArgs = mockPrisma.lobbies.findUnique.mock.calls[0][0] as any
     expect(queryArgs.select).toEqual(expect.objectContaining({ isActive: true, createdAt: true, pseudonymisedAt: true }))
+  })
+
+  it('never sweeps the player whose own request is reading the lobby (#1600)', async () => {
+    mockGetServerSession.mockResolvedValue({ user: { id: 'user-123', username: 'testuser' } } as any)
+    mockPrisma.users.findUnique.mockResolvedValue({ id: 'user-123', username: 'testuser', isGuest: false } as any)
+    mockPrisma.lobbies.findUnique.mockResolvedValue({
+      ...mockLobby,
+      games: [
+        {
+          id: 'game-waiting',
+          status: 'waiting',
+          state: '{}',
+          updatedAt: new Date(),
+          players: [
+            {
+              userId: 'user-123',
+              leftAt: null,
+              // Back from a background tab whose timers were frozen for two minutes.
+              lastHeartbeatAt: new Date(Date.now() - 2 * 60_000),
+              user: { id: 'user-123', username: 'testuser', bot: null },
+            },
+          ],
+        },
+      ],
+    } as any)
+
+    const response = await GET(new NextRequest('http://localhost:3000/api/lobby/ABC123'), { params: { code: 'ABC123' } })
+    const data = await response.json()
+
+    expect(data.game?.status).toBe('waiting')
+    expect(data.game?.players).toHaveLength(1)
+    expect(mockPrisma.lobbies.findUnique).toHaveBeenCalledTimes(1)
+    expect(mockPrisma.players.updateMany).toHaveBeenCalledWith({
+      where: { gameId: 'game-waiting', userId: 'user-123', leftAt: null },
+      data: { lastHeartbeatAt: expect.any(Date) },
+    })
   })
 
   it('should prioritize playing game when multiple active games exist', async () => {

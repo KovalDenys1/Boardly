@@ -163,7 +163,7 @@ export async function GET(
     if (activeGame && (activeGame.status === 'playing' || activeGame.status === 'waiting')) {
       const log = apiLogger('GET /api/lobby/[code]')
       try {
-        const sweepResult = await sweepStalePlayers(activeGame, code, log)
+        const sweepResult = await sweepStalePlayers(activeGame, code, log, { presentUserId: requestUser?.id })
         presenceSweptGameAbandoned = sweepResult.gameAbandoned
         // Keep the in-memory object in sync with what was just committed —
         // matches the existing pattern below (commitTimeoutFallback mutates
