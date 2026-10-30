@@ -34,7 +34,8 @@ import AfterGameActions from '@/components/game-chrome/AfterGameActions'
 import GameScoreboardHeader, { type GameHeaderRoom } from '@/components/game-chrome/GameScoreboardHeader'
 import GamePlayerCard from '@/components/game-chrome/GamePlayerCard'
 import GameLeaveButton from '@/components/game-chrome/GameLeaveButton'
-import GameStatusBanner from '@/components/game-chrome/GameStatusBanner'
+import GameStatusBanner, { type GameTurn } from '@/components/game-chrome/GameStatusBanner'
+import GamePageHeading from '@/components/game-chrome/GamePageHeading'
 import GameTabs from '@/components/game-chrome/GameTabs'
 import TryBotGamesBanner from '@/app/(site)/lobby/[code]/components/TryBotGamesBanner'
 import { getGameMetadata } from '@/lib/game-catalog'
@@ -1201,6 +1202,7 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
 
     return (
       <div style={pageBg(lobby?.theme)} data-testid="alias-waiting-room">
+        <GamePageHeading title={t('games.alias.name')} />
         <AliasPregameHeader
           code={code}
           leaveLabel={t('game.ui.leave')}
@@ -1215,13 +1217,13 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
           }}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10, maxWidth: 540 }}>
               <BdLabel>{t('alias.pregameKicker')}</BdLabel>
-              <h1 style={{
+              <h2 style={{
                 fontFamily: FONT_DISPLAY, fontWeight: 700,
                 fontSize: 'clamp(36px, 6vw, 56px)', lineHeight: 1.02, margin: 0, letterSpacing: '-0.02em',
               }}>
                 {t('alias.pregameTitle')}<br />
                 <span style={{ color: 'var(--bd-coral-text)' }}>{t('alias.doNotSayItShort')}</span>
-              </h1>
+              </h2>
               {/* The scoring rule is one key, ±1 included: a locale has to be
                   able to move the numbers inside its own sentence, which a
                   bolded <strong>+1</strong> spliced into English word order
@@ -1445,6 +1447,7 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
 
     return (
       <div className="alias-team-screen" style={{ ...pageBg(lobby?.theme), display: 'flex', flexDirection: 'column' }} data-testid="alias-team-assignment">
+        <GamePageHeading title={t('games.alias.name')} />
         <main className="alias-team-main bd-screen" style={{ maxWidth: 1100, margin: '0 auto', width: '100%', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', paddingBottom: 24 }}>
           <AliasPregameHeader
             code={code}
@@ -1455,12 +1458,12 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
           />
           <div className="alias-team-hero" style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 20 }}>
             <BdLabel>{t('alias.teamSelectionKicker')}</BdLabel>
-            <h1 style={{
+            <h2 style={{
               fontFamily: FONT_DISPLAY, fontWeight: 700,
               fontSize: 'clamp(32px, 5vw, 48px)', lineHeight: 1.05, margin: 0,
             }}>
               {isSolo ? t('alias.soloModeTitle') : t('alias.chooseSideTitle')}
-            </h1>
+            </h2>
             <p style={{ color: 'var(--bd-ink-soft)', fontSize: 15, margin: 0 }}>
               {isSolo
                 ? t('alias.soloModeSubtitle')
@@ -1574,6 +1577,12 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
   const teamAccentText = teamIndex === 0 ? 'var(--bd-coral-text)' : 'var(--bd-lav-text)'
   const describerPlayer = players.find(p => p.userId === describerId)
   const describerDisplayName = playerDisplayName(describerPlayer) ?? t('game.ui.playerFallback')
+  const isDescribersTeammate = !!currentUserId && !isDescriber && !!currentTeam?.playerIds.includes(currentUserId)
+  const turn: GameTurn = !isSpectator && isDescriber
+    ? { whose: 'you', action: t('alias.turnDescribe') }
+    : !isSpectator && isDescribersTeammate
+      ? { whose: 'you', action: t('alias.turnGuess') }
+      : { whose: 'player', player: describerDisplayName, doing: t('alias.doingDescribe') }
 
   // A turn is one describer's run at one card list, so it changes when the team
   // changes, the describer changes, or the clock restarts. The override is
@@ -1711,7 +1720,7 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
       <div className="alias-status-slot">
       <GameStatusBanner
         isFinished={false}
-        activeTitle={t('alias.describerTurnLine', { name: describerDisplayName, team: currentTeam?.name ?? '' })}
+        turn={turn}
         meta={`+${guessed} / −${skipped}`}
         // The countdown ring below is this game's clock, and it is the
         // thing players actually watch; a second timer in the banner would
@@ -1769,6 +1778,7 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
     const guessesPanel = (fill: boolean) => <GuessChatPanel {...chatProps} canType={false} fillHeight={fill} />
     return (
       <>
+        <GamePageHeading title={t('games.alias.name')} />
         {/* Phone landscape (#1384): the word and the buttons are the board pane; the
             header, the status line and the guesses are the side column. */}
         {isLandscape ? (
@@ -1924,7 +1934,7 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
       <div className="alias-status-slot">
       <GameStatusBanner
         isFinished={false}
-        activeTitle={t('alias.describerTurnLine', { name: describerDisplayName, team: currentTeam?.name ?? '' })}
+        turn={turn}
         meta={`+${guessed} / −${skipped}`}
         // The countdown ring below is this game's clock, and it is the
         // thing players actually watch; a second timer in the banner would
@@ -1942,6 +1952,7 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
     const guessesPanel = (fill: boolean) => <GuessChatPanel {...chatProps} canType={!isSpectator} fillHeight={fill} />
     return (
       <>
+        <GamePageHeading title={t('games.alias.name')} />
         {isLandscape ? (
           <div style={{ ...pageBg(lobby?.theme), padding: '8px 12px' }} data-testid="alias-guesser-screen">
             <div className="game-landscape-layout alias-landscape-layout" data-testid="alias-landscape-layout">
@@ -2026,6 +2037,7 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
     return (
       <>
         <div style={{ ...pageBg(lobby?.theme), display: 'flex', flexDirection: 'column' }} data-testid="alias-turn-results-screen">
+          <GamePageHeading title={t('games.alias.name')} />
           {renderHeader(t('alias.turnCompleteTitle'))}
           <main style={{ maxWidth: 980, margin: '0 auto', flex: 1, minHeight: 0 }} className="bd-screen grid w-full grid-cols-1 md:grid-cols-[1.3fr_1fr] gap-5 items-stretch">
             {/* Word list */}
@@ -2212,11 +2224,12 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
           ))}
         </div>
 
+        <GamePageHeading title={t('games.alias.name')} />
         {renderHeader(t('alias.finalTitle'))}
         <main className="bd-screen alias-final-main" style={{ maxWidth: 880, display: 'flex', flexDirection: 'column', alignItems: 'center', position: 'relative', zIndex: 2 }}>
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14 }}>
             <BdLabel>{isTie ? t('alias.noWinnerLabel') : t('alias.championsLabel')}</BdLabel>
-            <h1 className="alias-final-title" style={{
+            <h2 className="alias-final-title" style={{
               fontFamily: FONT_DISPLAY, fontWeight: 700,
               lineHeight: 0.98, textAlign: 'center', letterSpacing: '-0.025em', margin: 0,
             }}>
@@ -2229,7 +2242,7 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
                    the <br /> is layout, not grammar. */
                 <><span style={{ color: 'var(--bd-coral-text)' }}>{winner?.name}</span><br /><span style={{ fontStyle: 'italic', fontWeight: 400 }}>{t('alias.winsWord')}</span></>
               )}
-            </h1>
+            </h2>
             <p style={{ fontSize: 16, color: 'var(--bd-ink-soft)', textAlign: 'center', maxWidth: 460, margin: 0 }}>
               {isTie
                 ? t('alias.tieSubtitle')

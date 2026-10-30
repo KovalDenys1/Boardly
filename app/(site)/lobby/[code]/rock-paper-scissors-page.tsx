@@ -10,7 +10,8 @@ import GameResultOverlay from '@/components/game-chrome/GameResultOverlay'
 import GamePlayerCard from '@/components/game-chrome/GamePlayerCard'
 import { reportablePlayerId } from '@/lib/reportable-player'
 import GameScoreboardHeader, { type GameHeaderRoom } from '@/components/game-chrome/GameScoreboardHeader'
-import GameStatusBanner from '@/components/game-chrome/GameStatusBanner'
+import GameStatusBanner, { type GameTurn } from '@/components/game-chrome/GameStatusBanner'
+import GamePageHeading from '@/components/game-chrome/GamePageHeading'
 import { viewerOutcome } from '@/lib/game-outcome'
 import GameTabs from '@/components/game-chrome/GameTabs'
 import RockPaperScissorsGameBoard, { CHOICE_LABEL_KEY, getChoiceIcon, WinPips } from '@/components/RockPaperScissorsGameBoard'
@@ -797,15 +798,16 @@ export default function RockPaperScissorsLobbyPage({ code, isSpectator = false, 
         )
     }
 
-    const activeTitle = readyCount >= 2
-        ? t('games.rock_paper_scissors.revealing')
+    const stillPicking = [leftId, rightId].filter((id) => id && !isLockedIn(id))
+    const turn: GameTurn = readyCount >= 2
+        ? { whose: 'nobody', line: t('games.rock_paper_scissors.revealing') }
         : isSpectator
-            ? readyCount === 1
-                ? t('games.rock_paper_scissors.playerLockedIn', { player: getDisplayName(rpsData.playersReady[0]) })
-                : t('games.rock_paper_scissors.bothChoosing')
+            ? stillPicking.length === 1
+                ? { whose: 'player', player: getDisplayName(stillPicking[0]), doing: t('games.rock_paper_scissors.doingPick') }
+                : { whose: 'nobody', line: t('games.rock_paper_scissors.bothChoosing') }
             : mySubmitted
-                ? t('games.rock_paper_scissors.waitingForPick', { player: opponentName })
-                : t('games.rock_paper_scissors.pickPrompt')
+                ? { whose: 'player', player: opponentName, doing: t('games.rock_paper_scissors.doingPick') }
+                : { whose: 'you', action: t('games.rock_paper_scissors.turnPick') }
 
     const finishedMessage = iWon
         ? t('games.rock_paper_scissors.youWin')
@@ -854,7 +856,7 @@ export default function RockPaperScissorsLobbyPage({ code, isSpectator = false, 
             isFinished={shownFinished}
             outcome={viewerOutcome({ isFinished: shownFinished, isDraw: false, isSpectator, isSeated: !!currentUserId && (currentUserId === leftId || currentUserId === rightId), isViewerWinner: shownWinnerId ? shownWinnerId === currentUserId : null })}
             finishedMessage={finishedMessage}
-            activeTitle={activeTitle}
+            turn={turn}
             meta={`${readyCount}/2`}
             secs={timeLeft}
             turnTimerLimit={turnTimerLimit}
@@ -998,6 +1000,7 @@ export default function RockPaperScissorsLobbyPage({ code, isSpectator = false, 
 
     return (
         <div className="game-screen ttt-screen" style={themeStyle}>
+            <GamePageHeading title={t('games.rock_paper_scissors.name')} />
 
             {/* ── DESKTOP ─────────────────────────────────────────────────── */}
             <div className="ttt-desktop-layout">

@@ -25,6 +25,7 @@ import GamePlayerCard from '@/components/game-chrome/GamePlayerCard'
 import GameResultOverlay from '@/components/game-chrome/GameResultOverlay'
 import GameScoreboardHeader, { type GameHeaderRoom } from '@/components/game-chrome/GameScoreboardHeader'
 import GameStatusBanner from '@/components/game-chrome/GameStatusBanner'
+import GamePageHeading from '@/components/game-chrome/GamePageHeading'
 import { viewerOutcome } from '@/lib/game-outcome'
 import GameTabs from '@/components/game-chrome/GameTabs'
 import { getThemePageStyle } from '@/lib/lobby-themes'
@@ -1315,7 +1316,6 @@ export default function LiarsPartyPage({ code, isSpectator = false, onGameReset 
       isFinished
       outcome={viewerOutcome({ isFinished, isDraw: false, isSpectator, isSeated: players.some(p => p.userId === currentUserId || p.id === currentUserId), isViewerWinner: winnerId ? iWon : null })}
       finishedMessage={finishedMessage}
-      activeTitle={finishedMessage}
       secs={0}
       turnTimerLimit={turnTimerSeconds}
       barColor={LIARS_PARTY_ACCENT}
@@ -1324,10 +1324,14 @@ export default function LiarsPartyPage({ code, isSpectator = false, onGameReset 
   ) : isPlaying && phase !== 'reveal' ? (
     <GameStatusBanner
       isFinished={false}
-      activeTitle={
+      turn={
         phase === 'claim'
-          ? (isClaimant ? t('liarsParty.yourTurnToClaim') : t('liarsParty.isClaimingFor', { name: claimantName }))
-          : isClaimant ? t('liarsParty.tableVotingOnYourClaim') : t('liarsParty.challengeOrBelieve')
+          ? isClaimant
+            ? { whose: 'you', action: t('liarsParty.turnClaim') }
+            : { whose: 'player', player: claimantName, doing: t('liarsParty.doingClaim') }
+          : !isSpectator && !isEliminated && !isClaimant && !hasVoted
+            ? { whose: 'everyone', action: t('liarsParty.turnJudge') }
+            : { whose: 'nobody', line: t(isClaimant ? 'liarsParty.tableVotingOnYourClaim' : 'liarsParty.tableVoting') }
       }
       // No `meta`. GameStatusBanner puts it on the title's nowrap/ellipsis
       // line, and the peer pages pass 2 to 4 characters there (connect four
@@ -1534,6 +1538,7 @@ export default function LiarsPartyPage({ code, isSpectator = false, onGameReset 
 
   return (
     <div className="game-screen liars-screen" style={getThemePageStyle(lobby?.theme)} data-testid={phaseTestId}>
+      <GamePageHeading title={t('liarsParty.name')} />
 
       {/* ── DESKTOP ─────────────────────────────────────────────────── */}
       <div className="ttt-desktop-layout">

@@ -524,14 +524,17 @@ describe('AliasLobbyPage in-game chrome (#905)', () => {
   })
 
   it('names the describer from the user row when the Players row has no name', async () => {
-    mountWith(buildTurnResponse({ meDescribing: false }))
+    const response = buildTurnResponse({ meDescribing: false })
+    // On the other team, so the line is about Bob rather than the viewer's own guessing.
+    response.activeGame.state.data.teams[0].playerIds = ['user-2', 'user-3']
+    response.activeGame.state.data.teams[1].playerIds = ['user-1', 'user-4']
+    mountWith(response)
     await waitFor(() => expect(screen.getByTestId('alias-guesser-screen')).toBeTruthy())
 
     // t() is mocked to echo `key:{"...options"}`, so the interpolation values
     // are visible in the rendered text.
-    const line = screen.getByText(/alias\.describerTurnLine/)
-    expect(line.textContent).toContain('"name":"Bob"')
-    expect(line.textContent).toContain('"team":"alias.team1"')
+    const line = screen.getByText(/game\.ui\.turnPlayer/)
+    expect(line.textContent).toBe('game.ui.turnPlayer:{"player":"Bob","action":"alias.doingDescribe"}')
   })
 
   it('names the two teams in the site language, not by the English name the engine stores (#1481)', async () => {

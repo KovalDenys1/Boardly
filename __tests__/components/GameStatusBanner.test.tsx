@@ -17,7 +17,7 @@ jest.mock('@/lib/i18n-helpers', () => ({
 describe('GameStatusBanner (#736 phase 4)', () => {
   const base = {
     isFinished: false,
-    activeTitle: "Alice's turn",
+    turn: { whose: 'nobody' as const, line: "Alice's turn" },
     secs: 45,
     turnTimerLimit: 60,
     barColor: 'var(--bd-mint)',
@@ -77,7 +77,7 @@ describe('GameStatusBanner (#736 phase 4)', () => {
 describe('GameStatusBanner idle nudge (#817)', () => {
   const base = {
     isFinished: false,
-    activeTitle: 'Your turn',
+    turn: { whose: 'nobody' as const, line: 'Your turn' },
     secs: 60,
     turnTimerLimit: 60,
     barColor: 'var(--bd-mint)',
@@ -122,7 +122,7 @@ describe('GameStatusBanner idle nudge (#817)', () => {
 describe('GameStatusBanner clock and untimed phases (#905)', () => {
   const base = {
     isFinished: false,
-    activeTitle: 'Question round',
+    turn: { whose: 'nobody' as const, line: 'Question round' },
     secs: 45,
     turnTimerLimit: 60,
     barColor: 'var(--bd-lav)',
@@ -142,7 +142,7 @@ describe('GameStatusBanner clock and untimed phases (#905)', () => {
 
   it('shows neither clock nor bar on a phase with no deadline', () => {
     const { container } = render(
-      <GameStatusBanner {...base} showTimer={false} secs={0} turnTimerLimit={0} activeTitle="0/3 players ready" />
+      <GameStatusBanner {...base} showTimer={false} secs={0} turnTimerLimit={0} turn={{ whose: 'nobody', line: '0/3 players ready' }} />
     )
     expect(screen.getByText('0/3 players ready')).toBeTruthy()
     expect(screen.queryByText(':00')).toBeNull()
@@ -176,7 +176,7 @@ describe('GameStatusBanner clock and untimed phases (#905)', () => {
 describe('GameStatusBanner motion (#1111)', () => {
   const base = {
     isFinished: false,
-    activeTitle: "Alice's turn",
+    turn: { whose: 'nobody' as const, line: "Alice's turn" },
     secs: 30,
     turnTimerLimit: 60,
     barColor: 'var(--bd-mint)',
@@ -191,7 +191,7 @@ describe('GameStatusBanner motion (#1111)', () => {
     // A timer tick is not a turn change: same node, no replayed cue.
     expect(screen.getByTestId('game-status-title')).toBe(first)
 
-    rerender(<GameStatusBanner {...base} activeTitle="Your turn" />)
+    rerender(<GameStatusBanner {...base} turn={{ whose: 'nobody', line: 'Your turn' }} />)
     const second = screen.getByTestId('game-status-title')
     expect(second).not.toBe(first)
     expect(second.className).toContain('game-status-cue')
@@ -201,7 +201,7 @@ describe('GameStatusBanner motion (#1111)', () => {
   it('cues the spectator line and the finished plate too', () => {
     const { rerender } = render(<GameStatusBanner {...base} isSpectator />)
     const spectating = screen.getByTestId('game-status-title')
-    rerender(<GameStatusBanner {...base} isSpectator activeTitle="Bob's turn" />)
+    rerender(<GameStatusBanner {...base} isSpectator turn={{ whose: 'nobody', line: "Bob's turn" }} />)
     expect(screen.getByTestId('game-status-title')).not.toBe(spectating)
 
     rerender(<GameStatusBanner {...base} isFinished finishedMessage="Alice wins!" />)
@@ -224,7 +224,7 @@ describe('GameStatusBanner motion (#1111)', () => {
 describe('GameStatusBanner turn timer cues (#1464)', () => {
   const base = {
     isFinished: false,
-    activeTitle: 'Your turn',
+    turn: { whose: 'nobody' as const, line: 'Your turn' },
     secs: 7,
     turnTimerLimit: 60,
     barColor: 'var(--bd-mint)',
@@ -267,7 +267,7 @@ describe('GameStatusBanner turn timer cues (#1464)', () => {
 })
 
 describe('GameStatusBanner live finish (#1464)', () => {
-  const base = { activeTitle: 'Your turn', secs: 30, turnTimerLimit: 60, barColor: 'var(--bd-mint)', finishedMessage: 'Done' }
+  const base = { turn: { whose: 'nobody' as const, line: 'Your turn' }, secs: 30, turnTimerLimit: 60, barColor: 'var(--bd-mint)', finishedMessage: 'Done' }
 
   beforeEach(() => resetLiveFinish())
 
@@ -288,7 +288,7 @@ describe('GameStatusBanner live finish (#1464)', () => {
 describe('GameStatusBanner low-time warning (#1580)', () => {
   const base = {
     isFinished: false,
-    activeTitle: "Alice's turn",
+    turn: { whose: 'nobody' as const, line: "Alice's turn" },
     secs: 30,
     turnTimerLimit: 60,
     barColor: 'var(--bd-mint)',

@@ -23,6 +23,7 @@ import { LobbyPageLoadingFallback } from '@/app/(site)/lobby/[code]/components/L
 import type { Lobby, Game, GamePlayer } from '@/types/game'
 import type { GameState } from '@/lib/game-engine'
 import type { YahtzeeGame } from '@/lib/games/yahtzee-game'
+import GamePageHeading from '@/components/game-chrome/GamePageHeading'
 import { isBotSeat } from '@/lib/bots/core/bot-helpers'
 import { lobbySoundCues } from '@/lib/lobby-sound-cues'
 import { useSoundConsumer } from '@/hooks/useSoundConsumer'
@@ -772,6 +773,7 @@ export default function SpectatorLobbyPage() {
           isAdminView={isAdminView}
           isMidMatch={data.activeGame?.status === 'playing'}
         />
+        <GamePageHeading title={t('games.yahtzee.name')} />
         {yahtzeeEngine ? (
           <div className="yz-spectate">
             <div className="yz-board-card">
