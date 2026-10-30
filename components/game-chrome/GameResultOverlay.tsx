@@ -665,7 +665,7 @@ export default function GameResultOverlay({
       ref={rootRef}
       data-testid="game-result-overlay"
       data-state={shown ? 'shown' : 'pending'}
-      className="fixed inset-0 z-61 flex items-center justify-center p-4"
+      className="fixed inset-0 z-dialog flex items-center justify-center p-4"
       // Pending: not seen, not clickable and not modal, so a tap meant for the board cannot hit Play again.
       style={shown ? undefined : { opacity: 0, pointerEvents: 'none' }}
       aria-hidden={shown ? undefined : true}
@@ -675,7 +675,7 @@ export default function GameResultOverlay({
         data-testid="game-result-scrim"
         data-entrance="scrim"
         aria-hidden="true"
-        className="absolute inset-0 bg-[rgba(31,27,22,0.45)] backdrop-blur-[4px]"
+        className="absolute inset-0 bg-bd-scrim backdrop-blur-xs"
       />
       <div
         ref={panelRef}

@@ -97,11 +97,11 @@ export default function Providers({
         <OnboardingProvider>
           <TourProvider>
             <ToastProvider>
-              <GlobalToaster position="top-right" />
-              <DeferredGlobalEffects />
+              <GlobalToaster position="top-right" containerStyle={{ zIndex: 'var(--z-index-toast)' }} />
               <OnboardingModal />
               <TourOverlay />
               {children}
+              <DeferredGlobalEffects />
             </ToastProvider>
           </TourProvider>
         </OnboardingProvider>

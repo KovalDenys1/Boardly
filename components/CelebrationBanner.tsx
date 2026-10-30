@@ -89,7 +89,7 @@ export default function CelebrationBanner({ event, onComplete }: CelebrationBann
   return (
     <div
       className={`
-        yz-celebration pointer-events-none fixed left-1/2 z-50 -translate-x-1/2
+        yz-celebration pointer-events-none fixed left-1/2 z-celebration -translate-x-1/2
         ${visible ? 'animate-bounce-in opacity-100' : 'animate-fade-out opacity-0'}
       `}
     >

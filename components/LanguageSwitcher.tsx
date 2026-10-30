@@ -115,8 +115,8 @@ export default function LanguageSwitcher({ anchor }: LanguageSwitcherProps) {
       >
         <MenuItems
           anchor={anchor ? { to: anchor, gap: 8 } : undefined}
-          className={`z-50 overflow-hidden rounded-[1.25rem] border-[1.5px] border-bd-line bg-bd-input-bg p-1.5 shadow-[0_18px_36px_-18px_rgba(31,27,22,0.35)] focus:outline-hidden ${
-            anchor ? '' : 'absolute right-0 mt-2'
+          className={`overflow-hidden rounded-[1.25rem] border-[1.5px] border-bd-line bg-bd-input-bg p-1.5 shadow-[0_18px_36px_-18px_rgba(31,27,22,0.35)] focus:outline-hidden ${
+            anchor ? 'z-drawer' : 'absolute right-0 z-dropdown mt-2'
           } w-[176px]`}
         >
           {LANGUAGE_OPTIONS.map((option) => {

@@ -229,6 +229,18 @@
   }
 }
 
+/* Layers and the dialog scrim (#1556, #1549) – DESIGN.md "Layers". */
+@theme {
+  --z-index-floating: 30;
+  --z-index-header: 40;
+  --z-index-dropdown: 50;
+  --z-index-drawer: 60;
+  --z-index-dialog: 70;
+  --z-index-toast: 80;
+  --z-index-celebration: 90;
+  --color-bd-scrim: rgba(31, 27, 22, 0.45);
+}
+
 /* Tailwind 3's space-y; v4's lays out differently when a child is out of flow or has its own margin. */
 @utility stack-y-* {
   & > :not([hidden]) ~ :not([hidden]) {
@@ -2459,7 +2471,7 @@ input[type="range"].slider-thumb::-moz-range-track {
   position: fixed;
   inset: auto;
   margin: 0;
-  z-index: 60;
+  z-index: var(--z-index-dropdown);
   display: flex;
   flex-direction: column;
   min-width: 200px;

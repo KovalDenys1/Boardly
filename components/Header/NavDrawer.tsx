@@ -64,10 +64,10 @@ export function NavDrawer({
   }
 
   return (
-    <Dialog id={NAV_DRAWER_ID} open={open} onClose={onClose} transition className="relative z-50 desk:hidden">
+    <Dialog id={NAV_DRAWER_ID} open={open} onClose={onClose} transition className="relative z-drawer desk:hidden">
       <DialogBackdrop
         transition
-        className="fixed inset-0 bg-[rgba(31,27,22,0.45)] backdrop-blur-[4px] transition duration-300 ease-out data-closed:opacity-0 motion-reduce:transition-none"
+        className="fixed inset-0 bg-bd-scrim backdrop-blur-xs transition duration-300 ease-out data-closed:opacity-0 motion-reduce:transition-none"
       />
       <DialogPanel
         transition

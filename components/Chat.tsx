@@ -258,7 +258,7 @@ export default function Chat({
       : t('chat.openChat')
 
     return (
-      <div className="fixed z-50" style={{ bottom: 'max(20px, calc(20px + env(safe-area-inset-bottom)))', right: '20px' }}>
+      <div className="fixed z-floating" style={{ bottom: 'max(20px, calc(20px + env(safe-area-inset-bottom)))', right: '20px' }}>
         <button
           onClick={onToggleMinimize}
           aria-label={ariaLabel}
@@ -279,7 +279,7 @@ export default function Chat({
   return (
     <div
       ref={chatRef}
-      className={`chat-panel flex flex-col overflow-hidden ${fullScreen ? 'h-full' : 'bd-card fixed z-50 rounded-bd-lg'}`}
+      className={`chat-panel flex flex-col overflow-hidden ${fullScreen ? 'h-full' : 'bd-card fixed z-floating rounded-bd-lg'}`}
       style={fullScreen ? {
         background: 'linear-gradient(180deg, var(--bd-bg) 0%, var(--bd-card-warm) 100%)',
       } : {

@@ -42,7 +42,7 @@ export function MobileMenu({ isAuthenticated, userName, userEmail, userImage }: 
         type="button"
         onClick={() => setOpen((value) => !value)}
         data-open={open ? '' : undefined}
-        className={`${headerControl({ square: true, text: 'text-bd-ink' })} relative z-50 desk:hidden`}
+        className={`${headerControl({ square: true, text: 'text-bd-ink' })} relative z-10 desk:hidden`}
         aria-label={open ? t('common.close') : t('header.menu')}
         aria-expanded={open}
         aria-controls={NAV_DRAWER_ID}

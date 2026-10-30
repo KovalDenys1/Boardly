@@ -114,7 +114,7 @@ export default function FeedbackWidget() {
         aria-hidden={shouldHideFloatingButton}
         aria-label={t('feedback.buttonAriaLabel')}
         tabIndex={shouldHideFloatingButton ? -1 : 0}
-        className={`fixed bottom-[max(1.25rem,calc(1.25rem+env(safe-area-inset-bottom)))] right-5 z-40 inline-flex items-center gap-2 rounded-2xl border-2 border-bd-lav-deep bg-bd-lav px-4 py-3 text-sm font-bold text-bd-ink-on-accent shadow-[0_4px_0_var(--bd-lav-deep)] transition duration-200 hover:-translate-y-0.5 hover:bg-bd-lav-mid hover:shadow-[0_6px_0_var(--bd-lav-deep)] ${
+        className={`fixed bottom-[max(1.25rem,calc(1.25rem+env(safe-area-inset-bottom)))] right-5 z-floating inline-flex items-center gap-2 rounded-2xl border-2 border-bd-lav-deep bg-bd-lav px-4 py-3 text-sm font-bold text-bd-ink-on-accent shadow-[0_4px_0_var(--bd-lav-deep)] transition duration-200 hover:-translate-y-0.5 hover:bg-bd-lav-mid hover:shadow-[0_6px_0_var(--bd-lav-deep)] ${
           shouldHideFloatingButton ? 'pointer-events-none translate-y-2 opacity-0' : 'opacity-100'
         }`}
       >
@@ -129,7 +129,7 @@ export default function FeedbackWidget() {
 
       {isOpen && (
         <div
-          className="fixed inset-0 z-50 flex items-end justify-center p-4 backdrop-blur-xs sm:items-center"
+          className="fixed inset-0 z-dialog flex items-end justify-center p-4 backdrop-blur-xs sm:items-center"
           onClick={(e) => {
             if (e.target === e.currentTarget) setIsOpen(false)
           }}

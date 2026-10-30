@@ -15,10 +15,10 @@ export function BlockedPlayersDialog({ open, onClose }: BlockedPlayersDialogProp
   const { t } = useTranslation()
 
   return (
-    <Dialog open={open} onClose={onClose} transition className="relative z-60">
+    <Dialog open={open} onClose={onClose} transition className="relative z-dialog">
       <DialogBackdrop
         transition
-        className="fixed inset-0 bg-[rgba(31,27,22,0.45)] backdrop-blur-[4px] transition duration-200 ease-out data-closed:opacity-0 motion-reduce:transition-none"
+        className="fixed inset-0 bg-bd-scrim backdrop-blur-xs transition duration-200 ease-out data-closed:opacity-0 motion-reduce:transition-none"
       />
       <div className="fixed inset-0 flex items-center justify-center p-4">
         <DialogPanel

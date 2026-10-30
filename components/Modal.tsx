@@ -137,7 +137,7 @@ export default function Modal({
 
   return createPortal(
     <div
-      className={`fixed inset-0 z-50 flex justify-center animate-fade-in ${
+      className={`fixed inset-0 z-dialog flex justify-center animate-fade-in ${
         mobileFullscreen ? 'items-stretch sm:items-center' : 'items-center'
       }`}
       style={{ padding: mobileFullscreen ? '0px' : `clamp(12px, 1.2vw, 20px)` }}

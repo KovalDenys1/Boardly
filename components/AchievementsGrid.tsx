@@ -64,7 +64,7 @@ function Badge({
       </button>
       <div
         role="tooltip"
-        className={`pointer-events-none absolute inset-x-0 bottom-full z-20 mb-2 rounded-xl border-[1.5px] border-bd-line bg-bd-bg p-3 shadow-[0_6px_0_0_rgba(31,27,22,0.08),0_14px_28px_-10px_rgba(31,27,22,0.28)] transition-opacity duration-150 group-hover:opacity-100 group-focus-within:opacity-100 ${
+        className={`pointer-events-none absolute inset-x-0 bottom-full z-dropdown mb-2 rounded-xl border-[1.5px] border-bd-line bg-bd-bg p-3 shadow-[0_6px_0_0_rgba(31,27,22,0.08),0_14px_28px_-10px_rgba(31,27,22,0.28)] transition-opacity duration-150 group-hover:opacity-100 group-focus-within:opacity-100 ${
           pinned ? 'opacity-100' : 'opacity-0'
         }`}
       >

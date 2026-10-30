@@ -165,7 +165,7 @@ export default function FriendsListModal({
   const presenceLabel = (presence: FriendPresence): string | null => getFriendPresenceLabel(presence, t)
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-dialog p-4">
       <div
         className="rounded-2xl p-6 max-w-md w-full max-h-[80vh] overflow-y-auto overscroll-contain"
         style={{ background: 'var(--bd-card-warm)', border: '1.5px solid var(--bd-line)' }}

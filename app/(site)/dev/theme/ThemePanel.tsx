@@ -626,7 +626,7 @@ export default function ThemePanel(): React.JSX.Element {
           hatch keeps its own colours and is always readable. */}
       <div
         style={{
-          position: 'fixed', right: 12, bottom: 12, zIndex: 60,
+          position: 'fixed', right: 12, bottom: 12, zIndex: 'var(--z-index-drawer)',
           display: 'flex', alignItems: 'center', gap: 8,
           padding: '8px 12px', borderRadius: 999,
           background: '#1F1B16', color: '#FBF6EE',

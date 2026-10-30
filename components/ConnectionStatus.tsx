@@ -41,7 +41,7 @@ export function ConnectionStatus({
     const isSlowConnection = reconnectAttempt >= 3
 
     return (
-      <div className="fixed top-4 right-4 z-50 animate-in slide-in-from-top">
+      <div className="fixed top-4 right-4 z-toast animate-in slide-in-from-top">
         <div
           className="rounded-xl px-4 py-3 shadow-lg max-w-sm"
           style={{
@@ -86,7 +86,7 @@ export function ConnectionStatus({
   if (!showDisconnected) return null
 
   return (
-    <div className="fixed top-4 right-4 z-50 animate-in slide-in-from-top">
+    <div className="fixed top-4 right-4 z-toast animate-in slide-in-from-top">
       <div
         className="rounded-xl px-4 py-3 shadow-lg"
         style={{
