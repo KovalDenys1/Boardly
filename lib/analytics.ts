@@ -624,7 +624,6 @@ export function trackPushPrompt(
 /** Where an invite link was shared from; the lobby code goes in the payload so it joins. */
 export type InviteCopySource =
   | 'lobby_header_button'
-  | 'lobby_code_chip'
   | 'result_overlay'
   | 'waiting_room_slot'
 

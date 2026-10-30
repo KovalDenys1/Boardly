@@ -73,13 +73,13 @@ describe('buildOperationalEventRecord', () => {
   it('normalizes the invite events as flow events with the surface in source and the lobby code in the payload (#920)', () => {
     const copied = buildOperationalEventRecord({
       eventName: 'invite_copied',
-      payload: { source: 'lobby_code_chip', lobby_code: 'AB12' },
+      payload: { source: 'lobby_header_button', lobby_code: 'AB12' },
     })
     expect(copied).toMatchObject({
       eventName: 'invite_copied',
       metricType: 'flow',
-      source: 'lobby_code_chip',
-      payload: { source: 'lobby_code_chip', lobby_code: 'AB12' },
+      source: 'lobby_header_button',
+      payload: { source: 'lobby_header_button', lobby_code: 'AB12' },
     })
 
     const opened = buildOperationalEventRecord({
