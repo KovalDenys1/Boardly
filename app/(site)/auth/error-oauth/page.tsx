@@ -74,7 +74,7 @@ function OAuthErrorContent() {
 
   if (status === 'loading') {
     return (
-      <div className="page-shell flex items-center justify-center" style={authBg}>
+      <div className="flex min-h-(--game-h) items-center justify-center" style={authBg}>
         <LoadingSpinner />
       </div>
     )
@@ -82,7 +82,7 @@ function OAuthErrorContent() {
 
   if (status === 'unauthenticated') {
     return (
-      <div className="page-shell flex items-center justify-center overflow-y-auto p-4" style={authBg}>
+      <div className="flex min-h-(--game-h) items-center justify-center p-4" style={authBg}>
         <div className="bd-card w-full max-w-md p-8 text-center">
           <div className="mx-auto mb-5 grid h-16 w-16 place-items-center rounded-2xl border-2 border-bd-ink bg-bd-lav shadow-[3px_3px_0_var(--bd-ink)]">
             <Icon name="link" size={32} tone="on-accent" />
@@ -116,13 +116,13 @@ function OAuthErrorContent() {
             <button
               onClick={handleSignInWithProvider}
               disabled={merging}
-              className="bd-btn bd-btn-primary w-full justify-center disabled:cursor-not-allowed disabled:opacity-50"
+              className="bd-btn bd-btn-primary w-full justify-center whitespace-normal! leading-tight! text-center disabled:cursor-not-allowed disabled:opacity-50"
             >
               {merging
                 ? t('games.redirecting')
                 : t('auth.oauthError.signInWithProvider', { provider: getProviderName() })}
             </button>
-            <button onClick={handleSignInDifferent} className="bd-btn bd-btn-ghost w-full justify-center">
+            <button onClick={handleSignInDifferent} className="bd-btn bd-btn-ghost w-full justify-center whitespace-normal! leading-tight! text-center">
               {t('auth.oauthError.signInWithPassword')}
             </button>
           </div>
@@ -133,7 +133,7 @@ function OAuthErrorContent() {
 
   // User is authenticated - different account trying to link
   return (
-    <div className="page-shell flex items-center justify-center overflow-y-auto p-4" style={authBg}>
+    <div className="flex min-h-(--game-h) items-center justify-center p-4" style={authBg}>
       <div className="bd-card w-full max-w-md p-8">
         <div className="mb-6 text-center">
           <div className="mx-auto mb-4 grid h-16 w-16 place-items-center rounded-2xl border-2 border-bd-coral-deep bg-bd-coral/15 shadow-[3px_3px_0_var(--bd-ink)]">
@@ -166,17 +166,17 @@ function OAuthErrorContent() {
           ))}
         </div>
 
-        <div className="flex gap-3">
+        <div className="flex flex-wrap gap-3">
           <button
             onClick={handleSignInWithProvider}
             disabled={merging}
-            className="bd-btn bd-btn-primary flex-1 justify-center disabled:cursor-not-allowed disabled:opacity-50"
+            className="bd-btn bd-btn-primary grow justify-center whitespace-normal! leading-tight! text-center disabled:cursor-not-allowed disabled:opacity-50"
           >
             {merging
               ? t('games.redirecting')
               : t('auth.oauthError.useProvider', { provider: getProviderName() })}
           </button>
-          <button onClick={handleTryAgain} className="bd-btn bd-btn-ghost justify-center px-5">
+          <button onClick={handleTryAgain} className="bd-btn bd-btn-ghost grow justify-center whitespace-normal! leading-tight! text-center">
             {t('notFoundPage.goBack')}
           </button>
         </div>
@@ -187,7 +187,7 @@ function OAuthErrorContent() {
 
 export default function OAuthErrorPage() {
   return (
-    <Suspense fallback={<div className="page-shell flex items-center justify-center" style={{ background: 'var(--bd-bg)' }}><LoadingSpinner /></div>}>
+    <Suspense fallback={<div className="flex min-h-(--game-h) items-center justify-center" style={{ background: 'var(--bd-bg)' }}><LoadingSpinner /></div>}>
       <OAuthErrorContent />
     </Suspense>
   )

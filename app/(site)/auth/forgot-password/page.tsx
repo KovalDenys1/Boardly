@@ -68,12 +68,12 @@ export default function ForgotPasswordPage() {
               setSent(false)
               setEmail('')
             }}
-            className="bd-btn bd-btn-ghost"
+            className="bd-btn bd-btn-ghost whitespace-normal! leading-tight! text-center"
             style={{ justifyContent: 'center' }}
           >
             {t('auth.forgotPassword.sendAnother')}
           </button>
-          <button type="button" onClick={navigateToLogin} className="bd-btn bd-btn-coral" style={{ justifyContent: 'center' }}>
+          <button type="button" onClick={navigateToLogin} className="bd-btn bd-btn-coral whitespace-normal! leading-tight! text-center" style={{ justifyContent: 'center' }}>
             {t('auth.forgotPassword.backToLogin')}
           </button>
         </div>
@@ -101,7 +101,7 @@ export default function ForgotPasswordPage() {
           />
         </div>
 
-        <button type="submit" disabled={loading} className="bd-btn bd-btn-coral bd-btn-lg" style={{ justifyContent: 'center', marginTop: 4 }}>
+        <button type="submit" disabled={loading} className="bd-btn bd-btn-coral bd-btn-lg whitespace-normal! leading-tight! text-center" style={{ justifyContent: 'center', marginTop: 4 }}>
           {loading ? (
             <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <LoadingSpinner size="sm" />
