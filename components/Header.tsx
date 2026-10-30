@@ -99,7 +99,7 @@ export default function Header() {
               <LanguageSwitcher />
             </div>
 
-            <div className="hidden desk:block">
+            <div className="site-header-audio hidden desk:block">
               <AudioSettingsButton />
             </div>
 

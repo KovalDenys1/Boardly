@@ -438,14 +438,14 @@ describe('RockPaperScissorsLobbyPage', () => {
       ],
       data: { mode: 'best-of-3', rounds: [], playerChoices: {}, scores: {}, playersReady, gameWinner: null },
     })
-    const waitingTitles = () => screen.queryAllByText('games.rock_paper_scissors.waitingForPick')
+    const waitingTitles = () => screen.queryAllByText('game.ui.turnPlayer')
     const revealingTitles = () => screen.queryAllByText('games.rock_paper_scissors.revealing')
 
     it('says the round is being revealed once this player picks second', async () => {
       mockFetchWithGuest.mockResolvedValue({ ok: true, json: async () => buildLobbyResponse(withReady(['user-2'])) } as Response)
       render(<RockPaperScissorsLobbyPage code="ABCD" />)
       await waitFor(() => expect(screen.getAllByTestId('rps-board').length).toBeGreaterThan(0))
-      expect(screen.getAllByText('games.rock_paper_scissors.pickPrompt').length).toBeGreaterThan(0)
+      expect(screen.getAllByText('game.ui.turnYou').length).toBeGreaterThan(0)
 
       mockFetchWithGuest.mockImplementation(async (_url: string, init?: RequestInit) => {
         if (init?.method === 'POST') return new Promise<Response>(() => {})

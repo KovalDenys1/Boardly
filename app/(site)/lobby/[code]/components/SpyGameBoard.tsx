@@ -9,7 +9,8 @@ import { resolveSpyGameResult, resolveSpyOutcome } from '@/lib/games/spy-outcome
 import Chat from '@/components/Chat'
 import GameScoreboardHeader, { type GameHeaderRoom } from '@/components/game-chrome/GameScoreboardHeader'
 import GamePlayerCard from '@/components/game-chrome/GamePlayerCard'
-import GameStatusBanner from '@/components/game-chrome/GameStatusBanner'
+import GameStatusBanner, { type GameTurn } from '@/components/game-chrome/GameStatusBanner'
+import GamePageHeading from '@/components/game-chrome/GamePageHeading'
 import { hasTopScore, viewerOutcome } from '@/lib/game-outcome'
 import GameTabs from '@/components/game-chrome/GameTabs'
 import GameResultOverlay, { RESULT_REVEAL_DELAY_MS } from '@/components/game-chrome/GameResultOverlay'
@@ -758,24 +759,41 @@ export default function SpyGameBoard({
     </div>
   )
 
-  const activeTitle = (() => {
+  const turn: GameTurn = (() => {
     if (phase === SpyGamePhase.WAITING) {
-      return isCreator && !isSpectator ? t('spy.initializingRound') : t('spy.waitingForCreator')
+      return { whose: 'nobody', line: isCreator && !isSpectator ? t('spy.initializingRound') : t('spy.waitingForCreator') }
     }
     if (phase === SpyGamePhase.ROLE_REVEAL) {
-      return t('spy.playersReady', { count: seatedReadyCount, total: seatedPlayers.length })
+      const isReady = !!currentUserId && playersReady.includes(currentUserId)
+      return !isSpectator && !isReady
+        ? { whose: 'everyone', action: t('spy.turnCheckRole') }
+        : { whose: 'nobody', line: t('spy.playersCheckingRoles') }
     }
     if (phase === SpyGamePhase.QUESTIONING) {
-      return currentQuestioner ? t('spy.currentTurn', { player: currentQuestioner.name }) : t('spy.waitingForQuestioner')
+      if (!currentQuestioner) return { whose: 'nobody', line: t('spy.waitingForQuestioner') }
+      if (currentTarget && data.pendingQuestion) {
+        return !isSpectator && shouldAnswerNow
+          ? { whose: 'you', action: t('spy.turnAnswer') }
+          : { whose: 'player', player: currentTarget.name, doing: t('spy.doingAnswer') }
+      }
+      return !isSpectator && isMyQuestionTurn
+        ? { whose: 'you', action: t('spy.turnAsk') }
+        : { whose: 'player', player: currentQuestioner.name, doing: t('spy.doingAsk') }
     }
-    if (phase === SpyGamePhase.VOTING) return t('spy.voteFor')
-    return t('spy.phases.results')
+    if (phase === SpyGamePhase.VOTING) {
+      return !isSpectator && !hasVoted
+        ? { whose: 'everyone', action: t('spy.turnVote') }
+        : { whose: 'nobody', line: t('spy.playersVoting') }
+    }
+    return { whose: 'nobody', line: t('spy.phases.results') }
   })()
 
-  // Role reveal already counts readiness in its own line, so a meta counter
-  // beside it would print "0/3 players ready 0/3".
   const statusMeta =
-    phase === SpyGamePhase.VOTING ? `${votesSubmitted}/${seatedPlayers.length}` : undefined
+    phase === SpyGamePhase.VOTING
+      ? `${votesSubmitted}/${seatedPlayers.length}`
+      : phase === SpyGamePhase.ROLE_REVEAL
+        ? `${seatedReadyCount}/${seatedPlayers.length}`
+        : undefined
 
   const viewerResult = viewerOutcome({ isFinished: isGameOver, isDraw: gameResult.isDraw, isSpectator, isSeated: !!currentUserId && normalizedPlayers.some((p) => p.id === currentUserId), isViewerWinner: gameResult.winnerId ? iWon : null, isViewerAtTop: hasTopScore(scores, normalizedPlayers.map((p) => p.id), currentUserId) })
   const statusSection = (
@@ -783,7 +801,7 @@ export default function SpyGameBoard({
       isFinished={isGameOver}
       outcome={viewerResult}
       finishedMessage={finishedMessage}
-      activeTitle={activeTitle}
+      turn={turn}
       meta={statusMeta}
       // Role reveal, questioning and voting run a clock (the reveal ends on its own
       // after SPY_ROLE_REVEAL_TIME_LIMIT_SECONDS since #1277); the others have no
@@ -1276,6 +1294,7 @@ export default function SpyGameBoard({
 
   return (
     <div className="game-screen ttt-screen spy-screen-kit">
+      <GamePageHeading title={t('games.spy.name')} />
 
       {/* ── DESKTOP ─────────────────────────────────────────────────── */}
       <div className="ttt-desktop-layout">

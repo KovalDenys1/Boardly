@@ -6,12 +6,16 @@ import { Icon } from '@/components/icons'
 import { showToast } from '@/lib/i18n-toast'
 import LeaveIcon from '@/components/LeaveIcon'
 import GameLeaveButton from '@/components/game-chrome/GameLeaveButton'
+import { useSoundSettings } from '@/hooks/useSoundSettings'
+import { toggleSoundEnabled } from '@/lib/sound-settings'
+import { playCue } from '@/lib/sound-engine'
 
 /**
- * The header's actions (#1577): the spectate invite and Leave, or a spectator's
- * way back. Both forms are rendered and the header's container width picks one
- * (globals.css, `.game-header__actions-*`): side by side, or one menu on the
- * narrowest headers. The menu exists only when there is more than one action.
+ * The header's actions (#1577): sound, the spectate invite and Leave, or
+ * a spectator's way back. Both forms are rendered and the header's container
+ * width picks one (globals.css, `.game-header__actions-*`): side by side, or one
+ * menu on the narrowest headers. The menu exists only when there is more than
+ * one action.
  */
 export interface GameHeaderActionsProps {
   code: string
@@ -45,7 +49,19 @@ export default function GameHeaderActions({ code, isSpectator = false, onLeave, 
 
   const inviteLabel = t('game.ui.inviteSpectators')
   const leaveLabel = t('game.ui.leave')
+  const soundLabel = t('game.ui.sound')
   const canInvite = allowSpectators && !isSpectator
+  const { enabled: soundEnabled } = useSoundSettings()
+  const soundIcon = (
+    <span className="game-header__sound-icon" data-on={soundEnabled}>
+      <Icon name="sound-on" size={16} />
+      <Icon name="sound-off" size={16} />
+    </span>
+  )
+
+  const toggleSound = () => {
+    if (toggleSoundEnabled()) playCue('ui.select')
+  }
 
   const copyInvite = () => {
     if (typeof window === 'undefined') return
@@ -66,7 +82,7 @@ export default function GameHeaderActions({ code, isSpectator = false, onLeave, 
     if (rect) setPosition({ top: rect.bottom + 6, right: Math.max(8, window.innerWidth - rect.right) })
     const menu = menuRef.current
     if (menu && supportsPopover() && !menu.matches(':popover-open')) menu.showPopover()
-    menu?.querySelector<HTMLElement>('[role="menuitem"]')?.focus()
+    menu?.querySelector<HTMLElement>('[role^="menuitem"]')?.focus()
   }, [open])
 
   useEffect(() => {
@@ -88,7 +104,7 @@ export default function GameHeaderActions({ code, isSpectator = false, onLeave, 
   }, [open, close])
 
   const onMenuKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
-    const items = [...(menuRef.current?.querySelectorAll<HTMLElement>('[role="menuitem"]') ?? [])]
+    const items = [...(menuRef.current?.querySelectorAll<HTMLElement>('[role^="menuitem"]') ?? [])]
     const index = items.indexOf(document.activeElement as HTMLElement)
     if (event.key === 'Escape') {
       event.preventDefault()
@@ -107,11 +123,21 @@ export default function GameHeaderActions({ code, isSpectator = false, onLeave, 
     : onLeave
       ? <GameLeaveButton label={leaveLabel} onClick={onLeave} />
       : null
-  const hasMenu = canInvite && !!onLeave
+  const hasMenu = canInvite || !!exit
 
   return (
-    <div className="game-header__actions">
+    <div className={`game-header__actions${isSpectator ? ' game-header__actions--spectator' : ''}`}>
       <div className="game-header__actions-inline">
+        <button
+          type="button"
+          className="game-header__sound"
+          onClick={toggleSound}
+          aria-label={soundLabel}
+          aria-pressed={soundEnabled}
+          title={soundEnabled ? t('game.ui.disableSound') : t('game.ui.enableSound')}
+        >
+          {soundIcon}
+        </button>
         {canInvite && (
           <button type="button" className="game-header__invite" onClick={copyInvite} aria-label={inviteLabel} title={inviteLabel}>
             <Icon name="eye" size={16} />
@@ -147,28 +173,48 @@ export default function GameHeaderActions({ code, isSpectator = false, onLeave, 
             >
               <button
                 type="button"
-                role="menuitem"
+                role="menuitemcheckbox"
+                aria-checked={soundEnabled}
                 className="game-header__menu-item"
-                onClick={() => {
-                  copyInvite()
-                  close(true)
-                }}
+                onClick={toggleSound}
               >
-                <Icon name="eye" size={16} />
-                {inviteLabel}
+                {soundIcon}
+                {soundLabel}
+                <span className="game-header__switch" aria-hidden />
               </button>
-              <button
-                type="button"
-                role="menuitem"
-                className="game-header__menu-item game-header__menu-item--leave"
-                onClick={() => {
-                  close(false)
-                  onLeave?.()
-                }}
-              >
-                <LeaveIcon size={16} />
-                {leaveLabel}
-              </button>
+              {canInvite && (
+                <button
+                  type="button"
+                  role="menuitem"
+                  className="game-header__menu-item"
+                  onClick={() => {
+                    copyInvite()
+                    close(true)
+                  }}
+                >
+                  <Icon name="eye" size={16} />
+                  {inviteLabel}
+                </button>
+              )}
+              {isSpectator ? (
+                <a href={`/lobby/${code}`} role="menuitem" className="game-header__menu-item">
+                  <Icon name="arrow-left" size={16} />
+                  {t('game.ui.returnToLobby')}
+                </a>
+              ) : onLeave && (
+                <button
+                  type="button"
+                  role="menuitem"
+                  className="game-header__menu-item game-header__menu-item--leave"
+                  onClick={() => {
+                    close(false)
+                    onLeave()
+                  }}
+                >
+                  <LeaveIcon size={16} />
+                  {leaveLabel}
+                </button>
+              )}
             </div>
           )}
         </div>

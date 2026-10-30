@@ -44,6 +44,7 @@ import { useSpectatorResultCue } from '@/hooks/useSpectatorResultCue'
 import { useConnectFourDropSound } from './hooks/useConnectFourDropSound'
 import GameScoreboardHeader, { type GameHeaderRoom } from '@/components/game-chrome/GameScoreboardHeader'
 import GameStatusBanner from '@/components/game-chrome/GameStatusBanner'
+import GamePageHeading from '@/components/game-chrome/GamePageHeading'
 import { viewerOutcome } from '@/lib/game-outcome'
 import GameTabs from '@/components/game-chrome/GameTabs'
 import { useGameTimer } from './hooks/useGameTimer'
@@ -825,13 +826,9 @@ export default function ConnectFourLobbyPage({ code, isSpectator = false, onGame
             isDraw={isDraw}
             outcome={viewerOutcome({ isFinished, isDraw, isSpectator, isSeated: myDisc !== null, isViewerWinner: winnerDisc && !isDraw ? isMyWin : null })}
             finishedMessage={finishedTitle}
-            activeTitle={
-                isSpectator
-                    ? currentPlayerName
-                    : isMyTurn()
-                        ? t('games.connect_four.game.dropHint')
-                        : t('games.connect_four.game.playerTurn', { player: currentPlayerName })
-            }
+            turn={!isSpectator && isMyTurn()
+                ? { whose: 'you', action: t('games.connect_four.game.turnDrop') }
+                : { whose: 'player', player: currentPlayerName, doing: t('games.connect_four.game.doingDrop') }}
             meta={`#${gameData.moveCount + 1}`}
             secs={timeLeft}
             turnTimerLimit={turnTimerLimit}
@@ -1026,6 +1023,7 @@ export default function ConnectFourLobbyPage({ code, isSpectator = false, onGame
 
     return (
         <div className="game-screen ttt-screen" style={themeStyle}>
+            <GamePageHeading title={t('games.connect_four.name')} />
             {/* ── DESKTOP ─────────────────────────────────────────────────── */}
             <div className="ttt-desktop-layout">
                 <div className="ttt-grid">

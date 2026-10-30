@@ -117,7 +117,8 @@ import { resolveLobbySurface } from '@/lib/lobby-surface'
 import { getLobbyTheme, getThemePageStyle } from '@/lib/lobby-themes'
 import LeaveIcon from '@/components/LeaveIcon'
 import GameLeaveButton from '@/components/game-chrome/GameLeaveButton'
-import GameStatusBanner from '@/components/game-chrome/GameStatusBanner'
+import GameStatusBanner, { type GameTurn } from '@/components/game-chrome/GameStatusBanner'
+import GamePageHeading from '@/components/game-chrome/GamePageHeading'
 import GameTabs from '@/components/game-chrome/GameTabs'
 import GamePlayerCard from '@/components/game-chrome/GamePlayerCard'
 import GameScoreboardHeader, { type GameHeaderRoom } from '@/components/game-chrome/GameScoreboardHeader'
@@ -1804,18 +1805,14 @@ function LobbyPageContent({
     }))
     const canScore = myTurn && !isMoveInProgress && rollsLeft < 3
 
-    const statusTitle = myTurn
-      ? rollsLeft === 3
-        ? t('yahtzee.ui.turnRollFirst')
-        : rollsLeft === 0
-          ? t('yahtzee.ui.turnPickBox')
-          : t('yahtzee.ui.turnHoldOrPick')
-      : t('yahtzee.ui.playerTurn', { player: nameOf(currentPlayerId) })
+    const turn: GameTurn = myTurn && !isSpectator
+      ? { whose: 'you', action: t(rollsLeft === 3 ? 'yahtzee.ui.turnRollFirst' : rollsLeft === 0 ? 'yahtzee.ui.turnPickBox' : 'yahtzee.ui.turnHoldOrPick') }
+      : { whose: 'player', player: nameOf(currentPlayerId), doing: t(rollsLeft === 0 ? 'yahtzee.ui.doingPickBox' : 'yahtzee.ui.doingRoll') }
 
     const statusBanner = (
       <GameStatusBanner
         isFinished={false}
-        activeTitle={statusTitle}
+        turn={turn}
         meta={t('yahtzee.ui.roundOf', { current: roundInfo.current, total: roundInfo.total })}
         secs={timeLeft}
         turnTimerLimit={turnTimerLimit}
@@ -2178,6 +2175,7 @@ function LobbyPageContent({
             />
           ) : gameEngine && gameEngine instanceof YahtzeeGame ? (
             <div className="yahtzee-screen flex flex-col flex-1 min-h-0">
+              <GamePageHeading title={t('games.yahtzee.name')} />
               {(gameLayout === null || gameLayout === 'desktop') && (
                 <YahtzeeDesktopLayout
                   header={yahtzeeView?.scoreboard}

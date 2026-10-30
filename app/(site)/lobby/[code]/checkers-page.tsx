@@ -40,6 +40,7 @@ import GamePlayerCard from '@/components/game-chrome/GamePlayerCard'
 import { reportablePlayerId } from '@/lib/reportable-player'
 import GameScoreboardHeader, { type GameHeaderRoom } from '@/components/game-chrome/GameScoreboardHeader'
 import GameStatusBanner from '@/components/game-chrome/GameStatusBanner'
+import GamePageHeading from '@/components/game-chrome/GamePageHeading'
 import { viewerOutcome } from '@/lib/game-outcome'
 import GameTabs from '@/components/game-chrome/GameTabs'
 import { useGameTimer } from './hooks/useGameTimer'
@@ -867,7 +868,9 @@ export default function CheckersLobbyPage({ code, isSpectator = false, onGameRes
             isDraw={isDraw}
             outcome={viewerOutcome({ isFinished, isDraw, isSpectator, isSeated: mySide !== null, isViewerWinner: winnerSide && !isDraw ? winnerSide === mySide : null })}
             finishedMessage={finishedMessage}
-            activeTitle={currentPlayerName}
+            turn={!isSpectator && myTurnNow
+                ? { whose: 'you', action: t(chainFrom ? 'games.checkers.game.turnKeepJumping' : mustCapture ? 'games.checkers.game.turnCapture' : 'games.checkers.game.turnMove') }
+                : { whose: 'player', player: currentPlayerName, doing: t('games.checkers.game.doingMove') }}
             meta={`#${gameData.moveCount + 1}`}
             secs={timeLeft}
             turnTimerLimit={turnTimerLimit}
@@ -1018,6 +1021,7 @@ export default function CheckersLobbyPage({ code, isSpectator = false, onGameRes
 
     return (
         <div className="game-screen ttt-screen" style={themeStyle}>
+            <GamePageHeading title={t('games.checkers.name')} />
             {/* ── DESKTOP ─────────────────────────────────────────────────── */}
             <div className="ttt-desktop-layout">
                 <div className="ttt-grid">
