@@ -76,10 +76,10 @@ export default function RegisterForm() {
     3
   )
   const passwordStrengthLevels = [
-    { label: t('auth.password.weak', 'Weak'), color: 'bg-bd-coral', textColor: 'text-bd-coral-text' },
-    { label: t('auth.password.fair', 'Fair'), color: 'bg-bd-sun', textColor: 'text-bd-sun-text' },
+    { label: t('auth.password.weak', 'Weak'), color: 'bg-bd-danger', textColor: 'text-bd-danger-text' },
+    { label: t('auth.password.fair', 'Fair'), color: 'bg-bd-warning', textColor: 'text-bd-warning-text' },
     { label: t('auth.password.good', 'Good'), color: 'bg-bd-ink', textColor: 'text-bd-ink' },
-    { label: t('auth.password.strong', 'Strong'), color: 'bg-green-500', textColor: 'text-green-600' },
+    { label: t('auth.password.strong', 'Strong'), color: 'bg-bd-success', textColor: 'text-bd-success-text' },
   ] as const
   const passwordStrength = passwordStrengthLevels[passwordScore]
   const passwordTooltip = (
@@ -91,7 +91,7 @@ export default function RegisterForm() {
         {passwordChecks.map((check) => (
           <div key={check.text} className="flex items-center gap-2">
             {check.met ? (
-              <svg className="h-4 w-4 shrink-0 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+              <svg className="h-4 w-4 shrink-0 text-bd-success" fill="currentColor" viewBox="0 0 20 20">
                 <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
               </svg>
             ) : (
@@ -208,16 +208,16 @@ export default function RegisterForm() {
   }
 
   const renderInviteBanner = () => (
-    <div className="rounded-2xl p-4 shadow-xs" style={{ border: '1.5px solid #22C55E60', background: '#22C55E10' }}>
+    <div className="rounded-2xl p-4 shadow-xs" style={{ border: '1.5px solid var(--bd-success-border)', background: 'var(--bd-success-bg)' }}>
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
         <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl shadow-xs" style={{ background: 'var(--bd-bg2)' }}>
           <Icon name="gamepad" size={26} />
         </span>
         <div className="min-w-0">
-          <p className="font-semibold" style={{ color: '#16A34A' }}>
+          <p className="font-semibold" style={{ color: 'var(--bd-success-text)' }}>
             {t('auth.register.inviteBanner')}
           </p>
-          <p className="mt-1 text-sm leading-6" style={{ color: '#15803D' }}>
+          <p className="mt-1 text-sm leading-6" style={{ color: 'var(--bd-success-text)' }}>
             {t('auth.register.inviteSubtitle')}
           </p>
         </div>
@@ -334,7 +334,7 @@ export default function RegisterForm() {
                     placeholder={t('auth.register.emailPlaceholder')}
                     autoComplete="email"
                   />
-                  {fieldErrors.email && <p style={{ fontSize: 13, color: 'var(--bd-coral-text)', marginTop: 2 }}>{fieldErrors.email}</p>}
+                  {fieldErrors.email && <p style={{ fontSize: 13, color: 'var(--bd-danger-text)', marginTop: 2 }}>{fieldErrors.email}</p>}
                 </div>
 
                 <div>
@@ -361,7 +361,7 @@ export default function RegisterForm() {
                     hintLabel={t('auth.password.requirements')}
                     required={true}
                   />
-                  {fieldErrors.password && <p style={{ fontSize: 13, color: 'var(--bd-coral-text)', marginTop: 2 }}>{fieldErrors.password}</p>}
+                  {fieldErrors.password && <p style={{ fontSize: 13, color: 'var(--bd-danger-text)', marginTop: 2 }}>{fieldErrors.password}</p>}
                 </div>
 
                 <div>
@@ -372,7 +372,7 @@ export default function RegisterForm() {
                     autoComplete="new-password"
                     label={t('auth.register.confirmPassword')}
                   />
-                  {fieldErrors.confirmPassword && <p style={{ fontSize: 13, color: 'var(--bd-coral-text)', marginTop: 2 }}>{fieldErrors.confirmPassword}</p>}
+                  {fieldErrors.confirmPassword && <p style={{ fontSize: 13, color: 'var(--bd-danger-text)', marginTop: 2 }}>{fieldErrors.confirmPassword}</p>}
                 </div>
               </div>
 

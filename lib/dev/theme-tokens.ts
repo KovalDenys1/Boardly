@@ -14,7 +14,7 @@
 
 export type ThemeVariant = 'light' | 'dark'
 
-export type TokenGroup = 'accent' | 'ink' | 'surface'
+export type TokenGroup = 'accent' | 'status' | 'ink' | 'surface'
 
 export interface ThemeToken {
   /** The custom property, without the leading `--`. */
@@ -56,6 +56,20 @@ export const THEME_TOKENS: readonly ThemeToken[] = [
   { name: 'bd-sky', group: 'accent', note: 'Connect four, links, the info state', light: '#6BC1F0', dark: null },
   { name: 'bd-premium', group: 'accent', note: 'The crown icon and gold fills; premium names are drawn in bd-sun-text', light: '#F59E0B', dark: null },
 
+  { name: 'bd-danger', group: 'status', note: 'Destructive fills, error icons and field edges: 3:1 on every surface', light: '#C62828', dark: '#F2665C' },
+  { name: 'bd-danger-text', group: 'status', note: 'Error text: 4.5:1 on every surface and on bd-danger-bg', light: '#B3261E', dark: '#FF8A80' },
+  { name: 'bd-danger-bg', group: 'status', note: 'The ground of an error box', light: '#FDECEA', dark: '#3A201D' },
+  { name: 'bd-danger-border', group: 'status', note: 'The edge of an error box', light: '#F0B3AC', dark: '#6E302A' },
+  { name: 'bd-ink-on-danger', group: 'status', note: 'Text on a bd-danger fill: white in light, ink in dark', light: '#FFFFFF', dark: '#1F1B16' },
+  { name: 'bd-success', group: 'status', note: 'Success icons, bars and field edges: 3:1 on every surface', light: '#1C8A6B', dark: '#4FC9A6' },
+  { name: 'bd-success-text', group: 'status', note: 'Success text: 4.5:1 on every surface and on bd-success-bg', light: '#076F57', dark: '#4AC3A0' },
+  { name: 'bd-success-bg', group: 'status', note: 'The ground of a success box', light: '#E3F5EE', dark: '#15302A' },
+  { name: 'bd-success-border', group: 'status', note: 'The edge of a success box', light: '#A6DCC8', dark: '#285A4C' },
+  { name: 'bd-warning', group: 'status', note: 'Warning icons, bars and edges: 3:1 on every surface', light: '#9E6C00', dark: '#FFC44D' },
+  { name: 'bd-warning-text', group: 'status', note: 'Warning text: 4.5:1 on every surface and on bd-warning-bg', light: '#875D01', dark: '#FFC44D' },
+  { name: 'bd-warning-bg', group: 'status', note: 'The ground of a warning box', light: '#FFF3D6', dark: '#352A12' },
+  { name: 'bd-warning-border', group: 'status', note: 'The edge of a warning box', light: '#EFD08A', dark: '#62501F' },
+
   { name: 'bd-ink', group: 'ink', note: 'Body text, borders, the hard shadow', light: '#1F1B16', dark: '#F0E8DB' },
   { name: 'bd-ink-soft', group: 'ink', note: 'Secondary text', light: '#4A3F33', dark: '#B5A494' },
   { name: 'bd-ink-muted', group: 'ink', note: 'Hints, placeholders, captions: 4.5:1 on page, card and input', light: '#736451', dark: '#9C8E7E' },
@@ -73,6 +87,7 @@ export const THEME_TOKENS: readonly ThemeToken[] = [
 
 export const GROUP_LABELS: Record<TokenGroup, string> = {
   accent: 'Accents',
+  status: 'Status',
   ink: 'Ink',
   surface: 'Surfaces',
 }

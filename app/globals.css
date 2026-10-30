@@ -50,6 +50,19 @@
   --color-bd-input-bg: var(--bd-input-bg);
   --color-bd-input-border: var(--bd-input-border);
   --color-bd-premium: var(--bd-premium);
+  --color-bd-danger: var(--bd-danger);
+  --color-bd-danger-text: var(--bd-danger-text);
+  --color-bd-danger-bg: var(--bd-danger-bg);
+  --color-bd-danger-border: var(--bd-danger-border);
+  --color-bd-ink-on-danger: var(--bd-ink-on-danger);
+  --color-bd-success: var(--bd-success);
+  --color-bd-success-text: var(--bd-success-text);
+  --color-bd-success-bg: var(--bd-success-bg);
+  --color-bd-success-border: var(--bd-success-border);
+  --color-bd-warning: var(--bd-warning);
+  --color-bd-warning-text: var(--bd-warning-text);
+  --color-bd-warning-bg: var(--bd-warning-bg);
+  --color-bd-warning-border: var(--bd-warning-border);
   --default-ring-color: var(--bd-lav-deep);
   --shadow-bd-ink-4: 0 4px 0 var(--bd-ink);
   --shadow-bd-ink-5: 0 5px 0 var(--bd-ink);
@@ -65,10 +78,6 @@
   --breakpoint-2xl: 1536px;
   /* The single mobile/desktop switch point (docs/RESPONSIVE.md), DESKTOP_MIN_WIDTH_PX in lib/responsive-tokens. */
   --breakpoint-desk: 1024px;
-
-  --color-bd-danger-border: #F0B3AC;
-  --color-bd-danger-bg: #FFF2EF;
-  --color-bd-danger-text: #A6554A;
 
   --text-xs--line-height: 1rem;
   --text-sm--line-height: 1.25rem;
@@ -338,6 +347,41 @@ html.dark {
   --bd-input-bg:  #2B2720;
   --bd-input-border: #7A7065;
   --bd-surface-raised: rgba(255, 255, 255, 0.06);
+}
+
+/* Status colours (#1550). --bd-<status> is the solid colour of an icon, a bar or a field's edge in that
+   state (3:1 on every surface); -text holds 4.5:1 on every surface and on -bg; -border edges the
+   tinted box. Lobby themes set their own copies in lib/lobby-themes.ts. */
+:root {
+  --bd-danger: #C62828;
+  --bd-danger-text: #B3261E;
+  --bd-danger-bg: #FDECEA;
+  --bd-danger-border: #F0B3AC;
+  --bd-ink-on-danger: #FFFFFF;
+  --bd-success: #1C8A6B;
+  --bd-success-text: #076F57;
+  --bd-success-bg: #E3F5EE;
+  --bd-success-border: #A6DCC8;
+  --bd-warning: #9E6C00;
+  --bd-warning-text: #875D01;
+  --bd-warning-bg: #FFF3D6;
+  --bd-warning-border: #EFD08A;
+}
+
+html.dark {
+  --bd-danger: #F2665C;
+  --bd-danger-text: #FF8A80;
+  --bd-danger-bg: #3A201D;
+  --bd-danger-border: #6E302A;
+  --bd-ink-on-danger: #1F1B16;
+  --bd-success: #4FC9A6;
+  --bd-success-text: #4AC3A0;
+  --bd-success-bg: #15302A;
+  --bd-success-border: #285A4C;
+  --bd-warning: #FFC44D;
+  --bd-warning-text: #FFC44D;
+  --bd-warning-bg: #352A12;
+  --bd-warning-border: #62501F;
 }
 
 @keyframes bd-float {
@@ -4418,15 +4462,10 @@ html.dark .liars-seat { background: var(--bd-bg2); }
   gap: 10px;
   margin-top: 14px;
 }
-/* The eliminated-player alert and the "eliminated this round" card. Mixed from
-   the coral and the card ground rather than named --bd-danger-* tokens: those
-   were invented for this rule and defined nowhere, so all three var() calls
-   resolved to their initial values and the card came out with no background at
-   all and a currentColor border. Mixing keeps it right in both themes, because
-   both halves are redefined under html.dark. */
+/* The eliminated-player alert and the "eliminated this round" card. */
 .liars-card--danger {
-  background: color-mix(in srgb, var(--bd-coral) 14%, var(--bd-card-warm));
-  border-color: color-mix(in srgb, var(--bd-coral) 45%, var(--bd-line));
+  background: var(--bd-danger-bg);
+  border-color: var(--bd-danger-border);
   color: var(--bd-ink);
 }
 

@@ -345,7 +345,7 @@ export default function PublicProfileView({
 
     if (relation === 'friends') {
       return (
-        <div className="rounded-2xl border border-bd-mint/40 bg-bd-mint/15 px-4 py-3 text-sm font-semibold text-bd-mint-text dark:text-emerald-300">
+        <div className="rounded-2xl border border-bd-success-border bg-bd-success-bg px-4 py-3 text-sm font-semibold text-bd-success-text">
           {t('profile.publicProfile.alreadyFriends')}
         </div>
       )
@@ -439,8 +439,7 @@ export default function PublicProfileView({
       </div>
       {profile.isPremium && (
         <div
-          className="absolute -top-3 -left-4 z-10 rotate-[-8deg] rounded-full border-2 border-bd-ink px-3 py-1 font-display text-xs font-bold text-bd-ink shadow-[2px_2px_0_var(--bd-ink)]"
-          style={{ background: '#FBBF24' }}
+          className="absolute -top-3 -left-4 z-10 rotate-[-8deg] rounded-full border-2 border-bd-ink bg-bd-premium px-3 py-1 font-display text-xs font-bold text-bd-ink-on-accent shadow-[2px_2px_0_var(--bd-ink)]"
         >
           {t('common.premium')}
         </div>
@@ -558,7 +557,7 @@ export default function PublicProfileView({
                   <h1
                     className={`mt-3 font-display text-4xl font-black leading-none sm:text-5xl ${
                       profile.isPremium && !profile.accentColor
-                        ? /* accent-text-allow: a dark skin keeps the fill */ isDark ? 'text-amber-500' : 'text-bd-sun-text'
+                        ? /* accent-text-allow: a dark skin keeps the fill */ isDark ? 'text-bd-premium' : 'text-bd-sun-text'
                         : !profile.isPremium
                           ? isDark ? 'text-white' : 'text-bd-ink'
                           : ''

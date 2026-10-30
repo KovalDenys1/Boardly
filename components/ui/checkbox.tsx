@@ -4,7 +4,7 @@ import * as React from 'react'
 
 export interface CheckboxProps extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'size'> {
   onCheckedChange?: (checked: boolean) => void
-  variant?: 'default' | 'success' | 'danger'
+  variant?: 'default'
   size?: 'sm' | 'md' | 'lg'
 }
 
@@ -25,8 +25,6 @@ const Checkbox = React.forwardRef<HTMLInputElement, CheckboxProps>(
     // Variant classes
     const variantClasses = {
       default: 'border-bd-input-border checked:bg-bd-lav-deep checked:border-bd-lav-deep hover:border-bd-lav-deep',
-      success: 'border-bd-input-border checked:bg-green-600 checked:border-green-600 hover:border-green-500',
-      danger: 'border-bd-input-border checked:bg-red-600 checked:border-red-600 hover:border-red-500',
     }
 
     // Icon sizes

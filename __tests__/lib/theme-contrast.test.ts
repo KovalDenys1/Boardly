@@ -6,16 +6,15 @@ import { LOBBY_THEMES, LOBBY_THEME_IDS, getThemePageStyle } from '@/lib/lobby-th
 
 const css = fs.readFileSync(path.join(__dirname, '..', '..', 'app', 'globals.css'), 'utf8')
 
-function hexTokens(startMarker: string): Record<string, string> {
-  const start = css.indexOf(startMarker)
-  if (start < 0) throw new Error(`no "${startMarker}" in globals.css`)
-  const body = css.slice(start, css.indexOf('\n}', start))
-  return Object.fromEntries([...body.matchAll(/(--bd-[a-z0-9-]+):\s*(#[0-9A-Fa-f]{6})\s*;/g)].map((m) => [m[1], m[2]]))
+/** Hex tokens of every top-level `selector { ... }` block, in file order, so a later block overrides an earlier one. */
+function hexTokens(selector: string): Record<string, string> {
+  const blocks = [...css.matchAll(new RegExp(`^${selector.replace('.', '\\.')} \\{\\n([^}]*)\\n\\}`, 'gm'))]
+  if (blocks.length === 0) throw new Error(`no "${selector}" block in globals.css`)
+  return Object.fromEntries(blocks.flatMap((b) => [...b[1].matchAll(/(--bd-[a-z0-9-]+):\s*(#[0-9A-Fa-f]{6})\s*;/g)].map((m) => [m[1], m[2]])))
 }
 
-// The design-system :root, not the earlier one that holds only Tailwind's breakpoints.
-const light = hexTokens(':root {\n  --bd-bg:')
-const THEMES = { light, dark: { ...light, ...hexTokens('\nhtml.dark {\n  --bd-bg:') } }
+const light = hexTokens(':root')
+const THEMES = { light, dark: { ...light, ...hexTokens('html.dark') } }
 
 type Colour = string | number[]
 function rgb(colour: Colour): number[] {
@@ -96,6 +95,51 @@ describe.each(Object.entries(THEMES))('%s accent text', (_name, tokens) => {
       for (const alpha of [0.1, 0.15, 0.2]) pairs.push([`on ${accent}/${alpha * 100} over ${s}`, text, tint(v(accent), alpha, v(s))])
     }
     expect(below(pairs)).toEqual([])
+  })
+})
+
+/**
+ * Errors, confirmations and warnings (#1550): the text on every surface and on its own tinted ground,
+ * and the solid colour – an icon, a strength bar, a field's edge in that state – at 3:1, in every theme.
+ */
+const STATUSES = ['danger', 'success', 'warning']
+
+function statusFailures(tokens: Record<string, string>, surfaces: Array<[string, string]>): string[] {
+  const pairs: Array<[string, Colour, Colour]> = []
+  const solid: string[] = []
+  for (const status of STATUSES) {
+    const text = tokens[`--bd-${status}-text`]
+    const fill = tokens[`--bd-${status}`]
+    const ground = tokens[`--bd-${status}-bg`]
+    if (![text, fill, ground, tokens[`--bd-${status}-border`]].every((v) => /^#[0-9A-F]{6}$/i.test(v ?? ''))) {
+      solid.push(`--bd-${status}, -text, -bg and -border must all be hex tokens`)
+      continue
+    }
+    for (const [name, surface] of [...surfaces, [`${status}-bg`, ground] as [string, string]]) {
+      pairs.push([`${status}-text on ${name}`, text, surface])
+    }
+    for (const [name, surface] of surfaces) {
+      if (ratio(fill, surface) < 3) solid.push(`${status} on ${name}: ${ratio(fill, surface).toFixed(2)}:1`)
+    }
+  }
+  const onDanger = tokens['--bd-ink-on-danger']
+  if (!onDanger) solid.push('--bd-ink-on-danger is not a hex token')
+  else pairs.push(['ink-on-danger on danger', onDanger, tokens['--bd-danger']])
+  return [...below(pairs), ...solid]
+}
+
+describe.each(Object.entries(THEMES))('%s status colours', (_name, tokens) => {
+  it('read on the page, the cards, the inputs and their own ground', () => {
+    expect(statusFailures(tokens, TEXT_SURFACES.map((s) => [s, tokens[`--bd-${s}`]]))).toEqual([])
+  })
+})
+
+describe('lobby themes: status colours', () => {
+  it.each(LOBBY_THEME_IDS.filter((id) => id !== 'default'))('%s sets status colours that read on its surfaces', (id) => {
+    const theme = LOBBY_THEMES[id]
+    const style = getThemePageStyle(id) as Record<string, string>
+    const surfaces: Array<[string, string]> = [['bg', theme.bg], ['bg2', theme.bg2], ['card', style['--bd-card']], ['input-bg', style['--bd-input-bg']]]
+    expect(statusFailures(style, surfaces)).toEqual([])
   })
 })
 

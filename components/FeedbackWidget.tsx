@@ -233,7 +233,7 @@ export default function FeedbackWidget() {
                 </div>
 
                 {error && (
-                  <p className="rounded-2xl border border-bd-coral/40 bg-bd-coral/10 px-3 py-2 text-sm font-semibold text-bd-coral-text dark:text-red-300">
+                  <p className="rounded-2xl border border-bd-danger-border bg-bd-danger-bg px-3 py-2 text-sm font-semibold text-bd-danger-text">
                     {error}
                   </p>
                 )}

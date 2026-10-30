@@ -214,7 +214,7 @@ export default function FriendsListModal({
                     {isOnline && (
                       <div
                         className="absolute bottom-0 right-0 w-3 h-3 rounded-full"
-                        style={{ background: '#22C55E', border: '2px solid var(--bd-card-warm)' }}
+                        style={{ background: 'var(--bd-success)', border: '2px solid var(--bd-card-warm)' }}
                       />
                     )}
                   </div>
@@ -227,7 +227,7 @@ export default function FriendsListModal({
                         {friend.username || 'Unknown'}
                       </span>
                       {label && (
-                        <span className="text-xs font-medium" style={{ color: '#22C55E' }}>
+                        <span className="text-xs font-medium" style={{ color: 'var(--bd-success-text)' }}>
                           {label}
                         </span>
                       )}

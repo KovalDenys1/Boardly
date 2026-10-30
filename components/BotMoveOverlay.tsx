@@ -184,13 +184,13 @@ export default function BotMoveOverlay({
                 className="rounded-xl animate-pulse"
                 style={{
                   padding: `clamp(12px, 1.2vh, 20px)`,
-                  background: '#D1FAE5',
-                  border: `clamp(1.5px, 0.15vw, 2.5px) solid #22C55E`,
+                  background: 'var(--bd-success-bg)',
+                  border: `clamp(1.5px, 0.15vw, 2.5px) solid var(--bd-success)`,
                 }}
               >
                 <p
                   className="font-bold text-center"
-                  style={{ fontSize: `clamp(18px, 1.8vw, 28px)`, color: '#166534' }}
+                  style={{ fontSize: `clamp(18px, 1.8vw, 28px)`, color: 'var(--bd-success-text)' }}
                 >
                   {CATEGORY_DISPLAY_NAMES[currentStep.data.category as YahtzeeCategory] || currentStep.data.category}
                 </p>
@@ -199,7 +199,7 @@ export default function BotMoveOverlay({
                   style={{
                     fontSize: `clamp(22px, 2.2vw, 36px)`,
                     marginTop: `clamp(6px, 0.6vh, 10px)`,
-                    color: '#16A34A',
+                    color: 'var(--bd-success-text)',
                   }}
                 >
                   +{t('yahtzee.results.points', { count: currentStep.data.score })}
