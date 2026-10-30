@@ -187,7 +187,7 @@ export default function GameDetailPage({
                 </Link>
               </div>
               {groupNotice && (
-                <p className="mt-4 rounded-2xl border-2 border-amber-300 bg-amber-50 px-4 py-3 text-sm font-semibold leading-relaxed text-amber-900 dark:border-amber-600/60 dark:bg-amber-900/20 dark:text-amber-200">
+                <p className="mt-4 rounded-2xl border-2 border-bd-warning-border bg-bd-warning-bg px-4 py-3 text-sm font-semibold leading-relaxed text-bd-warning-text">
                   <Icon name="users" size={16} weight="bold" /> {groupNotice}
                 </p>
               )}

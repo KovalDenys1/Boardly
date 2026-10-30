@@ -8,6 +8,7 @@ import {
     isKing,
     pieceSide,
 } from '@/lib/games/checkers-game'
+import { MOTION_MS } from '@/lib/motion-durations'
 
 /**
  * Motion for the Checkers board (#1112): what moved between two states, and when.
@@ -170,8 +171,8 @@ export const OWN_HOP_MS = 160
 export const STEP_MS = 260
 /** An arriving jump, per hop. */
 export const JUMP_HOP_MS = 220
-/** A jumped piece fades out over this long, starting as the mover passes over it. */
-export const CAPTURE_FADE_MS = 220
+/** A jumped piece fades out over this long (.ck-piece--captured), starting as the mover passes over it. */
+export const CAPTURE_FADE_MS = MOTION_MS.base
 
 export interface CheckersMotionTiming {
     /** Start of each hop, ms from the start of the run. */

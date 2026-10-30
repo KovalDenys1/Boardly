@@ -195,8 +195,8 @@ function playEntrance(root: HTMLElement, reduced: boolean): Animation[] {
     run('card', fade, { duration: 200, easing: 'linear' })
     return animations
   }
-  const easeOut = cssToken('--bd-ease-out', 'cubic-bezier(0.2, 0.7, 0.2, 1)')
-  const spring = cssToken('--bd-ease-spring', 'cubic-bezier(0.2, 1.4, 0.4, 1)')
+  const easeOut = cssToken('--bd-ease-out', 'ease-out')
+  const spring = cssToken('--bd-ease-spring', 'ease-out')
   run('scrim', fade, { duration: 220, easing: easeOut })
   run('card', [
     { opacity: 0, transform: 'translateY(24px) scale(0.94)' },
@@ -265,10 +265,10 @@ function rankOf(rows: ResultStanding[]): number[] {
 }
 
 const SECONDARY_BUTTON_CLASS =
-  'inline-flex min-h-11 min-w-0 items-center justify-center gap-1.5 rounded-bd-md border-[1.5px] border-bd-line bg-bd-bg px-3 py-1.5 text-center text-sm font-semibold leading-tight text-balance text-bd-ink transition-[transform,background-color] duration-150 ease-out hover:bg-bd-bg2 enabled:active:scale-[0.96] disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-bd-lav-deep'
+  'inline-flex min-h-11 min-w-0 items-center justify-center gap-1.5 rounded-bd-md border-[1.5px] border-bd-line bg-bd-bg px-3 py-1.5 text-center text-sm font-semibold leading-tight text-balance text-bd-ink transition-[transform,background-color] duration-bd-fast ease-out hover:bg-bd-bg2 enabled:active:scale-[0.96] disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-bd-lav-deep'
 
 const PRIMARY_BUTTON_CLASS =
-  'inline-flex h-[3.25rem] w-full items-center justify-center gap-2 rounded-bd-md border-0 px-5 font-display text-lg font-bold text-bd-ink-on-accent transition-transform duration-150 ease-out enabled:active:scale-[0.96] disabled:cursor-not-allowed disabled:opacity-70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-bd-lav-deep short-portrait:h-12'
+  'inline-flex h-[3.25rem] w-full items-center justify-center gap-2 rounded-bd-md border-0 px-5 font-display text-lg font-bold text-bd-ink-on-accent transition-transform duration-bd-fast ease-out enabled:active:scale-[0.96] disabled:cursor-not-allowed disabled:opacity-70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-bd-lav-deep short-portrait:h-12'
 
 const PLATE_CLASS =
   'grid min-h-[3.25rem] place-items-center rounded-bd-md bg-bd-bg2 px-4 py-2 text-center text-sm font-semibold text-bd-ink-muted short-portrait:min-h-12'

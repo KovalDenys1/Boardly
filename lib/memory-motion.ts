@@ -4,6 +4,13 @@
  * matched pair (for the match cue). Pure, so the board only has to remember
  * the previous snapshot's ids.
  */
+import { MOTION_MS } from '@/lib/motion-durations'
+
+/** The card flip (`.memory-tile-inner`, --bd-dur-slow); the match cues wait for it to land. */
+export const MEMORY_FLIP_MS = MOTION_MS.slow
+
+/** A matched pair keeps its cue class through the flip, then the pop and glow (--bd-dur-slow each). */
+export const MATCH_CUE_MS = MEMORY_FLIP_MS + MOTION_MS.slow
 
 export interface MemoryCardLike {
   id: string

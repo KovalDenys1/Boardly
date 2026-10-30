@@ -14,7 +14,7 @@ interface MobileMenuProps {
   userImage?: string | null
 }
 
-const barClass = 'absolute left-0 h-[2.5px] w-full rounded-full bg-bd-ink transition-[top,transform,opacity] duration-300'
+const barClass = 'absolute left-0 h-[2.5px] w-full rounded-full bg-bd-ink transition-[top,transform,opacity] duration-bd'
 
 export function MobileMenu({ isAuthenticated, userName, userEmail, userImage }: MobileMenuProps) {
   const { t } = useTranslation()

@@ -437,7 +437,7 @@ export function OnboardingModal() {
                     cursor: 'pointer',
                     textAlign: 'center',
                     transform: selectedGame === type ? 'translate(-1px, -1px)' : 'translate(0,0)',
-                    transition: 'transform 0.1s, background 0.1s',
+                    transition: 'transform var(--bd-dur-fast) var(--bd-ease-out), background var(--bd-dur-fast) var(--bd-ease-out)',
                   }}
                 >
                   <GameIcon gameId={meta.svgId} accentColor={selectedGame === type ? 'var(--bd-ink)' : meta.accentColor} size={30} />

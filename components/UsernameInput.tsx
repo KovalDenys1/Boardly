@@ -144,9 +144,9 @@ export default function UsernameInput({
           disabled={disabled}
           className={`w-full rounded-2xl border bg-bd-input-bg px-4 py-3 pr-10 text-base text-bd-ink shadow-xs outline-hidden transition placeholder:text-bd-ink-muted desk:text-sm ${
             status === 'available'
-              ? 'border-emerald-400 focus:ring-2 focus:ring-inset focus:ring-bd-lav-deep'
+              ? 'border-bd-success focus:ring-2 focus:ring-inset focus:ring-bd-lav-deep'
               : status === 'taken' || status === 'invalid'
-                ? 'border-red-400 focus:ring-2 focus:ring-inset focus:ring-bd-lav-deep'
+                ? 'border-bd-danger focus:ring-2 focus:ring-inset focus:ring-bd-lav-deep'
                 : 'border-bd-input-border focus:border-bd-lav-deep focus:ring-4 focus:ring-inset focus:ring-bd-lav-deep'
           }`}
           value={value}
@@ -163,12 +163,12 @@ export default function UsernameInput({
             <div className="h-5 w-5 animate-spin rounded-full border-2 border-bd-lav border-t-transparent" />
           )}
           {status === 'available' && (
-            <svg className="w-5 h-5 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+            <svg className="w-5 h-5 text-bd-success" fill="currentColor" viewBox="0 0 20 20">
               <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
             </svg>
           )}
           {(status === 'taken' || status === 'invalid') && (
-            <svg className="w-5 h-5 text-red-500" fill="currentColor" viewBox="0 0 20 20">
+            <svg className="w-5 h-5 text-bd-danger" fill="currentColor" viewBox="0 0 20 20">
               <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
             </svg>
           )}
@@ -178,12 +178,12 @@ export default function UsernameInput({
       {/* Status Messages */}
       <div className="mt-1">
         {status === 'taken' && (
-          <p className="text-xs text-red-600">
+          <p className="text-xs text-bd-danger-text">
             <Icon name="close" size={13} /> {t('auth.username.taken', 'Username is already taken')}
           </p>
         )}
         {status === 'invalid' && validationError && (
-          <p className="text-xs text-red-600">
+          <p className="text-xs text-bd-danger-text">
             <Icon name="close" size={13} /> {validationError}
           </p>
         )}
@@ -211,7 +211,7 @@ export default function UsernameInput({
       )}
 
       {error && (
-        <p className="mt-1 text-sm text-red-600">{error}</p>
+        <p className="mt-1 text-sm text-bd-danger-text">{error}</p>
       )}
     </div>
   )

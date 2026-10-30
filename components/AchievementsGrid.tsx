@@ -64,7 +64,7 @@ function Badge({
       </button>
       <div
         role="tooltip"
-        className={`pointer-events-none absolute inset-x-0 bottom-full z-dropdown mb-2 rounded-xl border-[1.5px] border-bd-line bg-bd-bg p-3 shadow-[0_6px_0_0_rgba(31,27,22,0.08),0_14px_28px_-10px_rgba(31,27,22,0.28)] transition-opacity duration-150 group-hover:opacity-100 group-focus-within:opacity-100 ${
+        className={`pointer-events-none absolute inset-x-0 bottom-full z-dropdown mb-2 rounded-xl border-[1.5px] border-bd-line bg-bd-bg p-3 shadow-[0_6px_0_0_rgba(31,27,22,0.08),0_14px_28px_-10px_rgba(31,27,22,0.28)] transition-opacity duration-bd-fast group-hover:opacity-100 group-focus-within:opacity-100 ${
           pinned ? 'opacity-100' : 'opacity-0'
         }`}
       >
@@ -130,7 +130,7 @@ export default function AchievementsGrid({ items }: { items: AchievementGridItem
                 height="12"
                 viewBox="0 0 16 16"
                 fill="none"
-                className={`transition-transform duration-300 motion-reduce:transition-none ${expanded ? 'rotate-180' : ''}`}
+                className={`transition-transform duration-bd ${expanded ? 'rotate-180' : ''}`}
               >
                 <path d="M3 6L8 11L13 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
@@ -146,12 +146,12 @@ export default function AchievementsGrid({ items }: { items: AchievementGridItem
       {hasOverflow && (
         // height:auto animation via the grid-template-rows 0fr -> 1fr trick
         <div
-          className="grid transition-[grid-template-rows] duration-300 ease-out motion-reduce:transition-none"
+          className="grid transition-[grid-template-rows] duration-bd ease-out"
           style={{ gridTemplateRows: expanded ? '1fr' : '0fr' }}
         >
           <div className={`min-h-0 ${overflowVisible ? 'overflow-visible' : 'overflow-hidden'}`}>
             <div
-              className={`pt-3 ${GRID_CLASSES} transition-opacity duration-300 motion-reduce:transition-none ${
+              className={`pt-3 ${GRID_CLASSES} transition-opacity duration-bd ${
                 expanded ? 'opacity-100' : 'opacity-0'
               }`}
             >

@@ -61,10 +61,10 @@ export default function PasswordInput({
     score = Math.min(score, 3)
 
     const strengthLevels = [
-      { key: 'weak', label: t('auth.password.weak', 'Weak'), color: 'var(--bd-coral)' },
-      { key: 'fair', label: t('auth.password.fair', 'Fair'), color: 'var(--bd-sun)' },
+      { key: 'weak', label: t('auth.password.weak', 'Weak'), color: 'var(--bd-danger)' },
+      { key: 'fair', label: t('auth.password.fair', 'Fair'), color: 'var(--bd-warning)' },
       { key: 'good', label: t('auth.password.good', 'Good'), color: 'var(--bd-ink)' },
-      { key: 'strong', label: t('auth.password.strong', 'Strong'), color: '#22C55E' },
+      { key: 'strong', label: t('auth.password.strong', 'Strong'), color: 'var(--bd-success)' },
     ]
 
     return {
@@ -76,10 +76,10 @@ export default function PasswordInput({
   }, [value, t])
 
   const strengthLabelColor =
-    strength.score === 0 ? 'var(--bd-coral)' :
-    strength.score === 1 ? '#D97706' :
+    strength.score === 0 ? 'var(--bd-danger-text)' :
+    strength.score === 1 ? 'var(--bd-warning-text)' :
     strength.score === 2 ? 'var(--bd-ink)' :
-    '#16A34A'
+    'var(--bd-success-text)'
 
   return (
     <div>
@@ -142,7 +142,7 @@ export default function PasswordInput({
 
           <div className="h-2 rounded-full overflow-hidden shadow-inner" style={{ background: 'var(--bd-line)' }}>
             <div
-              className="h-full transition-[width,background-color] duration-500 ease-out"
+              className="h-full transition-[width,background-color] duration-bd-slow ease-out"
               style={{ width: `${strength.percentage}%`, background: strength.color }}
             />
           </div>
@@ -173,7 +173,7 @@ export default function PasswordInput({
       )}
 
       {error && (
-        <p className="mt-1 text-sm" style={{ color: 'var(--bd-coral-text)' }}>{error}</p>
+        <p className="mt-1 text-sm" style={{ color: 'var(--bd-danger-text)' }}>{error}</p>
       )}
     </div>
   )
@@ -183,7 +183,7 @@ function PasswordRequirement({ met, text }: { met: boolean; text: string }) {
   return (
     <div className="flex items-center gap-2 text-xs">
       {met ? (
-        <svg className="w-4 h-4 shrink-0" style={{ color: '#22C55E' }} fill="currentColor" viewBox="0 0 20 20">
+        <svg className="w-4 h-4 shrink-0" style={{ color: 'var(--bd-success)' }} fill="currentColor" viewBox="0 0 20 20">
           <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
         </svg>
       ) : (

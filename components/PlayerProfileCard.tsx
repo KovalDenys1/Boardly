@@ -302,7 +302,7 @@ export default function PlayerProfileCard({ userId, onClose, reportContext }: Pl
             {!data.isGuest && data.relation !== 'self' && status === 'authenticated' && (
               <div>
                 {data.relation === 'friends' ? (
-                  <p className="text-sm font-semibold" style={{ color: '#22C55E' }}>
+                  <p className="text-sm font-semibold" style={{ color: 'var(--bd-success-text)' }}>
                     <Icon name="check" size={14} /> {t('profile.friends.tabs.friends')}
                   </p>
                 ) : data.relation === 'request_sent' ? (

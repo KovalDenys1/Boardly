@@ -181,7 +181,7 @@ export default function SuspendedPage() {
                 </div>
 
                 {error && (
-                  <p className="text-xs text-bd-coral-text">{error}</p>
+                  <p className="text-xs text-bd-danger-text">{error}</p>
                 )}
 
                 <button

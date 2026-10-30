@@ -1,6 +1,6 @@
 import { existsSync, readdirSync, readFileSync, statSync } from 'fs'
 import path from 'path'
-import { accentTextLines, colourUtilities, focusColourLines, tokenHexShadowLines, tokenHexValues, transitionAllLines, varShorthandLines } from '../../scripts/design-token-rules'
+import { LEGACY_CLASS, accentTextLines, colourUtilities, focusColourLines, tokenHexShadowLines, tokenHexValues, transitionAllLines, varShorthandLines } from '../../scripts/design-token-rules'
 
 const globalsCss = readFileSync(path.join(__dirname, '..', '..', 'app', 'globals.css'), 'utf8')
 
@@ -32,6 +32,26 @@ describe('accent colour used as text', () => {
   })
 })
 
+describe('palette classes', () => {
+  const count = (line: string) => (line.match(LEGACY_CLASS) ?? []).length
+
+  it.each([
+    ['an error text', '<p className="text-xs text-red-600">'],
+    ['a dark-mode patch', '<p className="text-bd-danger-text dark:text-red-300">'],
+    ['a success tint', '<div className="bg-emerald-500/10 border-emerald-500/30">'],
+    ['a warning gradient', '<div className="bg-linear-to-r/srgb from-amber-50 to-orange-50">'],
+    ['a checked box', "success: 'checked:bg-green-600 hover:border-green-500'"],
+    ['a rose message', '<p className="text-rose-600">'],
+    ['a yellow chip', '<span className="bg-yellow-100 text-teal-700">'],
+  ])('counts %s, so the baseline catches a status palette class', (_label, line) => {
+    expect(count(line)).toBeGreaterThan(0)
+  })
+
+  it('leaves the status tokens alone', () => {
+    expect(count('<p className="border-bd-danger-border bg-bd-danger-bg text-bd-danger-text text-bd-success-text bg-bd-warning">')).toBe(0)
+  })
+})
+
 describe('focus ring colour', () => {
   it.each([
     ['an ink ring', 'focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-bd-ink'],
@@ -48,8 +68,9 @@ describe('focus ring colour', () => {
 
 describe('colour tokens as utilities', () => {
   it('wires every --bd-* colour in :root into @theme inline as a var() link', () => {
-    const root = globalsCss.slice(globalsCss.indexOf(':root {\n  --bd-bg:'))
-    const declared = [...root.slice(0, root.indexOf('\n}')).matchAll(/--(bd-[a-z0-9-]+):\s*(?:#|rgba?\(|var\(--bd-)/g)].map((m) => m[1])
+    const roots = [...globalsCss.matchAll(/^:root \{\n([^}]*)\n\}/gm)].map((m) => m[1]).join('\n')
+    const declared = [...roots.matchAll(/--(bd-[a-z0-9-]+):\s*(?:#|rgba?\(|var\(--bd-)/g)].map((m) => m[1])
+    expect(declared).toEqual(expect.arrayContaining(['bd-danger-text', 'bd-success-text', 'bd-warning-text']))
     const inline = globalsCss.slice(globalsCss.indexOf('@theme inline {'))
     const wired = inline.slice(0, inline.indexOf('\n}'))
     expect(declared.filter((name) => !wired.includes(`--color-${name}: var(--${name});`))).toEqual([])
@@ -195,6 +216,11 @@ describe('the app and components', () => {
 
   it('name what they transition instead of transition-all, which reaches layout properties', () => {
     expect(scan(transitionAllLines)).toEqual([])
+  })
+
+  it('draw status and gold colours with the tokens, not Tailwind palette hex', () => {
+    const PALETTE_HEX = /#(?:FCA5A5|F87171|EF4444|DC2626|B91C1C|FCD34D|FBBF24|F59E0B|D97706|B45309|FACC15|EAB308|86EFAC|4ADE80|22C55E|16A34A|15803D|34D399|10B981|059669)\b/i
+    expect(scan((src) => src.split('\n').flatMap((line, i) => (PALETTE_HEX.test(line) && !/accent-text-allow|--bd-premium/.test(line) ? [i + 1] : [])))).toEqual([])
   })
 
   it('spell a colour with a utility as that utility', () => {

@@ -170,7 +170,7 @@ export default function HeroDemoConnectFour() {
                   cursor: winner || board[0][c] || animatingDisc ? 'default' : 'pointer',
                   fontSize: 13, fontWeight: 900,
                   color: hoverCol === c && !board[0][c] && !winner && !animatingDisc ? 'var(--bd-coral)' : 'transparent',
-                  transition: 'color 0.1s',
+                  transition: 'color var(--bd-dur-fast) var(--bd-ease-out)',
                 }}
               >
                 ▼
@@ -234,7 +234,7 @@ export default function HeroDemoConnectFour() {
                       background: discColor!,
                       border: '2.5px solid var(--bd-ink)',
                       boxShadow: '0 2px 0 rgba(31,27,22,0.25)',
-                      animation: `c4-drop-simple ${durationMs}ms cubic-bezier(0.4, 0, 0.6, 1) both`,
+                      animation: `c4-drop-simple ${durationMs}ms var(--bd-ease-in-out) both`,
                       '--c4-fall-dist': `${fallDist}px`,
                     } as React.CSSProperties} />
                   )}

@@ -93,7 +93,7 @@ export default function SocialLoopListener() {
           <span className="text-sm">{message}</span>
           <button
             type="button"
-            className="rounded-md bg-green-600 px-2 py-1 text-xs font-semibold text-white hover:bg-green-700"
+            className="rounded-md bg-bd-mint px-2 py-1 text-xs font-semibold text-bd-ink-on-accent hover:bg-bd-mint-deep"
             onClick={() => {
               toast.dismiss(toastRef.id)
               router.push(`/lobby/${rematch.lobbyCode}`)

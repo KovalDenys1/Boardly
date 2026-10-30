@@ -79,7 +79,7 @@ export function WinPips({ filled, total, color = 'var(--bd-mint-deep)' }: { fill
             borderRadius: '50%',
             border: `2px solid ${index < filled ? color : 'var(--bd-line)'}`,
             background: index < filled ? color : 'transparent',
-            transition: 'background 0.2s, border-color 0.2s',
+            transition: 'background var(--bd-dur-fast) var(--bd-ease-out), border-color var(--bd-dur-fast) var(--bd-ease-out)',
           }}
         />
       ))}

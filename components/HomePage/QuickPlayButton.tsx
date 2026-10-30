@@ -205,7 +205,7 @@ export default function QuickPlayButton({ className, autoOpen = false }: QuickPl
                     boxShadow: '3px 3px 0 var(--bd-ink)',
                     cursor: 'pointer',
                     textAlign: 'left',
-                    transition: 'transform 0.1s, box-shadow 0.1s',
+                    transition: 'transform var(--bd-dur-fast) var(--bd-ease-out), box-shadow var(--bd-dur-fast) var(--bd-ease-out)',
                   }}
                   onMouseEnter={(e) => {
                     e.currentTarget.style.transform = 'translate(-1px, -1px)'

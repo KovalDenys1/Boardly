@@ -18,12 +18,12 @@ export function BlockedPlayersDialog({ open, onClose }: BlockedPlayersDialogProp
     <Dialog open={open} onClose={onClose} transition className="relative z-dialog">
       <DialogBackdrop
         transition
-        className="fixed inset-0 bg-bd-scrim backdrop-blur-xs transition duration-200 ease-out data-closed:opacity-0 motion-reduce:transition-none"
+        className="fixed inset-0 bg-bd-scrim backdrop-blur-xs transition duration-bd-fast ease-out data-closed:opacity-0"
       />
       <div className="fixed inset-0 flex items-center justify-center p-4">
         <DialogPanel
           transition
-          className="flex max-h-full w-full max-w-sm flex-col rounded-[1.5rem] border-[1.5px] border-bd-line bg-bd-card-warm p-5 shadow-[0_18px_36px_-18px_rgba(31,27,22,0.35)] transition duration-200 ease-out data-closed:scale-[0.98] data-closed:opacity-0 motion-reduce:transition-none"
+          className="flex max-h-full w-full max-w-sm flex-col rounded-[1.5rem] border-[1.5px] border-bd-line bg-bd-card-warm p-5 shadow-[0_18px_36px_-18px_rgba(31,27,22,0.35)] transition duration-bd-fast ease-out data-closed:scale-[0.98] data-closed:opacity-0"
         >
           <div className="mb-3 flex shrink-0 items-center justify-between gap-3">
             <DialogTitle className="text-lg font-bold text-bd-ink">{t('blockedPlayers.title')}</DialogTitle>

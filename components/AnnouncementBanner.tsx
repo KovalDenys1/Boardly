@@ -22,8 +22,8 @@ export async function AnnouncementBanner() {
 
   const tone = {
     info: 'bg-(--color-surface-2) text-(--color-text) border-(--color-border)',
-    success: 'bg-emerald-500/10 text-emerald-200 border-emerald-500/30',
-    warning: 'bg-amber-500/10 text-amber-100 border-amber-500/30',
+    success: 'bg-bd-success-bg text-bd-success-text border-bd-success-border',
+    warning: 'bg-bd-warning-bg text-bd-warning-text border-bd-warning-border',
   }[announcement.tone]
 
   const body = (arrow: boolean) => (

@@ -34,7 +34,7 @@ import {
 import ThemePreview from './ThemePreview'
 
 const STORAGE_KEY = 'boardly:dev-theme:v1'
-const GROUP_ORDER: readonly TokenGroup[] = ['accent', 'ink', 'surface']
+const GROUP_ORDER: readonly TokenGroup[] = ['accent', 'status', 'ink', 'surface']
 
 /** Hue rotation is a full turn either way; saturation scales from flat grey to double. */
 const HUE_RANGE = 180

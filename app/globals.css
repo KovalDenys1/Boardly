@@ -50,6 +50,29 @@
   --color-bd-input-bg: var(--bd-input-bg);
   --color-bd-input-border: var(--bd-input-border);
   --color-bd-premium: var(--bd-premium);
+  --color-bd-danger: var(--bd-danger);
+  --color-bd-danger-text: var(--bd-danger-text);
+  --color-bd-danger-bg: var(--bd-danger-bg);
+  --color-bd-danger-border: var(--bd-danger-border);
+  --color-bd-ink-on-danger: var(--bd-ink-on-danger);
+  --color-bd-success: var(--bd-success);
+  --color-bd-success-text: var(--bd-success-text);
+  --color-bd-success-bg: var(--bd-success-bg);
+  --color-bd-success-border: var(--bd-success-border);
+  --color-bd-warning: var(--bd-warning);
+  --color-bd-warning-text: var(--bd-warning-text);
+  --color-bd-warning-bg: var(--bd-warning-bg);
+  --color-bd-warning-border: var(--bd-warning-border);
+  --color-bd-board-line: var(--bd-board-line);
+  --color-bd-board-cell: var(--bd-board-cell);
+  --default-transition-duration: var(--bd-dur-fast);
+  --default-transition-timing-function: var(--bd-ease-out);
+  --transition-duration-bd-fast: var(--bd-dur-fast);
+  --transition-duration-bd: var(--bd-dur);
+  --transition-duration-bd-slow: var(--bd-dur-slow);
+  --ease-out: var(--bd-ease-out);
+  --ease-in: var(--bd-ease-in);
+  --ease-in-out: var(--bd-ease-in-out);
   --default-ring-color: var(--bd-lav-deep);
   --shadow-bd-ink-4: 0 4px 0 var(--bd-ink);
   --shadow-bd-ink-5: 0 5px 0 var(--bd-ink);
@@ -65,10 +88,6 @@
   --breakpoint-2xl: 1536px;
   /* The single mobile/desktop switch point (docs/RESPONSIVE.md), DESKTOP_MIN_WIDTH_PX in lib/responsive-tokens. */
   --breakpoint-desk: 1024px;
-
-  --color-bd-danger-border: #F0B3AC;
-  --color-bd-danger-bg: #FFF2EF;
-  --color-bd-danger-text: #A6554A;
 
   --text-xs--line-height: 1rem;
   --text-sm--line-height: 1.25rem;
@@ -307,15 +326,18 @@
   --bd-input-border: #958567;
   --bd-font-display: Georgia, serif;
   --bd-premium: #F59E0B;
-  /* Motion tokens (#1111). One vocabulary for every game's motion, inside the
-     200-450 ms band of CLAUDE.md's in-game DoD item 3. Theme-independent, so
-     html.dark does not redefine them. --bd-ease-out is the curve five rules
-     used to hard-code; --bd-ease-spring overshoots slightly, for pops. */
+  /* Motion tokens (#1111, #1569). The one place a duration or a curve is spelled out, inside the
+     200-450 ms band of CLAUDE.md's in-game DoD item 3. Theme-independent, so html.dark does not
+     redefine them. --bd-ease-out settles (entrances, hovers); --bd-ease-spring overshoots, for pops;
+     --bd-ease-in accelerates like a fall (a dropped disc, an exit); --bd-ease-in-out for shakes and
+     loops. A loop's period and a linear clock keep their real time. */
   --bd-dur-fast: 150ms;
   --bd-dur: 250ms;
   --bd-dur-slow: 420ms;
   --bd-ease-out: cubic-bezier(0.2, 0.7, 0.2, 1);
   --bd-ease-spring: cubic-bezier(0.2, 1.4, 0.4, 1);
+  --bd-ease-in: cubic-bezier(0.5, 0, 0.85, 0.35);
+  --bd-ease-in-out: cubic-bezier(0.42, 0, 0.58, 1);
 }
 
 html.dark {
@@ -340,6 +362,53 @@ html.dark {
   --bd-surface-raised: rgba(255, 255, 255, 0.06);
 }
 
+/* Status colours (#1550). --bd-<status> is the solid colour of an icon, a bar or a field's edge in that
+   state (3:1 on every surface); -text holds 4.5:1 on every surface and on -bg; -border edges the
+   tinted box. Lobby themes set their own copies in lib/lobby-themes.ts. */
+:root {
+  --bd-danger: #C62828;
+  --bd-danger-text: #B3261E;
+  --bd-danger-bg: #FDECEA;
+  --bd-danger-border: #F0B3AC;
+  --bd-ink-on-danger: #FFFFFF;
+  --bd-success: #1C8A6B;
+  --bd-success-text: #076F57;
+  --bd-success-bg: #E3F5EE;
+  --bd-success-border: #A6DCC8;
+  --bd-warning: #9E6C00;
+  --bd-warning-text: #875D01;
+  --bd-warning-bg: #FFF3D6;
+  --bd-warning-border: #EFD08A;
+}
+
+html.dark {
+  --bd-danger: #F2665C;
+  --bd-danger-text: #FF8A80;
+  --bd-danger-bg: #3A201D;
+  --bd-danger-border: #6E302A;
+  --bd-ink-on-danger: #1F1B16;
+  --bd-success: #4FC9A6;
+  --bd-success-text: #4AC3A0;
+  --bd-success-bg: #15302A;
+  --bd-success-border: #285A4C;
+  --bd-warning: #FFC44D;
+  --bd-warning-text: #FFC44D;
+  --bd-warning-bg: #352A12;
+  --bd-warning-border: #62501F;
+}
+
+/* Boards (#1567): the line that draws a board's edge and grid, 3:1 off every card and page a board sits on,
+   and Ludo's cells under it. The dark line is light, so a dark board keeps its edge on the dark card. */
+:root {
+  --bd-board-line: #1F1B16;
+  --bd-board-cell: #FFFFFF;
+}
+
+html.dark {
+  --bd-board-line: #A89A88;
+  --bd-board-cell: #1E1B17;
+}
+
 @keyframes bd-float {
   0%   { transform: translateY(7px)  rotate(0deg);  }
   25%  { transform: translateY(-7px) rotate(5deg);  }
@@ -356,11 +425,11 @@ html.dark {
 }
 
 .bd-float {
-  animation: bd-float 5s ease-in-out infinite;
+  animation: bd-float 5s var(--bd-ease-in-out) infinite;
 }
 
 .bd-float-board {
-  animation: bd-float-board 7s ease-in-out infinite;
+  animation: bd-float-board 7s var(--bd-ease-in-out) infinite;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -472,6 +541,7 @@ html.dark {
    chat, so its title strip goes, as in the landscape game column. */
 /* The composer's Rules link stands in for the title strip's where the strip is hidden. */
 .chat-composer-rules { display: none; }
+.chat-block-confirm { animation: fade-in-plain var(--bd-dur-fast) var(--bd-ease-out); }
 
 @media (max-height: 720px) {
   .waiting-room-chat .chat-titlebar { display: none; }
@@ -621,7 +691,7 @@ html.dark {
   min-height: 56px;
   padding: 0 28px;
   text-decoration: none;
-  transition: transform 150ms ease, background-color 150ms ease, color 150ms ease;
+  transition: transform var(--bd-dur-fast) var(--bd-ease-out), background-color var(--bd-dur-fast) var(--bd-ease-out), color var(--bd-dur-fast) var(--bd-ease-out);
   white-space: nowrap;
 }
 
@@ -747,7 +817,7 @@ html.dark .bd-shot-dark { display: block; }
   left: clamp(10px, 2.4vw, 20px);
   padding: clamp(8px, 1.2vw, 12px) clamp(14px, 2vw, 20px) clamp(8px, 1.2vw, 12px) clamp(10px, 1.6vw, 16px);
   position: absolute;
-  transition: transform 200ms ease;
+  transition: transform var(--bd-dur-fast) var(--bd-ease-out);
 }
 
 .home-video-play:hover {
@@ -986,12 +1056,12 @@ html.dark .bd-shot-dark { display: block; }
 @layer utilities {
   .animate-scale-fade-in {
     @apply opacity-100;
-    animation: scaleFadeIn 1s cubic-bezier(0.22, 1, 0.36, 1) both;
+    animation: scaleFadeIn var(--bd-dur-slow) var(--bd-ease-out) both;
   }
   
   .animate-fade-in-up {
     @apply opacity-100 translate-y-0;
-    animation: fadeInUp 1s cubic-bezier(0.22, 1, 0.36, 1) both;
+    animation: fadeInUp var(--bd-dur-slow) var(--bd-ease-out) both;
   }
 }
 
@@ -1026,7 +1096,7 @@ html.dark .bd-shot-dark { display: block; }
   border-radius: 0.5rem;
   color: #fff;
   font-weight: 500;
-  transition: background 0.2s, box-shadow 0.2s;
+  transition: background var(--bd-dur-fast) var(--bd-ease-out), box-shadow var(--bd-dur-fast) var(--bd-ease-out);
   box-shadow: 0 2px 8px 0 rgba(0,0,0,0.04);
   outline: none;
   border: none;
@@ -1065,7 +1135,7 @@ html.dark .bd-shot-dark { display: block; }
   background: #fff;
   font-weight: 500;
   border: none;
-  transition: background 0.2s, color 0.2s;
+  transition: background var(--bd-dur-fast) var(--bd-ease-out), color var(--bd-dur-fast) var(--bd-ease-out);
   outline: none;
   display: inline-block;
   min-width: 100px;
@@ -1114,20 +1184,39 @@ body {
   background: var(--bd-bg);
 }
 
-/* Accessibility: Respect user's motion preference */
+/* Reduced motion (#1569): movement stops, fades stay. Keyframe animations jump to their end and a
+   transition keeps only opacity and colour, each at its own duration. Delays go too (#1111): RPS held
+   its result back 1 s with one. A fade gets its time back below through a rule that names its own
+   opacity-only keyframes, so a moving animation on the same element can never borrow it;
+   __tests__/lib/motion-tokens.test.ts keeps the list complete and opacity-only. */
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
   *::after {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
-    /* Delays too (#1111): RPS's reveal held its result back 1 s with
-       animation-delay/transition-delay, which the duration reset left intact. */
     animation-delay: 0s !important;
-    transition-duration: 0.01ms !important;
+    transition-property: opacity, color, background-color, border-color, outline-color, text-decoration-color, fill, stroke !important;
     transition-delay: 0s !important;
     scroll-behavior: auto !important;
   }
+  .bd-screen,
+  :where(.lobby-route) > :where(:not([data-lobby-loader])),
+  .blocked-text-reveal,
+  .yz-tray__hint { animation: fade-in-plain var(--bd-dur) var(--bd-ease-out) both !important; }
+  .game-header__menu,
+  .yz-sheet__cat-hint,
+  .chat-block-confirm { animation: fade-in-plain var(--bd-dur-fast) var(--bd-ease-out) both !important; }
+  .animate-fade-out { animation: fade-out var(--bd-dur) var(--bd-ease-out) forwards !important; }
+  .animate-profile-surface-exit { animation: profile-surface-exit var(--bd-dur-fast) var(--bd-ease-in) forwards !important; }
+  .animate-profile-surface-enter { animation: profile-surface-enter var(--bd-dur-slow) var(--bd-ease-out) both !important; }
+  .animate-profile-preview-enter { animation: profile-preview-enter var(--bd-dur-slow) var(--bd-ease-out) both !important; }
+  .ck-last { animation: ck-last-in var(--bd-dur) var(--bd-ease-out) both !important; }
+  .alias-word-flash { animation: alias-word-flash var(--bd-dur-slow) var(--bd-ease-out) both !important; }
+  .rps-hand--reveal .rps-hand__state { animation: rps-verdict-in var(--bd-dur) var(--bd-ease-out) both !important; }
+  .rps-hand--win::before { animation: rps-verdict-in var(--bd-dur-slow) var(--bd-ease-out) both !important; }
+  .rps-hand--loss { animation: rps-loss-dim var(--bd-dur-slow) var(--bd-ease-out) both !important; }
+  .memory-tile-match-cue::after { animation: memory-match-glow var(--bd-dur-slow) var(--bd-ease-out) both !important; }
 }
 
 /* Animations. fade-in, scale-in and bounce-in are defined once, further
@@ -1178,28 +1267,17 @@ body {
 
 
 .animate-slide-in-right {
-  animation: slide-in-right 0.3s ease-out;
+  animation: slide-in-right var(--bd-dur) var(--bd-ease-out);
 }
 
 .animate-slide-out-right {
-  animation: slide-out-right 0.3s ease-out;
+  animation: slide-out-right var(--bd-dur) var(--bd-ease-out);
 }
 
 .animate-slide-in-up {
-  animation: slide-in-up 0.4s ease-out;
+  animation: slide-in-up var(--bd-dur-slow) var(--bd-ease-out);
 }
 
-
-@keyframes roll {
-  0%, 100% { transform: rotate(0deg) scale(1); }
-  25% { transform: rotate(90deg) scale(1.1); }
-  50% { transform: rotate(180deg) scale(1); }
-  75% { transform: rotate(270deg) scale(1.1); }
-}
-
-.animate-roll {
-  animation: roll 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
-}
 
 @keyframes fade-out {
   from {
@@ -1220,11 +1298,11 @@ body {
 }
 
 .animate-fade-out {
-  animation: fade-out 0.3s ease-out forwards;
+  animation: fade-out var(--bd-dur) var(--bd-ease-out) forwards;
 }
 
 .animate-scale-pulse {
-  animation: scale-pulse 0.8s ease-in-out infinite;
+  animation: scale-pulse 0.8s var(--bd-ease-in-out) infinite;
 }
 
 /* Form inputs – bd-* tokens (#1255); they switch with the theme by themselves */
@@ -1258,7 +1336,7 @@ input:focus, select:focus, textarea:focus {
 }
 
 .btn {
-  @apply px-4 py-2 rounded-lg font-semibold transition duration-200 transform active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100 focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-bd-lav-deep focus-visible:outline-hidden;
+  @apply px-4 py-2 rounded-lg font-semibold transition duration-bd-fast transform active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100 focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-bd-lav-deep focus-visible:outline-hidden;
 }
 
 .btn-primary {
@@ -1284,7 +1362,7 @@ input:focus, select:focus, textarea:focus {
 }
 
 .card {
-  @apply rounded-lg shadow-lg p-4 sm:p-6 transition duration-200 hover:shadow-xl;
+  @apply rounded-lg shadow-lg p-4 sm:p-6 transition duration-bd-fast hover:shadow-xl;
   background: var(--bd-card-warm);
   border: 1.5px solid var(--bd-line);
   color: var(--bd-ink);
@@ -1341,7 +1419,7 @@ input:focus, select:focus, textarea:focus {
 .custom-scrollbar::-webkit-scrollbar-thumb {
   background: rgba(156, 163, 175, 0.3); /* gray-400 with opacity */
   border-radius: 10px;
-  transition: background 0.2s ease;
+  transition: background var(--bd-dur-fast) var(--bd-ease-out);
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
@@ -1385,7 +1463,7 @@ input:focus, select:focus, textarea:focus {
 }
 
 .animate-bounce-in {
-  animation: bounce-in 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+  animation: bounce-in var(--bd-dur-slow) var(--bd-ease-spring);
 }
 
 /* Fade-in animation */
@@ -1401,7 +1479,7 @@ input:focus, select:focus, textarea:focus {
 }
 
 .animate-fade-in {
-  animation: fade-in 0.5s ease-out;
+  animation: fade-in var(--bd-dur-slow) var(--bd-ease-out);
 }
 
 /* Scale-in animation */
@@ -1417,7 +1495,7 @@ input:focus, select:focus, textarea:focus {
 }
 
 .animate-scale-in {
-  animation: scale-in 0.4s ease-out;
+  animation: scale-in var(--bd-dur-slow) var(--bd-ease-out);
 }
 
 @keyframes profile-surface-exit {
@@ -1448,26 +1526,18 @@ input:focus, select:focus, textarea:focus {
 }
 
 .animate-profile-surface-exit {
-  animation: profile-surface-exit 180ms cubic-bezier(0.4, 0, 1, 1) forwards;
+  animation: profile-surface-exit var(--bd-dur-fast) var(--bd-ease-in) forwards;
   will-change: opacity;
 }
 
 .animate-profile-surface-enter {
-  animation: profile-surface-enter 460ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation: profile-surface-enter var(--bd-dur-slow) var(--bd-ease-out) both;
   will-change: opacity;
 }
 
 .animate-profile-preview-enter {
-  animation: profile-preview-enter 560ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation: profile-preview-enter var(--bd-dur-slow) var(--bd-ease-out) both;
   will-change: opacity;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .animate-profile-surface-exit,
-  .animate-profile-surface-enter,
-  .animate-profile-preview-enter {
-    animation: none !important;
-  }
 }
 
 /* Shake animation for wrong vote */
@@ -1484,7 +1554,7 @@ input:focus, select:focus, textarea:focus {
 }
 
 .animate-shake {
-  animation: shake 0.6s ease-in-out;
+  animation: shake var(--bd-dur-slow) var(--bd-ease-in-out);
 }
 
 /* Custom Range Slider Styles */
@@ -1505,7 +1575,7 @@ input[type="range"].slider-thumb::-webkit-slider-thumb {
   border-radius: 50%;
   cursor: pointer;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-  transition: transform 0.2s, box-shadow 0.2s;
+  transition: transform var(--bd-dur-fast) var(--bd-ease-out), box-shadow var(--bd-dur-fast) var(--bd-ease-out);
   margin-top: -6px; /* Center the thumb vertically */
 }
 
@@ -1527,7 +1597,7 @@ input[type="range"].slider-thumb::-moz-range-thumb {
   border-radius: 50%;
   cursor: pointer;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-  transition: transform 0.2s, box-shadow 0.2s;
+  transition: transform var(--bd-dur-fast) var(--bd-ease-out), box-shadow var(--bd-dur-fast) var(--bd-ease-out);
 }
 
 input[type="range"].slider-thumb::-moz-range-thumb:hover {
@@ -1561,13 +1631,13 @@ input[type="range"].slider-thumb::-moz-range-track {
 @keyframes c4-drop {
   0%   {
     transform: translateY(calc(-1 * var(--c4-fall-dist, 180px))) scale(1);
-    animation-timing-function: cubic-bezier(0.5, 0, 0.85, 0.35);
+    animation-timing-function: var(--bd-ease-in);
   }
   72%  {
     transform: translateY(0) scale(1);
-    animation-timing-function: cubic-bezier(0.3, 0, 0.5, 1);
+    animation-timing-function: var(--bd-ease-in-out);
   }
-  84%  { transform: translateY(5px) scale(1); animation-timing-function: ease-in-out; }
+  84%  { transform: translateY(5px) scale(1); animation-timing-function: var(--bd-ease-in-out); }
   93%  { transform: translateY(-2px) scale(1); }
   100% { transform: translateY(0) scale(var(--c4-end-scale, 1)); }
 }
@@ -1613,7 +1683,7 @@ input[type="range"].slider-thumb::-moz-range-track {
   70%  { box-shadow: 0 0 0 8px rgba(47,167,135,0); }
   100% { box-shadow: 0 0 0 0 rgba(47,167,135,0); }
 }
-.bd-pulse { animation: bd-pulse 1.6s infinite; }
+.bd-pulse { animation: bd-pulse 1.6s var(--bd-ease-in-out) infinite; }
 
 @keyframes bd-listening {
   0%   { transform: scale(0.8); opacity: 0.6; }
@@ -1632,7 +1702,7 @@ input[type="range"].slider-thumb::-moz-range-track {
   from { opacity: 0; transform: translateY(8px); }
   to   { opacity: 1; transform: translateY(0); }
 }
-.bd-screen { animation: bd-screen-in 0.35s var(--bd-ease-out); }
+.bd-screen { animation: bd-screen-in var(--bd-dur-slow) var(--bd-ease-out); }
 /* Lobby route: the loader never animates in, so its stages swap in place; whatever replaces it fades in. */
 :where(.lobby-route) > :where(:not([data-lobby-loader])) {
   animation: fade-in-plain var(--bd-dur) var(--bd-ease-out);
@@ -1698,7 +1768,7 @@ input[type="range"].slider-thumb::-moz-range-track {
   background: var(--bd-mint-deep);
   display: inline-block;
   flex-shrink: 0;
-  animation: bd-pulse 1.6s infinite;
+  animation: bd-pulse 1.6s var(--bd-ease-in-out) infinite;
   box-shadow: 0 0 0 0 rgba(47,167,135,0.6);
 }
 
@@ -1746,7 +1816,7 @@ input[type="range"].slider-thumb::-moz-range-track {
   display: inline-flex; align-items: center; gap: 8px;
   padding: 12px 20px; border-radius: 14px;
   font-weight: 600; font-size: 15px; font-family: inherit;
-  transition: transform 0.1s, scale 0.1s, box-shadow 0.1s;
+  transition: transform var(--bd-dur-fast) var(--bd-ease-out), scale var(--bd-dur-fast) var(--bd-ease-out), box-shadow var(--bd-dur-fast) var(--bd-ease-out);
   white-space: nowrap; cursor: pointer; border: none;
   line-height: 1;
 }
@@ -1789,7 +1859,7 @@ input[type="range"].slider-thumb::-moz-range-track {
   background: var(--bd-input-bg);
   color: var(--bd-ink);
   font-size: 16px; font-family: inherit;
-  transition: border-color 0.15s;
+  transition: border-color var(--bd-dur-fast) var(--bd-ease-out);
   width: 100%; display: block;
 }
 @media (min-width: 1024px) { .bd-input { font-size: 15px; } }
@@ -1995,7 +2065,7 @@ input[type="range"].slider-thumb::-moz-range-track {
   place-items: center;
   position: relative;
   z-index: 1;
-  transition: opacity 0.2s, transform 0.15s;
+  transition: opacity var(--bd-dur-fast) var(--bd-ease-out), transform var(--bd-dur-fast) var(--bd-ease-out);
 }
 .ck-square[aria-pressed="true"] .ck-piece {
   transform: translateY(-2px) scale(1.06);
@@ -2013,7 +2083,7 @@ input[type="range"].slider-thumb::-moz-range-track {
   position: absolute;
   inset: 0;
   pointer-events: none;
-  animation: ck-last-in 300ms ease-out both;
+  animation: ck-last-in var(--bd-dur) var(--bd-ease-out) both;
 }
 /* Motion (#1112). The travelling piece: one square, placed on the origin by
    left/top once, then moved only by a transform animation (useCheckersMotion +
@@ -2030,19 +2100,19 @@ input[type="range"].slider-thumb::-moz-range-track {
 }
 /* Jumped mid-chain: dips as the mover passes, then rests at the pending fade. */
 .ck-piece--jumped {
-  animation: ck-jumped 220ms ease-out both;
+  animation: ck-jumped var(--bd-dur) var(--bd-ease-out) both;
 }
 /* Taken: fades and shrinks away as the mover passes (a lifted one from 0.35). */
 .ck-piece--captured {
   --ck-ghost-from: 1;
-  animation: ck-captured 220ms ease-in both;
+  animation: ck-captured var(--bd-dur) var(--bd-ease-in) both;
   pointer-events: none;
 }
 .ck-piece--lifted {
   --ck-ghost-from: 0.35;
 }
 .ck-crown--pop {
-  animation: ck-crown-pop 320ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  animation: ck-crown-pop var(--bd-dur) var(--bd-ease-spring) both;
 }
 @keyframes ck-last-in {
   from { opacity: 0; }
@@ -2202,7 +2272,7 @@ input[type="range"].slider-thumb::-moz-range-track {
   backdrop-filter: blur(2px);
   border-radius: inherit;
   z-index: 10;
-  animation: ttt-overlay-in 0.4s var(--bd-ease-out);
+  animation: ttt-overlay-in var(--bd-dur-slow) var(--bd-ease-out);
 }
 .ttt-history-card {
   display: flex;
@@ -2367,8 +2437,7 @@ input[type="range"].slider-thumb::-moz-range-track {
   white-space: nowrap;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
-  transition: background-color var(--bd-dur-fast) ease-out, color var(--bd-dur-fast) ease-out,
-    border-color var(--bd-dur-fast) ease-out, transform var(--bd-dur-fast) ease-out;
+  transition: background-color var(--bd-dur-fast) var(--bd-ease-out), color var(--bd-dur-fast) var(--bd-ease-out), border-color var(--bd-dur-fast) var(--bd-ease-out), transform var(--bd-dur-fast) var(--bd-ease-out);
 }
 @media (hover: hover) {
   .game-header :is(.game-header__invite, .game-header__more):hover {
@@ -2488,7 +2557,7 @@ input[type="range"].slider-thumb::-moz-range-track {
   box-shadow: 0 12px 32px -12px rgba(31,27,22,0.35), 0 2px 6px rgba(31,27,22,0.08);
   overscroll-behavior: contain;
   transform-origin: top right;
-  animation: game-header-menu-in var(--bd-dur-fast) ease-out both;
+  animation: game-header-menu-in var(--bd-dur-fast) var(--bd-ease-out) both;
 }
 .game-header__menu-item {
   display: flex;
@@ -2519,7 +2588,7 @@ input[type="range"].slider-thumb::-moz-range-track {
   to { opacity: 1; transform: none; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .game-header__menu { animation: fade-in-plain var(--bd-dur-fast) ease-out both; }
+  .game-header__menu { animation: fade-in-plain var(--bd-dur-fast) var(--bd-ease-out) both; }
 }
 /* Every seat on one equal track (#1577): the player whose turn it is keeps their
    seat and is marked by the active plate, so nothing moves when the turn passes. */
@@ -2912,7 +2981,7 @@ input[type="range"].slider-thumb::-moz-range-track {
   display: grid;
   place-items: center;
   position: relative;
-  transition: transform 0.12s, background 0.2s, box-shadow 0.2s;
+  transition: transform var(--bd-dur-fast) var(--bd-ease-out), background var(--bd-dur-fast) var(--bd-ease-out), box-shadow var(--bd-dur-fast) var(--bd-ease-out);
   box-shadow: inset 0 -3px 0 rgba(31,27,22,0.06);
   padding: 0;
   cursor: pointer;
@@ -3063,7 +3132,7 @@ input[type="range"].slider-thumb::-moz-range-track {
 }
 .spy-role-flip__inner--play > .spy-role-flip__back { display: grid; }
 .spy-role-flip__inner--play {
-  animation: spy-role-flip 0.46s var(--bd-ease-out) 0.3s both;
+  animation: spy-role-flip var(--bd-dur-slow) var(--bd-ease-out) 0.3s both;
 }
 @keyframes spy-role-flip {
   from { transform: rotateY(180deg); }
@@ -3157,7 +3226,7 @@ input[type="range"].slider-thumb::-moz-range-track {
   line-height: 1.3;
   text-align: center;
   color: var(--bd-ink-soft);
-  animation: fade-in-plain var(--bd-dur) ease-out both;
+  animation: fade-in-plain var(--bd-dur) var(--bd-ease-out) both;
 }
 .yz-tray__dice {
   display: flex;
@@ -3232,7 +3301,7 @@ input[type="range"].slider-thumb::-moz-range-track {
   transform: translateY(-4px) scale(0.8);
   transition-property: opacity, transform;
   transition-duration: var(--bd-dur-fast);
-  transition-timing-function: ease-out;
+  transition-timing-function: var(--bd-ease-out);
 }
 .yz-die--held .yz-die__held { opacity: 1; transform: none; }
 .yz-die--placeholder .yz-die__face {
@@ -3286,7 +3355,7 @@ input[type="range"].slider-thumb::-moz-range-track {
   cursor: pointer;
   transition-property: scale, background-color, color, box-shadow, border-color;
   transition-duration: var(--bd-dur-fast);
-  transition-timing-function: ease-out;
+  transition-timing-function: var(--bd-ease-out);
   -webkit-tap-highlight-color: transparent;
 }
 .yz-roll__icon { display: inline-flex; line-height: 0; }
@@ -3299,7 +3368,7 @@ input[type="range"].slider-thumb::-moz-range-track {
   opacity: 0.45;
   transition-property: opacity, background-color, transform;
   transition-duration: var(--bd-dur);
-  transition-timing-function: ease-out;
+  transition-timing-function: var(--bd-ease-out);
 }
 .yz-roll__pip--left { background: var(--bd-sun); opacity: 1; }
 @media (hover: hover) {
@@ -3379,7 +3448,7 @@ input[type="range"].slider-thumb::-moz-range-track {
   justify-content: center;
   padding-inline: 8px;
   border-inline-start: 1px solid var(--bd-line);
-  transition: background-color var(--bd-dur) ease-out;
+  transition: background-color var(--bd-dur) var(--bd-ease-out);
 }
 .yz-cell.is-current { background-color: color-mix(in srgb, var(--bd-sun) 14%, transparent); }
 
@@ -3437,13 +3506,13 @@ input[type="range"].slider-thumb::-moz-range-track {
 .yz-sheet__cat-text { position: relative; flex: 0 1 auto; min-width: 0; }
 .yz-sheet__cat-name {
   display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
-  transition: opacity var(--bd-dur-fast) ease-out;
+  transition: opacity var(--bd-dur-fast) var(--bd-ease-out);
 }
 .yz-sheet__cat-hint {
   position: absolute; inset-block: 0; inset-inline-start: 0;
   display: flex; align-items: center; white-space: nowrap;
   font-size: 12px; font-weight: 800; line-height: 1.1;
-  animation: fade-in-plain var(--bd-dur-fast) ease-out both;
+  animation: fade-in-plain var(--bd-dur-fast) var(--bd-ease-out) both;
 }
 .yz-sheet__row.is-armed :is(.yz-sheet__cat-name, .yz-sheet__cat-info) { opacity: 0; }
 .yz-sheet__cat-info {
@@ -3451,7 +3520,7 @@ input[type="range"].slider-thumb::-moz-range-track {
   color: var(--bd-ink-muted);
   transition-property: color, opacity;
   transition-duration: var(--bd-dur-fast);
-  transition-timing-function: ease-out;
+  transition-timing-function: var(--bd-ease-out);
 }
 @media (hover: hover) {
   .yz-sheet__cat:not(.yz-sheet__cat--static):hover .yz-sheet__cat-info { color: var(--bd-ink); }
@@ -3521,7 +3590,7 @@ input[type="range"].slider-thumb::-moz-range-track {
   cursor: pointer;
   transition-property: scale, background-color, border-color, color;
   transition-duration: var(--bd-dur-fast);
-  transition-timing-function: ease-out;
+  transition-timing-function: var(--bd-ease-out);
   -webkit-tap-highlight-color: transparent;
 }
 .yz-ghost__value { font-family: var(--bd-font-display); font-weight: 700; font-size: calc(13px + var(--yz-grow) / 2); line-height: 1; }
@@ -3614,7 +3683,7 @@ input[type="range"].slider-thumb::-moz-range-track {
   font-size: 13px;
   line-height: 1.4;
   text-align: start;
-  animation: yz-pop-in var(--bd-dur-fast) ease-out both;
+  animation: yz-pop-in var(--bd-dur-fast) var(--bd-ease-out) both;
 }
 .yz-rule-pop__name { font-family: var(--bd-font-display); font-weight: 800; font-size: 14px; }
 .yz-rule-pop__rule { color: var(--bd-ink-soft); }
@@ -3655,7 +3724,7 @@ input[type="range"].slider-thumb::-moz-range-track {
   white-space: nowrap;
   transition-property: background-color, border-color;
   transition-duration: var(--bd-dur);
-  transition-timing-function: ease-out;
+  transition-timing-function: var(--bd-ease-out);
 }
 .yz-pill--current { border-color: var(--bd-ink); background: color-mix(in srgb, var(--bd-sun) 26%, var(--bd-card)); }
 button.yz-pill { font: inherit; font-size: 12px; font-weight: 700; cursor: pointer; -webkit-tap-highlight-color: transparent; }
@@ -3834,7 +3903,7 @@ button.yz-pill:focus-visible { outline: 3px solid var(--bd-lav-deep); outline-of
   font-size: 13px;
   color: var(--bd-ink-soft);
   background: transparent;
-  transition: all 0.15s;
+  transition: all var(--bd-dur-fast) var(--bd-ease-out);
   border: none;
   cursor: pointer;
   font-family: inherit;
@@ -4130,7 +4199,7 @@ button.yz-pill:focus-visible { outline: 3px solid var(--bd-lav-deep); outline-of
   cursor: pointer;
   font-family: inherit;
   flex-shrink: 0;
-  transition: background 0.12s, color 0.12s, border-color 0.12s, transform 0.12s;
+  transition: background var(--bd-dur-fast) var(--bd-ease-out), color var(--bd-dur-fast) var(--bd-ease-out), border-color var(--bd-dur-fast) var(--bd-ease-out), transform var(--bd-dur-fast) var(--bd-ease-out);
 }
 .game-leave-button:hover {
   border-color: var(--bd-coral);
@@ -4418,15 +4487,10 @@ html.dark .liars-seat { background: var(--bd-bg2); }
   gap: 10px;
   margin-top: 14px;
 }
-/* The eliminated-player alert and the "eliminated this round" card. Mixed from
-   the coral and the card ground rather than named --bd-danger-* tokens: those
-   were invented for this rule and defined nowhere, so all three var() calls
-   resolved to their initial values and the card came out with no background at
-   all and a currentColor border. Mixing keeps it right in both themes, because
-   both halves are redefined under html.dark. */
+/* The eliminated-player alert and the "eliminated this round" card. */
 .liars-card--danger {
-  background: color-mix(in srgb, var(--bd-coral) 14%, var(--bd-card-warm));
-  border-color: color-mix(in srgb, var(--bd-coral) 45%, var(--bd-line));
+  background: var(--bd-danger-bg);
+  border-color: var(--bd-danger-border);
   color: var(--bd-ink);
 }
 
@@ -4579,7 +4643,7 @@ html.dark .liars-seat { background: var(--bd-bg2); }
   min-width: 0;
   position: relative;
   isolation: isolate;
-  transition: border-color 0.35s ease, background 0.35s ease, opacity 0.35s ease, transform 0.35s ease;
+  transition: border-color var(--bd-dur-slow) var(--bd-ease-out), background var(--bd-dur-slow) var(--bd-ease-out), opacity var(--bd-dur-slow) var(--bd-ease-out), transform var(--bd-dur-slow) var(--bd-ease-out);
 }
 .rps-hand__emoji {
   font-size: var(--rps-emoji-xl);
@@ -4619,21 +4683,21 @@ html.dark .liars-seat { background: var(--bd-bg2); }
   letter-spacing: 0.08em;
   color: var(--bd-ink-muted);
   min-height: 14px;
-  transition: color 0.35s ease;
+  transition: color var(--bd-dur-slow) var(--bd-ease-out);
 }
-.rps-hand--choosing .rps-hand__emoji { animation: rps-choosing 1.2s ease-in-out infinite; }
+.rps-hand--choosing .rps-hand__emoji { animation: rps-choosing 1.2s var(--bd-ease-in-out) infinite; }
 .rps-hand--locked { border-color: var(--hand-accent); }
 .rps-hand--locked .rps-hand__state { color: var(--hand-accent); }
-.rps-hand--locked .rps-hand__emoji { animation: rps-lock 0.35s cubic-bezier(0.2, 1.6, 0.4, 1) both; }
-/* Reveal: fists shake three times, then the throw flips in. 0.75s must equal RPS_SHAKE_MS, which swaps the icon. */
-.rps-hand--reveal .rps-hand__emoji { animation: rps-flip 0.35s cubic-bezier(0.2, 1.4, 0.4, 1) both; }
-.rps-hand--reveal.rps-hand--shaking .rps-hand__emoji { animation: rps-shake 0.75s ease-in-out both; }
+.rps-hand--locked .rps-hand__emoji { animation: rps-lock var(--bd-dur-slow) var(--bd-ease-spring) both; }
+/* Reveal: fists shake three times, then the throw flips in. lib/rps-motion.ts swaps the icon and calls the result on these durations. */
+.rps-hand--reveal .rps-hand__emoji { animation: rps-flip var(--bd-dur-slow) var(--bd-ease-spring) both; }
+.rps-hand--reveal.rps-hand--shaking .rps-hand__emoji { animation: rps-shake calc(var(--bd-dur) * 3) var(--bd-ease-in-out) both; }
 /* The verdict waits for the flip. A new result remounts the hands (revealKey),
    and a transition never runs on a freshly mounted element, so the old
    `transition-delay: 1s` did nothing: WIN/LOSS and the winner's tint were up
    while both hands were still blank and shaking (#1200). Animations with a
    delay and `both` fill do run on mount; opacity only. */
-.rps-hand--reveal .rps-hand__state { animation: rps-verdict-in 0.3s ease 1s both; }
+.rps-hand--reveal .rps-hand__state { animation: rps-verdict-in var(--bd-dur) var(--bd-ease-out) 1s both; }
 .rps-hand--win::before {
   content: '';
   position: absolute;
@@ -4642,10 +4706,10 @@ html.dark .liars-seat { background: var(--bd-bg2); }
   border-radius: inherit;
   border: 2px solid var(--hand-accent);
   background: color-mix(in srgb, var(--hand-accent) 22%, var(--bd-bg));
-  animation: rps-verdict-in 0.35s ease 1s both;
+  animation: rps-verdict-in var(--bd-dur-slow) var(--bd-ease-out) 1s both;
 }
 .rps-hand--win .rps-hand__state { color: var(--hand-accent); }
-.rps-hand--loss { animation: rps-loss-dim 0.35s ease 1s both; }
+.rps-hand--loss { animation: rps-loss-dim var(--bd-dur-slow) var(--bd-ease-out) 1s both; }
 .rps-hand--loss .rps-hand__state { color: var(--bd-coral-text); }
 .rps-hand--draw .rps-hand__state { color: var(--bd-ink-soft); }
 
@@ -4689,7 +4753,7 @@ html.dark .liars-seat { background: var(--bd-bg2); }
   font-size: clamp(28px, 8cqh, 56px);
   line-height: 1;
   color: var(--bd-ink);
-  animation: rps-pop 0.4s cubic-bezier(0.2, 1.6, 0.4, 1) both;
+  animation: rps-pop var(--bd-dur-slow) var(--bd-ease-spring) both;
 }
 .rps-stage__colon { color: var(--bd-ink-muted); margin: 0 6px; }
 .rps-stage__pips { display: inline-flex; align-items: center; gap: 6px; margin-top: 4px; }
@@ -4699,10 +4763,10 @@ html.dark .liars-seat { background: var(--bd-bg2); }
   font-size: 12px;
   font-weight: 700;
   color: var(--bd-ink-soft);
-  animation: rps-rise 0.35s ease both;
+  animation: rps-rise var(--bd-dur-slow) var(--bd-ease-out) both;
 }
 .rps-stage__result--reveal { color: var(--bd-ink); animation-delay: 1s; }
-.rps-stage__result--round { color: var(--bd-ink); animation: rps-pop 0.4s cubic-bezier(0.2, 1.6, 0.4, 1) both; }
+.rps-stage__result--round { color: var(--bd-ink); animation: rps-pop var(--bd-dur-slow) var(--bd-ease-spring) both; }
 
 .rps-tiles {
   display: grid;
@@ -4726,14 +4790,14 @@ html.dark .liars-seat { background: var(--bd-bg2); }
   font-family: inherit;
   color: var(--bd-ink);
   cursor: pointer;
-  animation: rps-rise 0.4s ease both;
+  animation: rps-rise var(--bd-dur-slow) var(--bd-ease-out) both;
   animation-delay: calc(var(--i, 0) * 70ms);
-  transition: transform 0.18s ease, opacity 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+  transition: transform var(--bd-dur-fast) var(--bd-ease-out), opacity var(--bd-dur) var(--bd-ease-out), box-shadow var(--bd-dur) var(--bd-ease-out), border-color var(--bd-dur) var(--bd-ease-out);
 }
 .rps-tile:disabled { cursor: default; }
 .rps-tile:not(:disabled):hover { transform: translateY(-3px) scale(1.02); border-color: var(--tile-accent); box-shadow: 0 8px 18px rgba(31,27,22,0.12); }
 .rps-tile:not(:disabled):active { transform: translateY(0) scale(0.98); }
-.rps-tile__emoji { font-size: var(--rps-emoji-md); line-height: 1; transition: transform 0.18s ease; }
+.rps-tile__emoji { font-size: var(--rps-emoji-md); line-height: 1; transition: transform var(--bd-dur-fast) var(--bd-ease-out); }
 .rps-tile:not(:disabled):hover .rps-tile__emoji { transform: scale(1.12) rotate(-6deg); }
 .rps-tile__label { font-size: 13px; font-weight: 700; }
 .rps-tile__beats { font-size: 10px; color: var(--bd-ink-muted); max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -4741,7 +4805,7 @@ html.dark .liars-seat { background: var(--bd-bg2); }
   background: color-mix(in srgb, var(--tile-accent) 14%, var(--bd-bg));
   border-color: var(--tile-accent);
   box-shadow: inset 0 0 0 3px color-mix(in srgb, var(--tile-accent) 30%, transparent);
-  animation: rps-lock 0.35s cubic-bezier(0.2, 1.6, 0.4, 1) both;
+  animation: rps-lock var(--bd-dur-slow) var(--bd-ease-spring) both;
 }
 .rps-tile--dimmed { opacity: 0.4; }
 
@@ -4830,7 +4894,7 @@ html.dark .liars-seat { background: var(--bd-bg2); }
   border-radius: 10px;
   background: var(--bd-card-warm);
   border-left: 3px solid var(--row-accent, var(--bd-line));
-  animation: rps-rise 0.35s ease both;
+  animation: rps-rise var(--bd-dur-slow) var(--bd-ease-out) both;
 }
 .rps-round-row__num { color: var(--bd-ink-muted); width: 22px; font-size: 11px; font-family: ui-monospace, monospace; flex-shrink: 0; }
 .rps-round-row__pair { display: inline-flex; align-items: center; gap: 4px; font-size: 18px; line-height: 1; flex-shrink: 0; }
@@ -4850,12 +4914,11 @@ html.dark .liars-seat { background: var(--bd-bg2); }
   padding: 12px 4px;
 }
 .rps-rounds-empty__arena { display: inline-flex; align-items: center; gap: 10px; font-size: 26px; line-height: 1; }
-.rps-rounds-empty__arena span:first-child { animation: rps-choosing 1.4s ease-in-out infinite; display: inline-block; }
-.rps-rounds-empty__arena span:last-child { animation: rps-choosing 1.4s ease-in-out 0.7s infinite; display: inline-block; }
+.rps-rounds-empty__arena span:first-child { animation: rps-choosing 1.4s var(--bd-ease-in-out) infinite; display: inline-block; }
+.rps-rounds-empty__arena span:last-child { animation: rps-choosing 1.4s var(--bd-ease-in-out) 0.7s infinite; display: inline-block; }
 .rps-rounds-empty__vs { font-size: 10px; font-weight: 800; letter-spacing: 0.18em; color: var(--bd-ink-muted); }
 @media (prefers-reduced-motion: reduce) {
   .rps-tile, .rps-tile--selected, .rps-hand__emoji, .rps-stage__score, .rps-stage__result, .rps-round-row, .rps-rounds-empty__arena span { animation: none !important; }
-  .rps-hand__state, .rps-hand--win::before, .rps-hand--loss { animation: none !important; }
   .rps-hand--loss { opacity: 0.7; }
 }
 
@@ -4952,7 +5015,7 @@ html.dark .liars-seat { background: var(--bd-bg2); }
   padding: 10px;
   min-height: 60px;
   box-sizing: border-box;
-  transition: transform 0.12s, border-color 0.12s, box-shadow 0.12s, background 0.12s;
+  transition: transform var(--bd-dur-fast) var(--bd-ease-out), border-color var(--bd-dur-fast) var(--bd-ease-out), box-shadow var(--bd-dur-fast) var(--bd-ease-out), background var(--bd-dur-fast) var(--bd-ease-out);
 }
 
 .spy-vote-option:not(:disabled):hover,
@@ -5114,7 +5177,7 @@ html.dark .liars-seat { background: var(--bd-bg2); }
   position: absolute;
   inset: 0;
   transform-style: preserve-3d;
-  transition: transform 0.46s var(--bd-ease-out);
+  transition: transform var(--bd-dur-slow) var(--bd-ease-out);
 }
 
 .memory-tile-inner-flipped {
@@ -5138,7 +5201,7 @@ html.dark .liars-seat { background: var(--bd-bg2); }
     var(--bd-lav);
   background-size: 18px 18px;
   box-shadow: 0 5px 0 rgba(31,27,22,0.16);
-  transition: transform 0.12s, box-shadow 0.12s;
+  transition: transform var(--bd-dur-fast) var(--bd-ease-out), box-shadow var(--bd-dur-fast) var(--bd-ease-out);
 }
 
 .memory-tile-back-mark {
@@ -5147,8 +5210,8 @@ html.dark .liars-seat { background: var(--bd-bg2); }
   width: 44%;
   height: 44%;
   border-radius: 50%;
-  background: var(--bd-card);
-  color: var(--bd-ink);
+  background: rgba(255, 255, 255, 0.55);
+  color: var(--bd-ink-on-accent);
   font-family: var(--bd-font-display);
   font-size: clamp(12px, 3vw, 28px);
   font-weight: 900;
@@ -5168,12 +5231,12 @@ html.dark .liars-seat { background: var(--bd-bg2); }
 }
 
 /* Match and mismatch cues (#1114). Both wait for the second card's flip
-   (.memory-tile-inner, 0.46s) to land before they play, and both move only
+   (.memory-tile-inner, --bd-dur-slow) to land before they play, and both move only
    transform and opacity: the pair pops with a mint glow (a pseudo-element's
    opacity) and settles into the matched style; a mismatch shakes sideways
    before the pair flips back. */
 .memory-tile-match-cue {
-  animation: memory-match-pop var(--bd-dur-slow) var(--bd-ease-spring) 0.4s both;
+  animation: memory-match-pop var(--bd-dur-slow) var(--bd-ease-spring) var(--bd-dur-slow) both;
 }
 .memory-tile-match-cue::after {
   content: '';
@@ -5183,7 +5246,7 @@ html.dark .liars-seat { background: var(--bd-bg2); }
   box-shadow: inset 0 0 0 3px rgba(47,167,135,0.55), 0 0 18px 2px rgba(79,201,166,0.55);
   pointer-events: none;
   opacity: 0;
-  animation: memory-match-glow 0.6s var(--bd-ease-out) 0.4s both;
+  animation: memory-match-glow var(--bd-dur-slow) var(--bd-ease-out) var(--bd-dur-slow) both;
 }
 @keyframes memory-match-pop {
   0% { transform: scale(1); }
@@ -5196,7 +5259,7 @@ html.dark .liars-seat { background: var(--bd-bg2); }
   100% { opacity: 0; }
 }
 .memory-tile-mismatch-cue {
-  animation: memory-mismatch-shake 0.4s ease-in-out 0.46s both;
+  animation: memory-mismatch-shake var(--bd-dur-slow) var(--bd-ease-in-out) var(--bd-dur-slow) both;
 }
 @keyframes memory-mismatch-shake {
   0%, 100% { transform: translateX(0); }
@@ -6037,7 +6100,7 @@ html.dark .sketch-score-row { background: var(--bd-bg2); }
   stroke: var(--bd-ink);
   stroke-width: 0.08;
   stroke-dasharray: 0.22 0.14;
-  animation: ludo-halo 1.1s ease-in-out infinite;
+  animation: ludo-halo 1.1s var(--bd-ease-in-out) infinite;
 }
 .ludo-token--selectable:focus-visible .ludo-token__halo { stroke-width: 0.14; }
 @keyframes ludo-halo {
@@ -6045,7 +6108,7 @@ html.dark .sketch-score-row { background: var(--bd-bg2); }
   50% { opacity: 0.35; }
 }
 .ludo-die { flex-shrink: 0; display: block; }
-.ludo-die--rolled { animation: ludo-die-roll 0.45s var(--bd-ease-out); }
+.ludo-die--rolled { animation: ludo-die-roll var(--bd-dur-slow) var(--bd-ease-out); }
 @keyframes ludo-die-roll {
   0% { transform: rotate(-200deg) scale(0.6); opacity: 0.3; }
   70% { transform: rotate(12deg) scale(1.06); opacity: 1; }
@@ -6093,7 +6156,7 @@ html.dark .sketch-score-row { background: var(--bd-bg2); }
   border: 2px solid var(--bd-ink);
   box-shadow: 0 4px 0 var(--bd-ink);
   cursor: pointer;
-  transition: transform 0.1s, box-shadow 0.1s, opacity 0.15s;
+  transition: transform var(--bd-dur-fast) var(--bd-ease-out), box-shadow var(--bd-dur-fast) var(--bd-ease-out), opacity var(--bd-dur-fast) var(--bd-ease-out);
 }
 .ludo-roll-button:active:not(:disabled) { transform: translateY(3px); box-shadow: 0 1px 0 var(--bd-ink); }
 .ludo-roll-button:disabled { opacity: 0.45; cursor: not-allowed; box-shadow: 0 2px 0 var(--bd-ink); }

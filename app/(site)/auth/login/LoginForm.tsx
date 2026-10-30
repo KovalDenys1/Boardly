@@ -183,16 +183,16 @@ export default function LoginForm() {
   }
 
   const renderInviteBanner = () => (
-    <div className="rounded-2xl p-4 shadow-xs" style={{ border: '1.5px solid #22C55E60', background: '#22C55E10' }}>
+    <div className="rounded-2xl p-4 shadow-xs" style={{ border: '1.5px solid var(--bd-success-border)', background: 'var(--bd-success-bg)' }}>
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
         <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl shadow-xs" style={{ background: 'var(--bd-bg2)' }}>
           <Icon name="gamepad" size={26} />
         </span>
         <div className="min-w-0">
-          <p className="font-semibold" style={{ color: '#16A34A' }}>
+          <p className="font-semibold" style={{ color: 'var(--bd-success-text)' }}>
             {t('auth.login.invited', "You've been invited to a game!")}
           </p>
-          <p className="mt-1 text-sm leading-6" style={{ color: '#15803D' }}>
+          <p className="mt-1 text-sm leading-6" style={{ color: 'var(--bd-success-text)' }}>
             {t('auth.login.loginToJoin', 'Login to join the lobby')}
           </p>
         </div>
@@ -393,7 +393,7 @@ export default function LoginForm() {
                   placeholder={t('auth.login.emailPlaceholder')}
                   autoComplete="email"
                 />
-                {fieldErrors.email && <p style={{ fontSize: 13, color: 'var(--bd-coral-text)', marginTop: 2 }}>{fieldErrors.email}</p>}
+                {fieldErrors.email && <p style={{ fontSize: 13, color: 'var(--bd-danger-text)', marginTop: 2 }}>{fieldErrors.email}</p>}
               </div>
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
@@ -411,7 +411,7 @@ export default function LoginForm() {
                     showStrength={false}
                   />
                 </div>
-                {fieldErrors.password && <p style={{ fontSize: 13, color: 'var(--bd-coral-text)', marginTop: 2 }}>{fieldErrors.password}</p>}
+                {fieldErrors.password && <p style={{ fontSize: 13, color: 'var(--bd-danger-text)', marginTop: 2 }}>{fieldErrors.password}</p>}
               </div>
 
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>

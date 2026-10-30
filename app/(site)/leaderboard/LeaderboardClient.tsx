@@ -309,7 +309,7 @@ function LeaderboardPageContent({ initial }: { initial: LeaderboardPage | null }
                 </div>
               ) : error ? (
                 <div className="py-16 text-center">
-                  <p className="text-sm font-semibold text-bd-coral-text">{error}</p>
+                  <p className="text-sm font-semibold text-bd-danger-text">{error}</p>
                 </div>
               ) : entries.length === 0 ? (
                 <div className="py-16 text-center">

@@ -249,7 +249,7 @@ const CountdownRing: React.FC<{ remaining: number; total: number; size?: number;
           strokeWidth={stroke} fill="none" strokeLinecap="round"
           strokeDasharray={c}
           strokeDashoffset={c * (1 - pct)}
-          style={{ transition: 'stroke-dashoffset 1s linear, stroke 200ms ease' }}
+          style={{ transition: 'stroke-dashoffset 1s linear, stroke var(--bd-dur-fast) var(--bd-ease-out)' }}
         />
       </svg>
       <div style={{
@@ -1881,7 +1881,7 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
             <span key={i} style={{
               position: 'absolute', width: 220, height: 220, borderRadius: '50%',
               border: '2px solid rgba(255,107,91,0.35)',
-              animation: 'bd-listening 2.4s ease-out infinite',
+              animation: 'bd-listening 2.4s var(--bd-ease-out) infinite',
               animationDelay: `${d}s`,
             }} />
           ))}

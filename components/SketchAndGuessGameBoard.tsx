@@ -738,7 +738,7 @@ function GuesserDrawingView({
       {!canGuess ? (
         <p className="text-center text-sm text-bd-ink-muted">{t('games.guess_my_drawing.game.spectatorNotice')}</p>
       ) : hasGuessedCorrectly ? (
-        <p className="text-center text-sm font-semibold text-emerald-600">{t('games.guess_my_drawing.game.alreadyGuessed')}</p>
+        <p className="text-center text-sm font-semibold text-bd-success-text">{t('games.guess_my_drawing.game.alreadyGuessed')}</p>
       ) : showTermsConsent ? (
         <TermsConsentPanel
           onAccept={handleAcceptTerms}
@@ -784,7 +784,7 @@ function GuesserDrawingView({
             </LoadingButton>
           </div>
           {validationError ? (
-            <p className="text-center text-xs font-semibold text-rose-600">{validationError}</p>
+            <p className="text-center text-xs font-semibold text-bd-danger-text">{validationError}</p>
           ) : closeHint ? (
             <p className="text-center text-xs font-semibold text-bd-sun-text">{t('games.guess_my_drawing.game.closeGuess')}</p>
           ) : null}

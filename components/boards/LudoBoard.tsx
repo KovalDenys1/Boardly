@@ -16,16 +16,16 @@ import {
 } from '@/lib/games/ludo-layout'
 import { LudoRingTiming, Point, ludoMoverKeyframes, ludoVictimKeyframes, nextLudoRingTiming } from '@/lib/games/ludo-motion'
 
-/** Token and yard colours; the board keeps its own light surface in both themes, like Connect Four's. */
+/** Token and yard colours. */
 export const COLOR_FILL: Record<LudoColor, string> = {
     red: 'var(--bd-coral)',
     green: 'var(--bd-mint)',
     yellow: 'var(--bd-sun)',
     blue: 'var(--bd-sky)',
 }
-const BOARD_BG = '#FFF8EC'
-const CELL_BG = '#FFFFFF'
-const BOARD_LINE = '#1F1B16'
+const BOARD_BG = 'var(--bd-card-warm)'
+const CELL_BG = 'var(--bd-board-cell)'
+const BOARD_LINE = 'var(--bd-board-line)'
 
 function tintOf(color: LudoColor): string {
     return `color-mix(in srgb, ${COLOR_FILL[color]} 30%, ${CELL_BG})`

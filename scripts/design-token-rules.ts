@@ -2,11 +2,12 @@
  * Rules for scripts/audit-design-tokens.ts, kept free of side effects so the tests can import them.
  */
 
-// Tailwind's default neutrals and blues, with any variant prefix (dark:, hover:, md:...).
-// `bd-sky`, `bd-lav` and the other tokens never match: the colour must follow a utility and be
+// Tailwind's default palettes, with any variant prefix (dark:, hover:, md:...): the neutrals and blues
+// of the old look, and the reds, greens and ambers that drew status before --bd-danger/success/warning
+// (#1550). `bd-sky`, `bd-lav` and the other tokens never match: the colour must follow a utility and be
 // followed by a shade number.
 export const LEGACY_CLASS =
-  /(?<![\w-])(?:[a-z0-9]+:)*(?:bg|text|border|from|to|via|ring|outline|divide|placeholder|shadow|fill|stroke|accent|caret|decoration)-(?:slate|gray|zinc|neutral|stone|blue|indigo)-\d{2,3}(?:\/\d{1,3})?(?![\w-])/g
+  /(?<![\w-])(?:[a-z0-9]+:)*(?:bg|text|border|from|to|via|ring|outline|divide|placeholder|shadow|fill|stroke|accent|caret|decoration)-(?:slate|gray|zinc|neutral|stone|blue|indigo|red|orange|amber|yellow|lime|green|emerald|teal|cyan|sky|violet|purple|fuchsia|pink|rose)-\d{2,3}(?:\/\d{1,3})?(?![\w-])/g
 
 const ACCENT = '(?:coral|mint|lav|sun|sky)'
 

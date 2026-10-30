@@ -363,7 +363,7 @@ export default function YahtzeeResults({
               ref={showResultsRef}
               type="button"
               onClick={() => setInspecting(false)}
-              className="pointer-events-auto inline-flex min-h-11 items-center gap-2 rounded-full bg-bd-inverse px-5 text-sm font-semibold text-bd-ink-on-inverse shadow-bd-card transition-transform duration-150 ease-out enabled:active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-bd-lav-deep"
+              className="pointer-events-auto inline-flex min-h-11 items-center gap-2 rounded-full bg-bd-inverse px-5 text-sm font-semibold text-bd-ink-on-inverse shadow-bd-card transition-transform duration-bd-fast ease-out enabled:active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-bd-lav-deep"
             >
               <Icon name="trophy" size={16} />
               <span>{t('game.ui.showResults')}</span>

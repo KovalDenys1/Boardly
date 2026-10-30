@@ -8,7 +8,7 @@ export function TttMark({ mark, size = 24, responsive = false, pop = false }: {
     mark: 'X' | 'O'; size?: number; responsive?: boolean; pop?: boolean
 }) {
     const stroke = mark === 'X' ? 'var(--bd-coral)' : 'var(--bd-lav)'
-    const anim = pop ? 'ttt-mark-in 0.28s cubic-bezier(0.2,1.6,0.4,1) both' : undefined
+    const anim = pop ? 'ttt-mark-in var(--bd-dur) var(--bd-ease-spring) both' : undefined
     if (responsive) {
         return (
             <span style={{ display: 'inline-grid', placeItems: 'center', width: '60%', height: '60%', animation: anim }}>

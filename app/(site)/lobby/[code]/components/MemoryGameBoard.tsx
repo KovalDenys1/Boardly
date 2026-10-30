@@ -26,7 +26,7 @@ import { useMemorySounds } from '../hooks/useMemorySounds'
 import { useSpectatorResultCue } from '@/hooks/useSpectatorResultCue'
 import ScorePop from '@/components/game-chrome/ScorePop'
 import { MemoryCardTile, MemoryGrid, memorySymbolSizeClass } from '@/components/boards/MemoryTiles'
-import { idsAddedSince, matchedCardIds } from '@/lib/memory-motion'
+import { MATCH_CUE_MS, idsAddedSince, matchedCardIds } from '@/lib/memory-motion'
 import { createStuckTurnRecovery, turnSignatureOf } from '@/lib/stuck-turn-recovery'
 
 interface LobbyPlayer {
@@ -103,8 +103,6 @@ interface MemoryGameBoardProps {
 }
 
 const MISMATCH_RESOLVE_DELAY_MS = 1200
-/** How long a freshly matched pair keeps its cue class: flip (~460 ms) + pop (~420 ms). */
-const MATCH_CUE_MS = 1000
 const MISMATCH_RESOLVE_WATCHDOG_MS = MISMATCH_RESOLVE_DELAY_MS + 3500
 
 function getPlayerDisplayName(player: LobbyPlayer): string {

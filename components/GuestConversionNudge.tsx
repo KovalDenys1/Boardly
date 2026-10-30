@@ -56,14 +56,14 @@ export default function GuestConversionNudge({ registerUrl, gameType, lobbyCode,
   if (!visible) return null
 
   return (
-    <div className="mt-6 rounded-2xl border border-emerald-200 bg-linear-to-br/srgb from-emerald-50 to-teal-50 p-4 shadow-xs dark:border-emerald-700/50 dark:from-emerald-900/20 dark:to-teal-900/20 sm:p-5">
+    <div className="mt-6 rounded-2xl border border-bd-success-border bg-bd-success-bg p-4 shadow-xs sm:p-5">
       <div className="flex items-start gap-3">
         <div className="shrink-0"><Icon name="party" size={24} /></div>
         <div className="min-w-0 flex-1">
-          <p className="font-bold text-emerald-900 dark:text-emerald-100 text-sm sm:text-base">
+          <p className="font-bold text-bd-ink text-sm sm:text-base">
             {t(hasReplay ? 'auth.guestConversion.headlineReplay' : 'auth.guestConversion.headline')}
           </p>
-          <p className="mt-1 text-xs text-emerald-700 dark:text-emerald-300 sm:text-sm">
+          <p className="mt-1 text-xs text-bd-success-text sm:text-sm">
             {t(hasReplay ? 'auth.guestConversion.bodyReplay' : 'auth.guestConversion.body')}
           </p>
           <div className="mt-3 flex flex-wrap gap-2">
@@ -73,14 +73,14 @@ export default function GuestConversionNudge({ registerUrl, gameType, lobbyCode,
                 trackSignupPrompt('clicked', { gameType, lobbyCode })
                 markSignupFrom('guest_prompt')
               }}
-              className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-4 py-2 text-xs font-bold text-white shadow-xs hover:bg-emerald-700 transition-colors sm:text-sm"
+              className="inline-flex items-center gap-1.5 rounded-xl bg-bd-mint px-4 py-2 text-xs font-bold text-bd-ink-on-accent shadow-xs hover:bg-bd-mint-deep transition-colors sm:text-sm"
             >
               <Icon name="sparkle" size={14} />
               <span>{t('auth.guestConversion.cta')}</span>
             </a>
             <button
               onClick={dismiss}
-              className="inline-flex items-center rounded-xl border border-emerald-200 bg-white/70 px-4 py-2 text-xs font-semibold text-emerald-700 hover:bg-white transition-colors dark:border-emerald-700/50 dark:bg-transparent dark:text-emerald-300 dark:hover:bg-emerald-900/20 sm:text-sm"
+              className="inline-flex items-center rounded-xl border border-bd-success-border bg-bd-card px-4 py-2 text-xs font-semibold text-bd-success-text hover:bg-bd-bg2 transition-colors sm:text-sm"
             >
               {t('auth.guestConversion.dismiss')}
             </button>

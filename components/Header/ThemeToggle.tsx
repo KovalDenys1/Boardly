@@ -132,7 +132,7 @@ export function ThemeToggle() {
         <TriggerIcon />
         <span
           aria-hidden
-          className={`absolute bottom-[5px] right-[5px] h-1.5 w-1.5 rounded-full bg-bd-lav transition-[opacity,scale] duration-150 ease-out ${
+          className={`absolute bottom-[5px] right-[5px] h-1.5 w-1.5 rounded-full bg-bd-lav transition-[opacity,scale] duration-bd-fast ease-out ${
             mode === 'system' ? 'scale-100 opacity-100' : 'scale-50 opacity-0'
           }`}
         />
@@ -140,10 +140,10 @@ export function ThemeToggle() {
 
       <Transition
         as={Fragment}
-        enter="transition ease-out duration-150"
+        enter="transition ease-out duration-bd-fast"
         enterFrom="opacity-0 translate-y-1 scale-[0.98]"
         enterTo="opacity-100 translate-y-0 scale-100"
-        leave="transition ease-in duration-100"
+        leave="transition ease-in duration-bd-fast"
         leaveFrom="opacity-100 translate-y-0 scale-100"
         leaveTo="opacity-0 translate-y-1 scale-[0.98]"
       >
@@ -157,7 +157,7 @@ export function ThemeToggle() {
                   <button
                     type="button"
                     onClick={() => setTheme(value)}
-                    className={`flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left transition-colors duration-150 ${
+                    className={`flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left transition-colors duration-bd-fast ${
                       active
                         ? 'bg-bd-lav/15 text-bd-lav-text dark:text-bd-lav'
                         : focus
@@ -172,7 +172,7 @@ export function ThemeToggle() {
                       <span className="block truncate text-sm font-semibold">{t(labelKey)}</span>
                       {hintKey && <span className="block text-xs text-bd-ink-muted">{t(hintKey)}</span>}
                     </span>
-                    <span className={`shrink-0 transition-opacity duration-150 ${active ? 'opacity-100' : 'opacity-0'}`}>
+                    <span className={`shrink-0 transition-opacity duration-bd-fast ${active ? 'opacity-100' : 'opacity-0'}`}>
                       <CheckIcon />
                     </span>
                   </button>

@@ -13,8 +13,8 @@ AI-agent reference for all visual decisions in this codebase.
 - In SVG `stroke`/`fill` attributes → convert to `style` prop: `style={{ stroke: 'var(--bd-coral)' }}`
 - In Tailwind arbitrary values → CSS variables work: `shadow-[0_4px_0_var(--bd-ink)]`
 
-`npm run audit:design-tokens` (part of `ci:quick`) refuses the legacy palette classes beyond their
-baseline, an accent fill or shade used as text, a focus colour other than `bd-lav-deep`, a colour spelled
+`npm run audit:design-tokens` (part of `ci:quick`) refuses Tailwind's palette classes (the old neutrals and
+blues, and the reds, greens and ambers status used to be drawn in) beyond their baseline, an accent fill or shade used as text, a focus colour other than `bd-lav-deep`, a colour spelled
 `-(--bd-x)` when the `bd-x` utility exists, a token's hex inside a shadow, and `transition-all`.
 
 The only legitimate exception is `app/root-document.tsx` — the `<style dangerouslySetInnerHTML>` block contains a critical inline CSS string for SSR first-paint performance. **Do not change it.**
@@ -55,6 +55,29 @@ Dark values (`html.dark`) that are not obvious from the light ones: `--bd-ink-mu
 `--bd-coral-text` `#FF8475`, `--bd-mint-text` `#4AC3A0`, `--bd-lav-text` `#AA9DFF`, `--bd-inverse`
 `#35302A`, `--bd-ink-on-inverse` `#F0E8DB`, `--bd-sun-text` `#FFC44D`.
 
+### Status colours
+
+Errors, confirmations and warnings use their own tokens, never a palette red, green or amber and never a
+`dark:` patch (#1550). Each flips in `html.dark` and every lobby theme sets its own copy (`lib/lobby-themes.ts`).
+
+| Role | Danger | Success | Warning | Use |
+|---|---|---|---|---|
+| Solid | `bd-danger` `#C62828` | `bd-success` `#1C8A6B` | `bd-warning` `#9E6C00` | an icon, a strength bar, a field's edge in that state, a destructive button |
+| Text | `bd-danger-text` `#B3261E` | `bd-success-text` `#076F57` | `bd-warning-text` `#875D01` | the message itself |
+| Ground | `bd-danger-bg` `#FDECEA` | `bd-success-bg` `#E3F5EE` | `bd-warning-bg` `#FFF3D6` | a tinted box |
+| Edge | `bd-danger-border` `#F0B3AC` | `bd-success-border` `#A6DCC8` | `bd-warning-border` `#EFD08A` | the box's border, decorative |
+
+Dark: danger `#F2665C` / `#FF8A80` / `#3A201D` / `#6E302A`, success `#4FC9A6` / `#4AC3A0` / `#15302A` / `#285A4C`,
+warning `#FFC44D` / `#FFC44D` / `#352A12` / `#62501F`. Text on the danger fill is `--bd-ink-on-danger` (white, ink
+in dark). Premium is gold, not a status: `bd-premium` fills, `bd-sun/25` chips with `bd-sun-text`.
+
+### Boards
+
+A board is a slab of its own and keeps an edge in every theme (#1567). `--bd-board-line` (`#1F1B16`, dark
+`#A89A88`) draws its edge and grid, 3:1 off every card and page; `--bd-board-cell` (`#FFFFFF`, dark `#1E1B17`)
+fills Ludo's cells. Connect Four's frame is `--bd-inverse` with a 2px rim in the line. The Memory card back is
+the same card in both themes: its mark is `--bd-ink-on-accent` on a white plate over lavender.
+
 **Accent text is `-text`; `-deep` is a shade.** `--bd-*-deep` draws what belongs to a fill: the border
 and hard shadow of a coral or lavender button, a checked box, a status dot, the lavender focus ring. It
 never flips, because the fills never flip. Coloured words and icons on a surface use `--bd-*-text`,
@@ -93,6 +116,8 @@ Ratios below are computed straight from the hex values in the Color tokens table
 | `bd-ink-on-inverse` on `bd-inverse` (marquee, CTA band, finished banner) | 15.9:1 (dark 10.7:1) | AA text + large |
 | accents on `bd-inverse` in dark (coral, lav, mint, sky, sun) | 4.67-8.25:1 | AA text + large |
 | `bd-sun-text` on a `bd-sun/25` tint | 5.0:1 (dark 5.5:1) | AA text + large |
+| `bd-danger/success/warning-text` on every surface, its own `-bg` and every lobby theme | 4.57:1 or more (warning-text on Sakura's `bd-bg2`); 4.84:1 in light, 6.45:1 in dark | AA text + large |
+| `bd-danger/success/warning` (an icon, a bar, a field edge) on every surface | 3.56:1 or more in light (success on `bd-bg2`), 4.83:1 in dark (danger on `bd-bg2`) | AA UI boundary |
 | `bd-coral/mint/lav/sun/sky-text` on every surface and on its own 10-20 % tint | 4.54:1 or more in light (coral on a 20 % tint over `bd-bg2`), 4.55:1 in dark (mint, the same) | AA text + large |
 | `bd-ink-on-accent` on a hover fill (`bd-coral`, `bd-lav-mid`); never on a `-deep` shade, 4.27:1 on coral-deep | 5.27:1 or more | AA text + large |
 | `bd-bg` text on `bd-ink` (primary button) | 15.9:1 | AA text + large |
@@ -375,7 +400,7 @@ Dark mode is implemented via CSS variable swapping. **Do not use `dark:` Tailwin
 - `system` (default) follows `prefers-color-scheme` automatically
 - Toggle UI: `ThemeToggle` (desktop header icon), `ThemeSegmented` (the drawer's quick-settings row, compact; Profile → Settings → Appearance in full through `ThemeSettingsPanel`)
 - Lobby premium themes (`ocean`, `midnight`, `sakura`, `neon_city`) override CSS vars at container level via `getThemePageStyle()` — they are immune to the global dark/light toggle
-- About 90 `dark:` classes remain in `app/` and `components/`, half of them on the profile page: dark-mode patches for palette colours that wait for status tokens. New code uses the tokens; a `dark:` variant of an accent text class is the one the audit allows, since the fills read on the dark surfaces
+- About 25 `dark:` classes remain in `app/` and `components/`, none of them for a status colour: the status tokens flip on their own (#1550). New code uses the tokens; a `dark:` variant of an accent text class is the one the audit allows, since the fills read on the dark surfaces
 - `applyThemeMode()` (`lib/theme.ts`) turns transitions off for one frame (`bd-theme-switching`) while the class changes, so a switch repaints every surface at once instead of each fading on its own timer
 
 ---
@@ -389,15 +414,35 @@ The motion tokens are in `:root` and do not change with the theme:
 | `--bd-dur-fast` | `150ms` | hover, press and small fades |
 | `--bd-dur` | `250ms` | a status cue, a last-move marker, a fade |
 | `--bd-dur-slow` | `420ms` | a score pop, the result panel, a last-move ring |
-| `--bd-ease-out` | `cubic-bezier(0.2, 0.7, 0.2, 1)` | the default curve |
+| `--bd-ease-out` | `cubic-bezier(0.2, 0.7, 0.2, 1)` | the default curve: entrances, hovers, fades |
 | `--bd-ease-spring` | `cubic-bezier(0.2, 1.4, 0.4, 1)` | a pop that overshoots slightly |
+| `--bd-ease-in` | `cubic-bezier(0.5, 0, 0.85, 0.35)` | accelerates like a fall: a dropped disc, an exit |
+| `--bd-ease-in-out` | `cubic-bezier(0.42, 0, 0.58, 1)` | a shake, a loop |
 
+- **Nothing spells a curve or a duration but the token block (#1569).** CSS uses `var(--bd-dur*)` and
+  `var(--bd-ease-*)`; Tailwind uses `duration-bd-fast`, `duration-bd`, `duration-bd-slow`, and `ease-out`,
+  `ease-in`, `ease-in-out`, which `@theme inline` points at the tokens, as it does a bare `transition`'s
+  default duration and curve. A loop's period (`infinite`) and a `linear` clock or progress bar keep their
+  real time. Arbitrary values follow the same rule: `animate-[slideIn_var(--bd-dur-fast)_var(--bd-ease-out)]`.
+  `__tests__/lib/motion-tokens.test.ts` fails on a `cubic-bezier(` outside the token block, a keyword
+  curve, or a raw duration, in CSS, inline styles and Tailwind classes alike.
+- **A wait in JavaScript takes its time from the tokens.** `MOTION_MS` in `lib/motion-durations.ts` holds the three
+  durations in milliseconds, and a constant that waits for a CSS animation is built from it
+  (`RPS_REVEAL_MS`, `CAPTURE_FADE_MS`, `MATCH_CUE_MS`); the motion test pins each one to the rule it waits for.
 - Animate `transform` and `opacity` only (CLAUDE.md, "never animate height"). Use `transition`, never
   `transition-all`: v4's `transition` leaves width, height and margins out, and the audit refuses
   `transition-all`. An animation that still moves a layout property names it (`transition-[width]`), so
   it can be found.
-- `prefers-reduced-motion` is collapsed by the global rule in `globals.css`. A wait that lives in
-  JavaScript asks `prefersReducedMotion()` from `lib/motion.ts`, never its own `matchMedia`.
+- **Reduced motion removes movement and keeps fades.** The global rule in `globals.css` collapses keyframe
+  animations and every delay, and limits transitions to opacity and colour at their own duration, so a
+  transform or a layout property snaps while a fade still runs, which is why there is no
+  `motion-reduce:transition-none` (the rule would override it anyway, and the test refuses it). A
+  keyframe animation that only changes opacity gets its time back under that rule through a line that
+  names its keyframes, so a moving animation on the same element cannot borrow it; `.bd-screen` and the
+  lobby route's children fade instead of sliding. The motion test fails when a fade is missing from the
+  list, when the list names a keyframe that moves, and on a fade in an arbitrary `animate-[…]` class, which
+  that list cannot reach. A wait that lives in JavaScript asks `prefersReducedMotion()` from
+  `lib/motion.ts`, never its own `matchMedia`.
 
 ---
 
