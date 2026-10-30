@@ -183,6 +183,10 @@ Any change touching layout, a game board, or an in-game view is NOT done until a
 6. **Cell sizing takes `min()` of a width-derived and a height-derived size.** A
    multi-row board sized purely from `100vw` can come out taller than the usable
    viewport and be silently clipped (#688 again).
+7. **Navigation and long pages use the shared parts.** A breadcrumb is `components/Breadcrumbs.tsx`
+   (text crumbs, 24 px targets, wraps), never a hand-made `<nav>`. Jump links on a long document are
+   `components/DocumentContents.tsx`; its sections carry an `id` and
+   `scroll-mt-[calc(var(--bd-header-h)+1rem)]`.
 
 ## In-game layout — Definition of Done
 
@@ -196,11 +200,15 @@ plus 844×390 landscape). Check before calling it done:
    history card and chat; when a panel is hidden for another reason, its space is
    taken by something useful, such as a rules strip.
 2. **Shared controls in the same place in every game**, current and future:
-   - Leave: in the actions of `GameScoreboardHeader`'s `room` (`GameHeaderActions`); below a
-     316 px header the actions fold into one menu; spectators get "Back to lobby" there.
-   - Whose turn / status: `GameStatusBanner` directly under the header.
+   - Leave and Sound: in the actions of `GameScoreboardHeader`'s `room` (`GameHeaderActions`); below a
+     420 px header three actions, or a spectator's, fold into one menu, and below 316 px every header
+     folds; spectators get "Back to lobby" there.
+   - Whose turn / status: `GameStatusBanner` directly under the header, given a `turn` (`GameTurn`) so it
+     writes "<whose turn>: <what to do>"; a viewer who cannot act gets the descriptive line, never an order.
+   - The game's name: `GamePageHeading`, once per screen.
    - Chat: right column on desktop, `GameTabs` tab on mobile.
-   - Result: `GameResultOverlay`, a modal dialog over the whole game screen (z-61, above chat).
+   - Result: `GameResultOverlay`, a modal dialog on the dialog layer (`z-dialog`), above the floating
+     chat on the drawer layer (DESIGN.md "Layers").
    Exceptions only where a game genuinely needs a different UI, and they are
    written down in the game's ticket.
 3. **Every state change moves (Denys, 2026-09-24).** A game with instant state swaps is not
@@ -255,7 +263,7 @@ plus 844×390 landscape). Check before calling it done:
   Verify by watching a bot game, not only by reading code.
 - [ ] **In-game chrome comes from the shared kit — never re-implement it.**
       Compose `components/game-chrome/` (`GameResultOverlay`, `GamePlayerCard`,
-      `GameScoreboardHeader`, `GameStatusBanner`, `GameTabs`) plus
+      `GameScoreboardHeader`, `GameStatusBanner`, `GameTabs`, `GamePageHeading`) plus
       `components/Chat.tsx` via `useLobbyChat`/`useLobbyChatHistory` (#736).
       Game-specific identity goes through their props (accent colors, icon
       slots, pre-translated titles) — a hand-rolled player card, result
@@ -268,7 +276,8 @@ plus 844×390 landscape). Check before calling it done:
 - [ ] `app/(site)/lobby/[code]/LobbyPageClient.tsx` — add dynamic import + route check
 - [ ] `app/localized-game-page.tsx` — add the detail component to `DETAIL_CONTENT`, so `/<locale>/games/<game>` exists under every language prefix (#1394, #928, #1610); `localized-pages.test.tsx` fails without it
 - [ ] Every new page goes under `app/(site)/`: outside every root layout, Next writes a bare layout for it
-- [ ] `components/HomePage/GameRibbon.tsx` – add to `translatedDetails` and `getIllustration`; the accent colour and the detail href are derived from the catalog entry, so there is nothing else to add
+- [ ] `games.<game>.ribbon` copy in all six locales – `GameCard` reads everything else from the catalog entry
+- [ ] `app/(site)/games/components/GameScreenshot.tsx` – add the game to `SCREENSHOT_SLUG`, then `npm run capture:screenshots`
 
 ### Locales
 - [ ] `locales/en.ts`, `ru.ts`, `no.ts`, `uk.ts`, `de.ts`, `es.ts` — add complete `games.<game>` namespace, `seo.title` and `seo.description` included – they are the titles of the prefixed pages (parity enforced by pre-commit hook)
@@ -321,6 +330,10 @@ Add the key to all six files first, then use `t('namespace.key')`. Never write
 parity check while leaving five languages broken.
 
 ## Animations — never animate height
+
+Curves come from `--bd-ease-*` and durations from `--bd-dur-*` / `duration-bd-*`; status colours only
+from `--bd-danger-*`, `--bd-success-*`, `--bd-warning-*` – the token audit refuses palette classes, and
+`__tests__/lib/motion-tokens.test.ts` refuses a raw curve (DESIGN.md "Motion").
 
 Only `opacity` and `transform`. Height animations trigger layout on every frame and cannot
 be GPU-composited, so they stutter on a phone whatever the technique.
@@ -415,6 +428,11 @@ ENABLE_IN_DEVELOPMENT_GAMES=true NEXT_PUBLIC_ENABLE_IN_DEVELOPMENT_GAMES=true pn
   opened - the safe direction, and boardly.online is unaffected either way.
 - It is deliberately **not** in `RUNTIME_FLAG_KEYS`, so the Control Panel cannot switch it on.
 - **Never commit a change to `availability` to get a game running.** The flip is #873's.
+
+## Page tests and the English fixture
+
+`__tests__/fixtures/english-t.ts` throws on a missing key, so a page test needs every key it renders to
+exist in `locales/en.ts`.
 
 ## Testing a game that needs three or more real players
 
