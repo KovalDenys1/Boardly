@@ -1,5 +1,8 @@
+import { readFileSync } from 'fs'
+import path from 'path'
 import { act, render, screen } from '@testing-library/react'
 import InstallPrompt from '@/components/InstallPrompt'
+import { zLayers } from '../../scripts/z-layer-rules'
 
 jest.mock('@/lib/i18n-helpers', () => ({
   useTranslation: () => ({ t: (key: string) => key }),
@@ -63,12 +66,13 @@ describe('InstallPrompt on a first visit', () => {
     expect(container).toBeEmptyDOMElement()
   })
 
-  it('sits under every dialog layer when it does show', () => {
+  it('sits under the header when it does show, so a header menu covers it', () => {
     window.localStorage.setItem('boardly:first-visit:v1', String(Date.now() - 24 * 60 * 60 * 1000))
     const { container } = render(<InstallPrompt />)
     fireBeforeInstallPrompt()
 
-    const layer = Number(/(?:^|\s)z-(\d+)(?:\s|$)/.exec((container.firstElementChild as HTMLElement).className)?.[1])
-    expect(layer).toBeLessThan(50)
+    const layers = zLayers(readFileSync(path.join(__dirname, '..', '..', 'app', 'globals.css'), 'utf8'))
+    const layer = /(?:^|\s)z-([a-z]+)(?:\s|$)/.exec((container.firstElementChild as HTMLElement).className)?.[1] ?? ''
+    expect(layers.get(layer)).toBeLessThan(layers.get('header')!)
   })
 })

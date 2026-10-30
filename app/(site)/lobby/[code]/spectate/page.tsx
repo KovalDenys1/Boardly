@@ -83,7 +83,7 @@ function SpectatorTopBar({
     <div style={{
       position: 'sticky',
       top: 0,
-      zIndex: 50,
+      zIndex: 'var(--z-index-header)',
       background: isAdminView ? 'rgba(124,58,237,0.92)' : 'rgba(31,27,22,0.92)',
       backdropFilter: 'blur(8px)',
       borderBottom: '1px solid rgba(255,255,255,0.12)',
@@ -237,7 +237,7 @@ function FloatingSpectatorChat({
         onClick={() => setIsOpen((open) => !open)}
         aria-label={t('spectate.chatTitle')}
         style={{
-          position: 'fixed', bottom: 16, right: 16, zIndex: 60,
+          position: 'fixed', bottom: 16, right: 16, zIndex: 'var(--z-index-floating)',
           width: 48, height: 48, borderRadius: 999,
           background: 'var(--bd-ink)', color: 'var(--bd-bg)',
           border: 'none', cursor: 'pointer', fontSize: 20,
@@ -258,7 +258,7 @@ function FloatingSpectatorChat({
         <div
           className="bd-card"
           style={{
-            position: 'fixed', bottom: 72, right: 16, zIndex: 60,
+            position: 'fixed', bottom: 72, right: 16, zIndex: 'var(--z-index-floating)',
             width: 300, maxWidth: 'calc(100vw - 32px)',
             display: 'flex', flexDirection: 'column', padding: 16,
           }}

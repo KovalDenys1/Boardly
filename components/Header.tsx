@@ -55,7 +55,7 @@ export default function Header() {
   return (
     <>
     <header
-      className="site-header sticky top-0 z-50"
+      className="site-header sticky top-0 z-header"
       style={{
         height: '64px',
         minHeight: '64px',

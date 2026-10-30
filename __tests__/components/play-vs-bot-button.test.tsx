@@ -1,5 +1,5 @@
 import { StrictMode } from 'react'
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import PlayVsBotButton from '@/app/(site)/games/components/PlayVsBotButton'
 import { fetchWithGuest } from '@/lib/fetch-with-guest'
 import { showToast } from '@/lib/i18n-toast'
@@ -555,5 +555,49 @@ describe('PlayVsBotButton – a clip visitor arrives with ?play=bot (#1541)', ()
     await waitFor(() => expect(pushMock).toHaveBeenCalledWith('/lobby/NEW1'))
     expect(calledUrls()).toEqual(['/api/quick-play', '/api/lobby/OLD1/leave', '/api/quick-play', '/api/game/create'])
     expect(bodyOf('/api/game/create')).toEqual({ gameType: 'connect_four', lobbyId: 'lobby-new1' })
+  })
+})
+
+describe('PlayVsBotButton – the guest gate is a dialog you can leave (#1549)', () => {
+  beforeEach(() => {
+    sessionStatus = 'unauthenticated'
+    guestState = { isGuest: false }
+    pushMock.mockClear()
+    setGuestModeMock.mockReset().mockResolvedValue(undefined)
+  })
+
+  async function openGate() {
+    render(<PlayVsBotButton gameType="yahtzee" />)
+    const trigger = screen.getByText('quickPlay.playVsBot', { exact: false }).closest('button') as HTMLButtonElement
+    trigger.focus()
+    fireEvent.click(trigger)
+    fireEvent.click(screen.getByText('lobby.create.difficultyEasy'))
+    const gate = await screen.findByRole('dialog', { name: 'header.authGateTitle' })
+    return { trigger, gate }
+  }
+
+  it('opens as a modal dialog', async () => {
+    const { gate } = await openGate()
+
+    expect(gate).toHaveAttribute('aria-modal', 'true')
+  })
+
+  it('closes on Escape and hands focus back to Play vs Bot', async () => {
+    const { trigger } = await openGate()
+
+    fireEvent.keyDown(document, { key: 'Escape' })
+
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
+    expect(document.activeElement).toBe(trigger)
+  })
+
+  it('has a close button that does the same', async () => {
+    const { trigger, gate } = await openGate()
+
+    fireEvent.click(within(gate).getByRole('button', { name: 'common.close' }))
+
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
+    expect(document.activeElement).toBe(trigger)
+    expect(pushMock).not.toHaveBeenCalled()
   })
 })

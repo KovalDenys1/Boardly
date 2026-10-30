@@ -1,6 +1,7 @@
 import { existsSync, readdirSync, readFileSync, statSync, writeFileSync } from 'fs'
 import path from 'path'
 import { LEGACY_CLASS, accentTextLines, colourUtilities, focusColourLines, tokenHexShadowLines, tokenHexValues, transitionAllLines, varShorthandLines } from './design-token-rules'
+import { zIndexLines } from './z-layer-rules'
 
 /**
  * Design-token audit – the pre-Boardly palette must not come back (#1254).
@@ -19,7 +20,8 @@ import { LEGACY_CLASS, accentTextLines, colourUtilities, focusColourLines, token
  * takes --bd-<accent>-text. An `accent-text-allow` comment on the line or the one above exempts it.
  * And on a focus ring or outline in any colour but --bd-lav-deep, the one focus colour, and on a
  * colour spelled `-(--bd-x)` or `-[var(--bd-x)]` where the `bd-x` utility exists, and on a shadow
- * that hard-codes a token's hex (app/root-document.tsx's critical CSS excepted).
+ * that hard-codes a token's hex (app/root-document.tsx's critical CSS excepted). And on a z-index off the
+ * layer scale (#1556, scripts/z-layer-rules.ts), in contexts/, hooks/ and lib/ as well.
  */
 
 const repoRoot = process.cwd()
@@ -63,6 +65,14 @@ for (const file of files) {
   if (rel !== 'app/root-document.tsx') for (const line of tokenHexShadowLines(src, tokenHex)) hexShadow.push(`${rel}:${line}`)
 }
 
+const zIndex: string[] = []
+const zFiles: string[] = [...files]
+for (const root of ['contexts', 'hooks', 'lib']) if (existsSync(path.join(repoRoot, root))) walk(path.join(repoRoot, root), zFiles)
+for (const file of zFiles) {
+  const rel = path.relative(repoRoot, file).split(path.sep).join('/')
+  for (const line of zIndexLines(readFileSync(file, 'utf8'))) zIndex.push(`${rel}:${line}`)
+}
+
 if (updateBaseline) {
   const sorted = Object.fromEntries(Object.entries(counts).sort(([a], [b]) => a.localeCompare(b)))
   writeFileSync(baselinePath, JSON.stringify(sorted, null, 2) + '\n')
@@ -89,6 +99,7 @@ for (const at of focusColour) problems.push(`${at}: a focus ring in another colo
 for (const at of varShorthand) problems.push(`${at}: a colour spelled through its variable – use the bd-* utility`)
 for (const at of transitionAll) problems.push(`${at}: transition-all also animates layout – use transition, or name the property`)
 for (const at of hexShadow) problems.push(`${at}: a shadow with a token's hex – use var(--bd-*) so it follows dark mode`)
+for (const at of zIndex) problems.push(`${at}: a z-index off the scale – use a layer (z-header ... z-celebration, DESIGN.md "Layers")`)
 
 if (problems.length > 0) {
   console.error('design-tokens audit FAILED:\n  ' + problems.join('\n  '))

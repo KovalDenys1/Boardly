@@ -111,7 +111,7 @@ export function AudioSettingsButton() {
       </button>
 
       {open && (
-        <div className="absolute right-0 top-12 z-50 w-64 rounded-2xl border border-bd-line bg-bd-card-warm p-4 text-bd-ink shadow-[0_18px_45px_rgba(31,27,22,0.18)]">
+        <div className="absolute right-0 top-12 z-dropdown w-64 rounded-2xl border border-bd-line bg-bd-card-warm p-4 text-bd-ink shadow-[0_18px_45px_rgba(31,27,22,0.18)]">
           <div className="mb-4 flex items-start justify-between gap-3">
             <div>
               <p className="bd-kicker">{t('header.audioSettings')}</p>

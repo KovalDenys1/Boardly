@@ -362,11 +362,11 @@ export function TourOverlay() {
   return (
     <>
       {!showSpotlight && (
-        <div className="fixed inset-0 z-105 animate-fade-in" style={{ background: 'rgba(31,27,22,0.7)' }} />
+        <div className="fixed inset-0 z-dialog animate-fade-in" style={{ background: 'rgba(31,27,22,0.7)' }} />
       )}
       {showSpotlight && targetRect && (
         <div
-          className="pointer-events-none fixed z-105 rounded-2xl transition-[top,left,width,height] duration-200"
+          className="pointer-events-none fixed z-dialog rounded-2xl transition-[top,left,width,height] duration-200"
           style={{
             top: targetRect.top - SPOTLIGHT_PADDING,
             left: targetRect.left - SPOTLIGHT_PADDING,
@@ -378,7 +378,7 @@ export function TourOverlay() {
         />
       )}
       {/* Full-viewport interaction blocker — only the tooltip card itself is clickable. */}
-      <div className="fixed inset-0 z-106" />
+      <div className="fixed inset-0 z-dialog" />
 
       <div
         ref={cardRef}
@@ -386,7 +386,7 @@ export function TourOverlay() {
         aria-modal="true"
         aria-labelledby={titleId}
         tabIndex={-1}
-        className="fixed z-110"
+        className="fixed z-dialog"
         style={tooltipStyle}
       >
         <TourCard>

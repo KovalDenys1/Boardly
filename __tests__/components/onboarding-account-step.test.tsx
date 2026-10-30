@@ -94,4 +94,42 @@ describe('onboarding account step for an OAuth sign-up (#1135, #1131)', () => {
     expect(screen.getByRole('button', { name: 'Skip for now' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Close' })).toBeInTheDocument()
   })
+
+  it('is a modal dialog named by its title (#1549)', () => {
+    render(<OnboardingModal />)
+
+    expect(screen.getByRole('dialog', { name: 'Welcome to Boardly!' })).toHaveAttribute('aria-modal', 'true')
+  })
+
+  it('opens by itself, so focus lands on the dialog rather than on a control nobody chose', () => {
+    // jsdom lays nothing out, so every control would look hidden to Modal's focus search.
+    const offsetParent = jest.spyOn(HTMLElement.prototype, 'offsetParent', 'get').mockImplementation(function (this: HTMLElement) {
+      return this.isConnected ? document.body : null
+    })
+    try {
+      render(<OnboardingModal />)
+
+      expect(document.activeElement).toBe(screen.getByRole('dialog', { name: 'Welcome to Boardly!' }))
+    } finally {
+      offsetParent.mockRestore()
+    }
+  })
+
+  it('ignores Escape while the age is asked', () => {
+    render(<OnboardingModal />)
+
+    fireEvent.keyDown(document, { key: 'Escape' })
+
+    expect(skipOnboarding).not.toHaveBeenCalled()
+    expect(screen.getByRole('dialog', { name: 'Welcome to Boardly!' })).toBeInTheDocument()
+  })
+
+  it('skips on Escape once the age is settled, as its close button does', () => {
+    accountSetup = { confirmAge: false, offerPublicProfile: true }
+    render(<OnboardingModal />)
+
+    fireEvent.keyDown(document, { key: 'Escape' })
+
+    expect(skipOnboarding).toHaveBeenCalledTimes(1)
+  })
 })

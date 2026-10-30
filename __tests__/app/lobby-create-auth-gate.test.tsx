@@ -85,14 +85,25 @@ describe('/lobby/create for a logged-out visitor', () => {
     expect(pushMock).not.toHaveBeenCalled()
   })
 
-  it('goes home only when the visitor dismisses the gate', async () => {
-    const { container } = render(<CreateLobbyPage />)
+  it('goes home only when the visitor clicks outside the gate', async () => {
+    render(<CreateLobbyPage />)
     await act(async () => {})
 
-    const backdrop = container.querySelector('.fixed.inset-0') as HTMLElement
-    fireEvent.click(backdrop)
+    const scrim = screen.getByRole('dialog', { name: 'header.authGateTitle' }).previousElementSibling as HTMLElement
+    fireEvent.click(scrim)
 
     expect(pushMock).toHaveBeenCalledWith('/')
+  })
+
+  it('is the page, so Escape keeps it and it has no close button (#1549)', async () => {
+    render(<CreateLobbyPage />)
+    await act(async () => {})
+
+    fireEvent.keyDown(document, { key: 'Escape' })
+
+    expect(screen.getByRole('dialog', { name: 'header.authGateTitle' })).toHaveAttribute('aria-modal', 'true')
+    expect(screen.queryByRole('button', { name: 'common.close' })).toBeNull()
+    expect(pushMock).not.toHaveBeenCalled()
   })
 
   it('shows no gate to a guest', async () => {

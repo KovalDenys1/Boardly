@@ -142,4 +142,17 @@ describe('FriendsListModal', () => {
 
     await waitFor(() => expect(onSelect).toHaveBeenCalledWith(['friend-1']))
   })
+
+  it('is a modal dialog named by its title, closed by Escape and by its close button (#1549)', async () => {
+    const onClose = jest.fn()
+    render(<FriendsListModal isOpen onClose={onClose} onInvite={jest.fn()} lobbyCode="ABCD" />)
+
+    expect(screen.getByRole('dialog', { name: 'lobby.invite.title' })).toHaveAttribute('aria-modal', 'true')
+    await waitFor(() => expect(screen.getAllByText('lobby.invite.inviteButton')).toHaveLength(2))
+
+    fireEvent.keyDown(document, { key: 'Escape' })
+    fireEvent.click(screen.getByRole('button', { name: 'common.close' }))
+
+    expect(onClose).toHaveBeenCalledTimes(2)
+  })
 })

@@ -2,7 +2,7 @@ import { readFileSync } from 'fs'
 import path from 'path'
 
 // A scroll region inside an overlay hands its leftover scroll to the page behind it unless it contains it.
-const OVERLAYS = ['components/Modal.tsx', 'components/Header/NavDrawer.tsx', 'components/FriendsListModal.tsx']
+const OVERLAYS = ['components/Modal.tsx', 'components/Header/NavDrawer.tsx']
 
 describe.each(OVERLAYS)('%s', (file) => {
   it('contains the scroll of every scrolling region it draws', () => {

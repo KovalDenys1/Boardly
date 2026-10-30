@@ -187,6 +187,47 @@ className="shadow-[6px_6px_0_var(--bd-ink)]"
 
 ---
 
+## Layers
+
+Everything that stacks above the page takes one of seven layers (#1556), declared in `app/globals.css`'s
+`@theme` as `--z-index-<layer>`, so each is a utility and a variable:
+
+| Layer | Value | Utility | What sits there |
+|---|---|---|---|
+| floating | 30 | `z-floating` | controls that float over the page: the feedback button, the floating chat, the install prompt |
+| header | 40 | `z-header` | the site header and the page's own sticky chrome: the spectator bar |
+| dropdown | 50 | `z-dropdown` | menus, selects, popovers and tooltips |
+| drawer | 60 | `z-drawer` | panels that slide in over everything on the page: the nav drawer |
+| dialog | 70 | `z-dialog` | every modal dialog (`Modal.tsx`, the Headless UI dialogs, the result dialog, the tour) |
+| toast | 80 | `z-toast` | toasts, the connection status, the skip link |
+| celebration | 90 | `z-celebration` | the celebration banner and confetti |
+
+- So a toast is never under a dialog, the result dialog paints above the floating chat, and a header
+  menu covers every floating control. The header is a stacking context at 40, so a menu inside it
+  rises no higher than the header itself.
+- Within one layer, later in the DOM paints on top: the install prompt renders after the page
+  (`app/providers.tsx`) so it covers the feedback button.
+- Inside one component, 0–10 (`z-0`, `z-1`, `z-10`) orders siblings in its own stacking context: a
+  modal's scrim under its panel, a sticky table row, a pill over a board. It is never a way to rise
+  above the page.
+- Inline styles and CSS take the variable: `zIndex: 'var(--z-index-drawer)'`,
+  `z-index: var(--z-index-dropdown)`. A library that wants a number reads it with
+  `getComputedStyle` (`hooks/useConfetti.ts`).
+- A menu portaled out of a drawer or dialog takes that container's layer, which it then paints above
+  because it is later in the DOM (`LanguageSwitcher` in the drawer is `z-drawer`).
+- `npm run audit:design-tokens` refuses a raw `z-50`, any number above 10 and an arbitrary `z-[…]`, in
+  `app/`, `components/`, `contexts/`, `hooks/` and `lib/` (`scripts/z-layer-rules.ts`).
+
+**One scrim** under every dialog and drawer: `bg-bd-scrim backdrop-blur-xs` (ink at 45 %, 4 px blur).
+A new overlay uses `Modal.tsx`, which already draws it, moves focus in, returns it to the trigger,
+traps Tab and closes on Escape and its close button. With two open, Escape and Tab belong to the top
+one. `dismissible={false}` drops Escape and the close button for a dialog that is the page itself (the
+guest gate on `/lobby/create`). `placement="sheet"` spans a phone's width on the bottom edge, padded
+above the home indicator, and is centred at its max width from `sm` up. Decoration that bleeds past a
+dialog's content (blobs, rotated shapes) sits in an `overflow-clip` box, or the body scrolls.
+
+---
+
 ## Typography
 
 Display font: **Bricolage Grotesque** (fallback: Georgia, serif). Body font: **Inter**, the page default.

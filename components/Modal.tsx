@@ -13,6 +13,9 @@ const FOCUSABLE_SELECTOR = [
   '[tabindex]:not([tabindex="-1"])',
 ].join(',')
 
+/** Open dialogs, oldest first. Escape and Tab belong to the last; the page stays locked until none is left. */
+const openDialogs: object[] = []
+
 /** Exactly one source for the dialog's accessible name; screen readers announce an unnamed one as just "dialog". */
 type ModalName =
   | { title: string; 'aria-labelledby'?: never; 'aria-label'?: never }
@@ -27,6 +30,31 @@ export type ModalProps = ModalName & {
   mobileFullscreen?: boolean
   bodyPadding?: 'default' | 'none'
   'aria-describedby'?: string
+  /** false: Escape does nothing and the title row has no close button, for a dialog that is the page itself. A click on the scrim still calls onClose. */
+  dismissible?: boolean
+  /** `sheet` sits flush on the bottom edge below `sm` and centres from `sm` up. */
+  placement?: 'center' | 'sheet'
+  /** Replaces the default card surface (background, border, radius, shadow). */
+  panelClassName?: string
+  /** `dialog` for one that opens by itself: focus lands on the dialog, not on a control nobody chose. `[data-autofocus]` wins over both. */
+  initialFocus?: 'first' | 'dialog'
+}
+
+export function ModalCloseButton({ onClick, className = '' }: { onClick: () => void; className?: string }) {
+  const { t } = useTranslation()
+
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-label={t('common.close')}
+      className={`grid h-10 w-10 shrink-0 place-items-center rounded-xl text-bd-ink-muted transition-colors hover:bg-bd-bg2 hover:text-bd-ink focus:outline-hidden focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-bd-lav-deep ${className}`}
+    >
+      <svg className="h-5 w-5 fill-none stroke-current" viewBox="0 0 24 24" aria-hidden="true">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+      </svg>
+    </button>
+  )
 }
 
 export default function Modal({
@@ -40,10 +68,14 @@ export default function Modal({
   maxWidth = 'lg',
   mobileFullscreen = false,
   bodyPadding = 'default',
+  dismissible = true,
+  placement = 'center',
+  panelClassName,
+  initialFocus = 'first',
 }: ModalProps) {
   const [isMounted, setIsMounted] = useState(false)
-  const { t } = useTranslation()
   const dialogRef = useRef<HTMLDivElement>(null)
+  const [stackEntry] = useState(() => ({}))
   const titleId = useId()
 
   useEffect(() => {
@@ -61,6 +93,18 @@ export default function Modal({
     )
   }, [])
 
+  useEffect(() => {
+    if (!isOpen) return
+
+    openDialogs.push(stackEntry)
+    document.body.style.overflow = 'hidden'
+
+    return () => {
+      openDialogs.splice(openDialogs.indexOf(stackEntry), 1)
+      if (openDialogs.length === 0) document.body.style.overflow = 'unset'
+    }
+  }, [isOpen, stackEntry])
+
   // Close on Escape, and keep Tab inside the dialog while it's open. Without the
   // trap, tabbing past the last control landed on the page behind a scroll-locked
   // body, which is a dead end for keyboard and screen-reader users.
@@ -68,8 +112,10 @@ export default function Modal({
     if (!isOpen) return
 
     const handleKeyDown = (e: KeyboardEvent) => {
+      if (openDialogs[openDialogs.length - 1] !== stackEntry) return
+
       if (e.key === 'Escape') {
-        onClose()
+        if (dismissible) onClose()
         return
       }
 
@@ -97,14 +143,8 @@ export default function Modal({
     }
 
     document.addEventListener('keydown', handleKeyDown)
-    // Prevent body scroll when modal is open
-    document.body.style.overflow = 'hidden'
-
-    return () => {
-      document.removeEventListener('keydown', handleKeyDown)
-      document.body.style.overflow = 'unset'
-    }
-  }, [isOpen, onClose, getFocusableElements])
+    return () => document.removeEventListener('keydown', handleKeyDown)
+  }, [isOpen, onClose, dismissible, getFocusableElements, stackEntry])
 
   // Move focus in on open and hand it back to the trigger on close, so keyboard
   // users don't get dropped at the top of the document.
@@ -112,13 +152,13 @@ export default function Modal({
     if (!isOpen || !isMounted) return
 
     const previouslyFocused = document.activeElement as HTMLElement | null
-    const focusable = getFocusableElements()
-    ;(focusable[0] ?? dialogRef.current)?.focus()
+    const preferred = dialogRef.current?.querySelector<HTMLElement>('[data-autofocus]')
+    ;(preferred ?? (initialFocus === 'first' ? getFocusableElements()[0] : null) ?? dialogRef.current)?.focus()
 
     return () => {
-      previouslyFocused?.focus?.()
+      if (previouslyFocused && previouslyFocused !== document.body && previouslyFocused.isConnected) previouslyFocused.focus()
     }
-  }, [isOpen, isMounted, getFocusableElements])
+  }, [isOpen, isMounted, initialFocus, getFocusableElements])
 
   if (!isOpen || !isMounted) return null
 
@@ -135,17 +175,23 @@ export default function Modal({
 
   const portalTarget = document.getElementById('bd-lobby-portal') ?? document.body
 
+  const sheet = placement === 'sheet'
+  // An inline max-width cannot wait for `sm`, so a sheet hands it to a utility through a variable.
+  const width = sheet
+    ? ({ '--modal-max-w': maxWidthStyles[maxWidth] } as React.CSSProperties)
+    : { maxWidth: maxWidthStyles[maxWidth] }
+
   return createPortal(
     <div
-      className={`fixed inset-0 z-50 flex justify-center animate-fade-in ${
-        mobileFullscreen ? 'items-stretch sm:items-center' : 'items-center'
+      className={`fixed inset-0 z-dialog flex justify-center animate-fade-in ${
+        mobileFullscreen ? 'items-stretch sm:items-center' : sheet ? 'items-end sm:items-center sm:p-[clamp(12px,1.2vw,20px)]' : 'items-center'
       }`}
-      style={{ padding: mobileFullscreen ? '0px' : `clamp(12px, 1.2vw, 20px)` }}
+      style={sheet ? undefined : { padding: mobileFullscreen ? '0px' : `clamp(12px, 1.2vw, 20px)` }}
     >
       {/* Backdrop — presentational; Escape and the close button are the
           keyboard-accessible ways out, so this isn't a focusable control. */}
       <div
-        className="absolute inset-0 z-0 bg-black/50 backdrop-blur-xs"
+        className="absolute inset-0 z-0 bg-bd-scrim backdrop-blur-xs"
         onClick={onClose}
         aria-hidden="true"
       />
@@ -159,17 +205,27 @@ export default function Modal({
         aria-label={title ? undefined : label}
         aria-describedby={describedBy}
         tabIndex={-1}
-        className={`relative z-10 flex w-full flex-col shadow-2xl animate-scale-in ${
-          mobileFullscreen
-            ? 'h-dvh max-h-dvh rounded-none border-0 sm:h-auto sm:max-h-[92dvh] sm:rounded-3xl sm:border'
-            : 'max-h-[90dvh] rounded-2xl border'
+        className={`relative z-10 flex w-full flex-col animate-scale-in focus:outline-hidden ${
+          sheet ? 'pb-[env(safe-area-inset-bottom)] sm:max-w-(--modal-max-w) sm:pb-0' : ''
+        } ${
+          panelClassName
+            ? `max-h-[90dvh] ${panelClassName}`
+            : `shadow-2xl ${
+                mobileFullscreen
+                  ? 'h-dvh max-h-dvh rounded-none border-0 sm:h-auto sm:max-h-[92dvh] sm:rounded-3xl sm:border'
+                  : 'max-h-[90dvh] rounded-2xl border'
+              }`
         }`}
-        style={{
-          background: 'var(--bd-card-warm)',
-          borderColor: 'var(--bd-line)',
-          maxWidth: maxWidthStyles[maxWidth],
-          borderWidth: `clamp(1px, 0.1vw, 2px)`,
-        }}
+        style={
+          panelClassName
+            ? width
+            : {
+                background: 'var(--bd-card-warm)',
+                borderColor: 'var(--bd-line)',
+                ...width,
+                borderWidth: `clamp(1px, 0.1vw, 2px)`,
+              }
+        }
       >
         {/* Header */}
         {title && (
@@ -188,23 +244,7 @@ export default function Modal({
             >
               {title}
             </h2>
-            <button
-              onClick={onClose}
-              className="transition-colors rounded-xl"
-              style={{ padding: `clamp(3px, 0.3vh, 5px)`, color: 'var(--bd-ink-muted)' }}
-              aria-label={t('common.close')}
-            >
-              <svg
-                className="fill-none stroke-current"
-                viewBox="0 0 24 24"
-                style={{
-                  width: `clamp(20px, 2vw, 28px)`,
-                  height: `clamp(20px, 2vw, 28px)`,
-                }}
-              >
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
+            {dismissible && <ModalCloseButton onClick={onClose} />}
           </div>
         )}
 

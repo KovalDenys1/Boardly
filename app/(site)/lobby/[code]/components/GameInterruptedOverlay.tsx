@@ -1,7 +1,8 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useId, useState } from 'react'
 import LeaveIcon from '@/components/LeaveIcon'
+import Modal, { ModalCloseButton } from '@/components/Modal'
 import { useTranslation } from '@/lib/i18n-helpers'
 
 interface GameInterruptedOverlayProps {
@@ -15,6 +16,7 @@ const COUNTDOWN = 5
 export default function GameInterruptedOverlay({ playerName, reason, onRedirect }: GameInterruptedOverlayProps) {
   const { t } = useTranslation()
   const [seconds, setSeconds] = useState(COUNTDOWN)
+  const titleId = useId()
 
   useEffect(() => {
     if (seconds <= 0) {
@@ -26,17 +28,20 @@ export default function GameInterruptedOverlay({ playerName, reason, onRedirect 
   }, [seconds, onRedirect])
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4"
-      style={{ background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(6px)' }}
+    <Modal
+      isOpen
+      onClose={onRedirect}
+      aria-labelledby={titleId}
+      initialFocus="dialog"
+      maxWidth="sm"
+      bodyPadding="none"
+      panelClassName="rounded-3xl border-[1.5px] border-bd-line bg-bd-bg shadow-2xl"
     >
-      <div
-        className="w-full max-w-xs rounded-3xl p-7 text-center shadow-2xl"
-        style={{ background: 'var(--bd-bg)', border: '1.5px solid var(--bd-line)' }}
-      >
+      <div className="relative p-7 text-center">
+        <ModalCloseButton onClick={onRedirect} className="absolute right-2 top-2" />
         <div className="mb-3 flex justify-center" style={{ color: 'var(--bd-ink-soft)' }}><LeaveIcon size={48} /></div>
 
-        <h2 className="mb-2 text-lg font-bold text-bd-ink">
+        <h2 id={titleId} className="mb-2 text-lg font-bold text-bd-ink">
           {t('lobby.gameAbandoned')}
         </h2>
 
@@ -57,6 +62,6 @@ export default function GameInterruptedOverlay({ playerName, reason, onRedirect 
           {t('lobby.gameInterrupted.returnNow')}
         </button>
       </div>
-    </div>
+    </Modal>
   )
 }

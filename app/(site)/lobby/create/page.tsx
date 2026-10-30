@@ -1053,6 +1053,7 @@ function CreateLobbyPage() {
           onClose={() => {}}
           onGuestReady={() => {}}
           onDismiss={() => router.push('/')}
+          dismissible={false}
         />
       )}
 

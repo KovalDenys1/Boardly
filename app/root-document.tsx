@@ -41,7 +41,7 @@ const AgentationToolbar =
 // Header Skeleton with fixed dimensions to prevent CLS
 function HeaderSkeleton() {
   return (
-    <header className="site-header sticky top-0 z-50" style={{ height: '64px', minHeight: '64px', background: 'var(--bd-bg)', borderBottom: '1.5px solid var(--bd-line)' }}>
+    <header className="site-header sticky top-0 z-header" style={{ height: '64px', minHeight: '64px', background: 'var(--bd-bg)', borderBottom: '1.5px solid var(--bd-line)' }}>
       <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8" style={{ height: '100%' }}>
         <div className="flex justify-between items-center" style={{ height: '100%' }}>
           <div className="flex items-center gap-2" style={{ minWidth: '120px', fontFamily: "'Bricolage Grotesque', Georgia, serif", fontWeight: 800, fontSize: 22, color: 'var(--bd-ink)' }}>

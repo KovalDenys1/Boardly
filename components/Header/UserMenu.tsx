@@ -57,7 +57,7 @@ export function UserMenu({ userName, userEmail, userImage }: UserMenuProps) {
         leaveFrom="opacity-100 translate-y-0 scale-100"
         leaveTo="opacity-0 translate-y-1 scale-[0.98]"
       >
-        <MenuItems className="absolute right-0 z-50 mt-2 w-[200px] overflow-hidden rounded-[1.25rem] border-[1.5px] border-bd-line bg-bd-input-bg p-1.5 shadow-[0_18px_36px_-18px_rgba(31,27,22,0.35)] focus:outline-hidden">
+        <MenuItems className="absolute right-0 z-dropdown mt-2 w-[200px] overflow-hidden rounded-[1.25rem] border-[1.5px] border-bd-line bg-bd-input-bg p-1.5 shadow-[0_18px_36px_-18px_rgba(31,27,22,0.35)] focus:outline-hidden">
           <div className="truncate px-3 pb-1.5 pt-1 text-xs font-semibold text-bd-ink-muted">{userName || userEmail}</div>
           <MenuItem>
             {({ focus }) => (

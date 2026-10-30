@@ -123,11 +123,11 @@ export default function ResultFixture({
   const portalRoot = <div id="bd-lobby-portal" className="contents" />
   const floatingLayers = floating && (
     <>
-      {/* LobbyPageClient's desktop chat beside a held Yahtzee result, and spectate/page.tsx's chat button (fixed, z-index 60). */}
+      {/* LobbyPageClient's desktop chat beside a held Yahtzee result, and spectate/page.tsx's chat button (fixed, on the floating layer). */}
       <Chat messages={[]} onSendMessage={() => undefined} isMinimized={false} onToggleMinimize={() => undefined} />
       <div
         data-testid="fixture-floating-chat-ready"
-        style={{ position: 'fixed', top: '50%', left: 16, zIndex: 60, width: 48, height: 48, borderRadius: 999, background: 'var(--bd-ink)' }}
+        style={{ position: 'fixed', top: '50%', left: 16, zIndex: 'var(--z-index-floating)', width: 48, height: 48, borderRadius: 999, background: 'var(--bd-ink)' }}
       />
     </>
   )
