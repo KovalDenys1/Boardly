@@ -37,7 +37,6 @@ const no = {
     label: 'Brødsmulesti',
     home: 'Hjem',
     games: 'Spill',
-    ariaLabel: 'brødsmulesti',
   },
   lobby: {
     title: 'Spillobby',

@@ -39,7 +39,6 @@ const de: TranslationWithPlurals = {
     label: 'Navigationspfad',
     home: 'Startseite',
     games: 'Spiele',
-    ariaLabel: 'Navigationspfad',
   },
   lobby: {
     title: 'Spiel-Lobbys',

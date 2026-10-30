@@ -37,7 +37,6 @@ const en = {
     label: 'Breadcrumb',
     home: 'Home',
     games: 'Games',
-    ariaLabel: 'breadcrumb',
   },
   lobby: {
     title: 'Game Lobbies',

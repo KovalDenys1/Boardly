@@ -39,7 +39,6 @@ const uk: TranslationWithPlurals = {
     label: 'Навігаційний ланцюжок',
     home: 'Головна',
     games: 'Ігри',
-    ariaLabel: 'навігаційний ланцюжок',
   },
   connection: {
     reconnecting: 'Повторне підключення...',
