@@ -1,5 +1,7 @@
 export type OperationalPayloadValue = string | number | boolean | null
 
+export const MAX_OPS_EVENT_BODY_BYTES = 4096
+
 export const OPERATIONAL_EVENT_NAMES = [
   'rejoin_timeout',
   'auth_refresh_failed',

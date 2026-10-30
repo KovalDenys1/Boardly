@@ -5,6 +5,7 @@ import { prisma } from '@/lib/db'
 import { apiLogger } from '@/lib/logger'
 import {
   buildOperationalEventRecord,
+  MAX_OPS_EVENT_BODY_BYTES,
   OPERATIONAL_EVENT_NAMES,
   type OperationalEventPayload,
   type OperationalPayloadValue,
@@ -24,7 +25,6 @@ const limiter = rateLimit({
 const MAX_PAYLOAD_KEYS = 20
 const MAX_PAYLOAD_KEY_LENGTH = 64
 const MAX_PAYLOAD_STRING_VALUE_LENGTH = 256
-export const MAX_OPS_EVENT_BODY_BYTES = 4096
 
 const payloadValueSchema = z.union([
   z.string().max(MAX_PAYLOAD_STRING_VALUE_LENGTH),

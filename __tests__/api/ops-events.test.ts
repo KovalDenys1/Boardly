@@ -4,7 +4,8 @@
 // @ts-nocheck - Route-level mocks are intentionally lightweight.
 
 import { NextRequest } from 'next/server'
-import { POST, MAX_OPS_EVENT_BODY_BYTES } from '@/app/api/ops/events/route'
+import { POST } from '@/app/api/ops/events/route'
+import { MAX_OPS_EVENT_BODY_BYTES } from '@/lib/operational-events'
 import { prisma } from '@/lib/db'
 
 jest.mock('@/lib/db', () => ({
