@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
+import Breadcrumbs from '@/components/Breadcrumbs'
 import Footer from '@/components/Footer'
 import GameIcon from '@/components/GameIcon'
 import { Icon } from '@/components/icons'
@@ -7,7 +8,7 @@ import { getCatalogAvailableGames } from '@/lib/game-catalog'
 import { getGuideCard } from '@/lib/guide-cards'
 import { BEST_OF_GUIDES, HOW_TO_PLAY_GUIDES, type GuideEntry } from '@/lib/guides-catalog'
 import { ORGANIZATION_ID } from '@/lib/organization-json-ld'
-import { OG_LOCALES, languageAlternates, localizeHref, localizedPath, type SeoLocale } from '@/lib/seo-locales'
+import { OG_LOCALES, languageAlternates, localizeHref, localizedPath, type GuideLocale } from '@/lib/seo-locales'
 import { serverTranslator } from '@/lib/server-i18n'
 import { OG_SITE_DEFAULTS, socialImages } from '@/lib/social-preview'
 import { GUIDE_UI, type GuideIndexUi } from './guide-ui'
@@ -26,12 +27,12 @@ const ENGLISH_KEYWORDS = [
 const guidedGames = new Set(HOW_TO_PLAY_GUIDES.map((guide) => guide.game))
 const unguidedGames = getCatalogAvailableGames().filter((game) => !guidedGames.has(game.id) && game.route)
 
-const urlOf = (path: string, locale: SeoLocale) => {
+const urlOf = (path: string, locale: GuideLocale) => {
   const localized = localizedPath(path, locale)
   return localized === '/' ? BASE : `${BASE}${localized}`
 }
 
-export function guidesIndexMetadata(locale: SeoLocale): Metadata {
+export function guidesIndexMetadata(locale: GuideLocale): Metadata {
   const { index } = GUIDE_UI[locale]
   const url = urlOf('/guides', locale)
   const ogTitle = `${index.ogTitle} | Boardly`
@@ -59,7 +60,7 @@ export function guidesIndexMetadata(locale: SeoLocale): Metadata {
   }
 }
 
-function GuideCard({ guide, locale, ui }: { guide: GuideEntry; locale: SeoLocale; ui: GuideIndexUi }) {
+function GuideCard({ guide, locale, ui }: { guide: GuideEntry; locale: GuideLocale; ui: GuideIndexUi }) {
   const { slug, icon, accent } = guide
   const { title, description, readTime } = getGuideCard(slug, locale)
 
@@ -106,7 +107,7 @@ function GuideCard({ guide, locale, ui }: { guide: GuideEntry; locale: SeoLocale
 }
 
 function GuideGroup({ title, guides, locale, ui, className }: {
-  title: string; guides: GuideEntry[]; locale: SeoLocale; ui: GuideIndexUi; className?: string
+  title: string; guides: GuideEntry[]; locale: GuideLocale; ui: GuideIndexUi; className?: string
 }) {
   return (
     <section className={className}>
@@ -127,7 +128,7 @@ function GuideGroup({ title, guides, locale, ui, className }: {
 }
 
 /** The guides index in one language: every guide listed at its URL in that language. */
-export default function GuidesIndex({ locale }: { locale: SeoLocale }) {
+export default function GuidesIndex({ locale }: { locale: GuideLocale }) {
   const ui = GUIDE_UI[locale].index
   const t = serverTranslator(locale)
   const unguided = unguidedGames.map((game) => ({
@@ -167,11 +168,11 @@ export default function GuidesIndex({ locale }: { locale: SeoLocale }) {
       <div className="bd-page bd-screen flex-1 overflow-y-auto">
         <div className="mx-auto max-w-4xl px-4 pb-20 pt-10 sm:px-6 lg:px-8">
 
-          <nav className="mb-8 flex items-center gap-2 text-sm" style={{ color: 'var(--bd-ink-muted)' }} aria-label={t('breadcrumbs.label')}>
-            <Link href={localizedPath('/', locale)} className="transition-colors hover:text-bd-ink">{t('breadcrumbs.home')}</Link>
-            <span>/</span>
-            <span style={{ color: 'var(--bd-ink)' }}>{t('header.guides')}</span>
-          </nav>
+          <Breadcrumbs
+            className="mb-8"
+            label={t('breadcrumbs.label')}
+            items={[{ label: t('breadcrumbs.home'), href: localizedPath('/', locale) }, { label: t('header.guides') }]}
+          />
 
           {/* Hero */}
           <div

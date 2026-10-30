@@ -9,6 +9,7 @@
 
 const lrange = jest.fn()
 const lrem = jest.fn()
+const del = jest.fn()
 
 jest.mock('@upstash/redis', () => ({
   Redis: class {
@@ -17,6 +18,7 @@ jest.mock('@upstash/redis', () => ({
     expire = jest.fn()
     lrange = lrange
     lrem = lrem
+    del = del
   },
 }))
 
@@ -137,5 +139,30 @@ describe('removeChatMessage', () => {
     lrange.mockRejectedValueOnce(new Error('fetch failed'))
     ;({ removeChatMessage } = await import('@/lib/chat-history'))
     await expect(removeChatMessage('1234', 'id-bad')).resolves.toBe('unavailable')
+  })
+})
+
+/** A reopened table starts a new conversation (#1594); the old one is not carried into it. */
+describe('clearChatHistory', () => {
+  beforeEach(() => {
+    jest.resetModules()
+    del.mockReset()
+    process.env.KV_REST_API_URL = 'https://example.upstash.io'
+    process.env.KV_REST_API_TOKEN = 'token'
+  })
+
+  it("deletes the lobby's history", async () => {
+    const { clearChatHistory } = await import('@/lib/chat-history')
+
+    await clearChatHistory('1234')
+
+    expect(del).toHaveBeenCalledWith('chat:lobby:1234')
+  })
+
+  it('never throws when Redis fails', async () => {
+    del.mockRejectedValueOnce(new Error('fetch failed'))
+    const { clearChatHistory } = await import('@/lib/chat-history')
+
+    await expect(clearChatHistory('1234')).resolves.toBeUndefined()
   })
 })

@@ -42,7 +42,6 @@
     "de games.alias.lobbies.host = \"Host\"",
     "de games.alias.lobbies.title = \"Alias\"",
     "de games.alias.name = \"Alias\"",
-    "de games.alias.ribbon.tag = \"Team\"",
     "de games.checkers.lobbies.host = \"Host\"",
     "de games.connect_four.lobbies.host = \"Host\"",
     "de games.detail.labels.download = \"Download\"",

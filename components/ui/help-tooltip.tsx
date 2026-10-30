@@ -65,7 +65,7 @@ export default function HelpTooltip({
       {open && (
         <div
           role="tooltip"
-          className={`absolute left-1/2 top-full z-30 mt-2 -translate-x-1/2 rounded-2xl border border-bd-line bg-bd-input-bg p-3 text-left text-xs leading-5 text-bd-ink-soft shadow-[0_18px_48px_rgba(15,23,42,0.22)] backdrop-blur-xl ${panelClassName}`}
+          className={`absolute left-1/2 top-full z-dropdown mt-2 -translate-x-1/2 rounded-2xl border border-bd-line bg-bd-input-bg p-3 text-left text-xs leading-5 text-bd-ink-soft shadow-[0_18px_48px_rgba(15,23,42,0.22)] backdrop-blur-xl ${panelClassName}`}
         >
           {content}
         </div>

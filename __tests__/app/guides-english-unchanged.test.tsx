@@ -14,17 +14,17 @@ const sha256 = (text: string) => createHash('sha256').update(text).digest('hex')
  * purpose, then record the hash the failure prints.
  */
 const ENGLISH_DOM: Record<string, string> = {
-  'best-2-player-games-online': '3a620dd5289078f2576063e4fc564d143ff3ed50decea8a4b08957d64d0e7fca',
-  'best-games-to-play-on-zoom': '0421b1dd0d417ad807e2fe6b74f7e68a6d7a9288f47acd3111d4cfde5d4258af',
-  'best-online-games-for-game-night': 'd214dd62cf55528f8d99dbc17bdcb4f1a3919f2694e1fecf0b8954063714d732',
-  'how-to-play-alias-online': 'e5eced559702e910006fe5934d4a1d40f2adef6cdf4bc945cdbe78b9b6b2651a',
-  'how-to-play-connect-four-online': '7d45121a5262f471280a56d51adbac6ede847d641ad392bb8f9259bb4043dc95',
-  'how-to-play-memory-card-game-online': '9a6ecc0fd191e0c5406546ddc67ab204df31cf69ebcd16e660d7b6ccdae7f525',
-  'how-to-play-rock-paper-scissors-online': '86b82cda464ad602be518d1e2e2e725b9ed6a019aa16e7a4b83d904945713a9a',
-  'how-to-play-spy-game-online': '74ad9aa885f7c6cc0f8689c37a7977fe3ee6117a1dc9eb50bf02132d09a88a7c',
-  'how-to-play-tic-tac-toe-online': '2dc20ad68da354457de58a92ee563254df13dbe5d7a53496f350fb108266b0a0',
-  'how-to-play-yahtzee-online': 'ff4c2374cc8c78a5b33e99ea4e444cc0626c2907ab64c9dfc80d86d7b6fefe3b',
-  index: '07441d4ffd68a7ef79656efdf89e923429b6524a2d9f9ceaa7e4adb75989af56',
+  'best-2-player-games-online': '1e6a0a0976b93098ce6e61d88621606cfcd08e840a2db132e576e38fcffb8d2b',
+  'best-games-to-play-on-zoom': '159c155913abb16d896ba5d079152b17e9dcf03d182e1fbfc5abad6ffbd274c2',
+  'best-online-games-for-game-night': 'f6f7488bef74d07e8121e4e4b3294cf940b32209c5d9a34802a390a4fffba7cd',
+  'how-to-play-alias-online': 'de0c93e2ae26189141b8a8ba7f7f66c569a69c7560cbeaed82114f012fdfe308',
+  'how-to-play-connect-four-online': 'd77cc72ed2e93ef400149f93177aeb25f141d4601246c7636d10e1d41b5b1228',
+  'how-to-play-memory-card-game-online': '1b961d0ba7ffc7006cb4b70753519771c2d910818fe5f63b26b4918461c418d3',
+  'how-to-play-rock-paper-scissors-online': 'a550966f1a9bda080c42e878ea851b8c04fb307db9c6764e9b51da5d9c296522',
+  'how-to-play-spy-game-online': 'a086b2a8ee7c64bd80ac37f7fca97752460b7f994b5c3bb51dcf4cbb3b5d0f7e',
+  'how-to-play-tic-tac-toe-online': 'c7ffe3ba7ee5a27cbe69c88f3a4af596d1ccac90ad2429b0db11d438b94831cd',
+  'how-to-play-yahtzee-online': '7cce9958434c0a26a930c4b765da28b0b9ef4d96b9c607a26155658fc3e38047',
+  index: 'c1a8abe0972c737bf9be393da54c6269ffc259bb70c74efedfeb807a856f48db',
 }
 
 /** The same pages' metadata as JSON, before the hreflang set was added to it. */

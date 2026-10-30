@@ -183,16 +183,16 @@ export default function LoginForm() {
   }
 
   const renderInviteBanner = () => (
-    <div className="rounded-2xl p-4 shadow-xs" style={{ border: '1.5px solid #22C55E60', background: '#22C55E10' }}>
+    <div className="rounded-2xl p-4 shadow-xs" style={{ border: '1.5px solid var(--bd-success-border)', background: 'var(--bd-success-bg)' }}>
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
         <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl shadow-xs" style={{ background: 'var(--bd-bg2)' }}>
           <Icon name="gamepad" size={26} />
         </span>
         <div className="min-w-0">
-          <p className="font-semibold" style={{ color: '#16A34A' }}>
+          <p className="font-semibold" style={{ color: 'var(--bd-success-text)' }}>
             {t('auth.login.invited', "You've been invited to a game!")}
           </p>
-          <p className="mt-1 text-sm leading-6" style={{ color: '#15803D' }}>
+          <p className="mt-1 text-sm leading-6" style={{ color: 'var(--bd-success-text)' }}>
             {t('auth.login.loginToJoin', 'Login to join the lobby')}
           </p>
         </div>
@@ -325,10 +325,10 @@ export default function LoginForm() {
 
   return (
     <div className="bd-screen" style={{
-      minHeight: '100svh', overflowX: 'hidden', overflowY: 'auto',
+      minHeight: 'var(--game-h)', overflowX: 'hidden', overflowY: 'auto',
       background: 'radial-gradient(circle at 12% 8%, rgba(255,196,77,0.18), transparent 35%), radial-gradient(circle at 88% 14%, rgba(155,140,255,0.16), transparent 40%), radial-gradient(circle at 50% 100%, rgba(79,201,166,0.14), transparent 50%), var(--bd-bg)',
     }}>
-      <div className="grid grid-cols-1 lg:grid-cols-2" style={{ maxWidth: 1280, margin: '0 auto', gap: 40, alignItems: 'center', padding: 'clamp(24px, 5vw, 40px) clamp(20px, 4vw, 32px)', minHeight: '100svh', boxSizing: 'border-box' }}>
+      <div className="grid grid-cols-1 lg:grid-cols-2" style={{ maxWidth: 1280, margin: '0 auto', gap: 40, alignItems: 'center', padding: 'clamp(24px, 5vw, 40px) clamp(20px, 4vw, 32px)', minHeight: 'var(--game-h)', boxSizing: 'border-box' }}>
 
         {/* LEFT: form */}
         <div style={{ maxWidth: 460, justifySelf: 'center', width: '100%' }}>
@@ -393,7 +393,7 @@ export default function LoginForm() {
                   placeholder={t('auth.login.emailPlaceholder')}
                   autoComplete="email"
                 />
-                {fieldErrors.email && <p style={{ fontSize: 13, color: 'var(--bd-coral-text)', marginTop: 2 }}>{fieldErrors.email}</p>}
+                {fieldErrors.email && <p style={{ fontSize: 13, color: 'var(--bd-danger-text)', marginTop: 2 }}>{fieldErrors.email}</p>}
               </div>
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
@@ -411,7 +411,7 @@ export default function LoginForm() {
                     showStrength={false}
                   />
                 </div>
-                {fieldErrors.password && <p style={{ fontSize: 13, color: 'var(--bd-coral-text)', marginTop: 2 }}>{fieldErrors.password}</p>}
+                {fieldErrors.password && <p style={{ fontSize: 13, color: 'var(--bd-danger-text)', marginTop: 2 }}>{fieldErrors.password}</p>}
               </div>
 
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
@@ -456,7 +456,7 @@ export default function LoginForm() {
           position: 'relative',
           background: 'linear-gradient(135deg, var(--bd-coral) 0%, var(--bd-sun) 100%)',
           borderRadius: 36, padding: 40, overflow: 'hidden',
-          height: 'clamp(480px, calc(100svh - 2 * clamp(24px, 5vw, 40px) - 12px), 640px)',
+          height: 'clamp(480px, calc(var(--game-h) - 2 * clamp(24px, 5vw, 40px) - 12px), 640px)',
           border: '3px solid var(--bd-ink)',
           boxShadow: '10px 10px 0 var(--bd-ink)',
         }} className="hidden lg:block">

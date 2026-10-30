@@ -100,7 +100,15 @@ describe('link previews (#1091)', () => {
   it('gives every root layout the site card, in openGraph and twitter alike', async () => {
     // A file-based opengraph-image only reaches metadata set in its own segment, so a root
     // layout that sets openGraph without images left ~20 pages and /ru, /uk without a card (#1394).
-    const roots = ['@/app/(site)/layout', '@/app/ru/layout', '@/app/uk/layout', '@/app/no/layout', '@/app/global-not-found']
+    const roots = [
+      '@/app/(site)/layout',
+      '@/app/ru/layout',
+      '@/app/uk/layout',
+      '@/app/no/layout',
+      '@/app/de/layout',
+      '@/app/es/layout',
+      '@/app/global-not-found',
+    ]
     for (const root of roots) {
       const { metadata } = (await import(root)) as { metadata: Metadata }
       expect({ root, og: metadata.openGraph?.images }).toEqual({

@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { useSession } from 'next-auth/react'
+import Breadcrumbs from '@/components/Breadcrumbs'
 import Footer from '@/components/Footer'
 import GameIcon from '@/components/GameIcon'
 import { Icon } from '@/components/icons'
@@ -137,13 +138,15 @@ export default function GameDetailPage({
   return (
     <div className="bd-page bd-screen flex min-h-(--game-h) flex-col overflow-y-auto text-bd-ink">
       <main className="mx-auto w-full max-w-6xl grow px-4 py-8 sm:px-6 lg:px-8">
-        <nav className="mb-6 flex flex-wrap items-center gap-2 text-sm font-semibold text-bd-ink-muted" aria-label={t('breadcrumbs.label')}>
-          <Link href={localize('/')} className="transition-colors hover:text-bd-ink">{t('breadcrumbs.home')}</Link>
-          <span>/</span>
-          <Link href={localize('/games')} className="transition-colors hover:text-bd-ink">{t('breadcrumbs.games')}</Link>
-          <span>/</span>
-          <span className="text-bd-ink">{gameName}</span>
-        </nav>
+        <Breadcrumbs
+          className="mb-6"
+          label={t('breadcrumbs.label')}
+          items={[
+            { label: t('breadcrumbs.home'), href: localize('/') },
+            { label: t('breadcrumbs.games'), href: localize('/games') },
+            { label: gameName },
+          ]}
+        />
 
         {/* No overflow-hidden here — the Play vs Bot dropdown must escape the
             card; decorative layers clip themselves via rounded-[inherit]. */}
@@ -162,32 +165,36 @@ export default function GameDetailPage({
               <p className="mt-5 max-w-2xl text-base font-medium leading-relaxed text-bd-ink-soft sm:text-lg sm:leading-7">
                 {description}
               </p>
-              <div className="mt-7 flex flex-col items-stretch gap-3 sm:flex-row sm:items-center sm:justify-center lg:items-start lg:justify-start">
+              <div className="mt-7 flex flex-col items-stretch gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-center lg:items-start lg:justify-start">
                 {primaryCtaDisabled ? (
-                  <span className="bd-btn bd-btn-primary bd-btn-lg cursor-not-allowed justify-center opacity-70 sm:w-[190px]" aria-disabled="true">
+                  <span className="bd-btn bd-btn-primary bd-btn-lg cursor-not-allowed justify-center opacity-70 sm:min-w-40" aria-disabled="true">
                     {ctaLabel}
                   </span>
+                ) : playVsBotGameType ? (
+                  <>
+                    <PlayVsBotButton gameType={playVsBotGameType} className="sm:min-w-40" />
+                    <Link href={lobbiesHref} className="bd-btn bd-btn-ghost bd-btn-lg justify-center sm:min-w-40">
+                      {t('games.playWithFriends')}
+                    </Link>
+                  </>
                 ) : (
-                  <Link href={lobbiesHref} className="bd-btn bd-btn-primary bd-btn-lg justify-center sm:w-[190px]">
+                  <Link href={lobbiesHref} className="bd-btn bd-btn-primary bd-btn-lg justify-center sm:min-w-40">
                     {ctaLabel}
                   </Link>
                 )}
-                {playVsBotGameType && !primaryCtaDisabled && (
-                  <PlayVsBotButton gameType={playVsBotGameType} className="sm:w-[190px]" />
-                )}
-                <Link href={localize('/games')} className="bd-btn bd-btn-ghost bd-btn-lg justify-center sm:w-[190px]">
+                <Link href={localize('/games')} className="bd-btn bd-btn-ghost bd-btn-lg justify-center sm:min-w-40">
                   {t('home.browseGames')}
                 </Link>
               </div>
               {groupNotice && (
-                <p className="mt-4 rounded-2xl border-2 border-amber-300 bg-amber-50 px-4 py-3 text-sm font-semibold leading-relaxed text-amber-900 dark:border-amber-600/60 dark:bg-amber-900/20 dark:text-amber-200">
+                <p className="mt-4 rounded-2xl border-2 border-bd-warning-border bg-bd-warning-bg px-4 py-3 text-sm font-semibold leading-relaxed text-bd-warning-text">
                   <Icon name="users" size={16} weight="bold" /> {groupNotice}
                 </p>
               )}
             </div>
 
             {hasScreenshot(gameId) ? (
-              <div className="relative mx-auto w-full max-w-md lg:mx-0 lg:w-104">
+              <div className="relative mx-auto w-full max-w-md lg:mx-0 lg:w-96">
                 <GameScreenshot gameId={gameId} gameName={gameName} />
                 <div className="absolute -left-4 -top-4">
                   <GameIcon gameId={gameId} accentColor={accentColor ?? 'var(--bd-coral)'} size={72} label={iconLabel} />

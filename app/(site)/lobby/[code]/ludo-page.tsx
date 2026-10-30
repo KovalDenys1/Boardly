@@ -34,7 +34,8 @@ import { TURN_AFTER_MOVE_MS, useTurnSounds } from '@/hooks/useTurnSounds'
 import { useSpectatorResultCue } from '@/hooks/useSpectatorResultCue'
 import { useLudoRollSound } from './hooks/useLudoRollSound'
 import GameScoreboardHeader, { type GameHeaderRoom } from '@/components/game-chrome/GameScoreboardHeader'
-import GameStatusBanner from '@/components/game-chrome/GameStatusBanner'
+import GameStatusBanner, { type GameTurn } from '@/components/game-chrome/GameStatusBanner'
+import GamePageHeading from '@/components/game-chrome/GamePageHeading'
 import { viewerOutcome } from '@/lib/game-outcome'
 import GameTabs from '@/components/game-chrome/GameTabs'
 import { useGameTimer } from './hooks/useGameTimer'
@@ -798,20 +799,16 @@ export default function LudoLobbyPage({ code, isSpectator = false, onGameReset }
         </div>
     )
 
-    const statusTitle = isFinished
-        ? ''
-        : myTurn
-            ? phase === 'move'
-                ? t('games.ludo.game.pickToken', { value: data.dice ?? 0 })
-                : t('games.ludo.game.yourRoll')
-            : t('games.ludo.game.playerTurn', { player: currentName })
+    const turn: GameTurn = myTurn
+        ? { whose: 'you', action: phase === 'move' ? t('games.ludo.game.turnMoveToken', { value: data.dice ?? 0 }) : t('games.ludo.game.turnRoll') }
+        : { whose: 'player', player: currentName, doing: t(phase === 'move' ? 'games.ludo.game.doingMoveToken' : 'games.ludo.game.doingRoll') }
 
     const statusSection = (
         <GameStatusBanner
             isFinished={isFinished}
             outcome={viewerOutcome({ isFinished, isDraw: false, isSpectator, isSeated: !!currentUserId && state.players.some((p) => p.id === currentUserId), isViewerWinner: winnerId ? winnerId === currentUserId : null })}
             finishedMessage={winnerName ? t('games.ludo.game.playerWins', { player: winnerName }) : t('game.ui.gameFinished')}
-            activeTitle={statusTitle}
+            turn={turn}
             meta={colorName(currentColor)}
             secs={timeLeft}
             turnTimerLimit={turnTimerLimit}
@@ -1031,6 +1028,7 @@ export default function LudoLobbyPage({ code, isSpectator = false, onGameReset }
 
     return (
         <div className="game-screen ttt-screen ludo-screen" style={themeStyle}>
+            <GamePageHeading title={t('games.ludo.name')} />
             {/* ── DESKTOP ─────────────────────────────────────────────────── */}
             <div className="ttt-desktop-layout">
                 <div className="ttt-grid">

@@ -136,11 +136,10 @@ this change; it only makes the decision possible to make with data instead of a 
   tags. Falls back to `NEXTAUTH_SECRET`; rotating either rotates the key, which clients pick up on
   the next message (they refetch `GET /api/realtime/key` for an unknown key id) and changes every
   user topic, which clients re-read on their next page load.
-- `BOARDLY_INTERNAL_SECRET`: server-to-server bot-turn triggers. When it is set, the trigger
-  sends only this header to a fixed internal origin (`getInternalAppOrigin()`, #1116) and
-  drops the caller's Cookie and Authorization; when it is unset, the trigger forwards the
-  caller's own session instead, so the bot turn runs on the player's identity – acceptable
-  locally and not in a deployed environment. `proxy.ts` compares it, and `CRON_SECRET`, with
+- `BOARDLY_INTERNAL_SECRET`: admits another server calling `/api/game/[gameId]/bot-turn` in an
+  `X-Internal-Secret` header. The bot turns this app starts itself, after a move and at game
+  start, run in-process (`lib/bot-turn-runner.ts`, #1568) and send nothing over HTTP, so no
+  player session is ever forwarded. `proxy.ts` compares it, and `CRON_SECRET`, with
   `constantTimeEqual` (#1119).
 - `DISCORD_INTERNAL_SECRET`: bearer the Raspberry Pi gateway bot presents to
   `/api/internal/discord/heartbeat` and `/api/internal/discord/members/[snowflake]`. Unset,

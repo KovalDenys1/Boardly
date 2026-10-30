@@ -34,6 +34,7 @@ import {
   PRIVACY_SETTINGS_SECTION_ID,
 } from '@/lib/public-profile'
 import { prefersReducedMotion } from '@/lib/motion'
+import { MOTION_MS } from '@/lib/motion-durations'
 import {
   getStoredAppearancePreferences,
   normalizeAppearanceLocale,
@@ -196,8 +197,8 @@ function getEmailChangeRefusalKey(data: unknown): TranslationKeys | null {
 type InlineEditorStatus = 'idle' | 'checking' | 'available' | 'taken' | 'invalid' | 'error'
 type PublicProfilePreviewTransitionPhase = 'idle' | 'hero-exit' | 'preview-enter' | 'preview-exit' | 'hero-enter'
 
-const PROFILE_PREVIEW_EXIT_MS = 220
-const PROFILE_PREVIEW_ENTER_MS = 420
+const PROFILE_PREVIEW_EXIT_MS = MOTION_MS.fast
+const PROFILE_PREVIEW_ENTER_MS = MOTION_MS.slow
 const PROFILE_TAB_INDICATOR_X_INSET_PX = 2
 
 function getProfilePreviewTransitionTimings() {
@@ -387,7 +388,7 @@ export default function ProfilePage() {
         id: 'premium',
         label: t('profile.premiumAccount'),
         value: hasUploadPack ? (premiumCancelAtPeriodEnd ? 'Cancels soon' : 'Active') : 'Free',
-        accent: hasUploadPack ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' : 'bg-bd-lav text-bd-lav-text',
+        accent: hasUploadPack ? 'bg-bd-sun/25 text-bd-sun-text' : 'bg-bd-lav text-bd-lav-text',
         onClick: () => {
           setActiveTab('premium')
           setTimeout(() => tabListRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 0)
@@ -1635,9 +1636,9 @@ export default function ProfilePage() {
 
   const inlineEditorMessageClassName =
     editingStatus === 'available'
-      ? 'text-emerald-600 dark:text-emerald-400'
+      ? 'text-bd-success-text'
       : editingStatus === 'taken' || editingStatus === 'invalid' || editingStatus === 'error'
-        ? 'text-red-600 dark:text-red-400'
+        ? 'text-bd-danger-text'
         : 'text-bd-ink-soft'
 
   const inlineEditorHasChanges = editingField
@@ -1688,7 +1689,7 @@ export default function ProfilePage() {
           <button
             type="button"
             onDoubleClick={() => beginInlineEdit(field)}
-            className={`block w-full rounded-lg bg-transparent p-0 text-left transition duration-200 ease-out focus:outline-hidden ${
+            className={`block w-full rounded-lg bg-transparent p-0 text-left transition duration-bd-fast ease-out focus:outline-hidden ${
               isEditing
                 ? 'pointer-events-none absolute inset-0 -translate-y-1 opacity-0'
                 : 'relative translate-y-0 opacity-100'
@@ -1699,7 +1700,7 @@ export default function ProfilePage() {
           </button>
 
           <div
-            className={`flex items-center gap-2 transition duration-200 ease-out ${
+            className={`flex items-center gap-2 transition duration-bd-fast ease-out ${
               isEditing
                 ? 'relative translate-y-0 opacity-100'
                 : 'pointer-events-none absolute inset-0 translate-y-1 opacity-0'
@@ -1727,11 +1728,11 @@ export default function ProfilePage() {
               }}
               aria-label={field === 'email' ? 'inline-email-input' : 'inline-username-input'}
               tabIndex={isEditing ? 0 : -1}
-              className={`min-w-0 flex-1 border-0 border-b-2 bg-transparent px-0 pb-1 shadow-none outline-hidden transition duration-200 focus:ring-0 ${
+              className={`min-w-0 flex-1 border-0 border-b-2 bg-transparent px-0 pb-1 shadow-none outline-hidden transition duration-bd-fast focus:ring-0 ${
                 editingStatus === 'available'
-                  ? 'border-emerald-400'
+                  ? 'border-bd-success'
                   : editingStatus === 'taken' || editingStatus === 'invalid' || editingStatus === 'error'
-                    ? 'border-red-400'
+                    ? 'border-bd-danger'
                     : 'border-bd-lav-deep'
               } ${inputClassName}`}
               autoFocus
@@ -1743,7 +1744,7 @@ export default function ProfilePage() {
                 onClick={() => void handleInlineEditSubmit()}
                 disabled={!inlineEditorCanSubmit}
                 tabIndex={isEditing ? 0 : -1}
-                className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-emerald-500/10 text-sm font-semibold text-emerald-700 transition-colors hover:bg-emerald-500/20 disabled:cursor-not-allowed disabled:opacity-40 dark:text-emerald-300 dark:hover:bg-emerald-500/15"
+                className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-bd-success-bg text-sm font-semibold text-bd-success-text transition-colors hover:bg-bd-success-border disabled:cursor-not-allowed disabled:opacity-40"
                 aria-label={t('profile.inline.confirm')}
               >
                 <Icon name="check" size={16} />
@@ -1782,7 +1783,7 @@ export default function ProfilePage() {
         )}
 
         <div
-          className={`overflow-hidden transition-[max-height,margin,opacity] duration-200 ease-out ${
+          className={`overflow-hidden transition-[max-height,margin,opacity] duration-bd-fast ease-out ${
             isEditing ? 'mt-1 max-h-10 opacity-100' : 'max-h-0 opacity-0'
           }`}
         >
@@ -1819,7 +1820,7 @@ export default function ProfilePage() {
   const actionSecondaryButtonClassName =
     'inline-flex items-center justify-center gap-2 rounded-2xl border-[1.5px] border-bd-line bg-bd-card-warm px-5 py-3 text-sm font-semibold text-bd-ink shadow-[0_3px_0_var(--bd-line)] transition hover:-translate-y-0.5 hover:bg-bd-bg2'
   const actionDangerButtonClassName =
-    'inline-flex items-center justify-center gap-2 rounded-2xl border border-bd-danger-border bg-bd-card-warm px-4 py-2.5 text-sm font-semibold text-bd-coral-text transition-colors hover:bg-bd-danger-bg dark:border-red-500/30 dark:text-red-300 dark:hover:bg-red-500/10'
+    'inline-flex items-center justify-center gap-2 rounded-2xl border border-bd-danger-border bg-bd-card-warm px-4 py-2.5 text-sm font-semibold text-bd-danger-text transition-colors hover:bg-bd-danger-bg'
   const profileSurfaceClassName =
     'rounded-3xl border border-bd-line bg-bd-bg p-5'
   const fieldInputClassName =
@@ -1952,7 +1953,7 @@ export default function ProfilePage() {
                         </div>
 
                         {pendingEmail && (
-                          <div className="mt-3 flex flex-col gap-3 rounded-2xl border border-amber-200/70 bg-linear-to-r/srgb from-amber-50 to-orange-50 px-4 py-3 text-sm text-amber-800 dark:border-amber-500/30 dark:from-amber-500/10 dark:to-orange-500/5 dark:text-amber-200 sm:flex-row sm:items-center sm:justify-between">
+                          <div className="mt-3 flex flex-col gap-3 rounded-2xl border border-bd-warning-border bg-bd-warning-bg px-4 py-3 text-sm text-bd-warning-text sm:flex-row sm:items-center sm:justify-between">
                             <span className="min-w-0 break-all">
                               {t('profile.inline.pendingEmailNotice', { email: pendingEmail })}
                             </span>
@@ -1960,7 +1961,7 @@ export default function ProfilePage() {
                               type="button"
                               onClick={handleResendVerification}
                               disabled={showResendVerification}
-                              className="inline-flex shrink-0 items-center justify-center rounded-xl bg-amber-500 px-3 py-2 text-xs font-semibold text-bd-ink-on-accent shadow-xs transition hover:bg-amber-600 hover:shadow-sm disabled:cursor-not-allowed disabled:opacity-60"
+                              className="inline-flex shrink-0 items-center justify-center rounded-xl bg-bd-sun px-3 py-2 text-xs font-semibold text-bd-ink-on-accent shadow-xs transition hover:bg-bd-sun-deep hover:shadow-sm disabled:cursor-not-allowed disabled:opacity-60"
                             >
                               {showResendVerification
                                 ? t('common.loading')
@@ -2077,7 +2078,7 @@ export default function ProfilePage() {
             >
               <div
                 aria-hidden="true"
-                className={`pointer-events-none absolute left-0 bottom-1.5 top-1.5 rounded-xl bg-bd-lav shadow-[0_3px_0_var(--bd-lav-deep)] ${animateTabIndicator ? 'transition-[transform,width,opacity] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]' : ''}`}
+                className={`pointer-events-none absolute left-0 bottom-1.5 top-1.5 rounded-xl bg-bd-lav shadow-[0_3px_0_var(--bd-lav-deep)] ${animateTabIndicator ? 'transition-[transform,width,opacity] duration-bd ease-out' : ''}`}
                 style={{
                   width: activeTabIndicatorStyle.width
                     ? `${activeTabIndicatorStyle.width}px`
@@ -2096,7 +2097,7 @@ export default function ProfilePage() {
                   aria-controls={`profile-tab-panel-${tab.id}`}
                   id={`profile-tab-${tab.id}`}
                   onClick={() => handleTabChange(tab.id)}
-                  className={`relative z-10 flex flex-1 items-center justify-center gap-1.5 rounded-xl px-3 py-2.5 text-sm font-semibold transition-colors duration-300 sm:px-4 ${
+                  className={`relative z-10 flex flex-1 items-center justify-center gap-1.5 rounded-xl px-3 py-2.5 text-sm font-semibold transition-colors duration-bd sm:px-4 ${
                     activeTab === tab.id
                       ? `text-bd-ink-on-accent ${activeTabIndicatorStyle.opacity ? '' : 'bg-bd-lav'}`
                       : 'text-bd-ink-soft hover:bg-bd-bg2 hover:text-bd-ink'
@@ -2123,24 +2124,24 @@ export default function ProfilePage() {
 
               {/* Email Verification Banner */}
               {currentEmail && !effectiveEmailVerified && !linkedAccounts.google && !linkedAccounts.github && !linkedAccounts.discord && (
-                <div className="mb-6 overflow-hidden rounded-2xl border border-amber-200/60 bg-linear-to-r/srgb from-amber-50 to-orange-50 dark:border-amber-500/20 dark:from-amber-500/10 dark:to-orange-500/5">
-                  <div className="border-l-4 border-amber-400 p-4 sm:p-5">
+                <div className="mb-6 overflow-hidden rounded-2xl border border-bd-warning-border bg-bd-warning-bg">
+                  <div className="border-l-4 border-bd-warning p-4 sm:p-5">
                     <div className="flex items-start gap-3">
-                      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-amber-100 text-bd-sun-text dark:bg-amber-500/20">
+                      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-bd-card text-bd-warning">
                         <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" /></svg>
                       </div>
                       <div className="flex-1 min-w-0">
-                        <h3 className="font-semibold text-amber-900 dark:text-amber-200 text-sm sm:text-base">
+                        <h3 className="font-semibold text-bd-warning-text text-sm sm:text-base">
                           {t('profile.verificationBanner.title')}
                         </h3>
-                        <p className="mt-1 text-xs sm:text-sm text-amber-700 dark:text-amber-300/80">
+                        <p className="mt-1 text-xs sm:text-sm text-bd-ink-soft">
                           {t('profile.verificationBanner.description')}
                         </p>
                         <button
                           type="button"
                           onClick={handleResendVerification}
                           disabled={showResendVerification}
-                          className="mt-3 inline-flex items-center gap-1.5 rounded-xl bg-amber-500 px-4 py-2 text-xs font-semibold text-bd-ink-on-accent shadow-xs transition hover:bg-amber-600 hover:shadow-sm disabled:opacity-50 sm:text-sm"
+                          className="mt-3 inline-flex items-center gap-1.5 rounded-xl bg-bd-sun px-4 py-2 text-xs font-semibold text-bd-ink-on-accent shadow-xs transition hover:bg-bd-sun-deep hover:shadow-sm disabled:opacity-50 sm:text-sm"
                         >
                           {showResendVerification ? t('profile.sending') : t('profile.verificationBanner.resend')}
                         </button>
@@ -2185,7 +2186,7 @@ export default function ProfilePage() {
                       <label htmlFor="profile-email-input" className="mb-2 block text-sm font-semibold text-bd-ink">
                         {t('profile.email')}
                         {effectiveEmailVerified && (
-                          <span className="ml-2 inline-flex items-center gap-1 rounded-full bg-bd-mint/20 px-2.5 py-1 text-xs font-bold text-bd-mint-text dark:bg-bd-mint/15 dark:text-bd-mint">
+                          <span className="ml-2 inline-flex items-center gap-1 rounded-full bg-bd-success-bg px-2.5 py-1 text-xs font-bold text-bd-success-text">
                             <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" strokeWidth="2.5" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>
                             {t('profile.verified')}
                           </span>
@@ -2198,9 +2199,9 @@ export default function ProfilePage() {
                         id="profile-email-input"
                         className={`${fieldInputClassName} ${
                           emailStatus === 'available'
-                            ? 'border-emerald-400 dark:border-emerald-500'
+                            ? 'border-bd-success'
                             : emailStatus === 'taken' || emailStatus === 'invalid' || emailStatus === 'error'
-                              ? 'border-red-400 dark:border-red-500'
+                              ? 'border-bd-danger'
                               : 'border-bd-input-border focus:border-bd-lav-deep'
                         }`}
                         autoComplete="email"
@@ -2209,9 +2210,9 @@ export default function ProfilePage() {
                         <p
                           className={`font-medium ${
                             emailStatus === 'available'
-                              ? 'text-emerald-600 dark:text-emerald-400'
+                              ? 'text-bd-success-text'
                               : emailStatus === 'taken' || emailStatus === 'invalid' || emailStatus === 'error'
-                                ? 'text-red-600 dark:text-red-400'
+                                ? 'text-bd-danger-text'
                                 : 'text-bd-ink-soft'
                           }`}
                         >
@@ -2338,7 +2339,7 @@ export default function ProfilePage() {
                             key={provider.id}
                             className={`rounded-2xl border p-4 ${
                               isConnected
-                                ? 'border-bd-mint/40 bg-bd-mint/10 dark:border-bd-mint/30 dark:bg-bd-mint/10'
+                                ? 'border-bd-success-border bg-bd-success-bg'
                                 : 'border-bd-line bg-bd-card-warm'
                             }`}
                           >
@@ -2349,7 +2350,7 @@ export default function ProfilePage() {
                               <div>
                                 <p className="text-sm font-semibold text-bd-ink">{provider.name}</p>
                                 {isConnected ? (
-                                  <p className="text-xs font-medium text-bd-mint-text dark:text-bd-mint">
+                                  <p className="text-xs font-medium text-bd-success-text">
                                     {t('profile.linkedAccounts.connected')}
                                   </p>
                                 ) : (
@@ -2394,11 +2395,11 @@ export default function ProfilePage() {
                   </button>
                 </div>
 
-                <div className="rounded-3xl border border-bd-danger-border bg-bd-danger-bg p-5 dark:border-red-500/20 dark:bg-red-500/10">
-                  <h3 className="text-base font-bold text-bd-coral-text dark:text-red-300">
+                <div className="rounded-3xl border border-bd-danger-border bg-bd-danger-bg p-5">
+                  <h3 className="text-base font-bold text-bd-danger-text">
                     {t('profile.dangerZone.title')}
                   </h3>
-                  <p className="mt-1 text-sm text-bd-danger-text dark:text-red-200/70">
+                  <p className="mt-1 text-sm text-bd-danger-text">
                     {t('profile.dangerZone.description')}
                   </p>
                   {!showDeleteConfirm ? (
@@ -2414,12 +2415,12 @@ export default function ProfilePage() {
                       role="dialog"
                       aria-modal="false"
                       aria-labelledby="delete-confirm-title"
-                      className="mt-4 rounded-2xl border border-bd-danger-border bg-bd-card-warm p-4 dark:border-red-500/20"
+                      className="mt-4 rounded-2xl border border-bd-danger-border bg-bd-card-warm p-4"
                     >
-                      <p id="delete-confirm-title" className="text-sm font-semibold text-bd-coral-text dark:text-red-300">
+                      <p id="delete-confirm-title" className="text-sm font-semibold text-bd-danger-text">
                         {t('profile.dangerZone.confirmTitle')}
                       </p>
-                      <p className="mt-2 break-all text-sm text-bd-danger-text dark:text-red-200/70">
+                      <p className="mt-2 break-all text-sm text-bd-danger-text">
                         {t('profile.dangerZone.confirmDescription', {
                           email: session?.user?.email || currentEmail,
                         })}
@@ -2889,19 +2890,19 @@ export default function ProfilePage() {
 
               {/* Premium status card */}
               {hasUploadPack && (
-                <div className={`${premiumCancelAtPeriodEnd ? 'border-amber-300/60 bg-amber-50 dark:border-amber-700/40 dark:bg-amber-950/20' : 'border-amber-300/60 bg-amber-50 dark:border-amber-700/40 dark:bg-amber-950/20'} rounded-3xl border p-5`}>
+                <div className={`rounded-3xl border border-bd-sun/40 bg-bd-sun/10 p-5`}>
                   <div className="flex flex-wrap items-start justify-between gap-4">
                     <div className="flex items-center gap-3">
-                      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-amber-100 text-xl dark:bg-amber-900/40">
+                      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-bd-sun/25 text-xl">
                         <Icon name={premiumCancelAtPeriodEnd ? 'hourglass' : 'star'} size={22} />
                       </span>
                       <div>
-                        <p className="font-bold text-amber-800 dark:text-amber-300">
+                        <p className="font-bold text-bd-sun-text">
                           {premiumCancelAtPeriodEnd
                             ? t('profile.premiumTab.cancelsOn', { date: formatPremiumDate(premiumUntilDate) })
                             : t('profile.premiumTab.active')}
                         </p>
-                        <p className="mt-0.5 text-sm text-amber-700/70 dark:text-amber-400/70">
+                        <p className="mt-0.5 text-sm text-bd-ink-soft">
                           {premiumCancelAtPeriodEnd
                             ? t('profile.premiumTab.loseAccess')
                             : premiumRenewal
@@ -2917,7 +2918,7 @@ export default function ProfilePage() {
                         </p>
                         <PlayAppOnly>
                           {premiumCancelAtPeriodEnd && (
-                            <p className="mt-1 text-sm text-amber-700 dark:text-amber-400">{t('premium.playAppNotice')}</p>
+                            <p className="mt-1 text-sm text-bd-sun-text">{t('premium.playAppNotice')}</p>
                           )}
                         </PlayAppOnly>
                       </div>
@@ -2929,7 +2930,7 @@ export default function ProfilePage() {
                             type="button"
                             onClick={() => void handleCancelSubscription()}
                             disabled={premiumActionLoading}
-                            className="rounded-xl border border-amber-200 px-3 py-1.5 text-xs font-medium text-amber-800 transition hover:border-red-300 hover:text-red-600 disabled:opacity-50 dark:border-amber-700/40 dark:text-amber-400 dark:hover:border-red-500 dark:hover:text-red-400"
+                            className="rounded-xl border border-bd-sun/40 px-3 py-1.5 text-xs font-medium text-bd-sun-text transition hover:border-bd-danger-border hover:text-bd-danger-text disabled:opacity-50"
                           >
                             {premiumActionLoading ? '...' : t('common.cancel')}
                           </button>
@@ -2940,7 +2941,7 @@ export default function ProfilePage() {
                               type="button"
                               onClick={() => void handleReactivate()}
                               disabled={premiumActionLoading}
-                              className="flex items-center gap-1.5 rounded-xl bg-amber-500 px-4 py-1.5 text-xs font-bold text-bd-ink-on-accent shadow-xs transition hover:bg-amber-600 active:scale-95 disabled:opacity-50"
+                              className="flex items-center gap-1.5 rounded-xl bg-bd-premium px-4 py-1.5 text-xs font-bold text-bd-ink-on-accent shadow-xs transition hover:bg-bd-sun active:scale-95 disabled:opacity-50"
                             >
                               <Icon name="star" size={16} />
                               <span>{premiumActionLoading ? '...' : t('profile.premiumTab.reactivate')}</span>
@@ -2950,7 +2951,7 @@ export default function ProfilePage() {
                             <button
                               type="button"
                               onClick={() => void handleManageBilling()}
-                              className="rounded-xl border border-amber-200 px-3 py-1.5 text-xs font-medium text-amber-800 transition hover:bg-amber-100 dark:border-amber-700/40 dark:text-amber-400 dark:hover:bg-amber-900/30"
+                              className="rounded-xl border border-bd-sun/40 px-3 py-1.5 text-xs font-medium text-bd-sun-text transition hover:bg-bd-sun/20"
                             >
                               {t('profile.premiumTab.manageBilling')}
                             </button>
@@ -2959,7 +2960,7 @@ export default function ProfilePage() {
                             <button
                               type="button"
                               onClick={() => void handleManageBilling()}
-                              className="rounded-xl border border-amber-200 px-3 py-1.5 text-xs font-medium text-amber-800 transition hover:bg-amber-100 dark:border-amber-700/40 dark:text-amber-400 dark:hover:bg-amber-900/30"
+                              className="rounded-xl border border-bd-sun/40 px-3 py-1.5 text-xs font-medium text-bd-sun-text transition hover:bg-bd-sun/20"
                             >
                               {t('premium.ctaManage')}
                             </button>
@@ -2985,7 +2986,7 @@ export default function ProfilePage() {
                         <p className="text-sm font-semibold text-bd-ink">{t(labelKey)}</p>
                         <p className="text-xs text-bd-ink-soft">{t(descKey)}</p>
                       </div>
-                      <span className="ml-auto shrink-0 text-bd-mint-text dark:text-bd-mint"><Icon name="check" size={15} /></span>
+                      <span className="ml-auto shrink-0 text-bd-success"><Icon name="check" size={15} /></span>
                     </div>
                   ))}
                 </div>
@@ -2998,7 +2999,7 @@ export default function ProfilePage() {
                       key={labelKey}
                       className={`flex items-start gap-2.5 rounded-xl border px-3 py-2.5 transition ${
                         hasUploadPack
-                          ? 'border-amber-200/70 bg-amber-50/60 dark:border-amber-700/30 dark:bg-amber-950/20'
+                          ? 'border-bd-sun/40 bg-bd-sun/10'
                           : 'border-bd-line bg-bd-card-warm opacity-60'
                       }`}
                     >
@@ -3023,7 +3024,7 @@ export default function ProfilePage() {
                           type="button"
                           onClick={() => void handleCheckout()}
                           disabled={premiumActionLoading}
-                          className="inline-flex items-center gap-2 rounded-xl bg-amber-500 px-5 py-2.5 text-sm font-bold text-bd-ink-on-accent shadow-[0_3px_0_#d97706] transition hover:-translate-y-px hover:bg-amber-600 hover:shadow-[0_4px_0_#d97706] active:scale-95 disabled:cursor-not-allowed disabled:opacity-60"
+                          className="inline-flex items-center gap-2 rounded-xl bg-bd-premium px-5 py-2.5 text-sm font-bold text-bd-ink-on-accent shadow-[0_3px_0_var(--bd-sun-deep)] transition hover:-translate-y-px hover:bg-bd-sun hover:shadow-[0_4px_0_var(--bd-sun-deep)] active:scale-95 disabled:cursor-not-allowed disabled:opacity-60"
                         >
                           {premiumActionLoading ? (
                             <>
@@ -3092,7 +3093,7 @@ export default function ProfilePage() {
                 <div className="mb-6">
                   <div className="mb-2 flex items-center gap-2">
                     <label className="text-sm font-semibold text-bd-ink">{t('profile.customization.accentTitle')}</label>
-                    {!hasUploadPack && <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-700 dark:bg-amber-900/30 dark:text-amber-400"><Icon name="crown" size={11} /> {t('premium.breadcrumb')}</span>}
+                    {!hasUploadPack && <span className="rounded-full bg-bd-sun/25 px-2 py-0.5 text-[10px] font-bold text-bd-sun-text"><Icon name="crown" size={11} /> {t('premium.breadcrumb')}</span>}
                   </div>
                   <p className="mb-2.5 text-xs text-bd-ink-soft">{t('profile.customization.accentHint')}</p>
                   <div className="flex flex-wrap gap-2">
@@ -3122,7 +3123,7 @@ export default function ProfilePage() {
                           outlineOffset: profileAccentColor === hex ? -3 : -2, cursor: 'pointer',
                           boxShadow: profileAccentColor === hex ? 'inset 0 0 0 5px var(--bd-bg)' : undefined,
                           opacity: hasUploadPack ? 1 : 0.4,
-                          transition: 'all 0.15s',
+                          transition: 'all var(--bd-dur-fast) var(--bd-ease-out)',
                         }}
                       />
                     ))}
@@ -3143,7 +3144,7 @@ export default function ProfilePage() {
                 <div className="mb-6">
                   <div className="mb-2 flex items-center gap-2">
                     <label className="text-sm font-semibold text-bd-ink">{t('profile.customization.featuredTitle')}</label>
-                    {!hasUploadPack && <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-700 dark:bg-amber-900/30 dark:text-amber-400"><Icon name="crown" size={11} /> {t('premium.breadcrumb')}</span>}
+                    {!hasUploadPack && <span className="rounded-full bg-bd-sun/25 px-2 py-0.5 text-[10px] font-bold text-bd-sun-text"><Icon name="crown" size={11} /> {t('premium.breadcrumb')}</span>}
                   </div>
                   <p className="mb-2.5 text-xs text-bd-ink-soft">{t('profile.customization.featuredHint')}</p>
                   <div className="flex flex-wrap gap-2">
@@ -3178,7 +3179,7 @@ export default function ProfilePage() {
                 <div>
                   <div className="mb-2 flex items-center gap-2">
                     <label className="text-sm font-semibold text-bd-ink">{t('profile.customization.cardStyleTitle')}</label>
-                    {!hasUploadPack && <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-700 dark:bg-amber-900/30 dark:text-amber-400"><Icon name="crown" size={11} /> {t('premium.breadcrumb')}</span>}
+                    {!hasUploadPack && <span className="rounded-full bg-bd-sun/25 px-2 py-0.5 text-[10px] font-bold text-bd-sun-text"><Icon name="crown" size={11} /> {t('premium.breadcrumb')}</span>}
                   </div>
                   <p className="mb-2.5 text-xs text-bd-ink-soft">{t('profile.customization.cardStyleHint')}</p>
                   <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">

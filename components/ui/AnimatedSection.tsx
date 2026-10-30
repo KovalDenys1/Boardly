@@ -41,7 +41,7 @@ export default function AnimatedSection({
     <div
       ref={ref}
       className={
-        `${className} transition-opacity duration-1000 ${visible ? `${animationClass} opacity-100` : 'opacity-0 translate-y-8'}`
+        `${className} transition-opacity duration-bd-slow ${visible ? `${animationClass} opacity-100` : 'opacity-0 translate-y-8'}`
       }
     >
       {children}

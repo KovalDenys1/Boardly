@@ -44,6 +44,7 @@ import { useSpectatorResultCue } from '@/hooks/useSpectatorResultCue'
 import { useConnectFourDropSound } from './hooks/useConnectFourDropSound'
 import GameScoreboardHeader, { type GameHeaderRoom } from '@/components/game-chrome/GameScoreboardHeader'
 import GameStatusBanner from '@/components/game-chrome/GameStatusBanner'
+import GamePageHeading from '@/components/game-chrome/GamePageHeading'
 import { viewerOutcome } from '@/lib/game-outcome'
 import GameTabs from '@/components/game-chrome/GameTabs'
 import { useGameTimer } from './hooks/useGameTimer'
@@ -825,19 +826,15 @@ export default function ConnectFourLobbyPage({ code, isSpectator = false, onGame
             isDraw={isDraw}
             outcome={viewerOutcome({ isFinished, isDraw, isSpectator, isSeated: myDisc !== null, isViewerWinner: winnerDisc && !isDraw ? isMyWin : null })}
             finishedMessage={finishedTitle}
-            activeTitle={
-                isSpectator
-                    ? currentPlayerName
-                    : isMyTurn()
-                        ? t('games.connect_four.game.dropHint')
-                        : t('games.connect_four.game.playerTurn', { player: currentPlayerName })
-            }
+            turn={!isSpectator && isMyTurn()
+                ? { whose: 'you', action: t('games.connect_four.game.turnDrop') }
+                : { whose: 'player', player: currentPlayerName, doing: t('games.connect_four.game.doingDrop') }}
             meta={`#${gameData.moveCount + 1}`}
             secs={timeLeft}
             turnTimerLimit={turnTimerLimit}
             isYourTurn={!isSpectator && isMyTurn()}
             barColor={gameData.currentDisc === 1 ? DISC_RED : DISC_YELLOW}
-            leadingIcon={<div style={{ width: 24, height: 24, borderRadius: '50%', background: gameData.currentDisc === 1 ? DISC_RED : DISC_YELLOW, flexShrink: 0, boxShadow: 'inset 0 0 0 2px var(--bd-ink)', transition: 'background 0.2s' }} />}
+            leadingIcon={<div style={{ width: 24, height: 24, borderRadius: '50%', background: gameData.currentDisc === 1 ? DISC_RED : DISC_YELLOW, flexShrink: 0, boxShadow: 'inset 0 0 0 2px var(--bd-ink)', transition: 'background var(--bd-dur-fast) var(--bd-ease-out)' }} />}
             isSpectator={isSpectator}
         />
     )
@@ -1026,6 +1023,7 @@ export default function ConnectFourLobbyPage({ code, isSpectator = false, onGame
 
     return (
         <div className="game-screen ttt-screen" style={themeStyle}>
+            <GamePageHeading title={t('games.connect_four.name')} />
             {/* ── DESKTOP ─────────────────────────────────────────────────── */}
             <div className="ttt-desktop-layout">
                 <div className="ttt-grid">

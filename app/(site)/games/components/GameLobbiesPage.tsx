@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useSession } from 'next-auth/react'
+import Breadcrumbs from '@/components/Breadcrumbs'
 import GameIcon from '@/components/GameIcon'
 import LoadingSpinner from '@/components/LoadingSpinner'
 import { AuthGateModal } from '@/components/AuthGateModal'
@@ -52,22 +53,10 @@ function GameLobbyIcon({
   gameId = 'yahtzee',
   accentColor = 'var(--bd-coral)',
 }: {
-  usage: 'breadcrumb' | 'card' | 'empty'
+  usage: 'card' | 'empty'
   gameId?: string
   accentColor?: string
 }) {
-  if (usage === 'breadcrumb') {
-    return (
-      <GameIcon
-        gameId={gameId}
-        accentColor={accentColor}
-        size={16}
-        variant="bare"
-        className="inline-block align-middle"
-      />
-    )
-  }
-
   if (usage === 'empty') {
     return (
       <div className="mb-4 flex justify-center">
@@ -206,21 +195,15 @@ export default function GameLobbiesPage({
             <RejoinLobbyBanner lobby={activeLobby} onDismiss={dismissActiveLobby} />
           )}
 
-          {/* Breadcrumb */}
-          <div className="mb-6 flex items-center gap-2 text-xs font-semibold text-bd-ink-muted sm:text-sm">
-            <button onClick={() => router.push('/')} className="hover:text-bd-ink transition-colors">
-              <Icon name="home" size={14} /> <span className="hidden xs:inline">{t('breadcrumbs.home')}</span>
-            </button>
-            <span>›</span>
-            <button onClick={() => router.push('/games')} className="hover:text-bd-ink transition-colors">
-              <Icon name="gamepad" size={14} /> <span className="hidden xs:inline">{t('breadcrumbs.games')}</span>
-            </button>
-            <span>›</span>
-            <span className="inline-flex items-center gap-2 text-bd-ink">
-              <GameLobbyIcon usage="breadcrumb" gameId={gameId} accentColor={accentColor} />
-              <span className="hidden xs:inline">{t(gameNameKey)}</span>
-            </span>
-          </div>
+          <Breadcrumbs
+            className="mb-6"
+            label={t('breadcrumbs.label')}
+            items={[
+              { label: t('breadcrumbs.home'), href: '/' },
+              { label: t('breadcrumbs.games'), href: '/games' },
+              { label: t(gameNameKey) },
+            ]}
+          />
 
           {/* Header */}
           <div className="mb-8 grid gap-6 lg:grid-cols-[1fr_20rem] lg:items-end">

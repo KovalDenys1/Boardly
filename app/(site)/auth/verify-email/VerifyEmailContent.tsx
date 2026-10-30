@@ -125,7 +125,7 @@ export default function VerifyEmailContent() {
 
   const authShell = (children: ReactNode) => (
     <div
-      className="page-shell-full flex items-center justify-center p-4"
+      className="flex min-h-(--game-h) items-center justify-center p-4"
       style={{
         background:
           'radial-gradient(circle at 12% 8%, rgba(255,196,77,0.18), transparent 35%), radial-gradient(circle at 88% 14%, rgba(155,140,255,0.16), transparent 40%), radial-gradient(circle at 50% 100%, rgba(79,201,166,0.14), transparent 50%), var(--bd-bg)',
@@ -192,7 +192,7 @@ export default function VerifyEmailContent() {
         <button
           onClick={resendVerification}
           disabled={loading || sent}
-          className="bd-btn bd-btn-primary w-full justify-center disabled:cursor-not-allowed disabled:opacity-50"
+          className="bd-btn bd-btn-primary w-full justify-center whitespace-normal! leading-tight! text-center disabled:cursor-not-allowed disabled:opacity-50"
         >
           {loading ? (
             <>
@@ -208,7 +208,7 @@ export default function VerifyEmailContent() {
 
         <button
           onClick={() => router.push('/')}
-          className="bd-btn bd-btn-ghost w-full justify-center"
+          className="bd-btn bd-btn-ghost w-full justify-center whitespace-normal! leading-tight! text-center"
         >
           {t('auth.verifyEmail.backToHome')}
         </button>

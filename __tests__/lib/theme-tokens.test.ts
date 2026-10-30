@@ -37,6 +37,8 @@ describe('theme token registry', () => {
       [
         'bd-bg', 'bd-bg2', 'bd-card', 'bd-card-warm', 'bd-line', 'bd-ink', 'bd-ink-muted', 'bd-ink-soft', 'bd-input-bg',
         'bd-coral-text', 'bd-mint-text', 'bd-lav-text', 'bd-sun-text', 'bd-sky-text', 'bd-inverse', 'bd-ink-on-inverse',
+        ...['danger', 'success', 'warning'].flatMap((s) => [`bd-${s}`, `bd-${s}-text`, `bd-${s}-bg`, `bd-${s}-border`]),
+        'bd-ink-on-danger', 'bd-board-line', 'bd-board-cell',
       ].sort()
     )
     // The accents do not flip, which is the whole reason --bd-ink-on-accent exists

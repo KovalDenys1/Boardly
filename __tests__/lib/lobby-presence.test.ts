@@ -8,6 +8,9 @@ jest.mock('@/lib/db', () => ({
     lobbies: {
       findUnique: jest.fn(),
     },
+    players: {
+      updateMany: jest.fn(async () => ({ count: 1 })),
+    },
   },
 }))
 
@@ -144,5 +147,51 @@ describe('sweepStalePlayers', () => {
       'Failed to sweep stale player',
       expect.objectContaining({ userId: 'user-a' })
     )
+  })
+
+  // #1600: a host back from a background tab reads the lobby before the next heartbeat lands.
+  it('keeps the player whose own request is reading the lobby, however old their heartbeat', async () => {
+    const game = {
+      id: 'game-1',
+      players: [
+        player({ userId: 'user-host', lastHeartbeatAt: new Date(Date.now() - 2 * 60_000) }),
+        player({ userId: 'user-gone', lastHeartbeatAt: STALE }),
+      ],
+    }
+    const refetchedLobby = {
+      games: [
+        {
+          id: 'game-1',
+          players: [
+            { userId: 'user-host', leftAt: null },
+            { userId: 'user-gone', leftAt: null },
+          ],
+        },
+      ],
+    }
+    mockPrisma.lobbies.findUnique.mockResolvedValue(refetchedLobby as never)
+    mockPerformPlayerLeave.mockResolvedValue({
+      status: 200,
+      body: { message: 'You left the lobby', gameEnded: false, lobbyDeactivated: false },
+    })
+
+    const result = await sweepStalePlayers(game, 'ABCD', mockLog, { presentUserId: 'user-host' })
+
+    expect(result.removedUserIds).toEqual(['user-gone'])
+    expect(mockPerformPlayerLeave).toHaveBeenCalledTimes(1)
+    expect(mockPerformPlayerLeave).toHaveBeenCalledWith(refetchedLobby, 'ABCD', 'user-gone', mockLog)
+    expect(mockPrisma.players.updateMany).toHaveBeenCalledWith({
+      where: { gameId: 'game-1', userId: 'user-host', leftAt: null },
+      data: { lastHeartbeatAt: expect.any(Date) },
+    })
+  })
+
+  it('writes nothing for a present player whose heartbeat is still fresh', async () => {
+    const game = { id: 'game-1', players: [player({ userId: 'user-host', lastHeartbeatAt: FRESH })] }
+
+    const result = await sweepStalePlayers(game, 'ABCD', mockLog, { presentUserId: 'user-host' })
+
+    expect(result).toEqual({ removedUserIds: [], gameAbandoned: false })
+    expect(mockPrisma.players.updateMany).not.toHaveBeenCalled()
   })
 })

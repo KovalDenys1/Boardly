@@ -3,6 +3,7 @@ const no = {
     loading: 'Laster...',
     error: 'Feil',
     success: 'Suksess',
+    contents: 'Innhold',
     cancel: 'Avbryt',
     confirm: 'Bekreft',
     save: 'Lagre',
@@ -36,7 +37,6 @@ const no = {
     label: 'Brødsmulesti',
     home: 'Hjem',
     games: 'Spill',
-    ariaLabel: 'brødsmulesti',
   },
   lobby: {
     title: 'Spillobby',
@@ -101,6 +101,21 @@ const no = {
     gameInterrupted: {
       returning: 'Returnerer til lobby om {{seconds}}...',
       returnNow: 'Gå til lobby',
+    },
+    reopen: {
+      title: 'Åpne bordet igjen',
+      description: 'Dette bordet ble stengt mens ingen satt ved det. Åpne det igjen, så virker den samme lenken.',
+      lastGame: 'Forrige spill',
+      lastGameWinner: '{{name}} vant',
+      lastGameDraw: 'Det ble uavgjort',
+      lastGameUnfinished: 'Spillet ble ikke fullført',
+      lastGameNotStarted: 'Spillet startet aldri',
+      reopen: 'Åpne',
+      failed: 'Kunne ikke åpne bordet. Prøv igjen.',
+      tooOld: 'Dette bordet er stengt. Start et nytt bord.',
+      sharedTitle: 'Bordet er åpent igjen',
+      sharedText: 'Send lenken til vennene dine. Lenken de allerede har, virker også.',
+      share: 'Del lenken',
     },
     leave: 'Forlat',
     invite: {
@@ -437,8 +452,6 @@ const no = {
     chooseWhatToPlay: 'Hva skal vi spille?',
     seeAllGames: 'Se alle spill →',
     heroTagline: 'Vennene dine er én lenke unna.',
-    ribbonBadgeLater: 'Kommer snart',
-    ribbonBadgePlanned: 'På planen',
     ribbonDescription: '{{available}} spill er klare nå. {{more}} til er under utvikling.',
     ribbonMoreTitle: 'Flere på vei',
     ribbonMoreDesc: '{{count}} spill til er under utvikling. Hele katalogen viser hva som kommer.',
@@ -499,9 +512,9 @@ const no = {
     available: 'Tilgjengelig',
     comingSoon: 'Kommer snart',
     playNow: 'Spill nå',
+    playWithFriends: 'Spill med venner',
     viewLobbies: 'Se lobbyer',
     catalog: 'Katalog',
-    seeGame: 'Se spillet →',
     noGamesFound: 'Ingen spill passer til disse filtrene.',
     filters: {
       reset: 'Nullstill filtre',
@@ -570,8 +583,6 @@ const no = {
         answer: 'Ja. Opprett en lobby, del den firesifrede koden, og inntil fire spillere spiller i sanntid – gratis, i nettleseren, med et gjestenavn i stedet for en konto. Kort modus har ni poengkategorier, klassisk har alle femten, og en bot kan ta en ledig plass.',
       },
       ribbon: {
-        desc: 'Rull fem terninger, fyll ut poenglisten og jakt de beste kombinasjonene. Spill med venner eller start en rask solo-kamp.',
-        tag: 'Terninger',
         time: '15 min',
       },
       detail: {
@@ -836,8 +847,6 @@ const no = {
         answer: 'Alle i rommet får det samme hemmelige stedet og en rolle der, bortsett fra én spiller som bare vet at vedkommende er spionen. Dere stiller hverandre spørsmål etter tur til gruppen tar en avstemning – eller spionen gjetter stedet og tar 500 poeng. Tre til ti spillere, gratis, i nettleseren.',
       },
       ribbon: {
-        desc: 'Alle får samme sted bortsett fra spionen. Still spørsmål, lytt nøye og stem.',
-        tag: 'Deduksjon',
         time: '10 min',
       },
       detail: {
@@ -1059,8 +1068,6 @@ const no = {
         answer: 'Ja. Del en lobbykode og bytt på å sette merker i 3×3-rutenettet i sanntid, eller legg til en bot på lett, middels eller vanskelig når ingen er tilgjengelig. En lobby fortsetter med nye runder og løpende poengstilling med mindre du setter den til best av 3, 5 eller 10. Gratis, i nettleseren.',
       },
       ribbon: {
-        desc: 'En rask klassiker for to. Spill med en venn eller start en rask kamp når du bare har et minutt.',
-        tag: 'Strategi',
         time: '5 min',
       },
       detail: {
@@ -1274,7 +1281,6 @@ const no = {
         theirTurn: 'Deres tur',
         yourTurnBadge: 'Din tur',
         catsGameFull: 'Uavgjort — brettet er fullt.',
-        playerTurn: '{{player}}s tur',
         moveNum: '· trekk {{num}}',
         roundOver: 'Runden er over',
         seriesComplete: 'Serien er over!',
@@ -1294,6 +1300,8 @@ const no = {
         spectator: 'Tilskuer',
         viewBoard: 'Se brettet',
         showResults: 'Vis resultater',
+        turnPlace: 'sett et merke',
+        doingPlace: 'setter et merke',
       }
     },
     memory: {
@@ -1307,8 +1315,6 @@ const no = {
         answer: 'Ja. To til fire spillere deler ett brett i nettleseren: snu to kort når det er din tur, behold paret og fortsett når de matcher, og den som har flest par til slutt vinner. Lett er 4×4 med 8 par, middels 5×4 med 10, vanskelig 6×6 med 18.',
       },
       ribbon: {
-        desc: 'Vend kort, husk posisjoner og match par på lett, middels eller vanskelig brett.',
-        tag: 'Kort',
         time: '10 min',
       },
       detail: {
@@ -1526,9 +1532,11 @@ const no = {
         tabMoves: 'Trekk',
         tabChat: 'Chat',
         noMovesYet: 'Ingen trekk ennå',
-        playerTurnBanner: '{{player}}s tur',
         victoryBadge: 'Vinner',
         drawBadge: 'Uavgjort',
+        turnFlipTwo: 'snu to kort',
+        turnFlipOne: 'snu ett kort til',
+        doingFlip: 'snur kort',
       }
     },
     rps: {
@@ -1572,8 +1580,6 @@ const no = {
         answer: 'Ja. Brettet er sju kolonner ganger seks rader, spilt direkte i nettleseren: send en venn lobbykoden, eller velg lett, middels eller vanskelig og slipp brikker mot en bot. Gratis, ingenting å installere, og et gjestenavn er all kontoen du trenger.',
       },
       ribbon: {
-        desc: 'En klassisk strategispill for to spillere. Slipp brikker, bygg rekker og utmanøvrer motstanderen.',
-        tag: 'Strategi',
         time: '10 min',
       },
       detail: {
@@ -1781,7 +1787,6 @@ const no = {
         drawBadge: 'UAVGJORT',
         theirTurn: 'Deres tur',
         yourTurn: 'Din tur',
-        playerTurn: '{{player}}s tur',
         playerWins: '{{player}} vinner!',
         itsADraw: 'Uavgjort — brettet er fullt',
         leave: 'Forlat',
@@ -1797,9 +1802,10 @@ const no = {
         tapToInspect: 'Se brettet',
         showResults: 'Vis resultat',
         spectator: 'Tilskuer',
-        dropHint: 'Velg en kolonne for å slippe brikken',
         winsOnTime: '{{player}} vinner på tid',
         outOfTime: 'Tiden er ute',
+        turnDrop: 'slipp en brikke',
+        doingDrop: 'slipper en brikke',
       },
     },
     checkers: {
@@ -1813,8 +1819,6 @@ const no = {
         answer: 'Ja. Det er standard engelsk dam på et 8×8-brett i nettleseren: send en venn lobbykoden eller spill mot en bot på lett, middels eller vanskelig. Et gjestenavn er all kontoen du trenger.',
       },
       ribbon: {
-        desc: 'Den klassiske diagonale duellen. Tvungne slag, hoppkjeder og konger.',
-        tag: 'Strategi',
         time: '15 minutter',
       },
       detail: {
@@ -2018,6 +2022,10 @@ const no = {
         showResults: 'Vis resultat',
         lastMove: 'Siste trekk',
         square: 'rute {{square}}',
+        turnMove: 'flytt en brikke',
+        turnCapture: 'slå en brikke',
+        turnKeepJumping: 'fortsett å slå',
+        doingMove: 'flytter en brikke',
       },
     },
     rock_paper_scissors: {
@@ -2035,8 +2043,6 @@ const no = {
         answer: 'Ja. Begge velger samtidig, og de to hendene snus samtidig, så ingen ser den andres trekk først. Spill mot en venn med en delt lobbykode eller mot en bot på lett, middels eller vanskelig; den som først vinner to runder, tar kampen. Gratis, i nettleseren.',
       },
       ribbon: {
-        desc: 'Velg stein, saks eller papir og avslør samtidig. Raske runder, første til målet vinner.',
-        tag: 'Uformell',
         time: '2 min',
       },
       rule_1: 'Begge spillerne velger stein, papir eller saks samtidig',
@@ -2206,9 +2212,6 @@ const no = {
       beats: 'slår {{target}}',
       roundNum: 'Runde {{num}}',
       lockedIn: 'Valgt',
-      playerLockedIn: '{{player}} har valgt',
-      waitingForPick: 'Venter på at {{player}} velger',
-      bothChoosing: 'Begge spillerne velger',
       pickPrompt: 'Velg trekket ditt',
       youWin: 'Du vant kampen!',
       playerWins: '{{player}} vant kampen!',
@@ -2220,6 +2223,9 @@ const no = {
       seriesTarget: 'Først til {{count}} · best av {{rounds}}',
       winsCount: '{{count}} seire',
       choosing: 'Velger…',
+      turnPick: 'velg et trekk',
+      doingPick: 'velger et trekk',
+      bothChoosing: 'Begge spillerne velger',
     },
     ludo: {
       name: 'Ludo-spill',
@@ -2232,8 +2238,6 @@ const no = {
         answer: 'Ja. Opprett en lobby og send koden til opptil tre venner, eller fyll tomme plasser med roboter på lett, middels eller vanskelig. Serveren vår kaster terningen, og det er gratis uten noe å installere.',
       },
       ribbon: {
-        desc: 'Det klassiske familiespillet. Slå en sekser for å komme ut, send motstanderne tilbake til gården og få alle brikkene hjem.',
-        tag: 'Brettspill',
         time: '15 minutter',
       },
       modes: {
@@ -2438,9 +2442,6 @@ const no = {
         tokenLabel: '{{color}} brikke {{number}}',
         tokensHome: '{{home}}/{{total}} hjemme',
         homeLabel: 'brikker hjemme',
-        pickToken: 'Du slo {{value}}: velg en brikke',
-        yourRoll: 'Din tur: kast terningen',
-        playerTurn: '{{player}} sin tur',
         playerWins: '{{player}} vinner!',
         youWon: 'Alle brikkene dine er hjemme',
         events: {
@@ -2467,6 +2468,10 @@ const no = {
         rolling: 'Kaster…',
         boardLabel: 'Ludo-brett',
         roll: 'Kast',
+        turnRoll: 'kast terningen',
+        turnMoveToken: 'flytt en brikke {{value}} felt',
+        doingRoll: 'kaster terningen',
+        doingMoveToken: 'flytter en brikke',
       },
     },
     alias: {
@@ -2480,8 +2485,6 @@ const no = {
         answer: 'Ja, med tre til seksten personer og ingen boter – Alias er lag som snakker sammen, så rommet trenger ekte spillere. En på laget forklarer ordet uten å si det, de andre gjetter mot klokka, et hopp koster et poeng, og høyest poengsum vinner.',
       },
       ribbon: {
-        desc: 'Én spiller beskriver et hemmelig ord, laget kapper om å gjette det. Gjettede ord gir poeng.',
-        tag: 'Lag',
         time: '20 min',
       },
       detail: {
@@ -2724,8 +2727,6 @@ const no = {
         answer: 'Ja, tre til ti personer rett i nettleseren. Hver runde tegner én spiller et hemmelig ord på et delt lerret mens de andre skriver gjetninger mot klokka. Raske gjett gir flere poeng, og et gjestenavn er all kontoen du trenger.',
       },
       ribbon: {
-        desc: 'Tegn et hemmelig ord etter tur mens de andre kappes om å gjette det.',
-        tag: 'Tegning',
         time: '10 min',
       },
       detail: {
@@ -2839,7 +2840,6 @@ const no = {
       },
       game: {
         roundLabel: 'Runde {{current}} av {{total}}',
-        drawerIntro: 'Du tegner!',
         yourPrompt: 'Ditt ord',
         waitingForDrawer: '{{name}} tegner...',
         eraser: 'Viskelær',
@@ -2865,13 +2865,11 @@ const no = {
         phaseDrawing: 'Tegner',
         phaseChoosing: 'Velger',
         phaseReveal: 'Fasit',
-        guessNow: 'Gjett tegningen',
         revealHeading: 'Svaret var {{prompt}}',
         standings: 'Stilling',
         points: '{{count}} p',
         youWin: 'Du vant!',
         chatLockedForDrawer: 'Du vet ordet – chatten åpner for deg ved fasiten',
-        spectatorGuessing: 'Spillerne gjetter',
         chooseWordTitle: 'Velg et ord å tegne',
         choosingWait: '{{name}} velger et ord...',
         guessedIt: '{{name}} gjettet det!',
@@ -2893,6 +2891,11 @@ const no = {
         guessTooFast: 'Ikke så fort – vent litt',
         waitingForDrawing: 'Venter på tegningen...',
         hintLabel: 'Bokstaver i ordet: {{count}}',
+        turnChoose: 'velg et ord',
+        turnDraw: 'tegn ordet',
+        turnGuess: 'gjett tegningen',
+        doingChoose: 'velger et ord',
+        doingDraw: 'tegner',
       },
     },
     liars_party: {
@@ -2900,8 +2903,6 @@ const no = {
       description: 'Bløff, les bordet og avslør de beste løgnerne før de lurer alle.',
       difficulty: 'Vanskelig',
       ribbon: {
-        desc: 'Kom med en påstand og håp den holder - bordet stemmer over om du snakker sant.',
-        tag: 'Bløff',
         time: '15 min',
       },
       seo: {
@@ -3141,8 +3142,6 @@ const no = {
       turn: 'Tur',
       leave: 'Forlat',
       leaveConfirm: 'Er du sikker på at du vil forlate spillet?',
-      soundOn: 'Lyd på',
-      soundOff: 'Lyd av',
       enableSound: 'Aktiver lydeffekter',
       disableSound: 'Deaktiver lydeffekter',
       sound: 'Lyd',
@@ -3245,6 +3244,9 @@ const no = {
       stepOf: 'Steg {{current}} av {{total}}',
       vs: 'mot',
       removeBot: 'Fjern bot',
+      turnYou: 'Din tur: {{action}}',
+      turnPlayer: '{{player}} sin tur: {{action}}',
+      turnEveryone: 'Alles tur: {{action}}',
     }
   },
   yahtzee: {
@@ -3405,22 +3407,21 @@ const no = {
       tileScoreAria: '{{category}}: før {{score}}',
       tileConfirmZeroAria: '{{category}}: trykk igjen for å føre 0',
       tapAgainZero: 'Trykk igjen: 0',
-      scoresLabel: 'Poeng',
       youPill: 'Du',
-      pillAria: '{{player}}: {{score}} poeng',
       dieAria: 'Terning med {{value}}, trykk for å holde',
       dieHeldAria: 'Terning med {{value}}, holdt, trykk for å slippe',
       dieBlankAria: 'Terning, ikke kastet ennå',
-      playerTurn: '{{player}} sin tur',
-      turnRollFirst: 'Din tur: kast',
-      turnHoldOrPick: 'Kast igjen eller velg en rute',
-      turnPickBox: 'Velg en rute',
+      turnRollFirst: 'kast terningene',
+      turnHoldOrPick: 'kast eller velg en rute',
+      turnPickBox: 'velg en rute',
       roundOf: 'Runde {{current}}/{{total}}',
       tabGame: 'Spill',
       pointsShort: '{{count}} p',
       heldLabel: 'Holdt',
       cellOpen: 'Åpen',
       tabRolls: 'Kast',
+      doingRoll: 'kaster terningene',
+      doingPickBox: 'velger en rute',
     }
   },
   chat: {
@@ -4441,7 +4442,6 @@ const no = {
     timeRemaining: 'Tid: {{time}}',
     questioningPhase: 'Spørsmålsrunde - {{time}} gjenstår',
     votingPhase: 'Stemmetid - {{time}} gjenstår',
-    currentTurn: '{{player}}s tur',
     askingQuestion: '{{asker}} spør {{target}}...',
     spyWins: 'Spionen vinner!',
     regularsWin: 'Vanlige spillere vinner!',
@@ -4521,7 +4521,15 @@ const no = {
       allVoted: 'Alle spillere har stemt!',
       calculating: 'Beregner resultater...',
       turnSkipped: '{{player}} hoppet over turen sin'
-    }
+    },
+    turnCheckRole: 'se rollen din',
+    turnAsk: 'still et spørsmål',
+    turnAnswer: 'svar på spørsmålet',
+    turnVote: 'stem på spionen',
+    doingAsk: 'stiller et spørsmål',
+    doingAnswer: 'svarer',
+    playersCheckingRoles: 'Spillerne ser på rollene sine',
+    playersVoting: 'Spillerne stemmer',
   },
   alias: {
     soloModeTitle: 'Alle for seg selv.',
@@ -4555,7 +4563,6 @@ const no = {
     listenUpTab: 'Lytt · svaret skriver du på Gjettinger-fanen',
     describer: 'Beskriver',
     phaseTurnKicker: 'Tur',
-    describerTurnLine: '{{name}} forklarer for {{team}}',
     turnCompleteTitle: 'Alias · Tur ferdig',
     finalTitle: 'Alias · Finale',
     cardNum: 'Kort #{{num}}',
@@ -4614,6 +4621,9 @@ const no = {
     teamLabel: 'Lag',
     teamNumbered: 'Lag {{num}}',
     runnerUpLabel: 'Andreplass',
+    turnDescribe: 'forklar ordene',
+    turnGuess: 'gjett ordene',
+    doingDescribe: 'forklarer ordene',
   },
   liarsParty: {
     name: 'Løgnerfest',
@@ -4628,15 +4638,12 @@ const no = {
     eliminatedAfter: 'eliminert etter {{count}} strikes',
     startGame: 'Start spillet',
     needMorePlayers: 'Trenger minst 4 spillere',
-    yourTurnToClaim: 'Din tur — gjør en påstand!',
-    isClaimingFor: '{{name}} gjør en påstand...',
     claimPlaceholder: 'Skriv din påstand...',
     truth: 'Sannhet',
     bluff: 'Bløff',
     submitClaim: 'Send påstand',
     charsRemaining: '{{count}} tegn igjen',
     challengeOrBelieve: 'Utfordre eller tro?',
-    tableVotingOnYourClaim: 'Bordet stemmer over påstanden din',
     challenge: 'Utfordre',
     believe: 'Tro',
     voted: '{{done}}/{{total}} stemt',
@@ -4675,6 +4682,11 @@ const no = {
     phaseReveal: 'Avsløring',
     youWin: 'Du vinner!',
     tabGame: 'Spill',
+    turnClaim: 'kom med en påstand',
+    turnJudge: 'utfordre eller tro',
+    doingClaim: 'kommer med en påstand',
+    tableVoting: 'Bordet stemmer',
+    tableVotingOnYourClaim: 'Bordet stemmer over påstanden din',
   },
   spectate: {
     watchingCount: 'Ser på · {{count}} ser',
@@ -4833,7 +4845,8 @@ const no = {
   },
   notFoundPage: {
     lostRoute: 'Tapt rute',
-    description: 'Side ikke funnet. Dette trekket endte utenfor brettet.',
+    title: 'Siden finnes ikke',
+    description: 'Dette trekket endte utenfor brettet.',
     description2: 'Gå tilbake til lobbylisten eller hjem for å starte et nytt spill.',
     browseLobby: 'Bla gjennom lobbyer',
     goHome: 'Gå hjem',
@@ -5007,7 +5020,6 @@ const no = {
   },
   privacyPolicy: {
     title: 'Personvernerklæring',
-    breadcrumbHome: 'Hjem',
     intro: 'Denne erklæringen forklarer hvilke personopplysninger Boardly behandler, hvorfor, på hvilket rettslig grunnlag, hvem som mottar dem, hvor lenge vi lagrer dem og hvilke rettigheter du har. «Vi» betyr Boardly-teamet.',
     updated: 'Sist oppdatert: {{date}}',
     controller: {

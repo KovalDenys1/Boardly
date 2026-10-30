@@ -96,7 +96,7 @@ export default function HeroDemoMemory() {
                 color: isFlipped ? 'var(--bd-ink)' : 'var(--bd-bg)',
                 cursor: card.matched || locked ? 'default' : 'pointer',
                 boxShadow: isFlipped ? 'none' : '0 4px 0 rgba(31,27,22,0.35)',
-                transition: 'background 0.18s, box-shadow 0.18s, font-size 0.12s',
+                transition: 'background var(--bd-dur-fast) var(--bd-ease-out), box-shadow var(--bd-dur-fast) var(--bd-ease-out), font-size var(--bd-dur-fast) var(--bd-ease-out)',
                 lineHeight: 1,
                 padding: 0,
               }}

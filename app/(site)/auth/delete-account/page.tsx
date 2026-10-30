@@ -80,14 +80,14 @@ function DeleteAccountContent() {
 
   if (loading) {
     return (
-      <div className="page-shell-full bg-bd-bg flex items-center justify-center overflow-y-auto">
+      <div className="flex min-h-(--game-h) items-center justify-center bg-bd-bg">
         <LoadingSpinner size="lg" />
       </div>
     )
   }
 
   return (
-    <div className="page-shell-full bg-bd-bg flex items-center justify-center overflow-y-auto p-4">
+    <div className="flex min-h-(--game-h) items-center justify-center bg-bd-bg p-4">
       <div className="max-w-md w-full bg-bd-card-warm border border-bd-line rounded-2xl shadow-2xl p-8">
         {error ? (
           <>
@@ -126,7 +126,7 @@ function DeleteAccountContent() {
               <div className="mb-4 flex justify-center">
                 <Icon name="warning" size={56} tone="coral" />
               </div>
-              <h1 className="text-2xl font-bold text-red-600 mb-2">
+              <h1 className="text-2xl font-bold text-bd-danger-text mb-2">
                 {t('deleteAccount.title')}
               </h1>
               <p className="text-bd-ink-soft mb-4">
@@ -134,11 +134,11 @@ function DeleteAccountContent() {
               </p>
             </div>
 
-            <div className="bg-red-50 border-2 border-red-200 dark:bg-red-900/20 dark:border-red-800 rounded-lg p-4 mb-6">
-              <h2 className="font-bold text-red-800 dark:text-red-300 mb-2">
+            <div className="bg-bd-danger-bg border-2 border-bd-danger-border rounded-lg p-4 mb-6">
+              <h2 className="font-bold text-bd-danger-text mb-2">
                 {t('deleteAccount.willBeDeleted')}
               </h2>
-              <ul className="text-sm text-red-700 dark:text-red-400 space-y-1">
+              <ul className="text-sm text-bd-danger-text space-y-1">
                 <li>• {t('deleteAccount.profileData')}</li>
                 <li>• {t('deleteAccount.gameHistory')}</li>
                 <li>• {t('deleteAccount.friends')}</li>
@@ -164,7 +164,7 @@ function DeleteAccountContent() {
               <button
                 onClick={handleDelete}
                 disabled={confirmInput !== 'DELETE' || deleting}
-                className="w-full bg-red-600 text-white py-3 rounded-lg font-semibold hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+                className="w-full bg-bd-danger text-bd-ink-on-danger py-3 rounded-lg font-semibold hover:bg-bd-danger/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
               >
                 {deleting ? (
                   <>
@@ -192,7 +192,7 @@ function DeleteAccountContent() {
 
 export default function DeleteAccountPage() {
   return (
-    <Suspense fallback={<div className="page-shell-full bg-bd-bg flex items-center justify-center"><LoadingSpinner /></div>}>
+    <Suspense fallback={<div className="flex min-h-(--game-h) items-center justify-center bg-bd-bg"><LoadingSpinner /></div>}>
       <DeleteAccountContent />
     </Suspense>
   )

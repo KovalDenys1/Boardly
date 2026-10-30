@@ -2,6 +2,8 @@
 
 import Link from 'next/link'
 import type { ReactNode } from 'react'
+import Breadcrumbs from '@/components/Breadcrumbs'
+import DocumentContents from '@/components/DocumentContents'
 import { COMMUNITY_RULES_BANNED, MODERATION_ACTIONS } from '@/lib/community-rules'
 import { useTranslation } from '@/lib/i18n-helpers'
 import { SUPPORT_EMAIL } from '@/lib/organization-json-ld'
@@ -26,12 +28,30 @@ import PremiumTerms from './PremiumTerms'
 
 export type TermsSeller = { name: string; address: string; email: string } | null
 
+const SECTIONS = [
+  'seller',
+  'about',
+  'accounts',
+  'premium',
+  'conduct',
+  'moderation',
+  'content',
+  'ip',
+  'service',
+  'liability',
+  'termination',
+  'changes',
+  'law',
+  'contact',
+] as const
+type TermsSectionId = (typeof SECTIONS)[number]
+
 const strong = { color: 'var(--bd-ink)' } as const
 const linkClass = 'underline'
 
-function Section({ title, children, testId }: { title: string; children: ReactNode; testId?: string }) {
+function Section({ id, title, children, testId }: { id: TermsSectionId; title: string; children: ReactNode; testId?: string }) {
   return (
-    <section data-testid={testId}>
+    <section id={id} data-testid={testId} className="scroll-mt-[calc(var(--bd-header-h)+1rem)]">
       <h2 className="mb-3 text-base font-semibold" style={strong}>
         {title}
       </h2>
@@ -65,11 +85,11 @@ export default function TermsContent({ seller }: { seller: TermsSeller }) {
 
   return (
     <div className="mx-auto max-w-3xl px-4 pb-20 pt-10 sm:px-6 lg:px-8">
-      <nav className="mb-6 flex items-center gap-2 text-sm" style={{ color: 'var(--bd-ink-soft)' }} aria-label={t('breadcrumbs.label')}>
-        <Link href="/" className="transition-colors hover:text-bd-ink">{t('breadcrumbs.home')}</Link>
-        <span aria-hidden="true">/</span>
-        <span style={strong}>{t('terms.title')}</span>
-      </nav>
+      <Breadcrumbs
+        className="mb-6"
+        label={t('breadcrumbs.label')}
+        items={[{ label: t('breadcrumbs.home'), href: '/' }, { label: t('terms.title') }]}
+      />
 
       <div className="bd-card p-6 sm:p-8 md:p-12">
         <h1
@@ -79,13 +99,18 @@ export default function TermsContent({ seller }: { seller: TermsSeller }) {
           {t('terms.title')}
         </h1>
 
+        <DocumentContents
+          label={t('common.contents')}
+          sections={SECTIONS.filter((id) => id !== 'seller' || seller).map((id) => ({ id, title: t(`terms.${id}.title`) }))}
+        />
+
         <div className="space-y-8 text-sm leading-relaxed" style={{ color: 'var(--bd-ink-soft)' }}>
           <p>{t('terms.intro')}</p>
 
           {/* The operator (#1163). Absent until NEXT_PUBLIC_SELLER_LEGAL_NAME and
               NEXT_PUBLIC_SELLER_ADDRESS are set, and then this section is not drawn. */}
           {seller && (
-            <Section title={t('terms.seller.title')} testId="terms-seller">
+            <Section id="seller" title={t('terms.seller.title')} testId="terms-seller">
               <p>
                 {t('terms.seller.body', { name: seller.name, address: seller.address })}{' '}
                 <MailLink email={seller.email} />
@@ -94,14 +119,14 @@ export default function TermsContent({ seller }: { seller: TermsSeller }) {
             </Section>
           )}
 
-          <Section title={t('terms.about.title')}>
+          <Section id="about" title={t('terms.about.title')}>
             <p>{t('terms.about.scope')}</p>
             <p className="mt-3">{t('terms.about.accept')}</p>
             <p className="mt-3">{t('terms.about.languages')}</p>
             <p className="mt-3">{t('terms.about.version')}</p>
           </Section>
 
-          <Section title={t('terms.accounts.title')} testId="terms-accounts">
+          <Section id="accounts" title={t('terms.accounts.title')} testId="terms-accounts">
             <p>{t('terms.accounts.guests', TERMS_FIGURES)}</p>
             <p className="mt-3">{t('terms.accounts.age')}</p>
             <p className="mt-3">{t('terms.accounts.under13')}</p>
@@ -121,7 +146,7 @@ export default function TermsContent({ seller }: { seller: TermsSeller }) {
           {/* Section 3, the part a Premium buyer agrees to at checkout (#1179). */}
           <PremiumTerms />
 
-          <Section title={t('terms.conduct.title')} testId="terms-conduct">
+          <Section id="conduct" title={t('terms.conduct.title')} testId="terms-conduct">
             <p className="mb-3">{t('terms.conduct.lead')}</p>
             <ul className="list-disc space-y-1.5 pl-5">
               {COMMUNITY_RULES_BANNED.map((id) => (
@@ -135,7 +160,7 @@ export default function TermsContent({ seller }: { seller: TermsSeller }) {
             <p className="mt-3">{t('terms.conduct.responsibility')}</p>
           </Section>
 
-          <Section title={t('terms.moderation.title')} testId="terms-moderation">
+          <Section id="moderation" title={t('terms.moderation.title')} testId="terms-moderation">
             <p>{t('terms.moderation.report')}</p>
             {/* The one address for content notices (#1172). */}
             <p className="mt-3">
@@ -152,27 +177,27 @@ export default function TermsContent({ seller }: { seller: TermsSeller }) {
             <p className="mt-3">{t('terms.moderation.appeal')}</p>
           </Section>
 
-          <Section title={t('terms.content.title')}>
+          <Section id="content" title={t('terms.content.title')}>
             <p>{t('terms.content.body', TERMS_FIGURES)}</p>
           </Section>
 
-          <Section title={t('terms.ip.title')}>
+          <Section id="ip" title={t('terms.ip.title')}>
             <p>{t('terms.ip.body')}</p>
           </Section>
 
-          <Section title={t('terms.service.title')}>
+          <Section id="service" title={t('terms.service.title')}>
             <p>{t('terms.service.free')}</p>
             <p className="mt-3">{t('terms.service.premium')}</p>
             <p className="mt-3">{t('terms.service.closing')}</p>
           </Section>
 
-          <Section title={t('terms.liability.title')} testId="terms-liability">
+          <Section id="liability" title={t('terms.liability.title')} testId="terms-liability">
             <p>{t('terms.liability.premium')}</p>
             <p className="mt-3">{t('terms.liability.damages')}</p>
             <p className="mt-3">{t('terms.liability.mandatory')}</p>
           </Section>
 
-          <Section title={t('terms.termination.title')} testId="terms-termination">
+          <Section id="termination" title={t('terms.termination.title')} testId="terms-termination">
             <p>{t('terms.termination.yours')}</p>
             {/* digitalytelsesloven § 33 fourth paragraph: the running-subscription notice (#1165). */}
             <p className="mt-3">{t('terms.termination.reminder')}</p>
@@ -187,13 +212,13 @@ export default function TermsContent({ seller }: { seller: TermsSeller }) {
             <p className="mt-3">{t('terms.termination.premium')}</p>
           </Section>
 
-          <Section title={t('terms.changes.title')} testId="terms-changes">
+          <Section id="changes" title={t('terms.changes.title')} testId="terms-changes">
             <p>{t('terms.changes.reasons')}</p>
             <p className="mt-3">{t('terms.changes.notice')}</p>
             <p className="mt-3">{t('terms.changes.exit')}</p>
           </Section>
 
-          <Section title={t('terms.law.title')} testId="terms-law">
+          <Section id="law" title={t('terms.law.title')} testId="terms-law">
             <p>{t('terms.law.law')}</p>
             <p className="mt-3">{t('terms.law.contactFirst')}</p>
             <p className="mt-3">
@@ -207,7 +232,7 @@ export default function TermsContent({ seller }: { seller: TermsSeller }) {
             <p className="mt-3">{t('terms.law.courts')}</p>
           </Section>
 
-          <Section title={t('terms.contact.title')}>
+          <Section id="contact" title={t('terms.contact.title')}>
             <p>
               {t('terms.contact.body')} <MailLink email={SUPPORT_EMAIL} />.
             </p>

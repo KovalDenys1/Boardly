@@ -277,9 +277,7 @@ export default function PlayVsBotButton({ gameType, className = '' }: PlayVsBotB
         disabled={loading}
         aria-haspopup="menu"
         aria-expanded={open}
-        className={`bd-btn bd-btn-soft bd-btn-lg w-full justify-center disabled:opacity-60 ${
-          open ? 'bg-bd-bg2' : ''
-        }`}
+        className="bd-btn bd-btn-primary bd-btn-lg w-full justify-center disabled:opacity-60"
       >
         <Icon name="robot" size={16} /> {loading ? '…' : t('quickPlay.playVsBot')}
       </button>
@@ -287,7 +285,7 @@ export default function PlayVsBotButton({ gameType, className = '' }: PlayVsBotB
       {open && (
         <div
           role="menu"
-          className="absolute left-0 right-0 top-full z-30 mt-2 min-w-44 overflow-hidden rounded-2xl border-2 border-bd-ink bg-bd-bg shadow-[0_6px_0_0_rgba(31,27,22,0.85)]"
+          className="absolute left-0 right-0 top-full z-dropdown mt-2 min-w-44 overflow-hidden rounded-2xl border-2 border-bd-ink bg-bd-bg shadow-[0_6px_0_0_rgba(31,27,22,0.85)]"
         >
           {DIFFICULTIES.map(({ id, icon, labelKey }) => (
             <button
@@ -314,7 +312,7 @@ export default function PlayVsBotButton({ gameType, className = '' }: PlayVsBotB
           onKeyDown={trapTab}
           aria-labelledby="play-vs-bot-open-lobby-title"
           aria-describedby="play-vs-bot-open-lobby-body"
-          className="absolute left-0 right-0 top-full z-30 mt-2 min-w-60 rounded-2xl border-2 border-bd-ink bg-bd-bg p-4 shadow-[0_6px_0_0_rgba(31,27,22,0.85)]"
+          className="absolute left-0 right-0 top-full z-dropdown mt-2 min-w-60 rounded-2xl border-2 border-bd-ink bg-bd-bg p-4 shadow-[0_6px_0_0_rgba(31,27,22,0.85)]"
         >
           <p id="play-vs-bot-open-lobby-title" className="text-[15px] font-bold text-bd-ink">
             {t('quickPlay.openLobbyTitle')}
@@ -347,7 +345,7 @@ export default function PlayVsBotButton({ gameType, className = '' }: PlayVsBotB
       {pendingDifficulty && (
         <AuthGateModal
           dest={pathname}
-          onClose={() => { setPendingDifficulty(null); setOpen(false) }}
+          onClose={() => { setPendingDifficulty(null); setOpen(false); triggerRef.current?.focus() }}
           onGuestReady={() => {
             const difficulty = pendingDifficulty
             setPendingDifficulty(null)

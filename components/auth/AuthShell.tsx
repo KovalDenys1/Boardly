@@ -24,13 +24,13 @@ export default function AuthShell({ kicker, title, subtitle, children, bare = fa
   return (
     <div
       className="bd-screen"
-      style={{ minHeight: '100svh', overflowX: 'hidden', overflowY: 'auto', background: AUTH_BACKGROUND }}
+      style={{ minHeight: 'var(--game-h)', overflowX: 'hidden', overflowY: 'auto', background: AUTH_BACKGROUND }}
     >
       <div
         style={{
           maxWidth: 520,
           margin: '0 auto',
-          minHeight: '100svh',
+          minHeight: 'var(--game-h)',
           boxSizing: 'border-box',
           display: 'flex',
           flexDirection: 'column',

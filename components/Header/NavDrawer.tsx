@@ -64,14 +64,14 @@ export function NavDrawer({
   }
 
   return (
-    <Dialog id={NAV_DRAWER_ID} open={open} onClose={onClose} transition className="relative z-50 desk:hidden">
+    <Dialog id={NAV_DRAWER_ID} open={open} onClose={onClose} transition className="relative z-drawer desk:hidden">
       <DialogBackdrop
         transition
-        className="fixed inset-0 bg-[rgba(31,27,22,0.45)] backdrop-blur-[4px] transition duration-300 ease-out data-closed:opacity-0 motion-reduce:transition-none"
+        className="fixed inset-0 bg-bd-scrim backdrop-blur-xs transition duration-bd ease-out data-closed:opacity-0"
       />
       <DialogPanel
         transition
-        className="nav-drawer fixed inset-y-0 right-0 flex w-[85vw] max-w-[360px] flex-col overflow-hidden border-l-[1.5px] border-bd-line bg-bd-bg shadow-[-8px_0_32px_rgba(31,27,22,0.12)] transition duration-300 ease-out data-closed:translate-x-full data-closed:opacity-0 motion-reduce:transition-none"
+        className="nav-drawer fixed inset-y-0 right-0 flex w-[85vw] max-w-[360px] flex-col overflow-hidden border-l-[1.5px] border-bd-line bg-bd-bg shadow-[-8px_0_32px_rgba(31,27,22,0.12)] transition duration-bd ease-out data-closed:translate-x-full data-closed:opacity-0"
       >
         <div className="flex shrink-0 items-center justify-between border-b-[1.5px] border-bd-line px-5 py-4">
           <DialogTitle as="span" className="font-display text-xl font-extrabold tracking-[-0.01em] text-bd-ink">

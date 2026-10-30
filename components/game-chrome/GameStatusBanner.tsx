@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useEffect, useState } from 'react'
+import React, { useCallback, useEffect, useState } from 'react'
 import { useTranslation, type TranslationKeys } from '@/lib/i18n-helpers'
 import { noteLiveFinish } from '@/lib/live-finish'
 import { Icon } from '@/components/icons'
@@ -27,8 +27,73 @@ import { getTimerLevel } from '@/app/(site)/lobby/[code]/hooks/useGameTimer'
 /** The finished game seen from the viewer's seat. */
 export type GameOutcome = 'win' | 'loss' | 'draw'
 
-export interface GameStatusBannerProps {
-  isFinished: boolean
+/**
+ * Every string arrives translated. `action` is an instruction to the viewer, so
+ * only the viewer's own turn and a phase the viewer acts in carry one; another
+ * player's turn says what they are `doing`, and a phase the viewer only watches
+ * is a whole `line`, so a spectator is never told to act.
+ */
+export type GameTurn =
+  | { whose: 'you'; action: string }
+  | { whose: 'everyone'; action: string }
+  | { whose: 'player'; player: string; doing: string }
+  | { whose: 'nobody'; line: string }
+
+type Translate = (key: TranslationKeys, options?: Record<string, unknown>) => string
+
+function turnLine(turn: GameTurn, t: Translate): string {
+  if (turn.whose === 'nobody') return turn.line
+  if (turn.whose === 'you') return t('game.ui.turnYou', { action: turn.action })
+  if (turn.whose === 'everyone') return t('game.ui.turnEveryone', { action: turn.action })
+  return t('game.ui.turnPlayer', { player: turn.player, action: turn.doing })
+}
+
+const NAME_SLOT = '\uE000'
+
+/** The line with the player's name in its own box, so a long name gives way before the action does. */
+function turnContent(turn: GameTurn, t: Translate): React.ReactNode {
+  if (turn.whose !== 'player') return turnLine(turn, t)
+  const [before, after = ''] = t('game.ui.turnPlayer', { player: NAME_SLOT, action: turn.doing }).split(NAME_SLOT)
+  const lead = /\S*$/.exec(before)?.[0] ?? ''
+  const tail = /^\S*/.exec(after)?.[0] ?? ''
+  return (
+    <>
+      {before.slice(0, before.length - lead.length)}
+      <span className="game-status-player-group">{lead}<span className="game-status-player">{turn.player}</span>{tail}</span>
+      {after.slice(tail.length)}
+    </>
+  )
+}
+
+// Whether a whole name and the action fit in two lines depends on the words and the font.
+function useNameRoom(named: boolean) {
+  return useCallback((title: HTMLSpanElement | null) => {
+    const heading = title?.parentElement
+    const group = title?.querySelector('.game-status-player-group')
+    if (!named || !title || !heading || !group) return
+    const fit = () => {
+      title.dataset.nameFull = ''
+      const fits = title.scrollHeight <= title.clientHeight + 1 && group.getBoundingClientRect().width <= title.clientWidth + 1
+      if (!fits) delete title.dataset.nameFull
+    }
+    fit()
+    let width = heading.clientWidth
+    const fonts = document.fonts
+    fonts?.addEventListener('loadingdone', fit)
+    const observer = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(() => {
+      if (heading.clientWidth === width) return
+      width = heading.clientWidth
+      fit()
+    })
+    observer?.observe(heading)
+    return () => {
+      fonts?.removeEventListener('loadingdone', fit)
+      observer?.disconnect()
+    }
+  }, [named])
+}
+
+interface GameStatusBannerBaseProps {
   isDraw?: boolean
   /**
    * The viewer's result. Without it a finished, non-draw game shows the neutral
@@ -38,8 +103,6 @@ export interface GameStatusBannerProps {
   outcome?: GameOutcome
   /** Already-translated result line ("Alice wins!", "It's a tie") — required when finished. */
   finishedMessage?: string
-  /** Already-translated active-turn line ("Alice's turn"). */
-  activeTitle: string
   /** Small trailing meta next to the title ("#5", "3/8"). */
   meta?: React.ReactNode
   secs: number
@@ -60,6 +123,11 @@ export interface GameStatusBannerProps {
    */
   showTimer?: boolean
 }
+
+export type GameStatusBannerProps = GameStatusBannerBaseProps & (
+  | { isFinished: boolean; turn: GameTurn }
+  | { isFinished: true; turn?: GameTurn }
+)
 
 /**
  * `:07` for a turn timer, `4:51` once there are minutes on the clock.
@@ -89,7 +157,7 @@ export default function GameStatusBanner({
   isDraw = false,
   outcome,
   finishedMessage,
-  activeTitle,
+  turn,
   meta,
   secs,
   turnTimerLimit,
@@ -111,6 +179,16 @@ export default function GameStatusBanner({
   const [mounted, setMounted] = useState(false)
   useEffect(() => setMounted(true), [])
   useTurnTimerSounds(secs, !isFinished && !isSpectator && isYourTurn && showTimer && turnTimerLimit > 0)
+  const line = turn ? turnLine(turn, t as Translate) : ''
+  const titleRef = useNameRoom(turn?.whose === 'player')
+  const title = (
+    <div className="game-status-heading">
+      <span key={line} ref={titleRef} className="game-status-cue game-status-title" data-testid="game-status-title" data-turn={turn?.whose}>
+        {turn ? turnContent(turn, t as Translate) : null}
+      </span>
+    </div>
+  )
+  const metaLine = meta !== undefined && <span className="game-status-meta">{meta}</span>
 
   if (isFinished) {
     const result: GameOutcome | 'over' =
@@ -141,16 +219,19 @@ export default function GameStatusBanner({
 
   if (isSpectator) {
     return (
-      <div style={{
+      <div className="game-status-spectator" style={{
         padding: '10px 14px', borderRadius: 14, background: 'var(--bd-bg)',
         border: '1.5px solid var(--bd-line)', boxShadow: '0 4px 14px rgba(31,27,22,0.07)',
-        display: 'flex', alignItems: 'center', gap: 10,
       }}>
-        <Icon name="eye" size={16} tone="muted" />
-        {leadingIcon}
-        <span key={activeTitle} className="game-status-cue" data-testid="game-status-title" style={{ fontWeight: 700, fontSize: 13, color: 'var(--bd-ink)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{activeTitle}</span>
-        {meta !== undefined && <span style={{ fontSize: 11, color: 'var(--bd-ink-soft)', marginLeft: 2 }}>{meta}</span>}
-        <span style={{ marginLeft: 'auto', fontSize: 11, fontWeight: 600, color: 'var(--bd-ink-soft)', whiteSpace: 'nowrap' }}>{t('game.ui.spectatingBadge')}</span>
+        <div className="game-status-layout">
+          <Icon name="eye" size={16} tone="muted" />
+          {leadingIcon && <span className="game-status-icon">{leadingIcon}</span>}
+          <div className="game-status-body">
+            {title}
+            {metaLine}
+            <span className="game-status-spectating">{t('game.ui.spectatingBadge')}</span>
+          </div>
+        </div>
       </div>
     )
   }
@@ -170,37 +251,34 @@ export default function GameStatusBanner({
         ['--game-status-accent' as string]: barColor,
         padding: '10px 14px', borderRadius: 14, background: 'var(--bd-bg)',
         border: '1.5px solid var(--bd-line)', boxShadow: '0 4px 14px rgba(31,27,22,0.07)',
-        display: 'flex', alignItems: 'center', gap: 12,
       }}
     >
-      {leadingIcon}
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div key={activeTitle} className="game-status-cue" data-testid="game-status-title" style={{ fontWeight: 700, fontSize: 13, color: 'var(--bd-ink)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-          {activeTitle}
-          {meta !== undefined && (
-            <span style={{ color: 'var(--bd-ink-soft)', fontWeight: 500, marginLeft: 6, fontSize: 11 }}>{meta}</span>
+      <div className="game-status-layout">
+        {leadingIcon && <span className="game-status-icon">{leadingIcon}</span>}
+        <div className="game-status-body">
+          {title}
+          {metaLine}
+          {showTimer && (
+            <div className="game-status-timer-track">
+              <div data-testid="game-status-timer-bar" className="game-status-timer-fill" data-level={level} style={{
+                height: '100%', width: '100%',
+                transform: `scaleX(${Math.max(0, Math.min(1, pct / 100))})`,
+                transformOrigin: 'left center',
+                background: barColor,
+                transition: 'transform 1s linear',
+              }}>
+                <span className="game-status-timer-fill__layer game-status-timer-fill__layer--low" />
+                <span className="game-status-timer-fill__layer game-status-timer-fill__layer--critical" />
+              </div>
+            </div>
           )}
         </div>
         {showTimer && (
-          <div className="game-status-timer-track">
-            <div data-testid="game-status-timer-bar" className="game-status-timer-fill" data-level={level} style={{
-              height: '100%', width: '100%',
-              transform: `scaleX(${Math.max(0, Math.min(1, pct / 100))})`,
-              transformOrigin: 'left center',
-              background: barColor,
-              transition: 'transform 1s linear',
-            }}>
-              <span className="game-status-timer-fill__layer game-status-timer-fill__layer--low" />
-              <span className="game-status-timer-fill__layer game-status-timer-fill__layer--critical" />
-            </div>
+          <div className="game-status-clock" data-testid="game-status-timer" data-level={level}>
+            <span className="game-status-clock__digits">{formatSeconds(secs)}</span>
           </div>
         )}
       </div>
-      {showTimer && (
-        <div className="game-status-clock" data-testid="game-status-timer" data-level={level}>
-          <span className="game-status-clock__digits">{formatSeconds(secs)}</span>
-        </div>
-      )}
       <span role="status" className="sr-only">{mounted && showIdleNudge ? t('game.ui.firstMoveNudge') : ''}</span>
     </div>
   )

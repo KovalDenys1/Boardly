@@ -41,19 +41,19 @@ export function ConnectionStatus({
     const isSlowConnection = reconnectAttempt >= 3
 
     return (
-      <div className="fixed top-4 right-4 z-50 animate-in slide-in-from-top">
+      <div className="fixed top-4 right-4 z-toast animate-in slide-in-from-top">
         <div
           className="rounded-xl px-4 py-3 shadow-lg max-w-sm"
           style={{
-            background: '#FFFBEB',
-            border: '1.5px solid #FDE68A',
+            background: 'var(--bd-warning-bg)',
+            border: '1.5px solid var(--bd-warning-border)',
           }}
         >
           <div className="flex items-center space-x-3">
             <div className="shrink-0">
               <svg
                 className="animate-spin h-5 w-5"
-                style={{ color: '#D97706' }}
+                style={{ color: 'var(--bd-warning)' }}
                 xmlns="http://www.w3.org/2000/svg"
                 fill="none"
                 viewBox="0 0 24 24"
@@ -63,16 +63,16 @@ export function ConnectionStatus({
               </svg>
             </div>
             <div className="flex-1">
-              <p className="text-sm font-medium" style={{ color: '#92400E' }}>
+              <p className="text-sm font-medium" style={{ color: 'var(--bd-warning-text)' }}>
                 {t('connection.reconnecting', 'Reconnecting...')}
               </p>
               {reconnectAttempt > 0 && (
-                <p className="text-xs mt-0.5" style={{ color: '#B45309' }}>
+                <p className="text-xs mt-0.5" style={{ color: 'var(--bd-warning-text)' }}>
                   {t('connection.attempt', `Attempt ${reconnectAttempt}`)}
                 </p>
               )}
               {isSlowConnection && (
-                <p className="text-xs mt-1 pt-1" style={{ color: '#B45309', borderTop: '1px solid #FDE68A' }}>
+                <p className="text-xs mt-1 pt-1" style={{ color: 'var(--bd-warning-text)', borderTop: '1px solid var(--bd-warning-border)' }}>
                   <Icon name="hourglass" size={14} /> {t('connection.coldStart', 'Server is waking up... This may take up to a minute.')}
                 </p>
               )}
@@ -86,19 +86,19 @@ export function ConnectionStatus({
   if (!showDisconnected) return null
 
   return (
-    <div className="fixed top-4 right-4 z-50 animate-in slide-in-from-top">
+    <div className="fixed top-4 right-4 z-toast animate-in slide-in-from-top">
       <div
         className="rounded-xl px-4 py-3 shadow-lg"
         style={{
-          background: '#FFF1F0',
-          border: '1.5px solid #FFCCC7',
+          background: 'var(--bd-danger-bg)',
+          border: '1.5px solid var(--bd-danger-border)',
         }}
       >
         <div className="flex items-center space-x-3">
           <div className="shrink-0">
             <svg
               className="h-5 w-5"
-              style={{ color: 'var(--bd-coral-text)' }}
+              style={{ color: 'var(--bd-danger)' }}
               xmlns="http://www.w3.org/2000/svg"
               viewBox="0 0 20 20"
               fill="currentColor"
@@ -111,10 +111,10 @@ export function ConnectionStatus({
             </svg>
           </div>
           <div className="flex-1">
-            <p className="text-sm font-medium" style={{ color: '#7F1D1D' }}>
+            <p className="text-sm font-medium" style={{ color: 'var(--bd-danger-text)' }}>
               {t('connection.disconnected', 'Connection lost')}
             </p>
-            <p className="text-xs mt-0.5" style={{ color: '#991B1B' }}>
+            <p className="text-xs mt-0.5" style={{ color: 'var(--bd-danger-text)' }}>
               {t('connection.checkNetwork', 'Please check your network connection')}
             </p>
           </div>

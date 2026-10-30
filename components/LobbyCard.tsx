@@ -110,7 +110,7 @@ export default function LobbyCard({ lobby, index, currentUserId, onOpenLobby, on
         background: 'var(--bd-card-warm)', borderRadius: 18, border: '1.5px solid var(--bd-line)',
         boxShadow: '0 4px 14px rgba(31,27,22,0.07)', padding: '16px 20px',
         display: 'flex', gap: 16, alignItems: 'center', flexWrap: 'wrap', cursor: 'pointer',
-        transition: 'transform 0.15s, box-shadow 0.15s', animationDelay: `${index * 0.05}s`,
+        transition: 'transform var(--bd-dur-fast) var(--bd-ease-out), box-shadow var(--bd-dur-fast) var(--bd-ease-out)', animationDelay: `${index * 0.05}s`,
       }}
       onMouseEnter={e => { (e.currentTarget as HTMLElement).style.transform = 'translateY(-1px)'; (e.currentTarget as HTMLElement).style.boxShadow = '0 6px 0 0 rgba(31,27,22,0.08), 0 14px 28px -10px rgba(31,27,22,0.18)'; }}
       onMouseLeave={e => { (e.currentTarget as HTMLElement).style.transform = 'translateY(0)'; (e.currentTarget as HTMLElement).style.boxShadow = '0 4px 14px rgba(31,27,22,0.07)'; }}
@@ -151,7 +151,7 @@ export default function LobbyCard({ lobby, index, currentUserId, onOpenLobby, on
         {/* Occupancy bar */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <div style={{ flex: 1, height: 6, borderRadius: 99, background: 'var(--bd-bg2)', overflow: 'hidden' }}>
-            <div style={{ height: '100%', width: `${occupancyPercent}%`, background: game.accent, borderRadius: 99, transition: 'width 0.5s' }} />
+            <div style={{ height: '100%', width: `${occupancyPercent}%`, background: game.accent, borderRadius: 99, transition: 'width var(--bd-dur-slow) var(--bd-ease-out)' }} />
           </div>
           <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--bd-ink-soft)', whiteSpace: 'nowrap' }}>
             {t('lobby.playerOccupancy', { current: playerCount, max: lobby.maxPlayers })}

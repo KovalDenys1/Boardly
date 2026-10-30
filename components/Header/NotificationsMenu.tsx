@@ -287,12 +287,12 @@ export function NotificationsMenu() {
         <>
           <button
             type="button"
-            className="fixed inset-0 z-40 bg-transparent md:hidden"
+            className="fixed inset-0 z-1 bg-transparent md:hidden"
             onClick={() => setOpen(false)}
             aria-label={t('common.close')}
           />
 
-          <div className="fixed left-3 right-3 top-19 z-50 overflow-hidden rounded-3xl border border-bd-line bg-bd-card-warm shadow-[0_22px_60px_rgba(31,27,22,0.22)] md:absolute md:left-auto md:right-0 md:top-full md:mt-4 md:w-90">
+          <div className="fixed left-3 right-3 top-19 z-dropdown overflow-hidden rounded-3xl border border-bd-line bg-bd-card-warm shadow-[0_22px_60px_rgba(31,27,22,0.22)] md:absolute md:left-auto md:right-0 md:top-full md:mt-4 md:w-90">
             <div className="flex items-start justify-between gap-3 border-b border-bd-line bg-bd-bg px-4 py-4">
               <div>
                 <p className="bd-kicker">{t('header.notifications')}</p>

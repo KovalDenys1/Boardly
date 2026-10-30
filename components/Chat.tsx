@@ -258,7 +258,7 @@ export default function Chat({
       : t('chat.openChat')
 
     return (
-      <div className="fixed z-50" style={{ bottom: 'max(20px, calc(20px + env(safe-area-inset-bottom)))', right: '20px' }}>
+      <div className="fixed z-floating" style={{ bottom: 'max(20px, calc(20px + env(safe-area-inset-bottom)))', right: '20px' }}>
         <button
           onClick={onToggleMinimize}
           aria-label={ariaLabel}
@@ -279,7 +279,7 @@ export default function Chat({
   return (
     <div
       ref={chatRef}
-      className={`chat-panel flex flex-col overflow-hidden ${fullScreen ? 'h-full' : 'bd-card fixed z-50 rounded-bd-lg'}`}
+      className={`chat-panel flex flex-col overflow-hidden ${fullScreen ? 'h-full' : 'bd-card fixed z-floating rounded-bd-lg'}`}
       style={fullScreen ? {
         background: 'linear-gradient(180deg, var(--bd-bg) 0%, var(--bd-card-warm) 100%)',
       } : {
@@ -419,7 +419,7 @@ export default function Chat({
               return (
                 <div
                   key={msg.id}
-                  className={`flex gap-2 ${isCurrentUser ? 'flex-row-reverse' : 'flex-row'} animate-[slideIn_0.2s_ease-out]`}
+                  className={`flex gap-2 ${isCurrentUser ? 'flex-row-reverse' : 'flex-row'} animate-[slideIn_var(--bd-dur-fast)_var(--bd-ease-out)]`}
                 >
                   {msg.type !== 'system' && (
                     <div
@@ -532,7 +532,7 @@ export default function Chat({
                           event.stopPropagation()
                           closeBlockConfirm()
                         }}
-                        className="chat-block-confirm mt-1.5 max-w-[280px] rounded-2xl border px-3.5 py-3 text-bd-ink shadow-xs animate-[fade-in-plain_0.15s_ease-out] sm:max-w-xs"
+                        className="chat-block-confirm mt-1.5 max-w-[280px] rounded-2xl border px-3.5 py-3 text-bd-ink shadow-xs sm:max-w-xs"
                         style={{ borderColor: 'var(--bd-line)', background: 'var(--bd-bg)' }}
                       >
                         <p id={`${blockConfirmId}-text`} className="text-xs leading-snug">
@@ -567,7 +567,7 @@ export default function Chat({
         {showScrollButton && (
           <button
             onClick={scrollToBottom}
-            className="bd-btn bd-btn-soft absolute bottom-4 right-4 rounded-full p-3! shadow-lg hover:scale-110 active:scale-95 active:transform-none! focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-bd-lav-deep focus-visible:outline-hidden animate-[bounce-in_0.3s_ease-out]"
+            className="bd-btn bd-btn-soft absolute bottom-4 right-4 rounded-full p-3! shadow-lg hover:scale-110 active:scale-95 active:transform-none! focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-bd-lav-deep focus-visible:outline-hidden animate-[bounce-in_var(--bd-dur)_var(--bd-ease-out)]"
             aria-label={t('chat.scrollToBottom')}
           >
             <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -579,7 +579,7 @@ export default function Chat({
 
       {someoneTyping && (
         <div
-          className="chat-typing shrink-0 border-t px-4 py-2.5 animate-[fade-in_0.3s_ease-out]"
+          className="chat-typing shrink-0 border-t px-4 py-2.5 animate-[fade-in_var(--bd-dur)_var(--bd-ease-out)]"
           style={{ borderColor: 'var(--bd-line)', background: 'var(--bd-card-warm)' }}
         >
           <div className="flex items-center gap-2.5 text-bd-ink-muted">

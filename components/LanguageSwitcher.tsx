@@ -77,7 +77,7 @@ export default function LanguageSwitcher({ anchor }: LanguageSwitcherProps) {
     }
 
     const stored = setStoredAppearanceLocale(getSafeLocalStorage(), nextLanguage) as Locale
-    // A /ru, /uk or /no page is in its URL's language, so another language is another URL.
+    // A /ru, /uk, /no, /de or /es page is in its URL's language, so another language is another URL.
     if (pathLocale(pathname)) {
       window.location.assign(localeSwitchHref(pathname, stored))
       return
@@ -106,17 +106,17 @@ export default function LanguageSwitcher({ anchor }: LanguageSwitcherProps) {
 
       <Transition
         as={Fragment}
-        enter="transition ease-out duration-150"
+        enter="transition ease-out duration-bd-fast"
         enterFrom="opacity-0 translate-y-1 scale-[0.98]"
         enterTo="opacity-100 translate-y-0 scale-100"
-        leave="transition ease-in duration-100"
+        leave="transition ease-in duration-bd-fast"
         leaveFrom="opacity-100 translate-y-0 scale-100"
         leaveTo="opacity-0 translate-y-1 scale-[0.98]"
       >
         <MenuItems
           anchor={anchor ? { to: anchor, gap: 8 } : undefined}
-          className={`z-50 overflow-hidden rounded-[1.25rem] border-[1.5px] border-bd-line bg-bd-input-bg p-1.5 shadow-[0_18px_36px_-18px_rgba(31,27,22,0.35)] focus:outline-hidden ${
-            anchor ? '' : 'absolute right-0 mt-2'
+          className={`overflow-hidden rounded-[1.25rem] border-[1.5px] border-bd-line bg-bd-input-bg p-1.5 shadow-[0_18px_36px_-18px_rgba(31,27,22,0.35)] focus:outline-hidden ${
+            anchor ? 'z-drawer' : 'absolute right-0 z-dropdown mt-2'
           } w-[176px]`}
         >
           {LANGUAGE_OPTIONS.map((option) => {

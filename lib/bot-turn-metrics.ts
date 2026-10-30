@@ -3,13 +3,13 @@ import { logger } from './logger'
 import type { ServerOperationalEventName } from './operational-events'
 
 /**
- * One `bot_turn_applied` row per bot turn, written by POST /api/game/[gameId]/bot-turn.
+ * One `bot_turn_applied` row per bot turn, written by `runBotTurn` (lib/bot-turn-runner.ts).
  *
  * `move_submit_applied` measures a person's move from the client, so nothing measured how
  * long a player waits for the bot's reply. `latencyMs` runs from the moment the turn became
- * the bot's (the state route's `triggeredAt`, right after the human's move committed, or the
- * bot-turn request's own arrival when nothing upstream stamped it) to the bot's first commit
- * being handed to Supabase Realtime, so it holds the trigger hop, the bot's pause, its search
+ * the bot's (right after the human's move committed when the server starts the turn, or the
+ * bot-turn request's own arrival when a client asks for it) to the bot's first commit
+ * being handed to Supabase Realtime, so it holds the bot's pause, its search
  * and the database write. Realtime delivery to the browser is not in it. `payload.turn_ms`
  * covers the whole turn, which is longer than `latencyMs` in the games that commit several
  * times per turn (Yahtzee, Memory, Ludo, a Checkers capture chain).

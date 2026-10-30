@@ -13,6 +13,7 @@ import {
   type FriendPresence,
 } from '@/hooks/useFriendPresence'
 import LoadingSpinner from './LoadingSpinner'
+import Modal from './Modal'
 
 interface Friend {
   id: string
@@ -165,24 +166,8 @@ export default function FriendsListModal({
   const presenceLabel = (presence: FriendPresence): string | null => getFriendPresenceLabel(presence, t)
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div
-        className="rounded-2xl p-6 max-w-md w-full max-h-[80vh] overflow-y-auto overscroll-contain"
-        style={{ background: 'var(--bd-card-warm)', border: '1.5px solid var(--bd-line)' }}
-      >
-        <div className="flex justify-between items-center mb-4">
-          <h3 className="text-xl font-bold" style={{ color: 'var(--bd-ink)' }}>
-            {t('lobby.invite.title')}
-          </h3>
-          <button
-            onClick={onClose}
-            className="transition-opacity hover:opacity-60"
-            style={{ color: 'var(--bd-ink-muted)' }}
-          >
-            <Icon name="close" size={16} />
-          </button>
-        </div>
-
+    <Modal isOpen={isOpen} onClose={onClose} title={t('lobby.invite.title')} maxWidth="md">
+      <>
         {loading ? (
           <div className="flex justify-center py-8">
             <LoadingSpinner />
@@ -229,7 +214,7 @@ export default function FriendsListModal({
                     {isOnline && (
                       <div
                         className="absolute bottom-0 right-0 w-3 h-3 rounded-full"
-                        style={{ background: '#22C55E', border: '2px solid var(--bd-card-warm)' }}
+                        style={{ background: 'var(--bd-success)', border: '2px solid var(--bd-card-warm)' }}
                       />
                     )}
                   </div>
@@ -242,7 +227,7 @@ export default function FriendsListModal({
                         {friend.username || 'Unknown'}
                       </span>
                       {label && (
-                        <span className="text-xs font-medium" style={{ color: '#22C55E' }}>
+                        <span className="text-xs font-medium" style={{ color: 'var(--bd-success-text)' }}>
                           {label}
                         </span>
                       )}
@@ -328,7 +313,7 @@ export default function FriendsListModal({
             )}
           </>
         )}
-      </div>
-    </div>
+      </>
+    </Modal>
   )
 }

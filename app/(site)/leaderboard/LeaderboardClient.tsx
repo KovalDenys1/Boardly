@@ -223,7 +223,7 @@ function LeaderboardPageContent({ initial }: { initial: LeaderboardPage | null }
 
                   {gameMenuOpen && (
                     <div
-                      className="absolute right-0 z-30 mt-3 w-full min-w-72 overflow-hidden rounded-2xl border-2 border-bd-ink bg-bd-card-warm shadow-[0_8px_0_var(--bd-ink),0_18px_36px_-18px_rgba(31,27,22,0.45)] sm:w-80"
+                      className="absolute right-0 z-dropdown mt-3 w-full min-w-72 overflow-hidden rounded-2xl border-2 border-bd-ink bg-bd-card-warm shadow-[0_8px_0_var(--bd-ink),0_18px_36px_-18px_rgba(31,27,22,0.45)] sm:w-80"
                       role="listbox"
                       aria-label={t('leaderboard.gameFilter')}
                     >
@@ -309,7 +309,7 @@ function LeaderboardPageContent({ initial }: { initial: LeaderboardPage | null }
                 </div>
               ) : error ? (
                 <div className="py-16 text-center">
-                  <p className="text-sm font-semibold text-bd-coral-text">{error}</p>
+                  <p className="text-sm font-semibold text-bd-danger-text">{error}</p>
                 </div>
               ) : entries.length === 0 ? (
                 <div className="py-16 text-center">

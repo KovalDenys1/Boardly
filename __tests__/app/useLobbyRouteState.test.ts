@@ -171,4 +171,73 @@ describe('useLobbyRouteState', () => {
     expect(result.current.gameType).toBe('tic_tac_toe')
     expect(result.current.gameStatus).toBe('playing')
   })
+
+  it('hands over the lobby facts the reopen panel is decided by (#1594)', async () => {
+    const closedLobby = {
+      gameType: 'connect_four',
+      isActive: false,
+      createdAt: '2026-10-30T10:00:00.000Z',
+      pseudonymisedAt: null,
+    }
+    const finishedGame = { status: 'finished', players: [{ userId: 'a', isWinner: true }] }
+    mockFetchWithGuest.mockResolvedValue({ ok: true, json: async () => ({}) } as Response)
+    mockNormalizeLobbySnapshotResponse.mockReturnValue({
+      lobby: closedLobby,
+      activeGame: finishedGame,
+    } as ReturnType<typeof normalizeLobbySnapshotResponse>)
+
+    const { result } = renderHook(() =>
+      useLobbyRouteState({ code: 'ABCD', status: 'unauthenticated', isGuest: false, guestToken: null })
+    )
+
+    await waitFor(() => expect(result.current.loading).toBe(false))
+
+    expect(result.current.lobby).toEqual(closedLobby)
+    expect(result.current.lastGame).toEqual(finishedGame)
+  })
+
+  it('reads the lobby again on refresh, after a reopen', async () => {
+    mockFetchWithGuest.mockResolvedValue({ ok: true, json: async () => ({}) } as Response)
+    mockNormalizeLobbySnapshotResponse
+      .mockReturnValueOnce({
+        lobby: { gameType: 'connect_four', isActive: false },
+        activeGame: { status: 'finished' },
+      } as ReturnType<typeof normalizeLobbySnapshotResponse>)
+      .mockReturnValueOnce({
+        lobby: { gameType: 'connect_four', isActive: true },
+        activeGame: { status: 'waiting' },
+      } as ReturnType<typeof normalizeLobbySnapshotResponse>)
+
+    const { result } = renderHook(() =>
+      useLobbyRouteState({ code: 'ABCD', status: 'unauthenticated', isGuest: false, guestToken: null })
+    )
+    await waitFor(() => expect(result.current.gameStatus).toBe('finished'))
+
+    act(() => {
+      result.current.refresh()
+    })
+
+    await waitFor(() => expect(result.current.gameStatus).toBe('waiting'))
+    expect(result.current.lobby).toEqual({ gameType: 'connect_four', isActive: true })
+    expect(mockFetchWithGuest).toHaveBeenCalledTimes(2)
+  })
+
+  it('drops the read once the game moves on, so a stale closed lobby cannot be offered for reopening', async () => {
+    mockFetchWithGuest.mockResolvedValue({ ok: true, json: async () => ({}) } as Response)
+    mockNormalizeLobbySnapshotResponse.mockReturnValue({
+      lobby: { gameType: 'connect_four', isActive: false },
+      activeGame: { status: 'playing' },
+    } as ReturnType<typeof normalizeLobbySnapshotResponse>)
+
+    const { result } = renderHook(() =>
+      useLobbyRouteState({ code: 'ABCD', status: 'unauthenticated', isGuest: false, guestToken: null })
+    )
+    await waitFor(() => expect(result.current.lobby).not.toBeNull())
+
+    act(() => {
+      result.current.handleGameReset()
+    })
+    expect(result.current.lobby).toBeNull()
+    expect(result.current.lastGame).toBeNull()
+  })
 })

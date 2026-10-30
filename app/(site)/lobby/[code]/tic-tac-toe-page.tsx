@@ -48,6 +48,7 @@ import { playCue } from '@/lib/sound-engine'
 import { tttMarkSemis } from '@/lib/board-sounds'
 import GameScoreboardHeader, { type GameHeaderRoom } from '@/components/game-chrome/GameScoreboardHeader'
 import GameStatusBanner from '@/components/game-chrome/GameStatusBanner'
+import GamePageHeading from '@/components/game-chrome/GamePageHeading'
 import { viewerOutcome } from '@/lib/game-outcome'
 import GameTabs from '@/components/game-chrome/GameTabs'
 import { useGameTimer } from './hooks/useGameTimer'
@@ -911,7 +912,9 @@ export default function TicTacToeLobbyPage({ code, isSpectator = false, onGameRe
             isDraw={isDraw}
             outcome={viewerOutcome({ isFinished, isDraw, isSpectator, isSeated: !!mySymbol, isViewerWinner: winnerSymbol && !isDraw ? winnerSymbol === mySymbol : null })}
             finishedMessage={isDraw ? t('games.tictactoe.game.catsGameFull') : t('games.tictactoe.game.playerWins', { player: winnerName })}
-            activeTitle={isSpectator ? (gameData.currentSymbol === 'X' ? xName : oName) : t('games.tictactoe.game.playerTurn', { player: gameData.currentSymbol === 'X' ? xName : oName })}
+            turn={!isSpectator && isMyTurn()
+                ? { whose: 'you', action: t('games.tictactoe.game.turnPlace') }
+                : { whose: 'player', player: gameData.currentSymbol === 'X' ? xName : oName, doing: t('games.tictactoe.game.doingPlace') }}
             meta={isSpectator ? `#${gameData.moveCount + 1}` : t('games.tictactoe.game.moveNum', { num: gameData.moveCount + 1 })}
             secs={timeLeft}
             turnTimerLimit={turnTimerLimit}
@@ -1173,6 +1176,7 @@ export default function TicTacToeLobbyPage({ code, isSpectator = false, onGameRe
 
     return (
         <div className="game-screen ttt-screen" style={themeStyle}>
+            <GamePageHeading title={t('games.tictactoe.name')} />
 
             {/* ── DESKTOP ─────────────────────────────────────────────────── */}
             <div className="ttt-desktop-layout">

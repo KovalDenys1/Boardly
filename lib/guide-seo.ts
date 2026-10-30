@@ -3,7 +3,7 @@ import type { Metadata } from 'next'
 import { getGuideCard } from './guide-cards'
 import { BOARDLY_URL, ORGANIZATION_ID } from './organization-json-ld'
 import { getGuideBySlug, type LocalizedGuideSeo } from './guides-catalog'
-import { HREFLANG, OG_LOCALES, languageAlternates, localizedPath, type PrefixedLocale, type SeoLocale } from './seo-locales'
+import { HREFLANG, OG_LOCALES, languageAlternates, localizedPath, type GuideLocale, type PrefixedGuideLocale } from './seo-locales'
 import { serverTranslator } from './server-i18n'
 import { OG_SITE_DEFAULTS, guideSocialCardKey, socialImages } from './social-preview'
 
@@ -22,7 +22,7 @@ const TITLE_SUFFIX = ' | Boardly'
 
 /** A guide in one of the prefixed languages: its `<head>` copy, from the translation itself. */
 export interface GuideTranslation {
-  locale: PrefixedLocale
+  locale: PrefixedGuideLocale
   seo: LocalizedGuideSeo
 }
 
@@ -33,7 +33,7 @@ export function getGuideCanonical(slug: string): string {
 
 function resolve(slug: string, translation?: GuideTranslation) {
   const guide = getGuideBySlug(slug)
-  const locale: SeoLocale = translation?.locale ?? 'en'
+  const locale: GuideLocale = translation?.locale ?? 'en'
   const at = (path: string) => {
     const localized = localizedPath(path, locale)
     return localized === '/' ? BOARDLY_URL : `${BOARDLY_URL}${localized}`

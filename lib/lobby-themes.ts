@@ -26,11 +26,22 @@ const DARK_THEME_SHADE: Record<string, string> = { '--bd-lav-deep': '#8070EE' }
 // Ocean's ink is a mid navy, so the default ring on an ink-filled control is 2.7:1; this one is 3.1:1 there and on its pale surfaces.
 const OCEAN_SHADE: Record<string, string> = { '--bd-lav-deep': '#8272F4' }
 const LIGHT_THEME_TEXT: Record<string, string> = { '--bd-coral-text': '#B71F14', '--bd-mint-text': '#076F57', '--bd-lav-text': '#5E49C7', '--bd-sky-text': '#04658C' }
+// The status colours of app/globals.css (#1550), light and dark, so a dark theme inside a light page does not draw a pale error box.
+const LIGHT_THEME_STATUS: Record<string, string> = {
+  '--bd-danger': '#C62828', '--bd-danger-text': '#B3261E', '--bd-danger-bg': '#FDECEA', '--bd-danger-border': '#F0B3AC', '--bd-ink-on-danger': '#FFFFFF',
+  '--bd-success': '#1C8A6B', '--bd-success-text': '#076F57', '--bd-success-bg': '#E3F5EE', '--bd-success-border': '#A6DCC8',
+  '--bd-warning': '#9E6C00', '--bd-warning-text': '#875D01', '--bd-warning-bg': '#FFF3D6', '--bd-warning-border': '#EFD08A',
+}
+const DARK_THEME_STATUS: Record<string, string> = {
+  '--bd-danger': '#F2665C', '--bd-danger-text': '#FF8A80', '--bd-danger-bg': '#3A201D', '--bd-danger-border': '#6E302A', '--bd-ink-on-danger': '#1F1B16',
+  '--bd-success': '#4FC9A6', '--bd-success-text': '#4AC3A0', '--bd-success-bg': '#15302A', '--bd-success-border': '#285A4C',
+  '--bd-warning': '#FFC44D', '--bd-warning-text': '#FFC44D', '--bd-warning-bg': '#352A12', '--bd-warning-border': '#62501F',
+}
 
 export function getThemePageStyle(theme: string | null | undefined): CSSProperties {
   const t = getLobbyTheme(theme)
   const isDefault = !theme || theme === 'default'
-  if (isDefault) return { transition: 'background 0.3s ease, color 0.3s ease' }
+  if (isDefault) return { transition: 'background var(--bd-dur) var(--bd-ease-out), color var(--bd-dur) var(--bd-ease-out)' }
 
   return {
     '--bd-bg': t.bg,
@@ -49,13 +60,15 @@ export function getThemePageStyle(theme: string | null | undefined): CSSProperti
     '--bd-input-border': t.inputBorder,
     '--bd-btn-ink': t.text,
     // A light theme sets them too, or inside html.dark it would inherit the pale dark values.
-    ...(t.dark ? { ...DARK_THEME_TEXT, ...DARK_THEME_SHADE } : LIGHT_THEME_TEXT),
+    ...(t.dark ? { ...DARK_THEME_TEXT, ...DARK_THEME_SHADE, ...DARK_THEME_STATUS } : { ...LIGHT_THEME_TEXT, ...LIGHT_THEME_STATUS }),
     ...(theme === 'ocean' ? OCEAN_SHADE : {}),
     '--bd-inverse': t.dark ? t.bg2 : t.text,
     '--bd-ink-on-inverse': t.dark ? t.text : t.bg,
     '--bd-sun-text': t.dark ? '#FFC44D' : '#875D01',
+    '--bd-board-line': t.dark ? '#A89A88' : '#1F1B16',
+    '--bd-board-cell': t.dark ? t.bg : '#ffffff',
     background: t.bg,
     color: t.text,
-    transition: 'background 0.3s ease, color 0.3s ease',
+    transition: 'background var(--bd-dur) var(--bd-ease-out), color var(--bd-dur) var(--bd-ease-out)',
   } as CSSProperties
 }

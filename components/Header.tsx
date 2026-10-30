@@ -1,8 +1,9 @@
 'use client'
 
 import dynamic from 'next/dynamic'
+import Link from 'next/link'
 import { useSession } from 'next-auth/react'
-import { useRouter, usePathname } from 'next/navigation'
+import { usePathname } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { HeaderNavigation } from './Header/HeaderNavigation'
 import { HeaderActions } from './Header/HeaderActions'
@@ -32,7 +33,6 @@ const LanguageSwitcher = dynamic(() => import('./LanguageSwitcher'), {
 
 export default function Header() {
   const { data: session, status } = useSession()
-  const router = useRouter()
   const pathname = usePathname()
   const localize = useLocalizedHref()
   const [isGuestUiReady, setIsGuestUiReady] = useState(false)
@@ -42,11 +42,6 @@ export default function Header() {
     setIsGuestUiReady(true)
   }, [])
 
-  // Don't show header on auth pages
-  if (pathname?.startsWith('/auth')) {
-    return null
-  }
-
   const isAuthenticated = status === 'authenticated'
   const isLoading = status === 'loading'
   const isAuthUiReady = isGuestUiReady && !isLoading
@@ -55,7 +50,7 @@ export default function Header() {
   return (
     <>
     <header
-      className="site-header sticky top-0 z-50"
+      className="site-header sticky top-0 z-header"
       style={{
         height: '64px',
         minHeight: '64px',
@@ -67,12 +62,13 @@ export default function Header() {
         <div className="flex items-center justify-between gap-3 sm:gap-4 min-w-0" style={{ height: '100%' }}>
           {/* Logo and main navigation */}
           <div className="flex items-center min-w-0 flex-1">
-            <button
-              onClick={() => router.push(localize('/'))}
+            <Link
+              href={localize('/')}
               className="flex shrink-0 items-center gap-2 whitespace-nowrap hover:opacity-80 transition-opacity"
               style={{ fontFamily: 'var(--bd-font-display)', fontWeight: 800, fontSize: 22, letterSpacing: '-0.03em', color: 'var(--bd-ink)' }}
             >
               <span
+                aria-hidden="true"
                 style={{
                   width: 34,
                   height: 34,
@@ -92,7 +88,7 @@ export default function Header() {
               </span>
               {/* i18n-allow: brand wordmark, identical in all four locales */}
               boardly
-            </button>
+            </Link>
 
             <HeaderNavigation isAuthenticated={effectiveIsAuthenticated} />
           </div>
@@ -103,7 +99,7 @@ export default function Header() {
               <LanguageSwitcher />
             </div>
 
-            <div className="hidden desk:block">
+            <div className="site-header-audio hidden desk:block">
               <AudioSettingsButton />
             </div>
 

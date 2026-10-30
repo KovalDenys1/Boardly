@@ -17,7 +17,7 @@ import { buildTerminalFieldsAndPlayerUpdates } from '@/lib/game-persistence'
 import { checkAchievementsOnStatusChange } from '@/lib/achievement-engine'
 import { gameStateRequestSchema, type AutoActionContextRequest } from '@/lib/validation/game-state'
 import { runAfterResponse } from '@/lib/after-response'
-import { buildBotTurnHeaders, getInternalAppOrigin, postBotTurn } from '@/lib/bot-turn-trigger'
+import { runBotTurn } from '@/lib/bot-turn-runner'
 import { requiresTermsAcceptance } from '@/lib/terms-gate'
 import { applySpyAction, spyActionSchema } from '@/lib/spy-action'
 import { LiarsPartyGame, liarsPartyTimeoutRecord } from '@/lib/games/liars-party-game'
@@ -36,7 +36,6 @@ const AUTO_ACTION_DEBOUNCE_MS = 2000
 const AUTO_ACTION_DEBOUNCE_TTL_MS = 60000
 const STATE_CHANGE_NOTIFY_TIMEOUT_MS = 750
 const FAST_STATE_CHANGE_NOTIFY_TIMEOUT_MS = 250
-const BOT_TURN_TRIGGER_TIMEOUT_MS = 15000
 const limiter = rateLimit(rateLimitPresets.game)
 
 function normalizeTimestamp(value: unknown): number | null {
@@ -114,119 +113,33 @@ function shouldDebounceAutoAction(key: string): boolean {
   return false
 }
 
-function resolveTurnEndToBotTriggerMs(state: unknown, triggeredAt: number): number | null {
-  const stateRecord = typeof state === 'object' && state !== null
-    ? (state as Record<string, unknown>)
-    : null
-  const lastMoveAt = normalizeTimestamp(stateRecord?.lastMoveAt)
-  if (lastMoveAt === null) return null
-
-  const latencyMs = triggeredAt - lastMoveAt
-  return Number.isFinite(latencyMs) && latencyMs >= 0 ? latencyMs : null
-}
-
 function resolveStateChangeNotifyTimeoutMs(gameType: string): number {
   return gameType === 'tic_tac_toe'
     ? FAST_STATE_CHANGE_NOTIFY_TIMEOUT_MS
     : STATE_CHANGE_NOTIFY_TIMEOUT_MS
 }
 
-function autoTriggerBotTurn(params: {
-  request: NextRequest
+// In this invocation after the response, not over HTTP: a call back to this app crosses the public edge and the proxy.
+function startBotTurn(params: {
   log: ReturnType<typeof apiLogger>
   gameId: string
-  gameType: string
   lobbyCode: string
   botUserId: string
   moveType: string
-  authoritativeState: unknown
 }) {
-  const { request, log, gameId, gameType, lobbyCode, botUserId, moveType, authoritativeState } = params
-  // The target is this app's own fixed origin, never the inbound request's — see
-  // getInternalAppOrigin (#1116, audit S2-01).
-  const botTurnApiUrl = `${getInternalAppOrigin()}/api/game/${gameId}/bot-turn`
-  const controller = new AbortController()
-  const timeoutId = setTimeout(() => controller.abort(), BOT_TURN_TRIGGER_TIMEOUT_MS)
-  const triggeredAt = Date.now()
-  const turnEndToBotTriggerMs = resolveTurnEndToBotTriggerMs(authoritativeState, triggeredAt)
-  const internalSecret = process.env.BOARDLY_INTERNAL_SECRET
-  const forwardedAuthorization = request.headers.get('authorization')
-  const forwardedGuestToken = request.headers.get('X-Guest-Token')
-  // A registered user's session lives in a cookie. The bot-turn route runs on
-  // the same origin and authorises the caller the same way this route did, so
-  // the cookie travels with the internal call – without it a logged-in player
-  // in an environment with no BOARDLY_INTERNAL_SECRET (local dev) got a silent
-  // 401 and a bot that never moved. When a secret IS configured it is the call's
-  // only credential: buildBotTurnHeaders drops the cookie (and Authorization)
-  // rather than forwarding both (#1116, audit S2-01).
-  const forwardedCookie = request.headers.get('cookie')
-  const botTurnHeaders = buildBotTurnHeaders({
-    internalSecret,
-    authorization: forwardedAuthorization,
-    guestToken: forwardedGuestToken,
-    cookie: forwardedCookie,
-  })
+  const { log, gameId, lobbyCode, botUserId, moveType } = params
+  log.debug('Starting bot turn after player move', { gameId, botUserId, moveType })
 
-  if (!internalSecret && !forwardedAuthorization && !forwardedGuestToken && !forwardedCookie) {
-    log.warn('Bot turn trigger has no identity: set BOARDLY_INTERNAL_SECRET or call with a session', {
-      gameId,
-      botUserId,
-    })
-  }
-
-  log.debug('Auto-triggering bot turn after player move', {
-    gameId,
-    gameType,
-    botUserId,
-    moveType,
-    turnEndToBotTriggerMs,
-  })
-
-  // `after()` and not a bare `void fetch(...)`: this route returns as soon as the
-  // move is written, and on Vercel the instance can be frozen the moment the
-  // response is sent — which cut the trigger off mid-flight and left the bot
-  // waiting for a client-side watchdog (in Rock Paper Scissors, the full round
-  // timer). `after` keeps the invocation alive until the work settles.
   runAfterResponse(
-    postBotTurn(botTurnApiUrl, {
-    headers: botTurnHeaders,
-    body: JSON.stringify({
-      botUserId,
-      lobbyCode,
-      triggerSource: 'state-route-auto',
-      triggeredAt,
-      turnEndToBotTriggerMs,
-    }),
-    signal: controller.signal,
-  })
-    .then(async (botResponse) => {
-      clearTimeout(timeoutId)
-      if (!botResponse.ok) {
-        const errorPayload = await botResponse.json().catch(() => null)
-        log.warn('Auto-triggered bot turn failed', {
-          gameId,
-          botUserId,
-          status: botResponse.status,
-          error: errorPayload,
-        })
-      }
-    })
-    .catch((triggerError) => {
-      clearTimeout(timeoutId)
-      if ((triggerError as Error)?.name === 'AbortError') {
-        log.warn('Auto-triggered bot turn request timed out', {
-          gameId,
-          botUserId,
-        })
-        return
-      }
-
-      log.warn('Failed to auto-trigger bot turn request', {
-        gameId,
-        botUserId,
-        error: triggerError,
+    runBotTurn({ gameId, botUserId, lobbyCode, source: 'state-route-auto', turnStartedAt: Date.now() })
+      .then((outcome) => {
+        if (outcome.status !== 200 && outcome.status !== 409) {
+          log.warn('Bot turn after player move failed', { gameId, botUserId, status: outcome.status, error: outcome.body })
+        }
       })
-    })
+      .catch((error) => {
+        log.warn('Bot turn after player move failed', { gameId, botUserId, error })
+      })
   )
 }
 
@@ -763,15 +676,12 @@ export async function POST(
     }
 
     if (botUserIdToTrigger) {
-      autoTriggerBotTurn({
-        request,
+      startBotTurn({
         log,
         gameId,
-        gameType: game.lobby.gameType,
         lobbyCode: game.lobby.code,
         botUserId: botUserIdToTrigger,
         moveType: gameMove.type,
-        authoritativeState,
       })
     }
 

@@ -167,7 +167,7 @@ export default function AvatarPicker({
             {t('profile.avatarPicker.customPhoto')}
           </p>
           {hasUploadPack ? (
-            <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
+            <span className="rounded-full bg-bd-sun/25 px-2 py-0.5 text-[10px] font-bold text-bd-sun-text">
               {t('profile.avatarPicker.unlocked')}
             </span>
           ) : (
@@ -212,7 +212,7 @@ export default function AvatarPicker({
                 <button
                   type="button"
                   onClick={onUnlockUpload}
-                  className="flex items-center gap-2 rounded-xl bg-amber-500 px-4 py-2 text-sm font-bold text-bd-ink-on-accent shadow-xs transition hover:bg-amber-600 active:scale-95"
+                  className="flex items-center gap-2 rounded-xl bg-bd-premium px-4 py-2 text-sm font-bold text-bd-ink-on-accent shadow-xs transition hover:bg-bd-sun-deep active:scale-95"
                 >
                   <Icon name="star" size={14} />
                   <span>{t('profile.avatarPicker.getPremium')}</span>

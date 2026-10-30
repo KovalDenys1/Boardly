@@ -1,5 +1,7 @@
 export type OperationalPayloadValue = string | number | boolean | null
 
+export const MAX_OPS_EVENT_BODY_BYTES = 4096
+
 export const OPERATIONAL_EVENT_NAMES = [
   'rejoin_timeout',
   'auth_refresh_failed',
@@ -60,6 +62,9 @@ export const SERVER_OPERATIONAL_EVENT_NAMES = [
   'bot_turn_applied',
   // Server-only: a client-posted copy could invent conversions for a prompt nobody clicked.
   'guest_upgraded',
+  // Written by lib/lobby-reopen.ts when an old link reopens its table. A forged row would
+  // count returns that never happened.
+  'lobby_reopened',
 ] as const
 
 export type ServerOperationalEventName = (typeof SERVER_OPERATIONAL_EVENT_NAMES)[number]

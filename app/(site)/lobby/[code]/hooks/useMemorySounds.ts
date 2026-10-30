@@ -2,12 +2,12 @@
 
 import { useCallback, useRef } from 'react'
 import { motionCues, useLiveCues, type CuePlay } from '@/hooks/useLiveCues'
-import { faceUpCardIds, matchedCardIds, takeRemoteFlips, type MemoryCardLike } from '@/lib/memory-motion'
+import { MEMORY_FLIP_MS, faceUpCardIds, matchedCardIds, takeRemoteFlips, type MemoryCardLike } from '@/lib/memory-motion'
 import { prefersReducedMotion } from '@/lib/motion'
 import { playCue } from '@/lib/sound-engine'
 
-/** Must equal the memory-match-pop delay in app/globals.css. */
-export const MATCH_POP_DELAY_MS = 400
+/** The pop plays when the flip lands, the memory-match-pop delay in app/globals.css. */
+export const MATCH_POP_DELAY_MS = MEMORY_FLIP_MS
 
 /** One move turns over at most a pair; a bigger difference is a snapshot catching up. */
 const ONE_MOVE_CARDS = 2

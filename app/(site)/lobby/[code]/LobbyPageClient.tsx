@@ -7,11 +7,9 @@ import { useSession } from 'next-auth/react'
 import { YahtzeeGame, type YahtzeeGameData } from '@/lib/games/yahtzee-game'
 import { ConnectionStatus } from '@/components/ConnectionStatus'
 import { playCue, type PlayOptions } from '@/lib/sound-engine'
-import { toggleSoundEnabled } from '@/lib/sound-settings'
 import type { CueId } from '@/lib/sound-map'
 import { lobbySoundCues } from '@/lib/lobby-sound-cues'
 import { useSoundConsumer } from '@/hooks/useSoundConsumer'
-import { useSoundSettings } from '@/hooks/useSoundSettings'
 import { useConfetti } from '@/hooks/useConfetti'
 import { useRemoteRoll } from '@/hooks/useRemoteRoll'
 import type { RollHistoryEntry } from '@/components/RollHistory'
@@ -22,7 +20,7 @@ import { Game, GamePlayer, GameUpdatePayload, PlayerJoinedPayload, GameStartedPa
 import type { BaseBotActionEvent, YahtzeeBotActionEvent } from '@/lib/bots'
 import { selectBestAvailableCategory, calculateScore, YahtzeeCategory, ALL_CATEGORIES, getActiveCategories } from '@/lib/yahtzee'
 import { GameEngine } from '@/lib/game-engine'
-import { DEFAULT_GAME_TYPE } from '@/lib/game-catalog'
+import { DEFAULT_GAME_TYPE, getAvailableGameTypes } from '@/lib/game-catalog'
 import { canCreateLobbyForGameType, getGameLobbiesRoute, getLobbyCreateRoute } from '@/lib/public-game-access'
 import { restoreGameEngineClient } from '@/lib/restore-game-engine-client'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
@@ -101,6 +99,7 @@ import { useShellGameSounds } from './hooks/useShellGameSounds'
 import { useSpectatorResultCue } from '@/hooks/useSpectatorResultCue'
 import { RESULT_REVEAL_DELAY_MS } from '@/lib/live-finish'
 import { LobbyPageErrorFallback, LobbyPageLoadingFallback } from './components/LobbyPageFallbacks'
+import ReopenTablePanel from './components/ReopenTablePanel'
 import { showToast } from '@/lib/i18n-toast'
 import { useGuest } from '@/contexts/GuestContext'
 import { fetchWithGuest } from '@/lib/fetch-with-guest'
@@ -108,15 +107,15 @@ import { getLobbyPlayerRequirements } from '@/lib/lobby-player-requirements'
 import { useLobbyRouteState } from './hooks/useLobbyRouteState'
 import { useLeaveLobby } from './hooks/useLeaveLobby'
 import type { BotDifficulty } from '@/lib/bot-profiles'
-import { isTerminalGameStatus, resolveLifecycleRedirectReason } from '@/lib/lobby-lifecycle'
+import { isTerminalGameStatus, resolveClosedLobbyOutcome, resolveLifecycleRedirectReason } from '@/lib/lobby-lifecycle'
 import { trackInviteOpened, trackLobbyLeaveRedirect } from '@/lib/analytics'
 import { parseInviteAttribution, readDocumentNavigation, stripInviteMarker } from '@/lib/invite-attribution'
 import { resolveDedicatedLobbyPageGameType } from '@/lib/lobby-page-routing'
 import { resolveLobbySurface } from '@/lib/lobby-surface'
 import { getLobbyTheme, getThemePageStyle } from '@/lib/lobby-themes'
 import LeaveIcon from '@/components/LeaveIcon'
-import GameLeaveButton from '@/components/game-chrome/GameLeaveButton'
-import GameStatusBanner from '@/components/game-chrome/GameStatusBanner'
+import GameStatusBanner, { type GameTurn } from '@/components/game-chrome/GameStatusBanner'
+import GamePageHeading from '@/components/game-chrome/GamePageHeading'
 import GameTabs from '@/components/game-chrome/GameTabs'
 import GamePlayerCard from '@/components/game-chrome/GamePlayerCard'
 import GameScoreboardHeader, { type GameHeaderRoom } from '@/components/game-chrome/GameScoreboardHeader'
@@ -125,13 +124,13 @@ import YahtzeeDesktopLayout from '@/components/yahtzee/YahtzeeDesktopLayout'
 import { reportablePlayerId } from '@/lib/reportable-player'
 import { useActiveGameLayout } from '@/hooks/useActiveGameLayout'
 import { useYahtzeeHoldHint } from '@/hooks/useYahtzeeHoldHint'
+import { rematchRefusalToastKey } from '@/hooks/useRematchSignal'
 import { isBotSeat } from '@/lib/bots/core/bot-helpers'
 import { MOBILE_MAX_MEDIA_QUERY } from '@/lib/responsive-tokens'
 import { createStuckTurnRecovery, turnSignatureOf } from '@/lib/stuck-turn-recovery'
 
 const PlayerProfileCard = dynamic(() => import('@/components/PlayerProfileCard'))
 const YahtzeeScoreTable = dynamic(() => import('@/components/yahtzee/YahtzeeScoreTable'))
-const YahtzeeScorePills = dynamic(() => import('@/components/yahtzee/YahtzeeScorePills'))
 const YahtzeeDiceBar = dynamic(() => import('@/components/yahtzee/YahtzeeDiceBar'))
 // next/dynamic without `loading` has no Suspense boundary; these mount mid-game and must not hide the game while their chunk loads.
 const CelebrationBanner = dynamic(() => import('@/components/CelebrationBanner'), { loading: () => null })
@@ -186,7 +185,14 @@ const BELOW_HEADER_TOAST = { position: 'top-center', style: { marginTop: 'calc(v
 const LIFECYCLE_REDIRECT_FALLBACK_MS = 1600
 const WAITING_LOBBY_SYNC_INTERVAL_MS = 2000
 
-function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage?: (gameType: string) => void }) {
+function LobbyPageContent({
+  onSwitchToDedicatedPage,
+  reopened = false,
+}: {
+  onSwitchToDedicatedPage?: (gameType: string) => void
+  /** This viewer just reopened the table from its old link (#1594). */
+  reopened?: boolean
+}) {
   const router = useRouter()
   const params = useParams()
   const { data: session, status } = useSession()
@@ -200,7 +206,6 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
   const [loading, setLoading] = useState(true)
   const [startingGame, setStartingGame] = useState(false)
   const [error, setError] = useState('')
-  const { enabled: soundEnabled } = useSoundSettings()
   const { celebrate, fireworks } = useConfetti()
   const { t } = useTranslation()
 
@@ -1424,21 +1429,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
 
       const result = await response.json().catch(() => null)
       if (!response.ok) {
-        const translationKey =
-          typeof result?.translationKey === 'string' ? result.translationKey : null
-        const fallbackMessage =
-          (typeof result?.error === 'string' && result.error) || 'Failed to request rematch'
-
-        if (translationKey) {
-          showToast.error(translationKey, undefined, undefined, { id: 'rematch-request' })
-        } else {
-          showToast.error(
-            'toast.rematchRequestFailed',
-            undefined,
-            { message: fallbackMessage },
-            { id: 'rematch-request' }
-          )
-        }
+        showToast.error(rematchRefusalToastKey(response.status, result), undefined, undefined, { id: 'rematch-request' })
         return
       }
 
@@ -1774,15 +1765,6 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
     )
   }
 
-  const toggleSound = () => {
-    const newState = toggleSoundEnabled()
-    if (newState) playCue('ui.select')
-    showToast.success(newState ? 'game.ui.soundOn' : 'game.ui.soundOff', undefined, undefined, {
-      ...BELOW_HEADER_TOAST,
-      duration: 2000,
-    })
-  }
-
   const yahtzeeView = gameEngine instanceof YahtzeeGame ? (() => {
     const viewerId = getCurrentUserId() || null
     const currentPlayerId = gameEngine.getCurrentPlayer()?.id ?? null
@@ -1800,51 +1782,22 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
         || enginePlayers.find((p) => p.id === playerId)?.name
         || t('game.ui.playerFallback')
     }
-    const pills = enginePlayers.map((p) => ({
-      id: p.id,
-      name: nameOf(p.id),
-      score: p.score || 0,
-      isBot: isBotPlayer(p.id),
-      profileId: p.id === viewerId ? null : reportablePlayerId(game?.players ?? [], p.id),
-    }))
     const canScore = myTurn && !isMoveInProgress && rollsLeft < 3
 
-    const statusTitle = myTurn
-      ? rollsLeft === 3
-        ? t('yahtzee.ui.turnRollFirst')
-        : rollsLeft === 0
-          ? t('yahtzee.ui.turnPickBox')
-          : t('yahtzee.ui.turnHoldOrPick')
-      : t('yahtzee.ui.playerTurn', { player: nameOf(currentPlayerId) })
+    const turn: GameTurn = myTurn && !isSpectator
+      ? { whose: 'you', action: t(rollsLeft === 3 ? 'yahtzee.ui.turnRollFirst' : rollsLeft === 0 ? 'yahtzee.ui.turnPickBox' : 'yahtzee.ui.turnHoldOrPick') }
+      : { whose: 'player', player: nameOf(currentPlayerId), doing: t(rollsLeft === 0 ? 'yahtzee.ui.doingPickBox' : 'yahtzee.ui.doingRoll') }
 
     const statusBanner = (
       <GameStatusBanner
         isFinished={false}
-        activeTitle={statusTitle}
+        turn={turn}
         meta={t('yahtzee.ui.roundOf', { current: roundInfo.current, total: roundInfo.total })}
         secs={timeLeft}
         turnTimerLimit={turnTimerLimit}
         barColor="var(--bd-sun)"
         isYourTurn={myTurn}
       />
-    )
-
-    const header = (
-      <>
-        <div className="yz-topbar">
-          <YahtzeeScorePills players={pills} viewerId={viewerId} currentTurnId={currentPlayerId} onOpenProfile={setProfileUserId} />
-          <button
-            type="button"
-            className="yz-sound"
-            onClick={toggleSound}
-            aria-label={soundEnabled ? t('game.ui.disableSound') : t('game.ui.enableSound')}
-          >
-            <Icon name={soundEnabled ? 'sound-on' : 'sound-off'} size={16} />
-          </button>
-          <GameLeaveButton label={t('game.ui.leave')} onClick={() => setShowLeaveConfirmModal(true)} />
-        </div>
-        <div className="yz-status">{statusBanner}</div>
-      </>
     )
 
     const diceBar = (
@@ -1907,7 +1860,10 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
               {isBotPlayer(playerId) && (
                 <span className="bd-chip bd-chip-lav" style={{ padding: '0 5px', fontSize: 9, marginRight: 4 }}>{t('game.ui.botBadge')}</span>
               )}
-              {t('yahtzee.ui.pointsShort', { count: score })}
+              <ScorePop value={score} className="yz-subline-score">
+                <span className="yz-seat-points">{t('yahtzee.ui.pointsShort', { count: score })}</span>
+                <span className="yz-seat-points-compact" aria-hidden="true">{score}</span>
+              </ScorePop>
             </>
           }
         />
@@ -1936,6 +1892,11 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
                 <div className="yz-scoreboard-meta">{t('yahtzee.ui.total')}</div>
               </>
             }
+            centerCompact={
+              <ScorePop value={`${scoreOf(0)}:${scoreOf(1)}`} className="yz-scoreboard-score yz-scoreboard-score--compact">
+                {scoreOf(0)}<span className="yz-scoreboard-score__sep">:</span>{scoreOf(1)}
+              </ScorePop>
+            }
             rightCard={playerCard(enginePlayers[1].id, 'right')}
           />
         ) : (
@@ -1952,7 +1913,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
       </div>
     )
 
-    return { header, statusBanner, diceBar, table, revertNotice, scoreboard, panel }
+    return { statusBanner, diceBar, table, revertNotice, scoreboard, panel }
   })() : null
 
   return (
@@ -2006,7 +1967,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
            game branch below narrows `game` to non-null, which the inline
            `game?.status === 'playing'` comparison used to do on its own. */
         /* Waiting Room - unified card with pinned actions */
-        <div className="bd-card flex min-h-0 flex-1 flex-col overflow-hidden">
+        <div className="bd-card mx-auto flex min-h-0 w-full max-w-180 flex-1 flex-col overflow-hidden">
           <LobbyInfo
             lobby={lobby}
             game={game}
@@ -2050,7 +2011,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
           <div className="relative flex-1 min-h-0 overflow-hidden">
             <div
               aria-hidden={showLobbySettings}
-              className={`absolute inset-0 transition-opacity duration-200 motion-reduce:transition-none ${
+              className={`absolute inset-0 transition-opacity duration-bd-fast ${
                 showLobbySettings ? 'pointer-events-none opacity-0' : 'opacity-100'
               }`}
             >
@@ -2071,6 +2032,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
                   onAddBot={canStartGame ? handleAddBot : undefined}
                   kickedPlayers={kickedPlayers}
                   onUnkickPlayer={isCreator ? handleUnkickPlayer : undefined}
+                  leadWithShare={reopened && !hasMultipleHumans}
                 />
               </div>
               {/* Chat - mobile only, inside card */}
@@ -2096,7 +2058,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
             </div>
             <div
               aria-hidden={!showLobbySettings}
-              className={`absolute inset-0 overflow-y-auto transition-opacity duration-200 motion-reduce:transition-none ${
+              className={`absolute inset-0 overflow-y-auto transition-opacity duration-bd-fast ${
                 showLobbySettings ? 'opacity-100' : 'pointer-events-none opacity-0'
               }`}
             >
@@ -2182,6 +2144,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
             />
           ) : gameEngine && gameEngine instanceof YahtzeeGame ? (
             <div className="yahtzee-screen flex flex-col flex-1 min-h-0">
+              <GamePageHeading title={t('games.yahtzee.name')} />
               {(gameLayout === null || gameLayout === 'desktop') && (
                 <YahtzeeDesktopLayout
                   header={yahtzeeView?.scoreboard}
@@ -2213,7 +2176,8 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
 
               {(gameLayout === null || gameLayout === 'mobile') && (
                 <div className="desk:hidden shrink-0 yahtzee-top-status-bar">
-                  {yahtzeeView?.header}
+                  {yahtzeeView?.scoreboard}
+                  {yahtzeeView?.statusBanner}
                 </div>
               )}
 
@@ -2275,7 +2239,8 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
                         <div className="yz-panel">{yahtzeeView?.table}</div>
                       </div>
                       <div className="game-landscape-side yahtzee-landscape-side">
-                        {yahtzeeView?.header}
+                        {yahtzeeView?.scoreboard}
+                        {yahtzeeView?.statusBanner}
                         {yahtzeeView?.revertNotice}
                         {yahtzeeView?.diceBar}
                       </div>
@@ -2446,15 +2411,53 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
 
 export default function LobbyPage() {
   const params = useParams()
+  const router = useRouter()
   const { status } = useSession()
   const { isGuest, guestToken } = useGuest()
   const code = params.code as string
-  const { gameType, gameStatus, loading, handleGameStarted, handleGameReset } = useLobbyRouteState({
+  const {
+    gameType,
+    gameStatus,
+    lobby: routeLobby,
+    lastGame,
+    loading,
+    handleGameStarted,
+    handleGameReset,
+    refresh,
+  } = useLobbyRouteState({
     code,
     status,
     isGuest,
     guestToken,
   })
+  const [reopenedHere, setReopenedHere] = useState(false)
+
+  // A closed table's link offers to reopen it (#1594); past its window it leads to the game.
+  const closedGameAvailable = (getAvailableGameTypes() as string[]).includes(gameType as string)
+  const closedOutcome = React.useMemo(
+    () =>
+      resolveClosedLobbyOutcome({
+        gameStatus: lastGame?.status ?? null,
+        lobbyIsActive: routeLobby?.isActive,
+        createdAt: routeLobby?.createdAt as string | undefined,
+        pseudonymisedAt: routeLobby?.pseudonymisedAt as string | null | undefined,
+        gameAvailable: closedGameAvailable,
+      }),
+    [routeLobby, lastGame, closedGameAvailable]
+  )
+  const closedLobbyTarget =
+    (closedGameAvailable && getGameLobbiesRoute(gameType)?.replace(/\/lobbies$/, '')) || '/games'
+  const leaveClosedTable = useCallback(() => {
+    showToast.info('lobby.reopen.tooOld', undefined, undefined, { id: 'lobby-too-old' })
+    router.replace(closedLobbyTarget)
+  }, [closedLobbyTarget, router])
+  useEffect(() => {
+    if (closedOutcome === 'start_new') leaveClosedTable()
+  }, [closedOutcome, leaveClosedTable])
+  const handleTableOpen = useCallback((reopenedByViewer: boolean) => {
+    setReopenedHere(reopenedByViewer)
+    refresh()
+  }, [refresh])
   // Held here, not in LobbyPageContent: the dedicated game pages render instead of the shell.
   useSoundConsumer(lobbySoundCues(gameType))
 
@@ -2485,8 +2488,26 @@ export default function LobbyPage() {
     }
   }, [code])
 
-  if (loading) {
+  if (loading || closedOutcome === 'start_new') {
     return <LobbyPageLoadingFallback />
+  }
+
+  if (closedOutcome === 'reopen' && routeLobby) {
+    return (
+      <div className="bd-page bd-screen min-h-(--game-h)" style={getThemePageStyle(routeLobby.theme as string | undefined)}>
+        <div className="mx-auto flex min-h-(--game-h) max-w-7xl flex-col px-4 py-5 sm:px-6 sm:py-7 lg:px-8">
+          <div className="flex flex-1 items-center justify-center">
+            <ReopenTablePanel
+              lobby={routeLobby}
+              lastGame={lastGame}
+              viewerMode={status === 'authenticated' ? 'authenticated' : isGuest ? 'guest' : 'anonymous'}
+              onTableOpen={handleTableOpen}
+              onTooOld={leaveClosedTable}
+            />
+          </div>
+        </div>
+      </div>
+    )
   }
 
   // Route to dedicated pages only when the game is active or just finished.
@@ -2528,7 +2549,7 @@ export default function LobbyPage() {
   return (
     <ErrorBoundary fallback={<LobbyPageErrorFallback />}>
       <Suspense fallback={<LobbyPageLoadingFallback />}>
-        <LobbyPageContent onSwitchToDedicatedPage={handleGameStarted} />
+        <LobbyPageContent onSwitchToDedicatedPage={handleGameStarted} reopened={reopenedHere} />
       </Suspense>
     </ErrorBoundary>
   )

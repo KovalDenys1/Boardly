@@ -6,8 +6,8 @@ import LanguageDetector from 'i18next-browser-languagedetector'
 // htmlTag detection keeps the first client render aligned with that SSR output,
 // so 'en' resources are the only ones ever needed before hydration. The other
 // locales (~300-450KB of source each) are fetched on demand by changeLanguageLazy,
-// below, the moment a user's stored preference actually needs them. A /ru, /uk or
-// /no page brings its own (lib/page-locale.tsx).
+// below, the moment a user's stored preference actually needs them. A prefixed page
+// (/ru, /uk, /no, /de, /es) brings its own (lib/page-locale.tsx).
 import en from './locales/en'
 import { defaultLocale, availableLocales } from './locales/meta'
 import type { Locale } from './locales/meta'

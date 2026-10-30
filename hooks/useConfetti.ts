@@ -22,6 +22,11 @@ function loadConfetti(): Promise<ConfettiFn> {
   return confettiLoader
 }
 
+// canvas-confetti sets its canvas's z-index from a number, so the layer is read off the theme.
+function celebrationLayer(): number {
+  return Number(getComputedStyle(document.documentElement).getPropertyValue('--z-index-celebration'))
+}
+
 export function useConfetti() {
   const celebrate = useCallback(() => {
     if (prefersReducedMotion()) return
@@ -30,7 +35,7 @@ export function useConfetti() {
       const count = 200
       const defaults = {
         origin: { y: 0.7 },
-        zIndex: 9999,
+        zIndex: celebrationLayer(),
       }
 
       function fire(particleRatio: number, opts: Record<string, unknown>) {
@@ -76,7 +81,7 @@ export function useConfetti() {
       const confetti = await loadConfetti()
       const duration = 3 * 1000
       const animationEnd = Date.now() + duration
-      const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 9999 }
+      const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: celebrationLayer() }
 
       function randomInRange(min: number, max: number) {
         return Math.random() * (max - min) + min

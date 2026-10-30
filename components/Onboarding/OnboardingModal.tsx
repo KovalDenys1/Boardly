@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useId, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { signOut } from 'next-auth/react'
@@ -15,6 +15,7 @@ import { fetchWithGuest } from '@/lib/fetch-with-guest'
 import { getPublicRegisteredGameTypes, getGameLobbiesRoute } from '@/lib/public-game-access'
 import { getGameMetadata, hasBotSupport } from '@/lib/game-catalog'
 import GameIcon from '@/components/GameIcon'
+import Modal from '@/components/Modal'
 
 /**
  * `account` comes first, and only for a signed-in account with something to settle: the
@@ -38,6 +39,7 @@ export function OnboardingModal() {
   // Unticked on purpose: a public profile is an opt-in (#1131, GDPR Art. 25(2)).
   const [profilePublic, setProfilePublic] = useState(false)
   const [savingAccount, setSavingAccount] = useState(false)
+  const titleId = useId()
   // The age confirmation cannot be skipped: no close button and no "Skip for now" on
   // this step while it is asked. Someone under 13 signs out instead.
   const ageRequired = step === 'account' && accountSetup.confirmAge
@@ -62,13 +64,6 @@ export function OnboardingModal() {
   useEffect(() => {
     if (playedAlready) void skipOnboarding()
   }, [playedAlready, skipOnboarding])
-
-  useEffect(() => {
-    if (!showModal || isTourActive || playedAlready) return
-    const prev = document.body.style.overflow
-    document.body.style.overflow = 'hidden'
-    return () => { document.body.style.overflow = prev }
-  }, [showModal, isTourActive, playedAlready])
 
   if (!showModal || isTourActive || playedAlready) return null
 
@@ -126,22 +121,18 @@ export function OnboardingModal() {
   }
 
   return (
-    <div
-      className="fixed inset-0 z-100 flex items-end justify-center sm:items-center sm:p-4"
-      style={{ background: 'rgba(31,27,22,0.7)', backdropFilter: 'blur(4px)' }}
+    <Modal
+      isOpen
+      onClose={ageRequired ? () => {} : () => void skipOnboarding()}
+      dismissible={!ageRequired}
+      aria-labelledby={titleId}
+      initialFocus="dialog"
+      placement="sheet"
+      maxWidth="md"
+      bodyPadding="none"
+      panelClassName="rounded-t-[20px] border-2 border-bd-ink bg-bd-card-warm shadow-[0_-4px_0_var(--bd-ink)] sm:rounded-[20px] sm:shadow-[6px_6px_0_var(--bd-ink)]"
     >
-      <div
-        style={{
-          width: '100%',
-          maxWidth: 420,
-          background: 'var(--bd-card-warm)',
-          border: '2px solid var(--bd-ink)',
-          padding: '24px 24px 32px',
-          maxHeight: '92dvh',
-          overflowY: 'auto',
-        }}
-        className="rounded-[20px_20px_0_0] shadow-[0_-4px_0_var(--bd-ink)] sm:rounded-[20px] sm:shadow-[6px_6px_0_var(--bd-ink)]"
-      >
+      <div style={{ padding: '24px 24px 32px' }}>
         {/* Drag handle — mobile only */}
         <div
           style={{
@@ -201,6 +192,7 @@ export function OnboardingModal() {
             <GameIcon gameId="yahtzee" accentColor="var(--bd-ink)" size={28} />
           </div>
           <h2
+            id={titleId}
             style={{
               fontFamily: 'var(--bd-font-display)',
               fontSize: 20,
@@ -445,7 +437,7 @@ export function OnboardingModal() {
                     cursor: 'pointer',
                     textAlign: 'center',
                     transform: selectedGame === type ? 'translate(-1px, -1px)' : 'translate(0,0)',
-                    transition: 'transform 0.1s, background 0.1s',
+                    transition: 'transform var(--bd-dur-fast) var(--bd-ease-out), background var(--bd-dur-fast) var(--bd-ease-out)',
                   }}
                 >
                   <GameIcon gameId={meta.svgId} accentColor={selectedGame === type ? 'var(--bd-ink)' : meta.accentColor} size={30} />
@@ -506,6 +498,6 @@ export function OnboardingModal() {
           </>
         )}
       </div>
-    </div>
+    </Modal>
   )
 }

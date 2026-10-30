@@ -184,13 +184,13 @@ export default function BotMoveOverlay({
                 className="rounded-xl animate-pulse"
                 style={{
                   padding: `clamp(12px, 1.2vh, 20px)`,
-                  background: '#D1FAE5',
-                  border: `clamp(1.5px, 0.15vw, 2.5px) solid #22C55E`,
+                  background: 'var(--bd-success-bg)',
+                  border: `clamp(1.5px, 0.15vw, 2.5px) solid var(--bd-success)`,
                 }}
               >
                 <p
                   className="font-bold text-center"
-                  style={{ fontSize: `clamp(18px, 1.8vw, 28px)`, color: '#166534' }}
+                  style={{ fontSize: `clamp(18px, 1.8vw, 28px)`, color: 'var(--bd-success-text)' }}
                 >
                   {CATEGORY_DISPLAY_NAMES[currentStep.data.category as YahtzeeCategory] || currentStep.data.category}
                 </p>
@@ -199,7 +199,7 @@ export default function BotMoveOverlay({
                   style={{
                     fontSize: `clamp(22px, 2.2vw, 36px)`,
                     marginTop: `clamp(6px, 0.6vh, 10px)`,
-                    color: '#16A34A',
+                    color: 'var(--bd-success-text)',
                   }}
                 >
                   +{t('yahtzee.results.points', { count: currentStep.data.score })}
@@ -219,7 +219,7 @@ export default function BotMoveOverlay({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs animate-fade-in">
+    <div className="fixed inset-0 z-dialog flex items-center justify-center bg-bd-scrim backdrop-blur-xs animate-fade-in">
       <div
         className="rounded-2xl shadow-2xl mx-4 animate-scale-in"
         style={{
@@ -254,7 +254,7 @@ export default function BotMoveOverlay({
             style={{ height: `clamp(6px, 0.6vh, 10px)`, background: 'var(--bd-line)' }}
           >
             <div
-              className="rounded-full transition-[width] duration-500"
+              className="rounded-full transition-[width] duration-bd-slow"
               style={{
                 width: `${((currentStepIndex + 1) / steps.length) * 100}%`,
                 height: `clamp(6px, 0.6vh, 10px)`,

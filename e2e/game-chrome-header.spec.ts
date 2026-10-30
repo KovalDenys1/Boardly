@@ -41,7 +41,8 @@ for (const width of [320, 390, 1280]) {
       const inline = actions.locator('.game-header__actions-inline')
       const menu = actions.locator('.game-header__actions-menu')
       const shown = (await inline.isVisible()) ? inline : menu
-      if (width < 390) {
+      // Three actions (sound, invite, leave) fold into the menu below a 420px header.
+      if (width <= 390) {
         await expect(menu).toBeVisible()
         await expect(inline).toBeHidden()
       } else {
@@ -78,16 +79,29 @@ for (const width of [320, 390, 1280]) {
   })
 }
 
+for (const [width, height] of [[320, 568], [390, 844], [768, 1024], [1280, 800]]) {
+  test(`a spectator's header leaves the seats at least the room a player's does at ${width}x${height}`, async ({ page }) => {
+    await page.setViewportSize({ width, height })
+    await page.goto('/dev/game-chrome')
+    const seatsWidth = async (id: string) =>
+      (await (await header(page, id)).locator('.game-scoreboard-header').boundingBox())!.width
+    expect(await seatsWidth('spectator')).toBeGreaterThanOrEqual((await seatsWidth('two')) - 0.5)
+
+    const name = (await header(page, 'spectator')).locator('.game-header__name')
+    expect(await name.evaluate((el) => el.scrollWidth <= el.clientWidth)).toBe(true)
+  })
+}
+
 for (const width of [320, 390]) {
-  test(`a spectator's way back is a tile like Leave and the game's name keeps its room at ${width}px`, async ({ page }) => {
+  test(`a spectator's sound and way back fold into the menu below a 420px header at ${width}px`, async ({ page }) => {
     await page.setViewportSize({ width, height: 900 })
     await page.goto('/dev/game-chrome')
     const root = await header(page, 'spectator')
 
-    const back = root.locator('.game-leave-button--back')
-    await expect(back).toBeVisible()
-    expect((await back.boundingBox())!.width).toBeLessThanOrEqual(48)
-    const name = root.locator('.game-header__name')
-    expect(await name.evaluate((el) => el.scrollWidth <= el.clientWidth)).toBe(true)
+    await expect(root.locator('.game-header__actions-inline')).toBeHidden()
+    await root.locator('.game-header__more').click()
+    const menu = page.getByRole('menu')
+    await expect(menu.getByRole('menuitemcheckbox')).toBeVisible()
+    await expect(menu.locator('a[role="menuitem"]')).toHaveAttribute('href', /^\/lobby\/[^/]+$/)
   })
 }

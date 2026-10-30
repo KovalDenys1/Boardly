@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { apiLogger } from '@/lib/logger'
 import { getOrCreateBotUser, isPrismaUniqueConstraintError } from '@/lib/bot-helpers'
@@ -7,11 +7,17 @@ import { broadcastToLobby } from '@/lib/supabase-server'
 import { hasBotSupport } from '@/lib/game-registry'
 import { getBotDisplayName, normalizeBotDifficulty } from '@/lib/bot-profiles'
 import { recordLobbyParticipation } from '@/lib/lobby-participation'
+import { rateLimit, rateLimitPresets } from '@/lib/rate-limit'
+
+const limiter = rateLimit(rateLimitPresets.api)
 
 export async function POST(
-  request: Request,
+  request: NextRequest,
   { params }: { params: Promise<{ code: string }> }
 ) {
+  const rateLimitResult = await limiter(request)
+  if (rateLimitResult) return rateLimitResult
+
   try {
     let requestPayload: { difficulty?: string } = {}
     try {

@@ -107,7 +107,7 @@ export default function HeroDemoTicTacToe() {
               color: cell === 'X' ? 'var(--bd-coral)' : 'var(--bd-ink)',
               cursor: cell || winner ? 'default' : 'pointer',
               boxShadow: cell ? 'none' : '0 4px 0 rgba(31,27,22,0.2)',
-              transition: 'box-shadow 0.08s, transform 0.08s',
+              transition: 'box-shadow var(--bd-dur-fast) var(--bd-ease-out), transform var(--bd-dur-fast) var(--bd-ease-out)',
               lineHeight: 1,
               padding: 0,
             }}

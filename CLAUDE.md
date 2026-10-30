@@ -114,8 +114,8 @@ hands its `revalidate` to the page that calls it, so a 30 s cache in `Announceme
 static routes rebuild every 30 s, and Sentry's one-a-minute uptime check rebuilt `/` ~1 400 times a
 day. Read the build's route table after touching anything the layout reads: static rows say `1h`.
 
-**There are four root layouts since #928: `app/(site)/layout.tsx`, `app/ru/layout.tsx`,
-`app/uk/layout.tsx` and `app/no/layout.tsx`, all rendering `app/root-document.tsx`.** Next attaches a file-based
+**There are six root layouts since #1610: `app/(site)/layout.tsx` and one per language prefix,
+`app/ru`, `app/uk`, `app/no`, `app/de` and `app/es`, all rendering `app/root-document.tsx`.** Next attaches a file-based
 `opengraph-image` only to metadata set at its own segment level, so when the layouts moved, `/`
 and 20 static pages lost their share image while every test stayed green. The site card is now a
 route handler named in `siteMetadata` (`lib/site-card.tsx`). After touching layouts or metadata,
@@ -139,6 +139,9 @@ disagree, the vault's newer dated entry wins; fix this file in the same session.
 - Deployed on Vercel, functions in `fra1` (Frankfurt) — `vercel.json` "regions" since #622; it was iad1 before
 
 ## Responsive UI — Definition of Done (details: docs/RESPONSIVE.md)
+
+`.bd-btn` sits in `@layer utilities` and wins over Tailwind's own utilities: `px-*`, `py-*`,
+`text-sm` or `gap-*` on a `.bd-btn` do nothing (measured 2026-10-29). Use the `!` suffix (`px-3!`).
 
 Any change touching layout, a game board, or an in-game view is NOT done until all of:
 
@@ -193,11 +196,11 @@ plus 844×390 landscape). Check before calling it done:
    history card and chat; when a panel is hidden for another reason, its space is
    taken by something useful, such as a rules strip.
 2. **Shared controls in the same place in every game**, current and future:
-   - Leave: top-right, in the `trailing` slot of `GameScoreboardHeader`, via
-     `components/game-chrome/GameLeaveButton`; spectators get "Back to lobby" there.
+   - Leave: in the actions of `GameScoreboardHeader`'s `room` (`GameHeaderActions`); below a
+     316 px header the actions fold into one menu; spectators get "Back to lobby" there.
    - Whose turn / status: `GameStatusBanner` directly under the header.
    - Chat: right column on desktop, `GameTabs` tab on mobile.
-   - Result: `GameResultOverlay` over the board.
+   - Result: `GameResultOverlay`, a modal dialog over the whole game screen (z-61, above chat).
    Exceptions only where a game genuinely needs a different UI, and they are
    written down in the game's ticket.
 3. **Every state change moves (Denys, 2026-09-24).** A game with instant state swaps is not
@@ -242,7 +245,7 @@ plus 844×390 landscape). Check before calling it done:
 - [ ] Run `npx prisma generate` then `npm run db:migrate`
 
 ### Pages & UI
-- [ ] **Layout DoD above: Leave in the header trailing slot, no empty regions at 320 / 390 / 768 / 1280.**
+- [ ] **Layout DoD above: Leave in the header's `room` actions, no empty regions at 320 / 390 / 768 / 1280.**
 - [ ] **Motion DoD above (item 3):**
   - the opponent's and bot's moves animate from their origin to their destination;
   - captures, rolls, flips, turn and score changes move;
@@ -263,12 +266,12 @@ plus 844×390 landscape). Check before calling it done:
 - [ ] `app/(site)/games/<game>/lobbies/page.tsx` — lobbies list page (use `GameLobbiesPage`)
 - [ ] `app/(site)/lobby/[code]/<game>-page.tsx` — full game UI (dedicated lobby page)
 - [ ] `app/(site)/lobby/[code]/LobbyPageClient.tsx` — add dynamic import + route check
-- [ ] `app/localized-game-page.tsx` — add the detail component to `DETAIL_CONTENT`, so `/ru/games/<game>`, `/uk/games/<game>` and `/no/games/<game>` exist (#1394, #928); `localized-pages.test.tsx` fails without it
+- [ ] `app/localized-game-page.tsx` — add the detail component to `DETAIL_CONTENT`, so `/<locale>/games/<game>` exists under every language prefix (#1394, #928, #1610); `localized-pages.test.tsx` fails without it
 - [ ] Every new page goes under `app/(site)/`: outside every root layout, Next writes a bare layout for it
 - [ ] `components/HomePage/GameRibbon.tsx` – add to `translatedDetails` and `getIllustration`; the accent colour and the detail href are derived from the catalog entry, so there is nothing else to add
 
 ### Locales
-- [ ] `locales/en.ts`, `ru.ts`, `no.ts`, `uk.ts`, `de.ts`, `es.ts` — add complete `games.<game>` namespace, `seo.title` and `seo.description` included – they are the /ru, /uk and /no page titles (parity enforced by pre-commit hook)
+- [ ] `locales/en.ts`, `ru.ts`, `no.ts`, `uk.ts`, `de.ts`, `es.ts` — add complete `games.<game>` namespace, `seo.title` and `seo.description` included – they are the titles of the prefixed pages (parity enforced by pre-commit hook)
 
 ### Verify
 ```bash
@@ -766,7 +769,7 @@ as tickets in the queue's shape (labels `growth`, `agent-ok` / `needs-denys`), n
 it. Decisions taken 2026-09-14, not to re-open: $2.99 subscription + yearly plan, no
 one-time unlock, no tip jar, no Reddit posting, no Poki/CrazyGames (Product Hunt was on that
 list; Denys reopened it 2026-09-28 and confirmed it as a standing channel 2026-10-03), no
-ads near a game, localized URLs for game pages only. **2026-09-24: social accounts are on**
+ads near a game, localized URLs for game pages and guides only. **2026-09-24: social accounts are on**
 (TikTok, Instagram, YouTube, Threads, Facebook Page, Pinterest; handle `@playboardly`; plan in
 the vault's `Growth/Social Launch Kit 2026-09.md`), and the brand is **faceless**: never
 Denys's name, face or voice in marketing — screen recordings, on-screen text, synthetic voice,

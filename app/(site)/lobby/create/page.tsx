@@ -465,7 +465,7 @@ function CreateLobbyPage() {
       : t('lobby.create.preview.players', { count: allowed[0] })
 
   const chipOpt = (active: boolean) =>
-    `bd-chip flex-1 cursor-pointer justify-center py-2 text-sm transition-[background-color,border-color,color] duration-150 ${FOCUS_RING} ${
+    `bd-chip flex-1 cursor-pointer justify-center py-2 text-sm transition-[background-color,border-color,color] duration-bd-fast ${FOCUS_RING} ${
       active ? 'border-bd-ink bg-bd-ink text-bd-bg' : 'hover:border-bd-ink'
     }`
 
@@ -522,7 +522,7 @@ function CreateLobbyPage() {
   // on desktop both are on screen, so only the game list ever covers the summary.
   const settingsHidden = isMobile && view !== 'options'
   const stageHidden = isMobile && view === 'options'
-  const layerMotion = 'transition-[opacity,translate] duration-200 ease-out'
+  const layerMotion = 'transition-[opacity,translate] duration-bd-fast ease-out'
 
   return (
     <div className="page-shell bd-page bd-screen" style={getThemePageStyle(selectedTheme)}>
@@ -557,14 +557,14 @@ function CreateLobbyPage() {
                       ref={changeGameRef}
                       type="button"
                       onClick={() => setView('games')}
-                      className={`inline-flex items-center gap-1.5 rounded-full border-[1.5px] border-bd-line bg-bd-card-warm px-3.5 py-2 text-[13px] font-semibold text-bd-ink transition-[border-color] duration-150 hover:border-bd-ink ${FOCUS_RING}`}
+                      className={`inline-flex items-center gap-1.5 rounded-full border-[1.5px] border-bd-line bg-bd-card-warm px-3.5 py-2 text-[13px] font-semibold text-bd-ink transition-[border-color] duration-bd-fast hover:border-bd-ink ${FOCUS_RING}`}
                     >
                       <Icon name="gamepad" size={15} />
                       {t('lobby.create.changeGame')}
                     </button>
                   </div>
                   <div className="grid flex-1 place-items-center px-2 pt-2 pb-4">
-                    <div key={selectedGameType} className="motion-safe:animate-[bd-screen-in_0.35s_var(--bd-ease-out)] motion-reduce:animate-[fade-in-plain_0.2s_ease-out]">
+                    <div key={selectedGameType} className="bd-screen">
                       <GameArt
                         gameType={selectedGameType}
                         svgId={gameInfo.svgId}
@@ -576,7 +576,7 @@ function CreateLobbyPage() {
                   </div>
                 </div>
 
-                <div key={`about-${selectedGameType}`} className="space-y-1.5 motion-safe:animate-[bd-screen-in_0.35s_var(--bd-ease-out)] motion-reduce:animate-[fade-in-plain_0.2s_ease-out]">
+                <div key={`about-${selectedGameType}`} className="space-y-1.5 bd-screen">
                   <h1
                     className="text-balance text-[clamp(22px,2.6vw,30px)] font-extrabold leading-tight text-bd-ink"
                     style={{ fontFamily: 'var(--bd-font-display)' }}
@@ -608,7 +608,7 @@ function CreateLobbyPage() {
                   ref={settingsRowRef}
                   type="button"
                   onClick={() => setView('options')}
-                  className={`flex w-full items-center gap-3 rounded-2xl border-[1.5px] border-bd-line bg-bd-card-warm px-4 py-3.5 text-left transition-[border-color] duration-150 hover:border-bd-ink desk:hidden ${FOCUS_RING}`}
+                  className={`flex w-full items-center gap-3 rounded-2xl border-[1.5px] border-bd-line bg-bd-card-warm px-4 py-3.5 text-left transition-[border-color] duration-bd-fast hover:border-bd-ink desk:hidden ${FOCUS_RING}`}
                 >
                   <span className="text-bd-ink-soft"><Icon name="gear" size={18} /></span>
                   <span className="min-w-0 flex-1">
@@ -638,7 +638,7 @@ function CreateLobbyPage() {
                   type="button"
                   onClick={() => setView('summary')}
                   aria-label={t('common.back')}
-                  className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-bd-ink transition-[background-color] duration-150 hover:bg-bd-bg2 ${FOCUS_RING}`}
+                  className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-bd-ink transition-[background-color] duration-bd-fast hover:bg-bd-bg2 ${FOCUS_RING}`}
                 >
                   <Icon name="arrow-left" size={18} />
                 </button>
@@ -657,7 +657,7 @@ function CreateLobbyPage() {
                         onClick={() => pickGame(key as GameType)}
                         aria-pressed={isSelected}
                         aria-label={t('lobby.create.selectGame', { name })}
-                        className={`flex w-full items-center gap-3 rounded-2xl border-[1.5px] px-4 py-3 text-left transition-[background-color,border-color,color] duration-150 ${FOCUS_RING} ${
+                        className={`flex w-full items-center gap-3 rounded-2xl border-[1.5px] px-4 py-3 text-left transition-[background-color,border-color,color] duration-bd-fast ${FOCUS_RING} ${
                           isSelected ? 'border-bd-ink bg-bd-ink text-bd-bg' : 'border-bd-line bg-bd-bg text-bd-ink hover:border-bd-ink'
                         }`}
                       >
@@ -754,7 +754,7 @@ function CreateLobbyPage() {
                   type="button"
                   onClick={() => setView('summary')}
                   aria-label={t('common.back')}
-                  className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-bd-ink transition-[background-color] duration-150 hover:bg-bd-bg2 desk:hidden ${FOCUS_RING}`}
+                  className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-bd-ink transition-[background-color] duration-bd-fast hover:bg-bd-bg2 desk:hidden ${FOCUS_RING}`}
                 >
                   <Icon name="arrow-left" size={18} />
                 </button>
@@ -956,7 +956,7 @@ function CreateLobbyPage() {
                             cursor: isLocked ? 'not-allowed' : 'pointer',
                             opacity: isLocked ? 0.5 : 1,
                             overflow: 'hidden',
-                            transition: 'border-color 0.15s, box-shadow 0.15s',
+                            transition: 'border-color var(--bd-dur-fast) var(--bd-ease-out), box-shadow var(--bd-dur-fast) var(--bd-ease-out)',
                           }}
                         >
                           <span style={{
@@ -1005,7 +1005,7 @@ function CreateLobbyPage() {
                       position: 'relative', display: 'inline-flex', height: 28, width: 52,
                       alignItems: 'center', borderRadius: 999, border: 'none',
                       cursor: isPremiumUser ? 'pointer' : 'not-allowed',
-                      flexShrink: 0, transition: 'background-color 0.2s',
+                      flexShrink: 0, transition: 'background-color var(--bd-dur-fast) var(--bd-ease-out)',
                       background: formData.allowSpectators ? 'var(--bd-mint)' : 'var(--bd-bg2)',
                       opacity: isPremiumUser ? 1 : 0.5,
                     }}
@@ -1013,7 +1013,7 @@ function CreateLobbyPage() {
                     <span style={{
                       display: 'inline-block', width: 20, height: 20, borderRadius: '50%',
                       background: 'white', boxShadow: '0 1px 4px rgba(31,27,22,0.2)',
-                      transition: 'transform 0.2s',
+                      transition: 'transform var(--bd-dur-fast) var(--bd-ease-out)',
                       transform: formData.allowSpectators ? 'translateX(28px)' : 'translateX(4px)',
                     }} />
                   </button>
@@ -1053,6 +1053,7 @@ function CreateLobbyPage() {
           onClose={() => {}}
           onGuestReady={() => {}}
           onDismiss={() => router.push('/')}
+          dismissible={false}
         />
       )}
 

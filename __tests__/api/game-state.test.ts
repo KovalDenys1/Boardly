@@ -10,6 +10,7 @@ import { getRequestAuthUser } from '@/lib/request-auth'
 import { restoreGameEngine } from '@/lib/game-registry'
 import { broadcastToLobby } from '@/lib/supabase-server'
 import { appendGameReplaySnapshot } from '@/lib/game-replay'
+import { runBotTurn } from '@/lib/bot-turn-runner'
 
 jest.mock('@/lib/db', () => ({
   prisma: {
@@ -40,6 +41,10 @@ jest.mock('@/lib/game-replay', () => ({
   appendGameReplaySnapshot: jest.fn().mockResolvedValue(undefined),
 }))
 
+jest.mock('@/lib/bot-turn-runner', () => ({
+  runBotTurn: jest.fn(),
+}))
+
 jest.mock('@/lib/rate-limit', () => {
   const gameLimiter = jest.fn(() => Promise.resolve(null))
   return {
@@ -68,9 +73,17 @@ const mockAppendGameReplaySnapshot = appendGameReplaySnapshot as jest.MockedFunc
 const rateLimitModule = jest.requireMock('@/lib/rate-limit') as {
   __gameLimiter: jest.Mock
 }
+const mockRunBotTurn = runBotTurn as jest.MockedFunction<typeof runBotTurn>
 const originalFetch = global.fetch
 const mockFetch = jest.fn()
 const originalSocketSecret = process.env.BOARDLY_INTERNAL_SECRET
+const expectedBotTurn = {
+  gameId: 'game-123',
+  botUserId: 'bot-1',
+  lobbyCode: 'ABCD12',
+  source: 'state-route-auto',
+  turnStartedAt: expect.any(Number),
+}
 
 describe('POST /api/game/[gameId]/state', () => {
   const mockAuthUser = {
@@ -135,6 +148,7 @@ describe('POST /api/game/[gameId]/state', () => {
     mockBroadcastToLobby.mockResolvedValue(true as any)
     mockAppendGameReplaySnapshot.mockResolvedValue(undefined)
     mockPrisma.players.update.mockResolvedValue({} as any)
+    mockRunBotTurn.mockResolvedValue({ status: 200, body: { success: true } })
     mockFetch.mockResolvedValue({
       ok: true,
       json: async () => ({}),
@@ -932,25 +946,8 @@ describe('POST /api/game/[gameId]/state', () => {
     })
 
     expect(response.status).toBe(200)
-    expect(mockFetch).toHaveBeenCalledWith(
-      'http://localhost:3000/api/game/game-123/bot-turn',
-      expect.objectContaining({
-        method: 'POST',
-        headers: expect.objectContaining({
-          'Content-Type': 'application/json',
-          'X-Internal-Secret': 'test-internal-secret',
-        }),
-      }),
-    )
-    const [, requestInit] = mockFetch.mock.calls[0]
-    expect(JSON.parse(requestInit.body)).toEqual(
-      expect.objectContaining({
-        botUserId: 'bot-1',
-        lobbyCode: 'ABCD12',
-        triggerSource: 'state-route-auto',
-        triggeredAt: expect.any(Number),
-      })
-    )
+    expect(mockRunBotTurn).toHaveBeenCalledWith(expectedBotTurn)
+    expect(mockFetch).not.toHaveBeenCalled()
     expect(mockBroadcastToLobby).toHaveBeenCalledWith(
       'ABCD12',
       'game-update',
@@ -1021,118 +1018,15 @@ describe('POST /api/game/[gameId]/state', () => {
     })
 
     expect(response.status).toBe(200)
-    expect(mockFetch).toHaveBeenCalledWith(
-      'http://localhost:3000/api/game/game-123/bot-turn',
-      expect.objectContaining({
-        method: 'POST',
-        headers: expect.objectContaining({
-          'Content-Type': 'application/json',
-          'X-Internal-Secret': 'test-internal-secret',
-        }),
-      }),
-    )
-    const [, requestInit] = mockFetch.mock.calls[0]
-    expect(JSON.parse(requestInit.body)).toEqual(
-      expect.objectContaining({
-        botUserId: 'bot-1',
-        lobbyCode: 'ABCD12',
-        triggerSource: 'state-route-auto',
-        triggeredAt: expect.any(Number),
-      })
-    )
+    expect(mockRunBotTurn).toHaveBeenCalledWith(expectedBotTurn)
+    expect(mockFetch).not.toHaveBeenCalled()
   })
 
-  it('builds the bot-turn trigger URL from the fixed app origin, not a spoofed Host header, and forwards no Cookie/Authorization alongside the internal secret (#1116)', async () => {
-    const rpsState = {
-      ...persistedState,
-      status: 'playing',
-      currentPlayerIndex: 0,
-      lastMoveAt: Date.now(),
-      data: {
-        mode: 'best-of-3',
-        rounds: [],
-        playerChoices: {
-          'player-1': 'rock',
-          'bot-1': null,
-        },
-        playersReady: ['player-1'],
-        scores: {
-          'player-1': 0,
-          'bot-1': 0,
-        },
-        gameWinner: null,
-      },
-    }
-
-    const rpsDbGame = {
-      ...dbGame,
-      lobby: {
-        ...dbGame.lobby,
-        gameType: 'rock_paper_scissors',
-      },
-      players: [
-        { id: 'db-player-1', userId: 'player-1', user: { id: 'player-1', bot: null } },
-        {
-          id: 'db-player-bot',
-          userId: 'bot-1',
-          user: { id: 'bot-1', bot: { id: 'bot-meta-1' } },
-        },
-      ],
-    }
-
-    const mockEngine = {
-      makeMove: jest.fn().mockReturnValue(true),
-      getState: jest.fn(() => rpsState),
-      getCurrentPlayer: jest.fn(() => ({ id: 'player-1' })),
-      getPlayers: jest.fn(() => [
-        { id: 'player-1', score: 0 },
-        { id: 'bot-1', score: 0 },
-      ]),
-    }
-
-    mockGetRequestAuthUser.mockResolvedValue(mockAuthUser)
-    mockPrisma.games.findUnique.mockResolvedValueOnce(rpsDbGame as any)
-    mockPrisma.games.updateMany.mockResolvedValue({ count: 1 } as any)
-    mockPrisma.players.update.mockResolvedValue({} as any)
-    mockRestoreGameEngine.mockReturnValue(mockEngine as any)
-
-    // An attacker-controlled Host / X-Forwarded-Host, plus the player's own cookie and
-    // Authorization header on the inbound request — none of these may reach the trigger
-    // URL or headers while BOARDLY_INTERNAL_SECRET (set in beforeEach) is configured.
-    const request = new NextRequest('http://localhost:3000/api/game/game-123/state', {
-      method: 'POST',
-      headers: {
-        origin: 'http://localhost:3000',
-        host: 'evil.example',
-        'x-forwarded-host': 'evil.example',
-        cookie: 'next-auth.session-token=abc',
-        authorization: 'Bearer player-token',
-      },
-      body: JSON.stringify({ move: { type: 'submit-choice', data: { choice: 'rock' } } }),
-    })
-
-    const response = await POST(request, { params: Promise.resolve({ gameId: 'game-123' }) })
-
-    expect(response.status).toBe(200)
-    expect(mockFetch).toHaveBeenCalledWith(
-      'http://localhost:3000/api/game/game-123/bot-turn',
-      expect.anything(),
-    )
-    const [calledUrl, requestInit] = mockFetch.mock.calls[0]
-    expect(calledUrl).not.toContain('evil.example')
-    expect(requestInit.headers).toEqual({
-      'Content-Type': 'application/json',
-      'X-Internal-Secret': 'test-internal-secret',
-    })
-    expect(requestInit.headers).not.toHaveProperty('cookie')
-    expect(requestInit.headers).not.toHaveProperty('authorization')
-  })
-
-  it("forwards the player's session cookie to the bot-turn trigger when there is no internal secret (#870)", async () => {
-    // A registered user's session is a cookie; local dev has no
-    // BOARDLY_INTERNAL_SECRET. Without the cookie the internal call had no
-    // identity at all and the bot never moved.
-    process.env.BOARDLY_INTERNAL_SECRET = ''
+  it.each([
+    ['with the internal secret set', 'test-internal-secret'],
+    ['without the internal secret (#870)', ''],
+  ])("starts the bot's turn in this process from nothing in the player's request (#1116), %s", async (_label, secret) => {
+    process.env.BOARDLY_INTERNAL_SECRET = secret
     const rpsState = {
       ...persistedState,
       status: 'playing',
@@ -1172,16 +1066,21 @@ describe('POST /api/game/[gameId]/state', () => {
 
     const request = new NextRequest('http://localhost:3000/api/game/game-123/state', {
       method: 'POST',
-      headers: { origin: 'http://localhost:3000', cookie: 'next-auth.session-token=abc' },
+      headers: {
+        origin: 'http://localhost:3000',
+        host: 'evil.example',
+        'x-forwarded-host': 'evil.example',
+        cookie: 'next-auth.session-token=abc',
+        authorization: 'Bearer player-token',
+      },
       body: JSON.stringify({ move: { type: 'submit-choice', data: { choice: 'rock' } } }),
     })
     const response = await POST(request, { params: Promise.resolve({ gameId: 'game-123' }) })
 
     expect(response.status).toBe(200)
-    const [, requestInit] = mockFetch.mock.calls[0]
-    expect(requestInit.headers).toEqual(expect.objectContaining({ cookie: 'next-auth.session-token=abc' }))
-    expect(requestInit.headers).not.toHaveProperty('X-Internal-Secret')
-    process.env.BOARDLY_INTERNAL_SECRET = 'test-internal-secret'
+    expect(mockRunBotTurn).toHaveBeenCalledTimes(1)
+    expect(mockRunBotTurn).toHaveBeenCalledWith(expectedBotTurn)
+    expect(mockFetch).not.toHaveBeenCalled()
   })
 
   it('auto-accepts Tic-Tac-Toe draw offers from a bot when the position is a theoretical draw', async () => {
@@ -1352,25 +1251,8 @@ describe('POST /api/game/[gameId]/state', () => {
     })
 
     expect(response.status).toBe(200)
-    expect(mockFetch).toHaveBeenCalledWith(
-      'http://localhost:3000/api/game/game-123/bot-turn',
-      expect.objectContaining({
-        method: 'POST',
-        headers: expect.objectContaining({
-          'Content-Type': 'application/json',
-          'X-Internal-Secret': 'test-internal-secret',
-        }),
-      }),
-    )
-    const [, requestInit] = mockFetch.mock.calls[0]
-    expect(JSON.parse(requestInit.body)).toEqual(
-      expect.objectContaining({
-        botUserId: 'bot-1',
-        lobbyCode: 'ABCD12',
-        triggerSource: 'state-route-auto',
-        triggeredAt: expect.any(Number),
-      })
-    )
+    expect(mockRunBotTurn).toHaveBeenCalledWith(expectedBotTurn)
+    expect(mockFetch).not.toHaveBeenCalled()
   })
 
   it('returns 409 for second concurrent move when optimistic lock fails', async () => {

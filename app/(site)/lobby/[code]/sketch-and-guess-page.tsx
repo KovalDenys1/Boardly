@@ -11,7 +11,8 @@ import ConfirmModal from '@/components/ConfirmModal'
 import Chat from '@/components/Chat'
 import GameScoreboardHeader, { type GameHeaderRoom } from '@/components/game-chrome/GameScoreboardHeader'
 import GamePlayerCard from '@/components/game-chrome/GamePlayerCard'
-import GameStatusBanner from '@/components/game-chrome/GameStatusBanner'
+import GameStatusBanner, { type GameTurn } from '@/components/game-chrome/GameStatusBanner'
+import GamePageHeading from '@/components/game-chrome/GamePageHeading'
 import { viewerOutcome } from '@/lib/game-outcome'
 import ScorePop from '@/components/game-chrome/ScorePop'
 import GameTabs from '@/components/game-chrome/GameTabs'
@@ -1118,23 +1119,13 @@ export default function SketchAndGuessLobbyPage({ code, isSpectator = false, onG
         ? t('games.guess_my_drawing.game.youWin')
         : t('games.guess_my_drawing.game.winnerBanner', { name: winnerId ? nameOf(winnerId) : t('game.ui.playerFallback') })
 
-    const activeTitle = isFinished
-        ? finishedMessage
-        : phase === 'reveal'
-          ? t('games.guess_my_drawing.game.revealHeading', { prompt: revealedWord })
-          : phase === 'choosing'
-            ? isDrawer
-                ? t('games.guess_my_drawing.game.chooseWordTitle')
-                : t('games.guess_my_drawing.game.choosingWait', { name: nameOf(drawerId) })
-            : isDrawer
-              ? t('games.guess_my_drawing.game.drawerIntro')
-              : isSpectator
-                // A spectator has no seat, so "guess now" would be an instruction
-                // they cannot follow (#1033/#1034).
-                ? t('games.guess_my_drawing.game.spectatorGuessing')
-                : hasGuessed
-                  ? t('games.guess_my_drawing.game.alreadyGuessed')
-                  : t('games.guess_my_drawing.game.guessNow')
+    const turn: GameTurn = phase === 'reveal'
+        ? { whose: 'nobody', line: t('games.guess_my_drawing.game.revealHeading', { prompt: revealedWord }) }
+        : isDrawer
+          ? { whose: 'you', action: t(phase === 'choosing' ? 'games.guess_my_drawing.game.turnChoose' : 'games.guess_my_drawing.game.turnDraw') }
+          : !isSpectator && phase === 'drawing' && !hasGuessed
+            ? { whose: 'you', action: t('games.guess_my_drawing.game.turnGuess') }
+            : { whose: 'player', player: nameOf(drawerId), doing: t(phase === 'choosing' ? 'games.guess_my_drawing.game.doingChoose' : 'games.guess_my_drawing.game.doingDraw') }
 
     const pencilBadge = (
         <div style={{
@@ -1227,7 +1218,7 @@ export default function SketchAndGuessLobbyPage({ code, isSpectator = false, onG
             isFinished={isFinished}
             outcome={viewerOutcome({ isFinished, isDraw: false, isSpectator, isSeated: !!currentPlayer, isViewerWinner: winnerId ? iWon : null })}
             finishedMessage={finishedMessage}
-            activeTitle={activeTitle}
+            turn={turn}
             meta={phase === 'drawing' && !isFinished ? (
                 // Pops as each correct guess comes in (#1115).
                 <ScorePop value={submittedCount} style={{ display: 'inline-block' }}>{`${submittedCount}/${totalGuessers}`}</ScorePop>
@@ -1356,6 +1347,7 @@ export default function SketchAndGuessLobbyPage({ code, isSpectator = false, onG
 
     return (
         <div className="game-screen ttt-screen" style={themeStyle}>
+            <GamePageHeading title={t('games.guess_my_drawing.name')} />
 
             {/* ── DESKTOP ─────────────────────────────────────────────────── */}
             <div className="ttt-desktop-layout">

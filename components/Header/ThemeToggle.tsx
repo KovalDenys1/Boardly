@@ -132,7 +132,7 @@ export function ThemeToggle() {
         <TriggerIcon />
         <span
           aria-hidden
-          className={`absolute bottom-[5px] right-[5px] h-1.5 w-1.5 rounded-full bg-bd-lav transition-[opacity,scale] duration-150 ease-out ${
+          className={`absolute bottom-[5px] right-[5px] h-1.5 w-1.5 rounded-full bg-bd-lav transition-[opacity,scale] duration-bd-fast ease-out ${
             mode === 'system' ? 'scale-100 opacity-100' : 'scale-50 opacity-0'
           }`}
         />
@@ -140,14 +140,14 @@ export function ThemeToggle() {
 
       <Transition
         as={Fragment}
-        enter="transition ease-out duration-150"
+        enter="transition ease-out duration-bd-fast"
         enterFrom="opacity-0 translate-y-1 scale-[0.98]"
         enterTo="opacity-100 translate-y-0 scale-100"
-        leave="transition ease-in duration-100"
+        leave="transition ease-in duration-bd-fast"
         leaveFrom="opacity-100 translate-y-0 scale-100"
         leaveTo="opacity-0 translate-y-1 scale-[0.98]"
       >
-        <MenuItems className="absolute right-0 z-50 mt-2 w-[232px] overflow-hidden rounded-[1.25rem] border-[1.5px] border-bd-line bg-bd-input-bg p-1.5 shadow-[0_18px_36px_-18px_rgba(31,27,22,0.35)] focus:outline-hidden">
+        <MenuItems className="absolute right-0 z-dropdown mt-2 w-[232px] overflow-hidden rounded-[1.25rem] border-[1.5px] border-bd-line bg-bd-input-bg p-1.5 shadow-[0_18px_36px_-18px_rgba(31,27,22,0.35)] focus:outline-hidden">
           <div className="px-3 pb-1.5 pt-1 text-xs font-semibold text-bd-ink-muted">{t('header.themeLabel')}</div>
           {MENU_OPTIONS.map(({ value, labelKey, hintKey, Icon }) => {
             const active = mode === value
@@ -157,7 +157,7 @@ export function ThemeToggle() {
                   <button
                     type="button"
                     onClick={() => setTheme(value)}
-                    className={`flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left transition-colors duration-150 ${
+                    className={`flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left transition-colors duration-bd-fast ${
                       active
                         ? 'bg-bd-lav/15 text-bd-lav-text dark:text-bd-lav'
                         : focus
@@ -172,7 +172,7 @@ export function ThemeToggle() {
                       <span className="block truncate text-sm font-semibold">{t(labelKey)}</span>
                       {hintKey && <span className="block text-xs text-bd-ink-muted">{t(hintKey)}</span>}
                     </span>
-                    <span className={`shrink-0 transition-opacity duration-150 ${active ? 'opacity-100' : 'opacity-0'}`}>
+                    <span className={`shrink-0 transition-opacity duration-bd-fast ${active ? 'opacity-100' : 'opacity-0'}`}>
                       <CheckIcon />
                     </span>
                   </button>

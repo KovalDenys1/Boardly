@@ -1,5 +1,6 @@
 import {
   HREFLANG,
+  guideLocaleFor,
   isLocalizedPage,
   languageAlternates,
   localeSwitchHref,
@@ -10,8 +11,8 @@ import {
 import { serverTranslator } from '@/lib/server-i18n'
 
 /**
- * #1394, #928: the server renders a locale for /ru/..., /uk/... and /no/... on /,
- * /games and /games/<game>. These are the pieces every such page is built on: the URL a
+ * #1394, #928, #1610: the server renders a locale for /ru/..., /uk/..., /no/..., /de/...
+ * and /es/... on /, /games and /games/<game>. These are the pieces every such page is built on: the URL a
  * locale lives at, the hreflang set it publishes, the links between its pages,
  * and a translator the server can use without the browser singleton.
  */
@@ -23,6 +24,8 @@ describe('localized paths (#1394)', () => {
     expect(localizedPath('/games', 'uk')).toBe('/uk/games')
     expect(localizedPath('/games/alias', 'ru')).toBe('/ru/games/alias')
     expect(localizedPath('/games/yahtzee', 'no')).toBe('/no/games/yahtzee')
+    expect(localizedPath('/', 'de')).toBe('/de')
+    expect(localizedPath('/games/spy', 'es')).toBe('/es/games/spy')
   })
 
   it('reads the locale back off a path, and only a served one', () => {
@@ -30,9 +33,12 @@ describe('localized paths (#1394)', () => {
     expect(pathLocale('/uk')).toBe('uk')
     expect(pathLocale('/no/games')).toBe('no')
     expect(pathLocale('/games/alias')).toBeNull()
-    expect(pathLocale('/de/games')).toBeNull()
+    expect(pathLocale('/de/games')).toBe('de')
+    expect(pathLocale('/es')).toBe('es')
+    expect(pathLocale('/fr/games')).toBeNull()
     expect(pathLocale('/russia')).toBeNull()
     expect(pathLocale('/norway')).toBeNull()
+    expect(pathLocale('/dev/icons')).toBeNull()
   })
 })
 
@@ -45,8 +51,16 @@ describe('hreflang alternates (#1394)', () => {
       ru: 'https://boardly.online/ru/games/alias',
       uk: 'https://boardly.online/uk/games/alias',
       nb: 'https://boardly.online/no/games/alias',
+      de: 'https://boardly.online/de/games/alias',
+      es: 'https://boardly.online/es/games/alias',
       'x-default': 'https://boardly.online/games/alias',
     })
+  })
+
+  it('names German and Spanish on the game pages but not on the guides, which are not written in them (#1610)', () => {
+    expect(languageAlternates('/de')).toMatchObject({ de: 'https://boardly.online/de', es: 'https://boardly.online/es' })
+    expect(Object.keys(languageAlternates('/guides/how-to-play-yahtzee-online')).sort()).toEqual(['en', 'nb', 'ru', 'uk', 'x-default'])
+    expect(Object.keys(languageAlternates('/ru/guides')).sort()).toEqual(['en', 'nb', 'ru', 'uk', 'x-default'])
   })
 
   it('publishes Norwegian under the Bokmål code nb, at the /no URL', () => {
@@ -59,7 +73,7 @@ describe('hreflang alternates (#1394)', () => {
     for (const path of pages) {
       const set = languageAlternates(path)
       const versions = Object.values(set)
-      expect(versions.length).toBe(5)
+      expect(versions.length).toBe(7)
       for (const url of versions) {
         expect(languageAlternates(new URL(url).pathname)).toEqual(set)
       }
@@ -113,6 +127,18 @@ describe('links on a localized page (#1394)', () => {
     expect(localizeHref('/games/yahtzee', 'no')).toBe('/no/games/yahtzee')
     expect(localizeHref('/guides', 'uk')).toBe('/uk/guides')
     expect(localizeHref('/guides/how-to-play-yahtzee-online', 'ru')).toBe('/ru/guides/how-to-play-yahtzee-online')
+    expect(localizeHref('/games/yahtzee#strategy', 'de')).toBe('/de/games/yahtzee#strategy')
+    expect(localizeHref('/', 'es')).toBe('/es')
+  })
+
+  it('link the English guides from a German or Spanish page (#1610)', () => {
+    expect(localizeHref('/guides', 'de')).toBe('/guides')
+    expect(localizeHref('/guides/how-to-play-spy-game-online', 'es')).toBe('/guides/how-to-play-spy-game-online')
+    expect(isLocalizedPage('/guides', 'de')).toBe(false)
+    expect(isLocalizedPage('/guides', 'no')).toBe(true)
+    expect(guideLocaleFor('de')).toBe('en')
+    expect(guideLocaleFor('uk')).toBe('uk')
+    expect(guideLocaleFor(null)).toBe('en')
   })
 
   it('leave every other page on its English URL', () => {
@@ -132,8 +158,14 @@ describe('switching language on a prefixed page (#1394)', () => {
     expect(localeSwitchHref('/ru/guides/how-to-play-alias-online', 'no')).toBe('/no/guides/how-to-play-alias-online')
   })
 
-  it('takes a locale without its own URL to the English URL, where the stored choice applies', () => {
-    expect(localeSwitchHref('/ru/games', 'de')).toBe('/games')
-    expect(localeSwitchHref('/no', 'es')).toBe('/')
+  it('goes to the German and Spanish versions of the pages that have them (#1610)', () => {
+    expect(localeSwitchHref('/ru/games', 'de')).toBe('/de/games')
+    expect(localeSwitchHref('/no', 'es')).toBe('/es')
+    expect(localeSwitchHref('/de/games/yahtzee', 'en')).toBe('/games/yahtzee')
+  })
+
+  it('takes a page without a version in the chosen language to the English URL, where the stored choice applies', () => {
+    expect(localeSwitchHref('/ru/guides/how-to-play-alias-online', 'de')).toBe('/guides/how-to-play-alias-online')
+    expect(localeSwitchHref('/no/guides', 'es')).toBe('/guides')
   })
 })

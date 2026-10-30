@@ -413,17 +413,17 @@ export function rateLimit(config: RateLimitConfig) {
     // identity when the route passes one, the address otherwise.
     const scope = keyScope ?? new URL(request.url).pathname
     const caller = options?.identity ? `id:${options.identity}` : ip
-    const key = `${caller}:${scope}`
-    const blockKey = `${key}:${windowMs}:${maxRequests}`
+    // A limiter is its window and its ceiling, so two limiters on one path count apart in either store.
+    const key = `${caller}:${scope}:${windowMs}:${maxRequests}`
 
     const now = Date.now()
 
-    const knownBlockedUntil = blockedUntil.get(blockKey)
+    const knownBlockedUntil = blockedUntil.get(key)
     if (knownBlockedUntil !== undefined) {
       if (knownBlockedUntil > now) {
         return tooManyRequests(message, maxRequests, knownBlockedUntil, now)
       }
-      blockedUntil.delete(blockKey)
+      blockedUntil.delete(key)
     }
 
     const shared = await consumeSharedRateLimit(key, windowMs, now, scope)
@@ -459,7 +459,7 @@ export function rateLimit(config: RateLimitConfig) {
     if (record.count > maxRequests) {
       if (shared.kind === 'ok') {
         if (blockedUntil.size >= BLOCKED_CACHE_MAX_ENTRIES) blockedUntil.clear()
-        blockedUntil.set(blockKey, record.resetTime)
+        blockedUntil.set(key, record.resetTime)
       }
       if (record.count === maxRequests + 1) {
         await reportRateLimited(scope, now)
@@ -650,8 +650,12 @@ export const rateLimitPresets = {
     message: 'Too many lobbies created. Please try again later.'
   },
 
-  // POST /api/lobby/<code>/rematch: lobby creation's budget. Normally keyed by its path, as it
-  // always was, so the limit is per lobby. While degraded (#1156) it is one bucket per IP
+  // Lobby creation's numbers for the two routes that start a game in an existing lobby.
+  // POST /api/lobby/<code>/rematch keys it on its path, so the limit is per lobby and per
+  // address: friends behind one address rematching at two tables do not share it.
+  // POST /api/lobby/<code>/reopen adds `keyScope: 'lobby-reopen'` and counts it per address
+  // and per opener across every code, because reopening one closed table after another is
+  // what walking the codes would buy. While degraded (#1156) both share one bucket per IP
   // across every code: keyed per path, each code would bring its own per-instance ceiling,
   // and the ceiling would bound nothing.
   lobbyRematch: {
@@ -659,7 +663,7 @@ export const rateLimitPresets = {
     maxRequests: 10,
     failClosed: true,
     degraded: { ...LOBBY_CREATION_DEGRADED, keyScope: 'lobby-rematch-degraded' },
-    message: 'Too many lobbies created. Please try again later.'
+    message: 'Too many requests. Please slow down.'
   },
 
   // Uncached invite-card renders (#1091). One bucket per IP across every lobby

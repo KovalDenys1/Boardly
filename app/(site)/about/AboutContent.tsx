@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import Breadcrumbs from '@/components/Breadcrumbs'
 import Footer from '@/components/Footer'
 import { useTranslation } from '@/lib/i18n-helpers'
 import { GITHUB_REPO_URL, SUPPORT_EMAIL } from './about-json-ld'
@@ -13,11 +14,11 @@ export default function AboutContent() {
   return (
     <div className="bd-page flex min-h-full flex-1 flex-col">
       <div className="mx-auto w-full max-w-3xl px-4 pb-20 pt-10 sm:px-6 lg:px-8">
-        <nav className="mb-6 flex items-center gap-2 text-sm" style={{ color: 'var(--bd-ink-muted)' }} aria-label={t('breadcrumbs.label')}>
-          <Link href="/" className="transition-colors hover:text-bd-ink">{t('breadcrumbs.home')}</Link>
-          <span>/</span>
-          <span style={{ color: 'var(--bd-ink)' }}>{t('about.breadcrumb')}</span>
-        </nav>
+        <Breadcrumbs
+          className="mb-6"
+          label={t('breadcrumbs.label')}
+          items={[{ label: t('breadcrumbs.home'), href: '/' }, { label: t('about.breadcrumb') }]}
+        />
 
         <article className="bd-card p-8 md:p-12">
           <h1

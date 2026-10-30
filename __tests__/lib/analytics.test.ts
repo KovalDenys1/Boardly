@@ -133,11 +133,11 @@ describe('invite loop events (#920)', () => {
   })
 
   it('names the surface, the method and the lobby code', () => {
-    trackInviteCopied('lobby_code_chip', 'AB12', 'clipboard')
+    trackInviteCopied('lobby_header_button', 'AB12', 'clipboard')
     trackInviteCopied('result_overlay', 'AB12', 'web_share')
 
     expect(mockTrack).toHaveBeenNthCalledWith(1, 'invite_copied', {
-      source: 'lobby_code_chip',
+      source: 'lobby_header_button',
       lobby_code: 'AB12',
       method: 'clipboard',
     })

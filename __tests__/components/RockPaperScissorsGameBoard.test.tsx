@@ -54,7 +54,7 @@ describe('RockPaperScissorsGameBoard reveal (#1287)', () => {
     act(() => { jest.advanceTimersByTime(1) })
     expect(handIcons(container)).toEqual(['paper', 'scissors'])
     expect(container.querySelectorAll('.rps-hand--shaking')).toHaveLength(0)
-    expect(RPS_REVEAL_MS).toBe(1100)
+    expect(RPS_REVEAL_MS).toBeGreaterThan(RPS_SHAKE_MS)
   })
 
   it('shows the throws at once when the viewer prefers reduced motion', () => {

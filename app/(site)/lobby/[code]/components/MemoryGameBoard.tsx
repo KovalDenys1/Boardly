@@ -17,6 +17,7 @@ import GamePlayerCard from '@/components/game-chrome/GamePlayerCard'
 import { reportablePlayerId } from '@/lib/reportable-player'
 import GameScoreboardHeader, { type GameHeaderRoom } from '@/components/game-chrome/GameScoreboardHeader'
 import GameStatusBanner from '@/components/game-chrome/GameStatusBanner'
+import GamePageHeading from '@/components/game-chrome/GamePageHeading'
 import { hasTopScore, viewerOutcome } from '@/lib/game-outcome'
 import GameTabs from '@/components/game-chrome/GameTabs'
 import { useGameTimer } from '../hooks/useGameTimer'
@@ -26,7 +27,7 @@ import { useMemorySounds } from '../hooks/useMemorySounds'
 import { useSpectatorResultCue } from '@/hooks/useSpectatorResultCue'
 import ScorePop from '@/components/game-chrome/ScorePop'
 import { MemoryCardTile, MemoryGrid, memorySymbolSizeClass } from '@/components/boards/MemoryTiles'
-import { idsAddedSince, matchedCardIds } from '@/lib/memory-motion'
+import { MATCH_CUE_MS, idsAddedSince, matchedCardIds } from '@/lib/memory-motion'
 import { createStuckTurnRecovery, turnSignatureOf } from '@/lib/stuck-turn-recovery'
 
 interface LobbyPlayer {
@@ -103,8 +104,6 @@ interface MemoryGameBoardProps {
 }
 
 const MISMATCH_RESOLVE_DELAY_MS = 1200
-/** How long a freshly matched pair keeps its cue class: flip (~460 ms) + pop (~420 ms). */
-const MATCH_CUE_MS = 1000
 const MISMATCH_RESOLVE_WATCHDOG_MS = MISMATCH_RESOLVE_DELAY_MS + 3500
 
 function getPlayerDisplayName(player: LobbyPlayer): string {
@@ -705,7 +704,9 @@ export default function MemoryGameBoard({
       isDraw={isDraw}
       outcome={viewerResult}
       finishedMessage={isDraw ? t('games.memory.game.tieLabel') : t('games.memory.game.winnerLabel', { player: winnerName })}
-      activeTitle={t('games.memory.game.playerTurnBanner', { player: currentPlayerName })}
+      turn={!isSpectator && isMyTurn
+        ? { whose: 'you', action: t(new Set([...flippedCardIds, ...optimisticFlippedIds]).size === 1 ? 'games.memory.game.turnFlipOne' : 'games.memory.game.turnFlipTwo') }
+        : { whose: 'player', player: currentPlayerName, doing: t('games.memory.game.doingFlip') }}
       meta={`${matchedPairs}/${totalPairs}`}
       secs={timeLeft}
       turnTimerLimit={turnTimerLimit}
@@ -763,6 +764,7 @@ export default function MemoryGameBoard({
 
   return (
     <div className="memory-screen">
+      <GamePageHeading title={t('games.memory.name')} />
       {/* ── Desktop layout ─────────────────────────────── */}
       <div className="memory-desktop-layout">
         <div className="memory-shell">

@@ -5,7 +5,9 @@ import { rateLimit, rateLimitPresets } from '@/lib/rate-limit'
 import { getRequestAuthUser } from '@/lib/request-auth'
 import { LOBBY_WITH_GAMES_FOR_LEAVE_INCLUDE, performPlayerLeave } from '@/lib/lobby-leave'
 
-const limiter = rateLimit(rateLimitPresets.api)
+// Keyed across codes so walking them costs the caller, and per player so a classroom on one address is not refused.
+const addressLimiter = rateLimit({ ...rateLimitPresets.lobbyReadAddress, keyScope: 'lobby-leave-address' })
+const playerLimiter = rateLimit({ ...rateLimitPresets.api, keyScope: 'lobby-leave' })
 
 export async function POST(
   req: NextRequest,
@@ -14,8 +16,8 @@ export async function POST(
   const log = apiLogger('POST /api/lobby/[code]/leave')
 
   try {
-    const rateLimitResult = await limiter(req)
-    if (rateLimitResult) return rateLimitResult
+    const addressLimitResult = await addressLimiter(req)
+    if (addressLimitResult) return addressLimitResult
 
     const requestUser = await getRequestAuthUser(req)
     const userId = requestUser?.id
@@ -23,6 +25,9 @@ export async function POST(
     if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
+
+    const playerLimitResult = await playerLimiter(req, { identity: userId })
+    if (playerLimitResult) return playerLimitResult
 
     const { code } = await params
 

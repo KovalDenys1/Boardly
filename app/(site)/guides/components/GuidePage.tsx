@@ -1,11 +1,11 @@
 import { buildGuideArticleJsonLd, buildGuideBreadcrumbJsonLd, type GuideTranslation } from '@/lib/guide-seo'
 import { getGuideBySlug } from '@/lib/guides-catalog'
-import { localizeHref, type SeoLocale } from '@/lib/seo-locales'
+import { localizeHref, type GuideLocale } from '@/lib/seo-locales'
 import GuideLayout, { GuideFaqList, GuideSection, buildGuideFaqJsonLd } from './GuideLayout'
 import type { RegisteredGuide } from './guide-definition'
 
 /** The translation's `<head>` copy, or nothing for the English guide, whose copy is in the catalog. */
-export function guideTranslation(guide: RegisteredGuide, locale: SeoLocale): GuideTranslation | undefined {
+export function guideTranslation(guide: RegisteredGuide, locale: GuideLocale): GuideTranslation | undefined {
   return locale === 'en' ? undefined : { locale, seo: guide.copy[locale].seo }
 }
 
@@ -13,7 +13,7 @@ export function guideTranslation(guide: RegisteredGuide, locale: SeoLocale): Gui
  * A guide page in one language. The FAQ section and its FAQPage node are both drawn from the
  * copy's one `faq` array, so the schema can never carry a question the page does not show.
  */
-export default function GuidePage({ guide, locale }: { guide: RegisteredGuide; locale: SeoLocale }) {
+export default function GuidePage({ guide, locale }: { guide: RegisteredGuide; locale: GuideLocale }) {
   const copy = guide.copy[locale]
   const translation = guideTranslation(guide, locale)
   const href = (path: string) => localizeHref(path, locale)

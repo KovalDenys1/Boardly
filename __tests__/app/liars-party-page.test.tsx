@@ -595,7 +595,7 @@ describe('LiarsPartyLobbyPage', () => {
       const { unmount } = render(<LiarsPartyLobbyPage code="ABCD" />)
       await waitFor(() => expect(screen.getByTestId('liars-party-challenge-screen')).toBeTruthy())
       const voterBanner = document.querySelector('.ttt-desktop-layout .ttt-center-col')!.firstElementChild as HTMLElement
-      expect(voterBanner.textContent).toContain('liarsParty.challengeOrBelieve')
+      expect(voterBanner.textContent).toContain('game.ui.turnEveryone:{"action":"liarsParty.turnJudge"}')
       expect(desktop().getByTestId('liars-claim-by').textContent).toBe('liarsParty.claimedBy:{"name":"Bob"}')
       unmount()
 
@@ -605,7 +605,7 @@ describe('LiarsPartyLobbyPage', () => {
       await waitFor(() => expect(screen.getByTestId('liars-party-challenge-screen')).toBeTruthy())
       const claimantBanner = document.querySelector('.ttt-desktop-layout .ttt-center-col')!.firstElementChild as HTMLElement
       expect(claimantBanner.textContent).toContain('liarsParty.tableVotingOnYourClaim')
-      expect(claimantBanner.textContent).not.toContain('liarsParty.challengeOrBelieve')
+      expect(claimantBanner.textContent).not.toContain('liarsParty.turnJudge')
     })
 
     it('shows the table under the banner to an eliminated player', async () => {
@@ -876,7 +876,7 @@ describe('LiarsPartyLobbyPage', () => {
       // a live round, so `overflow: hidden` cut the round off and truncated the
       // title with it. The counter in the header carries the round already.
       const banner = document.querySelector('.ttt-desktop-layout .ttt-center-col')!.firstElementChild as HTMLElement
-      expect(banner.textContent).toContain('liarsParty.isClaimingFor')
+      expect(banner.textContent).toContain('game.ui.turnPlayer:{"player":"Bob"')
       expect(banner.textContent).not.toContain('liarsParty.round')
 
       const counter = document.querySelector('.ttt-desktop-layout .liars-counter__value') as HTMLElement
@@ -980,7 +980,7 @@ describe('LiarsPartyLobbyPage', () => {
       expect((side as HTMLElement).querySelector('.liars-header-card .game-scoreboard-header')).toBeTruthy()
       // GameStatusBanner carries no class of its own (it is styled inline), so
       // the assertion is the line it renders: whose turn it is, once.
-      expect(within(side as HTMLElement).getByText(/liarsParty\.isClaimingFor/)).toBeTruthy()
+      expect(within(side as HTMLElement).getByText(/game\.ui\.turnPlayer/)).toBeTruthy()
       expect((side as HTMLElement).querySelector('.game-tabs')).toBeTruthy()
       expect((side as HTMLElement).querySelector('.liars-panel')).toBeTruthy()
     })
